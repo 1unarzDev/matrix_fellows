@@ -250,9 +250,22 @@ void main() {
     bool swellHit=false;
     if(storm>.1 && p>1.4 && rd.y<.16) {
       float travel=.5, previous=.5;
+      // The three swell amplitudes sum to five; their distance envelopes
+      // never exceed one. Intersect that exact vertical bound before tracing
+      // instead of marching empty sky above (or below) every possible crest.
+      float crestBound=5.0*storm*smoothstep(1.32,1.8,p)+.01;
+      float traceEnd=min(650.0,dist);
+      if(abs(rd.y)>.0001) {
+        float a=(waterLevel-crestBound-uCamera.y)/rd.y;
+        float b=(waterLevel+crestBound-uCamera.y)/rd.y;
+        travel=max(.5,min(a,b));
+        previous=travel;
+        traceEnd=min(traceEnd,max(a,b));
+      }
       // Grazing rays can spend hundreds of short steps approaching a crest.
       // Most rays exit early; the larger ceiling prevents false sky gaps.
       for(int step=0;step<512;step++) {
+        if(travel>traceEnd)break;
         vec3 samplePoint=uCamera+rd*travel;
         float clearance=samplePoint.y-waterLevel-swell(samplePoint.xz).x;
         if(clearance<0.0) {
@@ -344,11 +357,13 @@ void main() {
       atmosphere+=vec3(.055,.06,.065)*uLightning.x*storm;
       col=mix(col,atmosphere,fog);
     }
+    if(oasis<.999) {
     float dust=fbm(vec2(uv.x*3.0-uTime*.16,uv.y*8.0+uTime*.035));
     float wisps=fbm(vec2(uv.x*1.4-uTime*.22,uv.y*16.0+sin(uv.x*2.0)*1.3));
     float dustStorm=(1.0-oasis)*(.08+pow(dust,1.5)*.62+wisps*.19);
     col=mix(col,vec3(.62,.36,.18),dustStorm*.65);
     col+=vec3(.16,.08,.035)*pow(wisps,2.0)*(1.0-oasis);
+    }
     // Lens response follows the projected light as the camera rises and descends.
     float sunDepth=dot(sun,forward);
     vec2 sunScreen=vec2(dot(sun,right),dot(sun,up))/max(.1,sunDepth)/.9326;
@@ -403,6 +418,7 @@ void main() {
     if(cover>.5)sceneDistance=.15;
   }
 
+  if(submerged>0.0 && cosmos<.999) {
   vec2 warp=uv+vec2(sin(uv.y*9.0+uTime*.24),cos(uv.x*7.0-uTime*.19))*.022;
   float shaft=pow(max(0.0,sin((warp.x+warp.y*.3)*24.0+fbm(warp*3.0)*3.0)),8.0);
   // Refraction can move UVs below the frame. Fractional powers of negative
@@ -437,6 +453,7 @@ void main() {
   float windowLight=exp(-length((uv-vec2(.55,1.12))*vec2(1.3,.9))*5.0);
   deep+=vec3(.10,.40,.42)*windowLight*(1.0-smoothstep(2.7,3.1,p));
   col=mix(col,deep,submerged);
+  }
   if(submerged>.5)sceneDistance=10000.0;
   col+=vec3(.10,.36,.39)*edge*.55;
 

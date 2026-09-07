@@ -5,7 +5,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js'
 import { FXAAShader } from 'three/addons/shaders/FXAAShader.js'
 import { createOasisDressing } from './oasis'
-import { nextFrameTime } from './frame-clock'
+import { nextFrameTime, settleProgress } from './frame-clock'
 import { constellationLayout, constellationStarCount } from './constellations'
 import {
   worldFragment,
@@ -62,30 +62,59 @@ export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, on
     depthTest: true,
   })
   background.add(new THREE.Mesh(quadGeometry, quadMaterial))
+  // The procedural landscape dominates fragment cost. On phones render only
+  // that layer at a lower resolution; retain a sharp multisampled foreground
+  // for palm leaves, rocks, particles and constellation lines.
+  const atmosphereTarget = mobile ? new THREE.WebGLRenderTarget(1, 1, {
+    type: THREE.HalfFloatType,
+    depthTexture: new THREE.DepthTexture(1, 1, THREE.UnsignedIntType),
+    minFilter: THREE.LinearFilter,
+    magFilter: THREE.LinearFilter,
+  }) : undefined
+  const atmosphereCopy = atmosphereTarget ? new THREE.ShaderMaterial({
+    uniforms: { colorBuffer: { value: atmosphereTarget.texture }, depthBuffer: { value: atmosphereTarget.depthTexture } },
+    vertexShader: screenVertex,
+    fragmentShader: `uniform sampler2D colorBuffer; uniform sampler2D depthBuffer; varying vec2 vUv;
+      void main(){gl_FragColor=texture2D(colorBuffer,vUv);gl_FragDepth=texture2D(depthBuffer,vUv).r;}`,
+    depthTest: true, depthWrite: true,
+  }) : undefined
+  const compositeBackground = new THREE.Scene()
+  if (atmosphereCopy) compositeBackground.add(new THREE.Mesh(quadGeometry, atmosphereCopy))
   const renderTarget = new THREE.WebGLRenderTarget(1, 1, {
     type: THREE.HalfFloatType,
-    samples: Math.min(4, renderer.capabilities.maxSamples),
+    samples: Math.min(mobile ? 2 : 4, renderer.capabilities.maxSamples),
     depthBuffer: true,
   })
   const composer = new EffectComposer(renderer, renderTarget)
-  const backgroundPass = new RenderPass(background, screenCamera)
+  const backgroundPass = new RenderPass(mobile ? compositeBackground : background, screenCamera)
   const scenePass = new RenderPass(scene, camera)
   scenePass.clear = false
   scenePass.clearDepth = false
-  const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.48, 0, 1.05)
+  const bloom = mobile ? undefined : new UnrealBloomPass(new THREE.Vector2(1, 1), 0.48, 0, 1.05)
   // Very coarse mip levels create visibly offset/blocky lobes around the sun.
   // Keep bloom's fine halo; the analytic lens shader supplies its broad glow.
-  bloom.compositeMaterial.uniforms.bloomFactors!.value = [1, 0.65, 0.25, 0.08, 0.02]
+  if (bloom) bloom.compositeMaterial.uniforms.bloomFactors!.value = [1, 0.65, 0.25, 0.08, 0.02]
   const grade = new ShaderPass({
-    uniforms: { tDiffuse: { value: null } },
+    uniforms: { tDiffuse: { value: null }, texel: { value: new THREE.Vector2() } },
     vertexShader: screenVertex,
-    fragmentShader: `uniform sampler2D tDiffuse; varying vec2 vUv;
+    fragmentShader: `uniform sampler2D tDiffuse; uniform vec2 texel; varying vec2 vUv;
       void main(){vec3 c=max(texture2D(tDiffuse,vUv).rgb,vec3(0));
+      ${mobile ? `
+      // Eight symmetric highlight taps folded into color grading replace the
+      // desktop multi-mip bloom chain. The world shader retains broad glare.
+      vec3 halo=vec3(0.0);
+      for(int i=0;i<8;i++) {
+        float angle=float(i)*.785398;
+        vec2 offset=vec2(cos(angle),sin(angle))*texel*3.0;
+        halo+=max(texture2D(tDiffuse,vUv+offset).rgb-vec3(1.05),vec3(0.0));
+      }
+      c+=halo*.045;
+      ` : ''}
       gl_FragColor=vec4(pow(vec3(1)-exp(-c*1.35),vec3(.92)),1);}`,
   })
   composer.addPass(backgroundPass)
   composer.addPass(scenePass)
-  composer.addPass(bloom)
+  if (bloom) composer.addPass(bloom)
   composer.addPass(grade)
   // MSAA handles silhouette coverage; a final mobile-only edge resolve also
   // softens texture cutouts and high-contrast wave highlights at bounded DPR.
@@ -98,7 +127,7 @@ export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, on
     seed = (seed * 16807) % 2147483647
     return (seed - 1) / 2147483646
   }
-  const count = mobile ? 4200 : 12000
+  const count = mobile ? 2600 : 12000
   const positions = new Float32Array(count * 3)
   const seeds = new Float32Array(count)
   for (let i = 0; i < count; i++) {
@@ -152,7 +181,7 @@ export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, on
 
   const oasisDressing = createOasisDressing(scene, camera)
 
-  let ratio = Math.min(window.devicePixelRatio, mobile ? 1 : 1.5)
+  let ratio = Math.min(window.devicePixelRatio, mobile ? 0.7 : 1.5)
   let disposed = false,
     visible = true,
     frame = 0,
@@ -163,6 +192,8 @@ export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, on
     sampleFrames = 0,
     lastRender = sampleStart
   let progress = 0
+  let requestedProgress = 0
+  let hasScrollPosition = false
   let surfaceWidth = 0, surfaceHeight = 0
   // Explicit crest, basin, waterline, and submerged control points keep the reveals spatial.
   const cameraKeys = [
@@ -202,11 +233,14 @@ export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, on
       : Math.round(canvas.getBoundingClientRect().height) || window.innerHeight
     surfaceWidth = width
     surfaceHeight = height
-    renderer.setPixelRatio(ratio)
+    const foregroundRatio = mobile ? Math.min(window.devicePixelRatio, 1) : ratio
+    renderer.setPixelRatio(foregroundRatio)
     renderer.setSize(width, height, false)
-    composer.setPixelRatio(ratio)
+    composer.setPixelRatio(foregroundRatio)
     composer.setSize(width, height)
-    edgeResolve?.uniforms.resolution!.value.set(1 / (width * ratio), 1 / (height * ratio))
+    atmosphereTarget?.setSize(Math.max(1, Math.round(width * ratio)), Math.max(1, Math.round(height * ratio)))
+    grade.uniforms.texel!.value.set(1 / (width * foregroundRatio), 1 / (height * foregroundRatio))
+    edgeResolve?.uniforms.resolution!.value.set(1 / (width * foregroundRatio), 1 / (height * foregroundRatio))
     camera.aspect = width / height
     camera.updateProjectionMatrix()
     uniforms.uAspect.value = width / height
@@ -224,10 +258,11 @@ export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, on
     lineVertices.array.set(layout.lines)
     lineVertices.needsUpdate = true
     lineGeometry.computeBoundingSphere()
-    particleUniforms.uPixelRatio.value = ratio
-    canvas.dataset.pixelRatio = ratio.toFixed(2)
+    particleUniforms.uPixelRatio.value = foregroundRatio
+    canvas.dataset.pixelRatio = foregroundRatio.toFixed(2)
+    canvas.dataset.atmosphereRatio = ratio.toFixed(2)
   }
-  function setProgress(value: number) {
+  function updateCamera(value: number) {
     progress = THREE.MathUtils.clamp(value, 0, 5)
     uniforms.uProgress.value = progress
     canvas.dataset.progress = progress.toFixed(3)
@@ -275,6 +310,11 @@ export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, on
     lineMaterial.opacity = THREE.MathUtils.smoothstep(progress, 3.75, 4.15) * 0.25
     oasisDressing.setProgress(progress)
   }
+  function setProgress(value: number) {
+    requestedProgress = THREE.MathUtils.clamp(value, 0, 5)
+    if (!mobile || !hasScrollPosition || document.hidden) updateCamera(requestedProgress)
+    hasScrollPosition = true
+  }
   function draw(now: number) {
     if (disposed) return
     frame = requestAnimationFrame(draw)
@@ -290,7 +330,10 @@ export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, on
     // Do not skip it and accidentally alternate 33/66 ms frames.
     const frameTime = nextFrameTime(now, last)
     if (frameTime === null) return
-    elapsed += Math.min(now - lastRender, 70) / 1000
+    const seconds = Math.min(now - lastRender, 100) / 1000
+    elapsed += seconds
+    if (mobile && requestedProgress !== progress)
+      updateCamera(settleProgress(progress, requestedProgress, seconds))
     lastRender = now
     last = frameTime
     uniforms.uTime.value = elapsed
@@ -307,6 +350,12 @@ export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, on
     target.y -= emergence*3.2
     camera.lookAt(target)
     const start = performance.now()
+    if (atmosphereTarget) {
+      renderer.setRenderTarget(atmosphereTarget)
+      renderer.clear()
+      renderer.render(background, screenCamera)
+      renderer.setRenderTarget(null)
+    }
     composer.render()
     camera.position.y = cameraY
     target.y = targetY
@@ -321,9 +370,12 @@ export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, on
       sampleFrames = 0
     }
     const cost = performance.now() - start
-    slow = cost > 27 || delta > 52 ? slow + 1 : Math.max(0, slow - 1)
-    if (slow > 50 && ratio > 0.65) {
-      ratio = Math.max(0.65, ratio * 0.8)
+    // A sustained 50 ms cadence is only 20 fps. The old 52 ms threshold
+    // mistakenly treated that common missed-vsync cadence as healthy.
+    slow = cost > 27 || delta > (mobile ? 42 : 52) ? slow + 1 : Math.max(0, slow - 1)
+    const minimumRatio = mobile ? 0.45 : 0.65
+    if (slow > 30 && ratio > minimumRatio) {
+      ratio = Math.max(minimumRatio, ratio * 0.85)
       geometry.setDrawRange(
         0,
         Math.floor(
@@ -349,7 +401,7 @@ export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, on
   }
   window.addEventListener('resize', onResize, { passive: true })
   resize()
-  setProgress(0)
+  updateCamera(0)
   frame = requestAnimationFrame(draw)
   return {
     setProgress,
@@ -366,9 +418,11 @@ export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, on
       lineMaterial.dispose()
       quadGeometry.dispose()
       quadMaterial.dispose()
+      atmosphereCopy?.dispose()
+      atmosphereTarget?.dispose()
       backgroundPass.dispose()
       scenePass.dispose()
-      bloom.dispose()
+      bloom?.dispose()
       grade.dispose()
       edgeResolve?.dispose()
       composer.dispose()

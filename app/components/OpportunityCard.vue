@@ -103,7 +103,10 @@ onMounted(() => {
       </details>
     </div>
     <div class="border-t border-paper/10">
-      <div class="flex min-h-14 items-center justify-between gap-3 px-6 pt-5 sm:px-7">
+      <div
+        v-if="timeline.length"
+        class="flex min-h-14 items-center justify-between gap-3 px-6 pt-5 sm:px-7"
+      >
         <p class="text-[9px] uppercase tracking-[.16em] text-paper/40">
           The timeline
           <span v-if="timeline.length" class="ml-2 text-paper/25"
@@ -194,7 +197,8 @@ onMounted(() => {
         role="tabpanel"
         :aria-labelledby="checkpoint ? `${id}-tab-${selected}` : undefined"
         :tabindex="checkpoint ? 0 : undefined"
-        class="mx-6 mb-6 mt-2 min-h-40 rounded-xl border border-paper/10 bg-paper/[.025] p-4 focus-visible:outline-acid sm:mx-7"
+        class="mx-6 mb-6 rounded-xl border border-paper/10 bg-paper/[.025] p-4 focus-visible:outline-acid sm:mx-7"
+        :class="checkpoint ? 'mt-2 min-h-40' : 'mt-6'"
       >
         <Transition
           mode="out-in"

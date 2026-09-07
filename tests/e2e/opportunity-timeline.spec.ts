@@ -191,6 +191,8 @@ test('past-only and unannounced timelines remain readable', async ({ page }) => 
   const awaiting = card(page, 'Awaiting next announcement')
   await expect(awaiting.getByRole('tab')).toHaveCount(0)
   await expect(awaiting.getByRole('tabpanel')).toContainText('Awaiting announcement')
+  await expect(awaiting.getByRole('tabpanel')).toHaveCSS('min-height', '0px')
+  await expect(awaiting.getByText('The timeline', { exact: true })).toHaveCount(0)
 })
 
 test('narrow viewport confines horizontal scrolling and honors reduced motion', async ({

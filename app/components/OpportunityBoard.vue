@@ -113,12 +113,29 @@ const deadlines = computed(() =>
           <p class="mt-4 text-xs" :class="item.deadline ? 'text-acid' : 'text-paper/55'">
             {{
               item.deadline
-                ? `Submit by ${displayDate(item.deadline, item.timezone || 'UTC')}`
+                ? `${item.milestones?.find((m) => m.date === item.deadline)?.label || 'Submit by'} · ${displayDate(item.deadline, item.timezone || 'UTC')}`
                 : 'Dates vary · Check official source'
             }}
           </p>
           <p v-if="item.eventDate" class="mt-1 text-[11px] text-paper/50">
             Event · {{ displayDate(item.eventDate, item.timezone || 'UTC') }}
+          </p>
+          <p
+            v-for="milestone in (item.milestones || [])
+              .filter(
+                (m) =>
+                  m.date !== item.deadline &&
+                  m.date !== item.eventDate &&
+                  deadlineTimestamp(m.date) >= now,
+              )
+              .slice(0, 2)"
+            :key="milestone.label"
+            class="mt-2 text-[11px] leading-relaxed text-paper/50"
+          >
+            {{ milestone.label }} · {{ displayDate(milestone.date, milestone.timezone || 'UTC') }}
+          </p>
+          <p v-if="item.deadline && item.provenance" class="mt-1 text-[10px] text-paper/40">
+            {{ item.timezone || 'Date only · confirm cutoff with organizer' }}
           </p>
           <p class="mt-3 text-[9px] text-paper/30">
             Source checked {{ displayDate(item.verifiedAt) }}

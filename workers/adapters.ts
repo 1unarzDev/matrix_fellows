@@ -1,6 +1,8 @@
 import { XMLParser } from 'fast-xml-parser'
 import type { ImportSource, Opportunity } from '../shared/types/content'
 import { opportunitySchema } from '../shared/utils/validation'
+import { parseOfficial } from './official'
+import { officialProfiles } from './official-sources'
 
 export interface SourceAdapter {
   parse(body: string, source: ImportSource, now: string): Opportunity[]
@@ -111,6 +113,11 @@ export function deduplicate(items: Opportunity[]): Opportunity[] {
 }
 
 export async function fetchSource(source: ImportSource): Promise<Opportunity[]> {
+  if (
+    source.kind === 'official' &&
+    !officialProfiles.some((p) => p.id === source.id && p.url === source.url)
+  )
+    throw new Error('Official source URL does not match the reviewed allowlist')
   const url = new URL(source.url)
   if (
     url.protocol !== 'https:' ||
@@ -125,13 +132,17 @@ export async function fetchSource(source: ImportSource): Promise<Opportunity[]> 
     signal: AbortSignal.timeout(12000),
     headers: {
       Accept:
-        source.kind === 'json'
-          ? 'application/json'
-          : 'application/rss+xml, application/atom+xml, application/xml',
+        source.kind === 'official'
+          ? 'text/html'
+          : source.kind === 'json'
+            ? 'application/json'
+            : 'application/rss+xml, application/atom+xml, application/xml',
       'User-Agent': 'MatrixFellows-Opportunities/1.0',
     },
   })
   if (!response.ok) throw new Error(`Source returned HTTP ${response.status}`)
+  if (source.kind === 'official' && !response.headers.get('content-type')?.includes('text/html'))
+    throw new Error('Expected official HTML page, not a redirect or challenge')
   if (!response.body) throw new Error('Empty response')
   const reader = response.body.getReader(),
     chunks: Uint8Array[] = []
@@ -156,6 +167,11 @@ export async function fetchSource(source: ImportSource): Promise<Opportunity[]> 
     bytes.set(chunk, offset)
     offset += chunk.length
   })
+  if (source.kind === 'official') {
+    const digest = await crypto.subtle.digest('SHA-256', bytes)
+    const hash = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
+    return parseOfficial(new TextDecoder().decode(bytes), source, new Date().toISOString(), hash)
+  }
   return deduplicate(
     (source.kind === 'json' ? jsonAdapter : rssAdapter).parse(
       new TextDecoder().decode(bytes),

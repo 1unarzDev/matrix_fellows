@@ -4,6 +4,23 @@ import ArrivalVeil from '~/components/ArrivalVeil.vue'
 import { defaultContent, defaultOpportunities } from '#shared/data/defaults'
 import type { PublicContent } from '#shared/types/content'
 
+const siteUrl = useRuntimeConfig().public.siteUrl
+const socialImage = new URL('/social-card.png', siteUrl).href
+useSeoMeta({
+  ogImage: socialImage,
+  ogImageWidth: 1200,
+  ogImageHeight: 630,
+  ogImageType: 'image/png',
+  ogImageAlt: 'Matrix Fellows — Beyond what we know. A student-founded research society.',
+  ogSiteName: 'Matrix Fellows',
+  ogUrl: new URL('/', siteUrl).href,
+  twitterCard: 'summary_large_image',
+  twitterTitle: 'Matrix Fellows — Beyond what we know.',
+  twitterDescription: 'Independent minds. Shared horizons. A student-founded research society.',
+  twitterImage: socialImage,
+  twitterImageAlt: 'Matrix Fellows — Beyond what we know.',
+})
+
 const { data, refresh } = await useFetch<PublicContent>('/api/content', {
   default: () => ({
     content: defaultContent,

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none">
+  <defs>
+    <linearGradient id="back" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse"><stop stop-color="#151c20"/><stop offset="1" stop-color="#0d101b"/></linearGradient>
+    <radialGradient id="amber"><stop stop-color="#dca263" stop-opacity=".5"/><stop offset=".4" stop-color="#aa7546" stop-opacity=".18"/><stop offset="1" stop-color="#aa7546" stop-opacity="0"/></radialGradient>
+    <radialGradient id="violet"><stop stop-color="#a08de0" stop-opacity=".35"/><stop offset="1" stop-color="#645197" stop-opacity="0"/></radialGradient>
+    <linearGradient id="horizon" x1="690" y1="405" x2="1190" y2="350" gradientUnits="userSpaceOnUse"><stop stop-color="#e9bb79" stop-opacity="0"/><stop offset=".5" stop-color="#e9bb79"/><stop offset="1" stop-color="#c2b0ea" stop-opacity=".2"/></linearGradient>
+    <filter id="bloom" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="8"/></filter>
+    <linearGradient id="word" x1="64" y1="340" x2="500" y2="340" gradientUnits="userSpaceOnUse"><stop stop-color="#f2e5cf"/><stop offset="1" stop-color="#dfbc86"/></linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#back)"/>
+  <ellipse cx="973" cy="367" rx="440" ry="320" fill="url(#amber)"/>
+  <ellipse cx="1060" cy="105" rx="430" ry="355" fill="url(#violet)"/>
+  <g stroke="#b9a4e6" stroke-opacity=".16" stroke-width="1">
+    <ellipse cx="967" cy="321" rx="182" ry="180"/>
+    <ellipse cx="967" cy="321" rx="244" ry="238" stroke-dasharray="2 12"/>
+    <path d="M751 415C847 326 1052 265 1182 292"/>
+  </g>
+  <path d="M655 423C836 428 883 337 1015 364S1138 412 1250 357" stroke="url(#horizon)" stroke-width="8" filter="url(#bloom)" opacity=".65"/>
+  <path d="M655 423C836 428 883 337 1015 364S1138 412 1250 357" stroke="url(#horizon)" stroke-width="1.5"/>
+  <path d="M0 630C370 625 560 496 710 445S982 444 1200 421V630H0Z" fill="#10151d" opacity=".7"/>
+  <g fill="#e5d4bc"><circle cx="818" cy="218" r="2" opacity=".6"/><circle cx="1058" cy="167" r="2.5"/><circle cx="1144" cy="289" r="1.6" opacity=".6"/><circle cx="877" cy="324" r="1.4" opacity=".7"/></g>
+  <g transform="translate(62 54)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9 28C23 15 45 7 54 13M57 24C49 39 22 58 9 51C5 49 5 45 8 41" stroke="#cbb68e" stroke-width="1.8"/>
+    <path d="M17 46V22L32 37L47 22V46" stroke="#f4f1e9" stroke-width="4.5"/>
+    <circle cx="56" cy="17" r="2.2" fill="#eac279"/>
+  </g>
+  <g font-family="Manrope, Arial, sans-serif">
+    <text x="145" y="82" fill="#f4f1e9" font-size="19" font-weight="750" letter-spacing="1.5">MATRIX FELLOWS</text>
+    <text x="145" y="106" fill="#9ba7ad" font-size="13" letter-spacing="1.2">A STUDENT-FOUNDED RESEARCH SOCIETY</text>
+    <text x="64" y="264" fill="#f4f1e9" font-size="78" font-weight="550" letter-spacing="-4">Beyond what</text>
+    <text x="64" y="354" fill="url(#word)" font-size="78" font-weight="550" letter-spacing="-4">we know.</text>
+    <text x="68" y="420" fill="#aeb8bd" font-size="21">Independent minds. Shared horizons.</text>
+    <path d="M64 530H1136" stroke="#c5d3df" stroke-opacity=".14"/>
+    <text x="66" y="570" fill="#b2bbc0" font-size="14" letter-spacing=".4">Research begins with a question.</text>
+    <text x="1136" y="570" text-anchor="end" fill="#d6c7ab" font-size="12" letter-spacing="2">EXPLORE · CONNECT · DISCOVER</text>
+  </g>
+</svg>

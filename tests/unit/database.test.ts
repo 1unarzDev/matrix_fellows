@@ -29,6 +29,74 @@ afterAll(async () => {
   await db?.close()
 })
 
+it('stages official facts for owner review and preserves approved data on changes', async () => {
+  await db.exec(
+    await readFile(
+      new URL('../../supabase/migrations/002_official_imports.sql', import.meta.url),
+      'utf8',
+    ),
+  )
+  const item = {
+    id: 'isef-2027:main',
+    sourceId: 'isef-2027',
+    externalId: 'main',
+    url: 'https://example.org/isef',
+    title: 'ISEF',
+    provenance: { contentHash: 'a'.repeat(64) },
+  }
+  await db.exec('set role service_role')
+  await db.query('select public.stage_import($1)', [JSON.stringify([item])])
+  await db.exec('reset role')
+  expect(
+    (await db.query("select * from public.opportunities where id='isef-2027:main'")).rows,
+  ).toHaveLength(0)
+  await db.exec(`set role authenticated; set request.jwt.claim.sub='${outsider}'`)
+  await expect(
+    db.query('select public.review_import($1,$2,true)', [item.id, item.provenance.contentHash]),
+  ).rejects.toThrow(/Unauthorized/)
+  await db.exec(`set request.jwt.claim.sub='${owner}'`)
+  await expect(
+    db.query('select public.review_import($1,$2,true)', [item.id, null]),
+  ).rejects.toThrow(/Source changed/)
+  await db.query('select public.review_import($1,$2,true)', [item.id, item.provenance.contentHash])
+  await db.query('select public.edit_opportunity($1,$2,false)', [
+    item.id,
+    JSON.stringify({ title: 'Owner title' }),
+  ])
+  await db.exec('reset role; set role service_role')
+  await db.query('select public.stage_import($1)', [JSON.stringify([item])])
+  await db.exec('reset role')
+  expect(
+    (await db.query('select status from public.import_candidates where id=$1', [item.id])).rows[0],
+  ).toEqual({ status: 'approved' })
+  await db.exec('set role service_role')
+  await db.query('select public.stage_import($1)', [
+    JSON.stringify([{ ...item, title: 'Changed', provenance: { contentHash: 'b'.repeat(64) } }]),
+  ])
+  await db.exec('reset role')
+  expect(
+    (
+      await db.query('select data,overrides,suppressed from public.opportunities where id=$1', [
+        item.id,
+      ])
+    ).rows[0],
+  ).toMatchObject({
+    data: { title: 'ISEF' },
+    overrides: { title: 'Owner title' },
+    suppressed: true,
+  })
+  await db.exec(`set role authenticated; set request.jwt.claim.sub='${owner}'`)
+  await db.query('select public.review_import($1,$2,false)', [item.id, 'b'.repeat(64)])
+  await db.exec('reset role; set role service_role')
+  await db.query('select public.stage_import($1)', [
+    JSON.stringify([{ ...item, title: 'Changed', provenance: { contentHash: 'b'.repeat(64) } }]),
+  ])
+  await db.exec('reset role')
+  expect(
+    (await db.query('select status from public.import_candidates where id=$1', [item.id])).rows[0],
+  ).toEqual({ status: 'dismissed' })
+})
+
 describe('database authorization and publication', () => {
   it('lets anonymous visitors read published data but never drafts or writes', async () => {
     await db.exec('set role anon')
@@ -90,7 +158,9 @@ describe('database authorization and publication', () => {
     ])
     await db.exec('reset role')
     const rows = (
-      await db.query('select data,overrides,published,suppressed from public.opportunities')
+      await db.query(
+        "select data,overrides,published,suppressed from public.opportunities where source_id in ('test','other')",
+      )
     ).rows
     expect(rows).toHaveLength(1)
     expect(rows[0]).toMatchObject({

@@ -26,7 +26,12 @@ export async function runImports(env: Env) {
     try {
       const source = sourceSchema.parse(row)
       const items = await fetchSource(source)
-      const result = await client.rpc('apply_import', { items })
+      // Official web-page changes are proposals, never autonomous edits to
+      // public deadlines. Trusted curated feeds retain their existing behavior.
+      const result = await client.rpc(
+        source.kind === 'official' ? 'stage_import' : 'apply_import',
+        { items },
+      )
       if (result.error) throw new Error('Database import failed; previous data retained')
       count = result.data || 0
     } catch (err) {

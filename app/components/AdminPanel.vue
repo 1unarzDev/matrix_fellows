@@ -31,6 +31,32 @@ async function signOut() {
 const draft = ref<SiteContent>(JSON.parse(JSON.stringify(props.initialContent)))
 const listings = ref<Opportunity[]>([...props.opportunities])
 const sources = ref<Array<ImportSource & { last_run?: string; last_error?: string }>>([])
+const candidates = ref<Opportunity[]>([])
+async function reviewCandidate(item: Opportunity, approve: boolean) {
+  if (!client || !item.provenance) return
+  busy.value = true
+  error.value = ''
+  try {
+    const result = await client.rpc('review_import', {
+      candidate_id: item.id,
+      expected_hash: item.provenance.contentHash,
+      approve,
+    })
+    if (result.error) throw result.error
+    await authorize()
+    if (approve) emit('saved')
+    message.value = approve
+      ? 'Verified listing published. Existing owner corrections are preserved.'
+      : 'Proposal dismissed until the source facts change.'
+  } catch (err) {
+    error.value =
+      err instanceof Error
+        ? err.message
+        : String((err as { message?: string }).message || 'Review failed')
+  } finally {
+    busy.value = false
+  }
+}
 const editing = ref<Opportunity | null>(null)
 const source = ref<ImportSource>({ id: '', name: '', kind: 'json', url: '', enabled: false })
 const topics = computed({
@@ -65,13 +91,18 @@ async function authorize() {
     error.value = 'This account does not have editing access.'
     return
   }
-  const [site, rows, feeds] = await Promise.all([
+  const [site, rows, feeds, proposals] = await Promise.all([
     client.from('site_content').select('data,draft').eq('id', 'main').maybeSingle(),
     client.from('opportunities').select('*').order('updated_at', { ascending: false }),
     client.from('import_sources').select('*'),
+    client
+      .from('import_candidates')
+      .select('data')
+      .eq('status', 'pending')
+      .order('fetched_at', { ascending: false }),
   ])
   if (disposed) return
-  if (site.error || rows.error || feeds.error) {
+  if (site.error || rows.error || feeds.error || proposals.error) {
     error.value = 'Could not load all editor data. Please retry.'
     return
   }
@@ -83,6 +114,10 @@ async function authorize() {
     published: row.published && !row.suppressed,
   }))
   sources.value = feeds.data || []
+  candidates.value = (proposals.data || []).flatMap((row) => {
+    const parsed = opportunitySchema.safeParse(row.data)
+    return parsed.success ? [parsed.data] : []
+  })
 }
 
 async function login() {
@@ -498,9 +533,70 @@ onBeforeUnmount(() => {
             </div>
             <div v-if="tab === 'Sources'" class="space-y-6">
               <p class="text-xs leading-relaxed text-paper/55">
-                Enable only trusted, verified HTTPS feeds that match the documented JSON or RSS
-                adapter. New entries publish automatically on the daily schedule.
+                Official sources are checked daily and propose dates for your approval below. Only
+                registered official URLs are supported. Trusted JSON / RSS feeds publish
+                automatically.
               </p>
+              <section
+                v-if="candidates.length"
+                class="space-y-4"
+                aria-label="Dates awaiting review"
+              >
+                <h3 class="text-lg">Awaiting review · {{ candidates.length }}</h3>
+                <article
+                  v-for="item in candidates"
+                  :key="item.id"
+                  class="space-y-4 rounded-xl border border-acid/20 bg-paper/3 p-5"
+                >
+                  <h4 class="font-medium">{{ item.title }}</h4>
+                  <p class="text-xs leading-relaxed text-paper/65">{{ item.description }}</p>
+                  <p class="text-xs text-paper/50">
+                    Currently published deadline:
+                    {{ listings.find((row) => row.id === item.id)?.deadline || 'None' }}
+                  </p>
+                  <ul class="space-y-3">
+                    <li
+                      v-for="milestone in item.milestones"
+                      :key="milestone.label"
+                      class="text-xs leading-relaxed"
+                    >
+                      <p>
+                        {{ milestone.label }} · {{ milestone.date }}
+                        <span class="text-paper/50">{{
+                          milestone.timezone || 'Date only; confirm local cutoff'
+                        }}</span>
+                      </p>
+                      <blockquote class="mt-1 text-paper/50">“{{ milestone.evidence }}”</blockquote>
+                    </li>
+                  </ul>
+                  <a
+                    :href="item.url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-block text-xs text-acid underline underline-offset-4"
+                    >Verify official source ↗</a
+                  >
+                  <p class="text-[10px] text-paper/40">
+                    Fetched {{ item.verifiedAt }} · {{ item.provenance?.parserVersion }}
+                  </p>
+                  <div class="flex flex-wrap gap-3">
+                    <button
+                      :disabled="busy"
+                      class="rounded-full bg-acid px-4 py-2 text-xs text-ink disabled:opacity-40"
+                      @click="reviewCandidate(item, true)"
+                    >
+                      Approve &amp; publish
+                    </button>
+                    <button
+                      :disabled="busy"
+                      class="rounded-full border border-paper/20 px-4 py-2 text-xs disabled:opacity-40"
+                      @click="reviewCandidate(item, false)"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </article>
+              </section>
               <button
                 v-for="feed in sources"
                 :key="feed.id"
@@ -538,10 +634,11 @@ onBeforeUnmount(() => {
                   >
                     <option value="json">JSON</option>
                     <option value="rss">RSS / Atom</option>
+                    <option value="official">Official website (registered profile)</option>
                   </select></label
                 ><label class="flex items-center gap-3 text-sm"
                   ><input v-model="source.enabled" type="checkbox" class="accent-acid" />Enable
-                  automatic publication</label
+                  daily fetching</label
                 ><button
                   :disabled="busy"
                   class="rounded-full bg-acid px-5 py-3 text-sm text-ink disabled:opacity-40"

@@ -28,6 +28,14 @@ export interface SiteContent {
   links: { join: string; contact: string }
 }
 export type OpportunityKind = 'Competition' | 'Conference' | 'Workshop' | 'Publication' | 'Program'
+export interface OpportunityMilestone {
+  label: string
+  date: string
+  kind: 'deadline' | 'event'
+  timezone: string | null
+  evidence: string
+  url: string
+}
 export interface Opportunity {
   id: string
   sourceId: string
@@ -45,6 +53,8 @@ export interface Opportunity {
   verifiedAt: string
   priority: number
   published: boolean
+  milestones?: OpportunityMilestone[]
+  provenance?: { url: string; contentHash: string; parserVersion: string }
 }
 export interface PublicContent {
   content: SiteContent
@@ -55,7 +65,7 @@ export interface PublicContent {
 export interface ImportSource {
   id: string
   name: string
-  kind: 'json' | 'rss'
+  kind: 'json' | 'rss' | 'official'
   url: string
   enabled: boolean
 }

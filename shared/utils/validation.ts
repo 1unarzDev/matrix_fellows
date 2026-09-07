@@ -73,11 +73,31 @@ export const opportunitySchema = z.object({
   verifiedAt: date,
   priority: z.number().min(0).max(100),
   published: z.boolean(),
+  milestones: z
+    .array(
+      z.object({
+        label: shortText.min(1),
+        date,
+        kind: z.enum(['deadline', 'event']),
+        timezone: timezone.nullable(),
+        evidence: z.string().min(1).max(700),
+        url: httpsUrl,
+      }),
+    )
+    .max(30)
+    .optional(),
+  provenance: z
+    .object({
+      url: httpsUrl,
+      contentHash: z.string().regex(/^[a-f0-9]{64}$/),
+      parserVersion: shortText,
+    })
+    .optional(),
 })
 export const sourceSchema = z.object({
   id: z.string().regex(/^[a-z0-9-]{1,60}$/),
   name: shortText.min(1),
-  kind: z.enum(['json', 'rss']),
+  kind: z.enum(['json', 'rss', 'official']),
   url: httpsUrl,
   enabled: z.boolean(),
 })

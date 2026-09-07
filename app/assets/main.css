@@ -1,0 +1,42 @@
+@import 'tailwindcss';
+
+@utility tactile {
+  @apply transition-[transform,scale,translate,background-color,border-color,color,box-shadow] duration-1000 ease-[cubic-bezier(.4,0,.2,1)] hover:-translate-y-px hover:scale-[1.008] active:translate-y-0 active:scale-[.995] active:duration-250 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acid motion-reduce:transform-none motion-reduce:scale-100 motion-reduce:translate-none motion-reduce:transition-none;
+}
+
+@layer base {
+  /* :target is available before hydration: never paint desert dunes over a
+     non-desert hash destination while JavaScript is still starting. */
+  html:has(:is(#discovery, #research, #frontiers, #connection, #community):target) [data-horizon-preview] {
+    @apply invisible;
+  }
+  a,
+  button {
+    @apply focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acid;
+  }
+  button:not(:disabled),
+  a[href] {
+    @apply cursor-pointer;
+  }
+}
+
+@theme {
+  --animate-arrival-safety: arrival-safety 15s step-end forwards;
+  @keyframes arrival-safety {
+    to { visibility: hidden; }
+  }
+  --animate-orbit-trace: orbit-trace 1.8s linear infinite;
+  @keyframes orbit-trace {
+    from {
+      stroke-dashoffset: 1;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  --font-sans: 'DM Sans', sans-serif;
+  --font-display: 'Manrope', sans-serif;
+  --color-ink: #101413;
+  --color-paper: #f4f1e9;
+  --color-acid: #eac279;
+}

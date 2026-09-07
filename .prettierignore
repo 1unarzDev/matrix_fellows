@@ -1,0 +1,8 @@
+node_modules
+.nuxt
+.output
+.wrangler
+public/models
+package-lock.json
+test-results
+playwright-report

@@ -20,7 +20,7 @@ interface Monitor {
   seed: Opportunity & { sourceUrls?: string[] }
   discovered: boolean
 }
-const AGENT_VERSION = 'evidence-agent-v2'
+const AGENT_VERSION = 'evidence-agent-v3'
 const compact = (s: string) => s.replace(/\s+/g, ' ').trim()
 export async function digest(value: unknown): Promise<string> {
   const bytes = await crypto.subtle.digest(
@@ -190,6 +190,8 @@ export function validateExtraction(
     quote.length >= 8 && docs.some((d) => d.text.includes(compact(quote)))
   if (value.edition && !docs.some((d) => d.text.includes(value.edition!)))
     throw new Error('Edition lacks source evidence')
+  if (value.edition && seed.edition && Number(value.edition) < Number(seed.edition))
+    throw new Error('Older edition cannot replace the latest confirmed cycle')
   if (
     discovery &&
     (!includes(value.eligibilityQuote) ||
@@ -217,7 +219,10 @@ export function validateExtraction(
     throw new Error('Discontinuation is not explicit')
   if (
     value.lifecycle === 'replaced' &&
-    !/replac|renamed|now known|merged/i.test(value.lifecycleQuote)
+    (!/replac|renamed|now known|merged/i.test(value.lifecycleQuote) ||
+      /not (?:been )?(?:replac|renamed|merged)|never (?:replac|renamed|merged)/i.test(
+        value.lifecycleQuote,
+      ))
   )
     throw new Error('Replacement is not explicit')
   const milestones: OpportunityMilestone[] = value.milestones.map((m) => {

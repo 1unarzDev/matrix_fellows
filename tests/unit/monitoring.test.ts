@@ -84,6 +84,22 @@ describe('monitoring date evidence', () => {
 })
 
 describe('automatic publication safeguards', () => {
+  it('does not regress the confirmed cycle to an older edition mentioned on the page', () => {
+    expect(() =>
+      validateExtraction(extraction({ edition: '2025' }), docs(sourceText), seed(), now),
+    ).toThrow(/Older edition/)
+  })
+  it('does not treat a denial of replacement as a replacement announcement', () => {
+    const quote = 'This program has not been renamed or replaced.'
+    expect(() =>
+      validateExtraction(
+        extraction({ lifecycle: 'replaced', lifecycleQuote: quote }),
+        docs(`${sourceText} ${quote}`),
+        seed(),
+        now,
+      ),
+    ).toThrow(/Replacement/)
+  })
   it('does not carry unconfirmed discovery dates into a subsequent observation', () => {
     const pending = { ...seed([{ ...milestone, timezone: null }]), published: false }
     const result = validateExtraction(

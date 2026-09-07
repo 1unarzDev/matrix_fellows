@@ -39,13 +39,14 @@ for (const { item, sources } of catalogSeeds) {
       { onConflict: 'id', ignoreDuplicates: true },
     )
   if (result.error) throw new Error(`${data.title}: ${result.error.message}`)
-  // Prefer explicit calendar/eligibility URLs over a marketing homepage.
+  // Keep each opportunity's canonical page as its monitor identity. Several
+  // distinct workshops can share the same secondary event-directory source.
   const monitor = await client
     .from('opportunity_monitors')
     .upsert(
       {
         id: data.id,
-        url: sources[1] || sources[0],
+        url: data.url,
         seed: { ...data, sourceUrls: sources },
         last_success_at: checked,
       },

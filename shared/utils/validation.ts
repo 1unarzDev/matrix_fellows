@@ -95,7 +95,7 @@ export const opportunitySchema = z.object({
     })
     .optional(),
   lifecycle: z
-    .enum(['announced', 'awaiting-announcement', 'discontinued', 'replaced', 'unknown'])
+    .enum(['announced', 'rolling', 'awaiting-announcement', 'discontinued', 'replaced', 'unknown'])
     .optional(),
   lifecycleEvidence: z.string().max(1000).optional(),
   edition: z.string().max(80).optional(),

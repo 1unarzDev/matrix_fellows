@@ -1,0 +1,88 @@
+[
+  {
+    "id": "journal-emerging-investigators",
+    "title": "Journal of Emerging Investigators (JEI)",
+    "kind": "Publication",
+    "discipline": "Student research · Science & engineering",
+    "url": "https://emerginginvestigators.org/submissions/guidelines",
+    "sourceUrls": [
+      "https://emerginginvestigators.org/submissions/author-eligibility",
+      "https://emerginginvestigators.org/submissions/pay-and-submit/pay",
+      "https://emerginginvestigators.org/submissions/review-process"
+    ],
+    "description": "A student-focused research journal with scientist feedback and an educational peer-review process. A strong route for turning an original experiment into a carefully written paper; acceptance is not guaranteed and review cannot be expedited.",
+    "eligibility": "Middle- and high-school authors aged 13+; initial submission before university enrollment. A senior adult mentor must coauthor, and an adult must submit on the student's behalf.",
+    "location": "Online · International",
+    "cost": "$49 submission fee; limited need-based scholarships. Payment does not guarantee publication.",
+    "effort": "Original research, manuscript template, adult mentorship, and revision after review.",
+    "lifecycle": "unknown",
+    "lifecycleEvidence": "Submission guidance is available; no calendar deadline verified. Manuscripts are handled in order received, with no expedited review. Confirm requirements before submitting.",
+    "milestones": []
+  },
+  {
+    "id": "national-high-school-journal-science",
+    "title": "National High School Journal of Science (NHSJS)",
+    "kind": "Publication",
+    "discipline": "Student research · STEM",
+    "url": "https://nhsjs.com/about/",
+    "sourceUrls": [
+      "https://nhsjs.com/submission-guidelines/",
+      "https://nhsjs.com/submit-your-work/submit-original-research/"
+    ],
+    "description": "A high-school research journal publishing original studies and articles on developments in science and policy. Its stated review team includes graduate students, postdocs, and scientists. Read the formatting requirements before preparing a submission.",
+    "eligibility": "Targeted toward high-school students and their original research. Match the journal's submission category and research ethics requirements.",
+    "location": "Online",
+    "cost": "Free to read; author fees were not verified. Confirm all charges before submitting.",
+    "effort": "Full manuscript and journal-specific citation/formatting requirements; revisions may be needed.",
+    "lifecycle": "unknown",
+    "lifecycleEvidence": "The journal invites submissions and provides a submission-form request. No fixed deadline or explicit year-round policy was verified.",
+    "milestones": []
+  },
+  {
+    "id": "young-scientists-journal",
+    "title": "Young Scientists Journal",
+    "kind": "Publication",
+    "discipline": "Student research · Science communication",
+    "url": "https://www.youngscientistsjournal.com/publish",
+    "sourceUrls": ["https://www.youngscientistsjournal.com/about"],
+    "description": "A youth-run science journal accepting original research, review articles, and science writing. Research goes through student editorial review and an academic advisor; blog and magazine pieces are different formats, not equivalent research publications.",
+    "eligibility": "Authors must be ages 12–20 at submission. International student community; use the author guide for your article type.",
+    "location": "Online · International",
+    "cost": "Current author fees not verified; check before submitting.",
+    "effort": "Chicago references, British English, and multiple review stages. The journal warns publication can take months.",
+    "lifecycle": "unknown",
+    "lifecycleEvidence": "Author instructions and submission link are published. No exact deadline or explicit rolling policy was verified.",
+    "milestones": []
+  },
+  {
+    "id": "journal-open-source-software",
+    "title": "Journal of Open Source Software (JOSS)",
+    "kind": "Publication",
+    "discipline": "Advanced route · Research software",
+    "url": "https://joss.theoj.org/about",
+    "sourceUrls": ["https://joss.readthedocs.io/en/latest/submitting.html"],
+    "description": "A professional, peer-reviewed journal for substantial open-source research software, with a citable DOI after acceptance. Relevant to mature simulation or scientific-computing tools—not a shortcut for a small class project or a notebook.",
+    "eligibility": "Submitters must be major software contributors. Not a high-school-specific program; no school-level restriction is stated in the inspected requirements. Requires demonstrated research use and more than six months of public development history.",
+    "location": "Online · Public GitHub review",
+    "cost": "Free to read and publish; no article-processing charge.",
+    "effort": "Research impact, open-source license, public development, documentation, tests, releases, and a short software paper.",
+    "lifecycle": "unknown",
+    "lifecycleEvidence": "Submission instructions are available. No calendar deadline was verified; editors assess scope and software readiness before review.",
+    "milestones": []
+  },
+  {
+    "id": "arxiv-preprints",
+    "title": "arXiv — research preprints",
+    "kind": "Publication",
+    "discipline": "Preprint · Computing, mathematics & physical sciences",
+    "url": "https://info.arxiv.org/help/submit/index.html",
+    "description": "Share a complete scientific manuscript publicly before or alongside journal review. arXiv is a moderated preprint repository, not peer-reviewed journal acceptance. Check a future venue's preprint and anonymity policies before posting.",
+    "eligibility": "Registered authors submitting topical, refereeable scientific work. New authors or categories may require endorsement; not a high-school-specific publication program.",
+    "location": "Online · International",
+    "cost": "Free submission.",
+    "effort": "A complete manuscript, appropriate category, distribution license, and possible endorsement/moderation.",
+    "lifecycle": "unknown",
+    "lifecycleEvidence": "Submissions follow a recurring announcement schedule, not an annual competition deadline. The daily processing cutoff is not a deadline for eligibility; review the submission guide.",
+    "milestones": []
+  }
+]

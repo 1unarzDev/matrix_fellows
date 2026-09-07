@@ -174,9 +174,23 @@ test('paired cards align and filter changes have a deliberate transition', async
     expect(Math.abs(boxes[0]!.bottom - boxes[1]!.bottom)).toBeLessThan(1)
   }
   await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await board.evaluate((element) => {
+    const observer = new MutationObserver(() => {
+      if (element.querySelector('.opacity-0')) {
+        element.setAttribute('data-transition-observed', 'true')
+        observer.disconnect()
+      }
+    })
+    observer.observe(element, {
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class'],
+      childList: true,
+    })
+  })
   await page.getByRole('button', { name: 'Opportunity type: All types' }).click()
   await page.getByRole('option', { name: 'Workshop', exact: true }).click()
-  await expect(board.locator('.opacity-0').first()).toBeAttached()
+  await expect(board).toHaveAttribute('data-transition-observed', 'true')
   await expect(board.getByRole('article').first()).toContainText('Research opening 05')
   await expect(board.getByRole('article').first().locator('..')).toHaveCSS('opacity', '1')
 })

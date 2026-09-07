@@ -56,7 +56,8 @@ export interface Opportunity {
   published: boolean
   milestones?: OpportunityMilestone[]
   provenance?: { url: string; contentHash: string; parserVersion: string }
-  lifecycle?: 'announced' | 'awaiting-announcement' | 'discontinued' | 'replaced' | 'unknown'
+  lifecycle?:
+    'announced' | 'rolling' | 'awaiting-announcement' | 'discontinued' | 'replaced' | 'unknown'
   lifecycleEvidence?: string
   edition?: string
   cost?: string

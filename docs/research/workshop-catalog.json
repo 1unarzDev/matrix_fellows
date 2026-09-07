@@ -1,0 +1,204 @@
+[
+  {
+    "id": "ml-physical-sciences",
+    "title": "Machine Learning and the Physical Sciences (ML4PS)",
+    "kind": "Workshop",
+    "discipline": "Advanced research · AI for science",
+    "edition": "2026",
+    "url": "https://ml4physicalsciences.github.io/2026/",
+    "description": "Four-page research, evaluation/dataset, and perspective papers connecting physics and ML. Accepted work is presented as posters, with selected spotlight talks. In 2026 this is an independent workshop near NeurIPS Atlanta, not an affiliated NeurIPS workshop.",
+    "eligibility": "Research-level submissions; no school-year restriction is stated in the inspected call. An advanced high-school project may be suitable, but confirm minor attendance and author requirements with organizers.",
+    "location": "Georgia Tech, Atlanta · Virtual participation possible",
+    "cost": "NeurIPS registration is not required; workshop fees not verified.",
+    "effort": "Up to four pages plus references; technical contribution or thoughtful research perspective.",
+    "lifecycle": "announced",
+    "lifecycleEvidence": "2026 submission deadline and workshop date are announced on the organizer's page.",
+    "milestones": [
+      {
+        "label": "Paper submission deadline · 23:59 AoE",
+        "date": "2026-09-12",
+        "kind": "deadline",
+        "timezone": null,
+        "evidence": "Saturday, September 12th, 2026, 23:59 AoE: Submission Deadline",
+        "url": "https://ml4physicalsciences.github.io/2026/"
+      },
+      {
+        "label": "Workshop",
+        "date": "2026-12-11",
+        "kind": "event",
+        "timezone": null,
+        "evidence": "Friday, December 11, 2026: Workshop date",
+        "url": "https://ml4physicalsciences.github.io/2026/"
+      }
+    ]
+  },
+  {
+    "id": "climate-ai-neurips",
+    "title": "Tackling Climate Change with Machine Learning",
+    "kind": "Workshop",
+    "discipline": "Advanced research · Climate & AI",
+    "edition": "2026",
+    "url": "https://www.climatechange.ai/events/neurips2026",
+    "sourceUrls": ["https://www.climatechange.ai/events"],
+    "description": "A NeurIPS workshop accepting short papers, proposals, and tutorial notebooks with a credible path to climate impact. Submissions are non-archival: workshop presentation is not a proceedings publication. The 2026 submission window has closed.",
+    "eligibility": "Interdisciplinary researchers; no school-year restriction stated in the inspected call. Advanced students should confirm author and minor-attendance requirements; a mentor can help establish a meaningful climate application.",
+    "location": "Sydney, Australia · NeurIPS 2026",
+    "cost": "Check conference registration and travel costs; no funding guarantee.",
+    "effort": "Anonymized submission via OpenReview; demonstrate climate relevance and follow track-specific guidelines.",
+    "lifecycle": "announced",
+    "lifecycleEvidence": "Submission deadline passed. Workshop listed as December 11/12, 2026; exact day remains ambiguous and is not converted into a single date.",
+    "milestones": [
+      {
+        "label": "Workshop contribution deadline · 23:59 AoE",
+        "date": "2026-08-29",
+        "kind": "deadline",
+        "timezone": null,
+        "evidence": "Submission deadline for workshop contributions: August 29, 2026, 23:59 AoE",
+        "url": "https://www.climatechange.ai/events/neurips2026"
+      },
+      {
+        "label": "Decisions released",
+        "date": "2026-09-29",
+        "kind": "results",
+        "timezone": null,
+        "evidence": "Decisions released: September 29, 2026, 23:59 AoE",
+        "url": "https://www.climatechange.ai/events/neurips2026"
+      }
+    ]
+  },
+  {
+    "id": "corl-workshops",
+    "title": "CoRL workshops & tutorials",
+    "kind": "Workshop",
+    "discipline": "Advanced research · Robot learning",
+    "edition": "2026",
+    "url": "https://www.corl.org/contributions/call-for-workshops",
+    "sourceUrls": ["https://www.corl.org/"],
+    "description": "Half-day, problem-focused robot-learning workshops and teaching-oriented tutorials in Austin. A relevant local research destination for autonomy projects. Individual workshops may solicit preliminary papers; their author deadlines are separate from workshop-organizer proposals.",
+    "eligibility": "Research community, including newcomers to tutorial topics. Not a high-school program; confirm minor attendance, registration, and each workshop's contribution requirements directly.",
+    "location": "JW Marriott Austin, Texas · In person",
+    "cost": "Check CoRL registration, workshop access, and travel costs.",
+    "effort": "Choose an accepted workshop first; paper formats and submission dates vary. Tutorials may require no contributed paper.",
+    "lifecycle": "announced",
+    "lifecycleEvidence": "Workshop day announced. Individual contributed-paper deadlines are not verified; the organizer-proposal deadline is not a student submission deadline.",
+    "milestones": [
+      {
+        "label": "Workshop & tutorial day",
+        "date": "2026-11-12",
+        "kind": "event",
+        "timezone": null,
+        "evidence": "Workshops and tutorials will be held in-person at the JW Marriott Austin in Austin, Texas, USA, the day after the main conference (November 12, 2026).",
+        "url": "https://www.corl.org/contributions/call-for-workshops"
+      }
+    ]
+  },
+  {
+    "id": "scipy-tutorials",
+    "title": "SciPy tutorials & scientific Python workshops",
+    "kind": "Workshop",
+    "discipline": "Hands-on learning · Scientific computing",
+    "edition": "2026",
+    "url": "https://www.scipy2026.scipy.org/",
+    "description": "Practical scientific Python tutorials, community discussions, and coding sprints. Useful preparation for reproducible simulations, research data analysis, and open-source contributions. The 2026 edition has finished; monitor for the next program.",
+    "eligibility": "Scientific Python community; prerequisite experience varies by tutorial. Advanced high-school learners should confirm age/guardian requirements before registering. Not a student research award.",
+    "location": "University of Minnesota, Minneapolis · 2026 included remote attendance options",
+    "cost": "Registration fees vary; financial aid was offered for 2026. Future terms unconfirmed.",
+    "effort": "Select tutorials matching your Python background. Workshop participation is not journal publication.",
+    "lifecycle": "announced",
+    "lifecycleEvidence": "2026 event completed. No next-cycle dates verified.",
+    "milestones": [
+      {
+        "label": "2026 event begins · tutorials first",
+        "date": "2026-07-13",
+        "kind": "event",
+        "timezone": null,
+        "evidence": "July 13-19, 2026",
+        "url": "https://www.scipy2026.scipy.org/"
+      },
+      {
+        "label": "2026 event ends · sprints",
+        "date": "2026-07-19",
+        "kind": "event",
+        "timezone": null,
+        "evidence": "July 13-19, 2026",
+        "url": "https://www.scipy2026.scipy.org/"
+      }
+    ]
+  },
+  {
+    "id": "climate-ai-tutorials",
+    "title": "Climate Change AI virtual tutorials & summer school",
+    "kind": "Workshop",
+    "discipline": "Hands-on learning · Climate & machine learning",
+    "edition": "2026",
+    "url": "https://www.climatechange.ai/events/summer_school2026",
+    "sourceUrls": ["https://www.climatechange.ai/events"],
+    "description": "Expert lectures and hands-on Python tutorials spanning climate science, energy, transport, and other applications. Recorded lectures and asynchronous notebooks support self-paced learning. Registration is closed; the remaining certificate deadline is only for enrolled participants.",
+    "eligibility": "Global audience across career stages, including students. Some AI or climate familiarity is useful; optional coding background materials are provided. Confirm any minor participation requirements.",
+    "location": "Online · Recorded lectures and asynchronous tutorials",
+    "cost": "2026 fee: US$30 in high-income economies, US$10 elsewhere; waivers available. Registration is closed.",
+    "effort": "Certificate requires six foundation and at least four sectoral modules; existing participants retain content access.",
+    "lifecycle": "announced",
+    "lifecycleEvidence": "Registration is now closed. September 20 is a completion deadline for existing participants, not an invitation to enroll.",
+    "milestones": [
+      {
+        "label": "2026 teaching period begins",
+        "date": "2026-07-20",
+        "kind": "event",
+        "timezone": null,
+        "evidence": "This year’s program took place from July 20–August 22, 2026.",
+        "url": "https://www.climatechange.ai/events/summer_school2026"
+      },
+      {
+        "label": "Certificate completion · enrolled participants only",
+        "date": "2026-09-20",
+        "kind": "deadline",
+        "timezone": null,
+        "evidence": "Participants will have until September 20, 2026 to complete the requirements and receive a certificate.",
+        "url": "https://www.climatechange.ai/events/summer_school2026"
+      }
+    ]
+  },
+  {
+    "id": "machine-learning-health",
+    "title": "Machine Learning for Health (ML4H)",
+    "kind": "Conference",
+    "discipline": "Advanced research · Health & AI",
+    "edition": "2026",
+    "url": "https://ml4h.ahli.cc/",
+    "sourceUrls": ["https://ml4h.ahli.cc/submit/call-for-papers/"],
+    "description": "Now a standalone symposium, formerly a NeurIPS-affiliated workshop. Offers an eight-page archival Proceedings track and a four-page non-archival Findings track for preliminary insights, datasets, reproducibility, and negative results.",
+    "eligibility": "Research-level work with health relevance; no school-year restriction stated in the inspected call. Advanced students should confirm eligibility and minor attendance. Required human-subject/IRB approvals must be addressed.",
+    "location": "Sydney, Australia · In person",
+    "cost": "Confirm symposium registration and travel costs; grants are not guaranteed.",
+    "effort": "Double-blind review; choose archival Proceedings or non-archival Findings carefully. OpenReview account required.",
+    "lifecycle": "announced",
+    "lifecycleEvidence": "ML4H has transitioned from a NeurIPS-affiliated workshop into a standalone symposium. Current paper deadline is September 10, 2026.",
+    "milestones": [
+      {
+        "label": "Paper submission deadline · 23:59 AoE per CFP",
+        "date": "2026-09-10",
+        "kind": "deadline",
+        "timezone": null,
+        "evidence": "Submission DeadlineSeptember 10, 2026",
+        "url": "https://ml4h.ahli.cc/"
+      },
+      {
+        "label": "Symposium begins",
+        "date": "2026-12-06",
+        "kind": "event",
+        "timezone": null,
+        "evidence": "December 6–7, 2026",
+        "url": "https://ml4h.ahli.cc/"
+      },
+      {
+        "label": "Symposium ends",
+        "date": "2026-12-07",
+        "kind": "event",
+        "timezone": null,
+        "evidence": "December 6–7, 2026",
+        "url": "https://ml4h.ahli.cc/"
+      }
+    ]
+  }
+]

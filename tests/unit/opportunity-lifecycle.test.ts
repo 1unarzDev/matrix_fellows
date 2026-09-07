@@ -12,6 +12,12 @@ const base = {
   deadline: null,
   eventDate: null,
 }
+it('shows rolling publications without fabricated future checkpoints', () => {
+  expect(getOpportunityState({ ...base, lifecycle: 'rolling' }, now)).toMatchObject({
+    key: 'rolling',
+    label: 'Rolling submissions',
+  })
+})
 it('does not highlight superseded upcoming dates', () => {
   const item = {
     ...base,

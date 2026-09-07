@@ -35,12 +35,20 @@ export function getOpportunityState(item: Opportunity, now: number) {
       ? { key: 'discontinued', label: 'Discontinued' }
       : item.lifecycle === 'replaced'
         ? { key: 'changed', label: 'Program changed' }
-        : points.some((p) => !p.superseded && deadlineTimestamp(p.date) >= now)
-          ? { key: 'upcoming', label: 'Upcoming checkpoints' }
-          : item.lifecycle === 'awaiting-announcement'
-            ? { key: 'awaiting', label: 'Awaiting announcement' }
-            : points.length
-              ? { key: 'completed', label: 'Latest cycle completed' }
-              : { key: 'unknown', label: 'Dates not confirmed' }
+        : item.lifecycle === 'rolling'
+          ? { key: 'rolling', label: 'Rolling submissions' }
+          : points.some((p) => !p.superseded && deadlineTimestamp(p.date) >= now)
+            ? { key: 'upcoming', label: 'Upcoming checkpoints' }
+            : item.lifecycle === 'awaiting-announcement'
+              ? { key: 'awaiting', label: 'Awaiting announcement' }
+              : points.length
+                ? { key: 'completed', label: 'Latest cycle completed' }
+                : {
+                    key: 'unknown',
+                    label:
+                      item.kind === 'Publication'
+                        ? 'Check submission guidance'
+                        : 'Dates not confirmed',
+                  }
   return { ...base, stale }
 }

@@ -71,7 +71,9 @@ onMounted(() => {
         <span
           class="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[9px]"
           :class="
-            state.key === 'upcoming' ? 'border-acid/25 text-acid' : 'border-paper/15 text-paper/55'
+            ['upcoming', 'rolling'].includes(state.key)
+              ? 'border-acid/25 text-acid'
+              : 'border-paper/15 text-paper/55'
           "
           ><span class="h-1 w-1 rounded-full bg-current" aria-hidden="true" />{{
             state.label

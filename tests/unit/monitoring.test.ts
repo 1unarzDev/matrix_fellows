@@ -53,6 +53,32 @@ function extraction(overrides: Record<string, unknown> = {}) {
 }
 
 describe('monitoring date evidence', () => {
+  it('accepts explicit rolling submissions without inventing a deadline', () => {
+    const quote = 'We accept submissions throughout the year.'
+    const result = validateExtraction(
+      extraction({ edition: null, lifecycle: 'rolling', lifecycleQuote: quote, milestones: [] }),
+      docs(`${sourceText} ${quote}`),
+      { ...seed(), edition: '' },
+      now,
+      false,
+    )
+    expect(result.lifecycle).toBe('rolling')
+    expect(result.milestones).toEqual([])
+  })
+  it.each(['Click here to submit.', 'We are not accepting submissions on a rolling basis.'])(
+    'rejects unsupported rolling claims: %s',
+    (quote) => {
+      expect(() =>
+        validateExtraction(
+          extraction({ lifecycle: 'rolling', lifecycleQuote: quote, milestones: [] }),
+          docs(`${sourceText} ${quote}`),
+          seed(),
+          now,
+          false,
+        ),
+      ).toThrow('Rolling submissions are not explicit')
+    },
+  )
   it.each([
     ['2026-02-05', 'Application deadline: February 5, 2026 (11:59 PM EST)'],
     ['2027-06-27', 'PROMYS 2027: June 27 – August 7, 2027'],

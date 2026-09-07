@@ -2,6 +2,7 @@
 import type { Opportunity } from '#shared/types/content'
 import { sortOpportunities } from '#shared/utils/opportunities'
 import { getOpportunityState } from '#shared/utils/opportunity-lifecycle'
+import { groupOpportunityPathways } from '#shared/utils/opportunity-pathways'
 const props = defineProps<{ opportunities: Opportunity[] }>()
 const query = ref('')
 const kind = ref('All types')
@@ -35,6 +36,7 @@ const kinds = ['All types', 'Competition', 'Conference', 'Workshop', 'Publicatio
 const statuses = [
   'All statuses',
   'Upcoming',
+  'Rolling submissions',
   'Awaiting announcement',
   'Completed',
   'Discontinued',
@@ -42,6 +44,7 @@ const statuses = [
   'Unknown',
 ]
 const statusKeys: Record<string, string> = {
+  'Rolling submissions': 'rolling',
   Upcoming: 'upcoming',
   'Awaiting announcement': 'awaiting',
   Completed: 'completed',
@@ -51,7 +54,7 @@ const statusKeys: Record<string, string> = {
 }
 const filtered = computed(() =>
   sortOpportunities(
-    props.opportunities.filter(
+    groupOpportunityPathways(props.opportunities).filter(
       (item) =>
         item.published &&
         (kind.value === 'All types' || item.kind === kind.value) &&
@@ -65,6 +68,11 @@ const filtered = computed(() =>
 )
 watch([query, kind, status], () => {
   page.value = 1
+})
+// Calendar statuses from competitions should not hide undated journals when
+// switching categories. Search remains intact; status can be refined again.
+watch(kind, () => {
+  status.value = 'All statuses'
 })
 const pageCount = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize)))
 watch(pageCount, (count) => {
@@ -131,6 +139,10 @@ function clearFilters() {
         <ThemedSelect v-model="status" :options="statuses" label="Opportunity status" />
       </div>
     </div>
+    <p v-if="kind === 'Publication'" class="mb-5 max-w-2xl text-xs leading-relaxed text-paper/55">
+      Publication routes often use submission guidelines rather than annual deadlines. Check review
+      policies, author requirements, and fees; a preprint is not peer-reviewed journal acceptance.
+    </p>
     <div
       ref="results"
       class="mb-5 flex scroll-mt-8 flex-wrap items-center justify-between gap-3 text-[10px] text-paper/45"

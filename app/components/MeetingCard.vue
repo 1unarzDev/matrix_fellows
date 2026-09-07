@@ -45,7 +45,7 @@ defineProps<{ meeting: Meeting }>()
         <p class="mb-3 text-[10px] uppercase tracking-[.17em] text-paper/40">On the table</p>
         <ul class="space-y-2">
           <li v-for="topic in meeting.topics" :key="topic" class="flex gap-3 text-sm text-paper/70">
-            <span class="text-acid/60">↗</span>{{ topic }}
+            <SiteIcon :size="16" class="mt-1 shrink-0 text-acid/60" />{{ topic }}
           </li>
         </ul>
       </div>

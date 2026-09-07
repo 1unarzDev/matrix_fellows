@@ -168,7 +168,7 @@ onBeforeUnmount(() => {
     />
 
     <header
-      class="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-6 py-7 sm:px-10 lg:px-16 lg:py-9"
+      class="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-6 pb-7 pt-[max(1.75rem,env(safe-area-inset-top))] sm:px-10 lg:px-16 lg:py-9"
     >
       <a
         href="#beginning"
@@ -323,7 +323,8 @@ onBeforeUnmount(() => {
         aria-labelledby="discovery-title"
         class="relative flex min-h-[110svh] items-center px-6 py-32 outline-none sm:px-10 lg:px-16"
       >
-        <div class="max-w-xl">
+        <div aria-hidden="true" class="pointer-events-none absolute -inset-x-0 inset-y-0 bg-[radial-gradient(ellipse_at_35%_50%,#101a17d9,transparent_72%)] sm:hidden" />
+        <div class="relative max-w-xl max-sm:[text-shadow:0_2px_18px_#06100de6] max-sm:[&_p]:text-paper/90">
           <p class="mb-8 text-[10px] uppercase tracking-[.25em] text-acid">
             02 — A first discovery
           </p>
@@ -492,7 +493,7 @@ onBeforeUnmount(() => {
             class="font-display text-5xl font-medium leading-[1.07] tracking-[-.055em] sm:text-7xl lg:text-8xl"
           >
             One curious mind.<br /><span
-              class="bg-linear-to-r from-[#b6e4ee] via-[#e2d4f7] to-[#c7b5ed] bg-clip-text text-transparent drop-shadow-[0_0_22px_#b79de83d]"
+              class="bg-linear-to-r from-[#ddd6f2] via-[#e7dff7] to-[#d2c4ee] bg-clip-text text-transparent drop-shadow-[0_0_22px_#b79de83d] sm:from-[#b6e4ee] sm:via-[#e2d4f7] sm:to-[#c7b5ed]"
               >Infinite connections.</span
             >
           </h2>

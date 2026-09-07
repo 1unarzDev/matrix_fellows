@@ -3,7 +3,9 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js'
+import { FXAAShader } from 'three/addons/shaders/FXAAShader.js'
 import { createOasisDressing } from './oasis'
+import { nextFrameTime } from './frame-clock'
 import { constellationLayout, constellationStarCount } from './constellations'
 import {
   worldFragment,
@@ -62,7 +64,7 @@ export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, on
   background.add(new THREE.Mesh(quadGeometry, quadMaterial))
   const renderTarget = new THREE.WebGLRenderTarget(1, 1, {
     type: THREE.HalfFloatType,
-    samples: Math.min(mobile ? 2 : 4, renderer.capabilities.maxSamples),
+    samples: Math.min(4, renderer.capabilities.maxSamples),
     depthBuffer: true,
   })
   const composer = new EffectComposer(renderer, renderTarget)
@@ -85,6 +87,10 @@ export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, on
   composer.addPass(scenePass)
   composer.addPass(bloom)
   composer.addPass(grade)
+  // MSAA handles silhouette coverage; a final mobile-only edge resolve also
+  // softens texture cutouts and high-contrast wave highlights at bounded DPR.
+  const edgeResolve = mobile ? new ShaderPass(FXAAShader) : undefined
+  if (edgeResolve) composer.addPass(edgeResolve)
 
   // Stable seeds allow every particle to survive the entire journey.
   let seed = 1709
@@ -157,6 +163,7 @@ export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, on
     sampleFrames = 0,
     lastRender = sampleStart
   let progress = 0
+  let surfaceWidth = 0, surfaceHeight = 0
   // Explicit crest, basin, waterline, and submerged control points keep the reveals spatial.
   const cameraKeys = [
     { at: 0, position: [0, 6.5, 30], target: [0, 3, -40] },
@@ -187,12 +194,19 @@ export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, on
   )
 
   function resize() {
-    const width = window.innerWidth,
-      height = window.innerHeight
+    const width = window.innerWidth
+    // Safari toolbar movement changes innerHeight during a swipe. Keep the
+    // large viewport surface stable, including its expensive bloom targets.
+    const height = mobile && width === surfaceWidth
+      ? surfaceHeight
+      : Math.round(canvas.getBoundingClientRect().height) || window.innerHeight
+    surfaceWidth = width
+    surfaceHeight = height
     renderer.setPixelRatio(ratio)
     renderer.setSize(width, height, false)
     composer.setPixelRatio(ratio)
     composer.setSize(width, height)
+    edgeResolve?.uniforms.resolution!.value.set(1 / (width * ratio), 1 / (height * ratio))
     camera.aspect = width / height
     camera.updateProjectionMatrix()
     uniforms.uAspect.value = width / height
@@ -272,11 +286,13 @@ export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, on
       return
     }
     const delta = now - last
-    const interval = 1000 / 30
-    if (delta < interval) return
+    // A 30 Hz callback can arrive a fraction early (notably low-power iOS).
+    // Do not skip it and accidentally alternate 33/66 ms frames.
+    const frameTime = nextFrameTime(now, last)
+    if (frameTime === null) return
     elapsed += Math.min(now - lastRender, 70) / 1000
     lastRender = now
-    last = now - (delta % interval)
+    last = frameTime
     uniforms.uTime.value = elapsed
     const lightning = lightningState(elapsed)
     uniforms.uLightning.value.set(lightning.intensity, lightning.seed)
@@ -327,7 +343,11 @@ export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, on
   })
   observer.observe(canvas)
   canvas.addEventListener('webglcontextlost', contextLost)
-  window.addEventListener('resize', resize, { passive: true })
+  const onResize = () => {
+    if (mobile && window.innerWidth === surfaceWidth) return
+    resize()
+  }
+  window.addEventListener('resize', onResize, { passive: true })
   resize()
   setProgress(0)
   frame = requestAnimationFrame(draw)
@@ -337,7 +357,7 @@ export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, on
       disposed = true
       cancelAnimationFrame(frame)
       observer.disconnect()
-      window.removeEventListener('resize', resize)
+      window.removeEventListener('resize', onResize)
       canvas.removeEventListener('webglcontextlost', contextLost)
       oasisDressing.dispose()
       geometry.dispose()
@@ -350,6 +370,7 @@ export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, on
       scenePass.dispose()
       bloom.dispose()
       grade.dispose()
+      edgeResolve?.dispose()
       composer.dispose()
       renderer.dispose()
       renderer.forceContextLoss()

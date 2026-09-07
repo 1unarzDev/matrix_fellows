@@ -27,6 +27,8 @@ onMounted(() => {
     ])
     if (disposed) return
     gsap.registerPlugin(ScrollTrigger)
+    const touchLayout = window.matchMedia('(pointer: coarse)').matches
+    ScrollTrigger.config({ ignoreMobileResize: true })
     // One clock and one smoothed scroll position for both the DOM and camera.
     // Touch keeps its native inertia; nested menus/dialogs keep their own scroll.
     const smoothScroll = new Lenis({
@@ -71,7 +73,9 @@ onMounted(() => {
           ),
         ).filter((el) => !el.hasAttribute('aria-hidden') && !el.classList.contains('absolute')),
       )
-      .map((el) => ({ el, top: 0, height: 0 }))
+      .map((el) => ({ el, top: 0, height: 0, inactive: false,
+        discovery: Boolean(el.closest('#discovery')),
+        beginning: Boolean(el.closest('#beginning')) }))
     const documentTop = (element: HTMLElement) => {
       let top = 0
       for (
@@ -85,8 +89,10 @@ onMounted(() => {
     let measuredHeight = 0
     let maxScroll = 1
     let stops: number[] = []
+    let viewportHeight = window.innerHeight
     const state = { position: 0 }
     const measure = () => {
+      viewportHeight = window.innerHeight
       stops = chapters.map((el) => el.offsetTop)
       stops[0] = 0
       measuredHeight = main?.offsetHeight || 0
@@ -94,6 +100,7 @@ onMounted(() => {
       layers.forEach((layer) => {
         layer.top = documentTop(layer.el)
         layer.height = layer.el.offsetHeight
+        layer.inactive = false
         layer.el.dataset.depthLayer = ''
       })
     }
@@ -124,17 +131,20 @@ onMounted(() => {
         if (media.matches) return
         const top = layer.top - scroll,
           bottom = top + layer.height
-        let entry = ease((window.innerHeight * 0.98 - top) / (window.innerHeight * 0.43))
-        if (layer.el.closest('#discovery')) entry *= ease((stage - 0.62) / 0.25)
+        const inactive = top > viewportHeight * 1.15 || bottom < -viewportHeight * 0.6
+        if (inactive && layer.inactive) return
+        layer.inactive = inactive
+        let entry = ease((viewportHeight * 0.98 - top) / (viewportHeight * (touchLayout ? 0.30 : 0.43)))
+        if (layer.discovery) entry *= ease((stage - 0.62) / 0.25)
         if (layer.el.hasAttribute('data-ocean-intro')) entry *= ease((stage - 2.01) / 0.12)
-        let exit = ease((window.innerHeight * 0.22 - bottom) / (window.innerHeight * 0.5))
-        if (layer.el.closest('#beginning')) exit = Math.max(exit, ease((stage - 0.08) / 0.3))
+        let exit = ease((viewportHeight * 0.22 - bottom) / (viewportHeight * 0.5))
+        if (layer.beginning) exit = Math.max(exit, ease((stage - 0.08) / 0.3))
         gsap.set(layer.el, {
           opacity: entry * (1 - exit),
-          z: -240 * (1 - entry) + 90 * exit,
-          rotationX: 14 * (1 - entry) - 9 * exit,
-          y: 64 * (1 - entry) - 40 * exit,
-          scale: 0.9 + 0.1 * entry,
+          z: touchLayout ? 0 : -240 * (1 - entry) + 90 * exit,
+          rotationX: touchLayout ? 0 : 14 * (1 - entry) - 9 * exit,
+          y: (touchLayout ? 24 : 64) * (1 - entry) - (touchLayout ? 16 : 40) * exit,
+          scale: touchLayout ? 1 : 0.9 + 0.1 * entry,
           transformOrigin: '50% 50%',
           force3D: true,
         })
@@ -279,7 +289,7 @@ onBeforeUnmount(() => {
   <canvas
     ref="canvas"
     aria-hidden="true"
-    class="pointer-events-none fixed inset-0 z-0 h-dvh w-full transition-opacity duration-[1800ms] ease-[cubic-bezier(.4,0,.2,1)] motion-reduce:transition-none"
+    class="pointer-events-none fixed inset-x-0 top-0 z-0 h-lvh w-full transition-opacity duration-[1800ms] ease-[cubic-bezier(.4,0,.2,1)] motion-reduce:transition-none sm:h-dvh"
     :class="ready && !failed ? 'opacity-100' : 'opacity-0'"
   />
 </template>

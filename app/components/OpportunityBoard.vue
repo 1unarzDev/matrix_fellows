@@ -129,7 +129,7 @@ function clearFilters() {
         @click="limit += 6"
       >
         Show {{ Math.min(6, filtered.length - limit) }} more opportunities
-        <span aria-hidden="true" class="ml-3">↓</span>
+        <SiteIcon name="down" :size="16" class="ml-3" />
       </button>
     </div>
   </section>

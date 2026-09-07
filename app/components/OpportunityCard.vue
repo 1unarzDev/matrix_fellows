@@ -118,7 +118,7 @@ onMounted(() => {
             class="flex h-9 w-9 items-center justify-center rounded-full border border-paper/15 text-paper/65 transition-colors duration-700 hover:border-acid/50 hover:text-acid focus-visible:outline-2 focus-visible:outline-acid disabled:cursor-default disabled:opacity-20 motion-reduce:transition-none"
             @click="select(selected - 1)"
           >
-            ←
+            <SiteIcon name="right" :size="16" class="rotate-180" />
           </button>
           <button
             type="button"
@@ -127,7 +127,7 @@ onMounted(() => {
             class="flex h-9 w-9 items-center justify-center rounded-full border border-paper/15 text-paper/65 transition-colors duration-700 hover:border-acid/50 hover:text-acid focus-visible:outline-2 focus-visible:outline-acid disabled:cursor-default disabled:opacity-20 motion-reduce:transition-none"
             @click="select(selected + 1)"
           >
-            →
+            <SiteIcon name="right" :size="16" />
           </button>
         </div>
       </div>
@@ -224,7 +224,7 @@ onMounted(() => {
                 target="_blank"
                 rel="noopener noreferrer"
                 class="mt-2 inline-block text-acid underline underline-offset-4"
-                >View checkpoint source ↗</a
+                >View checkpoint source <SiteIcon :size="13" class="ml-1 inline-block" /></a
               >
             </details>
           </div>
@@ -266,7 +266,7 @@ onMounted(() => {
         <span
           aria-hidden="true"
           class="transition-transform duration-700 ease-out group-hover:-translate-y-0.5 group-hover:translate-x-0.5 motion-reduce:transform-none motion-reduce:transition-none"
-          >↗</span
+          ><SiteIcon :size="16" /></span
         ><span class="sr-only">for {{ item.title }} (opens in a new tab)</span></a
       >
     </div>

@@ -216,11 +216,16 @@ void main() {
   vec3 up=cross(right,forward);
   vec3 rd=normalize(forward+0.9326*(screen.x*right+screen.y*up));
   vec3 sun=normalize(vec3(0.48*min(1.0,uAspect/1.25),0.26,-1.0));
-  vec3 col=sky(rd,sun);
+  float submerged=1.0-smoothstep(waterline-.018,waterline+.018,uv.y);
+  submerged=max(submerged,smoothstep(2.68,2.75,p));
+  // Once a pixel is fully underwater, the expensive sky and ocean raymarch
+  // cannot contribute. Keep the feathered waterline on the full path.
+  vec3 col=vec3(0.0);
+  if(submerged<.999) col=sky(rd,sun);
   float sceneDistance=10000.0;
   float exposedGround=0.0;
 
-  if(dive<0.999) {
+  if(dive<0.999 && submerged<.999) {
     float dist=0.5; bool hit=false;
     vec3 pos=uCamera;
     for(int i=0;i<112;i++) {
@@ -429,8 +434,6 @@ void main() {
   deep+=vec3(.015,.035,.058)*fbm(warp*7.0+uTime*.015);
   // A restrained violet-blue distant glow bridges the sea and later nebula.
   deep+=vec3(.055,.028,.11)*exp(-length((uv-vec2(.84,.38))*vec2(2.0,3.0))*3.5);
-  float submerged=1.0-smoothstep(waterline-.018,waterline+.018,uv.y);
-  submerged=max(submerged,smoothstep(2.68,2.75,p));
   float windowLight=exp(-length((uv-vec2(.55,1.12))*vec2(1.3,.9))*5.0);
   deep+=vec3(.10,.40,.42)*windowLight*(1.0-smoothstep(2.7,3.1,p));
   col=mix(col,deep,submerged);

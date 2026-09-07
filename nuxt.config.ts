@@ -15,7 +15,8 @@ export default defineNuxtConfig({
   },
   app: {
     head: {
-      htmlAttrs: { lang: 'en' },
+      htmlAttrs: { lang: 'en', class: 'bg-ink [color-scheme:dark]' },
+      bodyAttrs: { class: 'bg-ink' },
       title: 'Matrix Fellows — The next question starts with you.',
       meta: [
         {
@@ -24,6 +25,8 @@ export default defineNuxtConfig({
             'A student-founded research society for curious minds. Explore ideas, find collaborators, and take your first step into scientific research.',
         },
         { name: 'theme-color', content: '#101413' },
+        { name: 'color-scheme', content: 'dark' },
+        { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
         { property: 'og:title', content: 'Matrix Fellows — Beyond what we know.' },
         {
           property: 'og:description',

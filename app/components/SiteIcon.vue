@@ -1,6 +1,6 @@
 <script setup lang="ts">
 defineProps<{
-  name?: 'atom' | 'arrow' | 'down' | 'plus' | 'close' | 'search' | 'globe' | 'spark' | 'compass'
+  name?: 'atom' | 'arrow' | 'right' | 'down' | 'plus' | 'close' | 'search' | 'globe' | 'spark' | 'compass'
   size?: number
 }>()
 </script>
@@ -29,6 +29,7 @@ defineProps<{
       <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
     </g>
     <g v-else-if="name === 'down'"><path d="M12 4v16m-6-6 6 6 6-6" /></g>
+    <g v-else-if="name === 'right'"><path d="M4 12h16m-6-6 6 6-6 6" /></g>
     <g v-else-if="name === 'plus'"><path d="M12 5v14M5 12h14" /></g>
     <g v-else-if="name === 'close'"><path d="m6 6 12 12M6 18 18 6" /></g>
     <g v-else-if="name === 'search'">

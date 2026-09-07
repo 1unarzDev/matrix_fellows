@@ -306,13 +306,9 @@ onBeforeUnmount(() => {
         <div
           aria-hidden="true"
           data-hero-detail
-          class="absolute right-[16%] top-[48%] hidden h-32 w-32 items-center justify-center rounded-full border border-paper/15 xl:flex"
+          class="absolute right-[16%] top-[48%] hidden xl:block"
         >
-          <div class="absolute -inset-3 rounded-full border border-dashed border-paper/10" />
-          <span class="text-3xl font-extralight text-paper/35">+</span
-          ><span class="absolute -bottom-8 text-[8px] uppercase tracking-[.25em] text-paper/40"
-            >The unexplored</span
-          >
+          <UnexploredMarker />
         </div>
       </section>
 

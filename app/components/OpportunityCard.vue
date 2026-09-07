@@ -141,7 +141,7 @@ onMounted(() => {
         ref="rail"
         role="tablist"
         :aria-label="`${item.title} checkpoints`"
-        class="relative mt-4 flex snap-x snap-proximity overflow-x-auto overscroll-x-contain px-6 pb-3 [scrollbar-width:thin] [scrollbar-color:var(--color-acid)_transparent] [mask-image:linear-gradient(to_right,transparent,black_20px,black_calc(100%-20px),transparent)] sm:px-7"
+        class="relative flex snap-x snap-proximity overflow-x-auto overscroll-x-contain px-6 py-4 [scrollbar-width:thin] [scrollbar-color:var(--color-acid)_transparent] [mask-image:linear-gradient(to_right,transparent,black_12px,black_calc(100%-12px),transparent)] sm:px-7"
         @keydown="keyboard"
       >
         <button
@@ -153,20 +153,20 @@ onMounted(() => {
           :aria-selected="selected === index"
           :aria-controls="`${id}-panel`"
           :tabindex="selected === index ? 0 : -1"
-          class="group relative flex w-40 shrink-0 snap-center flex-col items-start justify-start pb-2 pr-5 pt-2 text-left focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-acid"
+          class="group relative flex w-40 shrink-0 snap-center flex-col items-start justify-start pb-2 pl-3 pr-5 pt-2 text-left focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-acid"
           @click="select(index)"
         >
           <span
             data-timeline-line
-            class="absolute left-[6px] right-[-6px] top-[14px] h-px -translate-y-1/2 bg-paper/15 group-last:right-5 group-last:bg-transparent group-last:bg-linear-to-r group-last:from-paper/15 group-last:to-transparent"
+            class="absolute left-[18px] right-[-18px] top-[14px] h-px -translate-y-1/2 bg-paper/15 transition-colors duration-1000 group-hover:bg-acid/25 group-focus-visible:bg-acid/25 group-last:right-5 group-last:bg-transparent group-last:bg-linear-to-r group-last:from-paper/15 group-last:to-transparent motion-reduce:transition-none"
             aria-hidden="true"
           />
           <span
             data-timeline-dot
-            class="relative block h-3 w-3 shrink-0 rounded-full border transition-[background-color,border-color,box-shadow] duration-700 motion-reduce:transition-none"
+            class="relative block h-3 w-3 shrink-0 rounded-full border transition-[transform,background-color,border-color,box-shadow] duration-1000 ease-[cubic-bezier(.4,0,.2,1)] group-hover:scale-[1.18] group-hover:shadow-[0_0_16px_color-mix(in_srgb,var(--color-acid)_25%,transparent)] group-focus-visible:scale-[1.18] motion-reduce:transform-none motion-reduce:transition-none"
             :class="
               selected === index
-                ? 'border-acid bg-acid shadow-[0_0_18px_#d4f57130]'
+                ? 'border-acid bg-acid shadow-[0_0_14px_color-mix(in_srgb,var(--color-acid)_20%,transparent)]'
                 : 'border-paper/35 bg-ink group-hover:border-acid/60'
             "
             aria-hidden="true"
@@ -185,13 +185,14 @@ onMounted(() => {
             }}</span
           >
           <span
-            class="mt-1 block text-xs transition-colors duration-700 motion-reduce:transition-none"
+            class="mt-1 block text-xs transition-[color,transform] duration-1000 ease-[cubic-bezier(.4,0,.2,1)] group-hover:translate-x-0.5 group-hover:text-acid group-focus-visible:text-acid motion-reduce:transform-none motion-reduce:transition-none"
             :class="selected === index ? 'text-paper' : 'text-paper/45'"
             >{{ displayDate(milestone.date, milestone.timezone || 'UTC') }}</span
           >
-          <span class="mt-1 block text-[10px] leading-relaxed text-paper/45">{{
-            milestone.label
-          }}</span>
+          <span
+            class="mt-1 block text-[10px] leading-relaxed text-paper/45 transition-colors duration-1000 group-hover:text-paper/75 group-focus-visible:text-paper/75 motion-reduce:transition-none"
+            >{{ milestone.label }}</span
+          >
         </button>
       </div>
       <div

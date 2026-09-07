@@ -48,28 +48,12 @@ The research investigates whether parallel branching can dramatically reduce nav
       title: 'CRANE: robust autonomy',
       field: 'Navigation · Optimization · Interpretability',
       summary:
-        'An ongoing, multi-part study using simulation to make classical ROS 2/Nav2 navigation more robust, automatically tunable, interpretable, and adaptable before deployment.',
-      details: `The central question: how can simulation help us understand—and improve—classical autonomous navigation before a robot enters the real world?
+        'Extending CRANE sim to test, tune, and understand autonomous navigation before deploying it on a real robot.',
+      details: `How can simulation make autonomous navigation more reliable in the real world?
 
-Study 1 — Sensor noise & localization robustness
-Model noise, bias, drift, latency, dropout, and correlated sensor error. Measure how localization and SLAM degrade, tune filter and localization parameters, and evaluate how well those settings transfer from simulation to physical vehicles.
+Building on CRANE sim, this ongoing research tests ROS 2/Nav2 navigation against sensor errors, obstacles, and changing environmental conditions. Automated tuning explores safer, more efficient configurations while keeping classical planning and control at the core.
 
-Study 2 — Environmental randomization & navigation robustness
-Run large, seeded test suites with varied obstacle layouts, moving objects, currents, wind, starting conditions, perception quality, and tasks. Map Nav2’s robustness envelope: where it succeeds, where it fails, and which conditions push it beyond reliable operation.
-
-Study 3 — Automated Nav2 hyperparameter tuning
-Evaluate sample-efficient methods such as Bayesian optimization and CMA-ES to tune Nav2/MPPI parameters without replacing navigation with reinforcement learning. Compare speed, safety, success rate, path efficiency, energy use, and compute cost.
-
-Interpretability
-Turn optimization data into parameter-sensitivity views, pairwise interactions, response surfaces, Pareto fronts, failure regions, and convergence plots. The goal is not just a better configuration, but a clearer explanation of why it works and where its tradeoffs lie.
-
-Simulation & replay
-Use stripped-down, headless Unity simulations with minimal ROS and data overhead across many randomized episodes. Store compact trajectories, parameter sets, events, seeds, and metrics. Reconstruct experiments separately in a dedicated HDRP replay scene with ghost trajectories, GPU-instanced boats, parameter-space heatmaps, best-so-far evolution, and cinematic failure comparisons.
-
-Future adaptive extension
-Explore a lightweight ML/RL meta-controller that adjusts selected Nav2 parameters or chooses strategies in response to uncertainty, obstacle density, currents, and path geometry. Keep SLAM backends, global planning, safety systems, control, and thruster allocation primarily classical; investigate ML where it adds value in perception, dynamic-object prediction, learned dynamics, mission selection, and adaptive tuning.
-
-This study is ongoing. These components describe the research program and planned evaluations, not completed findings.`,
+Experiment replays and parameter visualizations will help explain where navigation fails, which settings matter, and how performance trades off against safety. The goal is a navigation stack that is better understood and better prepared for real-world deployment.`,
       status: 'Ongoing study',
       url: '',
     },

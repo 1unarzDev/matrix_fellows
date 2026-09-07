@@ -199,14 +199,19 @@ test('narrow viewport confines horizontal scrolling and honors reduced motion', 
   await page.setViewportSize({ width: 390, height: 844 })
   await openBoard(page)
   const first = card(page)
-  const typeBox = await page
-    .getByRole('button', { name: 'Opportunity type: All types' })
-    .boundingBox()
-  const statusBox = await page
-    .getByRole('button', { name: 'Opportunity status: All statuses' })
-    .boundingBox()
-  expect(Math.abs(typeBox!.y - statusBox!.y)).toBeLessThan(1)
-  expect(statusBox!.x).toBeGreaterThan(typeBox!.x)
+  // Read both in the same frame: hash restoration can scroll between two
+  // independent boundingBox calls without changing their relative alignment.
+  const alignment = await page.evaluate(() => {
+    const type = document
+      .querySelector('[aria-label="Opportunity type: All types"]')!
+      .getBoundingClientRect()
+    const status = document
+      .querySelector('[aria-label="Opportunity status: All statuses"]')!
+      .getBoundingClientRect()
+    return { vertical: Math.abs(type.y - status.y), horizontal: status.x - type.x }
+  })
+  expect(alignment.vertical).toBeLessThan(1)
+  expect(alignment.horizontal).toBeGreaterThan(0)
   const rail = first.getByRole('tablist')
   expect(await rail.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true)
   expect(await rail.evaluate((el) => el.scrollLeft)).toBeGreaterThan(0)

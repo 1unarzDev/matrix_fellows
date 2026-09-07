@@ -27,6 +27,20 @@ const row = {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('opportunity ingestion', () => {
+  it('uses Workers-compatible manual redirects and rejects redirected sources', async () => {
+    const mock = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(null, { status: 302, headers: { Location: 'https://other.example/feed' } }),
+      )
+    vi.stubGlobal('fetch', mock)
+    await expect(fetchSource(source)).rejects.toThrow('Source redirects are not allowed')
+    expect(mock).toHaveBeenCalledWith(
+      expect.any(URL),
+      expect.objectContaining({ redirect: 'manual' }),
+    )
+    expect(mock).toHaveBeenCalledTimes(1)
+  })
   it('compares offset deadlines as instants and ranks US entries first at equal priority', () => {
     expect(deadlineTimestamp('2026-09-07T01:00:00+03:00')).toBeLessThan(
       deadlineTimestamp('2026-09-06T23:00:00Z'),

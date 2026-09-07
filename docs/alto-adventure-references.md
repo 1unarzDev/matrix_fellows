@@ -37,3 +37,7 @@ Downloaded inspection copies: `/tmp/matrix-alto-adventure/dawn.png`, `night.png`
 - The underwater interpretation remains original to Matrix Fellows: the reference supplies palette and layering principles, not literal geography or copied assets.
 
 The implementing agent inspected desktop captures of these changes; final verification details belong in the task handoff rather than this source note.
+
+## Social preview refinement
+
+Reinspected the Dawn and Night screenshots for the 1200×630 Open Graph card. Retained Matrix Fellows’ purple/orange bloom, localized the warm horizon, and introduced muted mauve/slate ridges with darker foreground separation. A sparse Cassiopeia-inspired W and fine orbital geometry echo the website’s scientific identity. The typography remains on a quiet dark field; the lower-right domain replaces the decorative tagline. All artwork is original SVG, rasterized to PNG for social crawlers.

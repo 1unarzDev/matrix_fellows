@@ -128,7 +128,9 @@ export async function fetchSource(source: ImportSource): Promise<Opportunity[]> 
   )
     throw new Error('Source must be a public HTTPS hostname')
   const response = await fetch(url, {
-    redirect: 'error',
+    // Workers supports manual/follow, but not the browser's "error" mode.
+    // Never follow an upstream redirect beyond the validated hostname.
+    redirect: 'manual',
     signal: AbortSignal.timeout(12000),
     headers: {
       Accept:
@@ -140,6 +142,8 @@ export async function fetchSource(source: ImportSource): Promise<Opportunity[]> 
       'User-Agent': 'MatrixFellows-Opportunities/1.0',
     },
   })
+  if (response.status >= 300 && response.status < 400)
+    throw new Error('Source redirects are not allowed')
   if (!response.ok) throw new Error(`Source returned HTTP ${response.status}`)
   if (source.kind === 'official' && !response.headers.get('content-type')?.includes('text/html'))
     throw new Error('Expected official HTML page, not a redirect or challenge')

@@ -5,7 +5,7 @@ import { defaultContent, defaultOpportunities } from '#shared/data/defaults'
 import type { PublicContent } from '#shared/types/content'
 
 const siteUrl = useRuntimeConfig().public.siteUrl
-const socialImage = new URL('/social-card.png', siteUrl).href
+const socialImage = new URL('/social-card.png?v=horizon-2', siteUrl).href
 useSeoMeta({
   ogImage: socialImage,
   ogImageWidth: 1200,

@@ -17,9 +17,18 @@ ISEF, Davidson Fellows, Queer in AI at NeurIPS, NeurIPS, IEEE/CVF CVPR, IEEE ICR
 ## Maintenance
 
 - Run `npm run check:sources` for a read-only live check; `npm test` covers deterministic extraction and database authorization.
+- Run `npm run check:live` after deployment to verify social-crawler metadata, the exact deployed PNG, Supabase connectivity, and all seven published official listings.
 - For redesigned pages or new editions, inspect the official source, update the profile/parser and tests, then redeploy with `npm run deploy:imports`.
 - Apply migrations with `npx supabase db push --linked` before deploying code requiring them.
 - Cloudflare secrets: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`. Never commit either credential.
 - Monitor source errors in the editor and Worker logs. Unannounced dates and ambiguous timezones are explicitly retained as unknown/date-only. Edition rollover deliberately requires maintenance rather than relabeling last year’s dates.
 
 An LLM can later propose parser repairs behind this same review boundary, but is not required for the initial scheduled service.
+
+## Production verification — September 7, 2026
+
+The first seven proposals were checked against fresh official-source results and published. The older generic ISEF and STS discovery cards were suppressed (not deleted) to avoid duplicate listings; the JSHS and general NeurIPS workshop discovery links remain. Davidson is published with an explicit unannounced deadline, not a guessed date.
+
+Exercised the scheduled handler in Cloudflare using Wrangler remote preview and `--test-scheduled`. This revealed that Workers rejects `redirect: 'error'`; the adapter now uses `manual` and explicitly rejects 3xx responses without following them. After the fix, all seven sources recorded one imported item and no errors. This is a manual cloud-runtime test of the scheduled handler, not a claim that a future daily cron has already fired. The production cron remains `0 11 * * *`.
+
+The website Worker has `NUXT_PUBLIC_SUPABASE_URL`, `NUXT_PUBLIC_SUPABASE_ANON_KEY`, and `NUXT_PUBLIC_SITE_URL` configured. The service-role key exists only on the importer. Changed official facts still require owner review; unchanged approved facts refresh automatically.

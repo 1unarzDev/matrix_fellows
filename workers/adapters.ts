@@ -7,6 +7,11 @@ import { officialProfiles } from './official-sources'
 export interface SourceAdapter {
   parse(body: string, source: ImportSource, now: string): Opportunity[]
 }
+export class SourceRedirectError extends Error {
+  constructor(public location: string | null) {
+    super('Source redirects are not allowed')
+  }
+}
 
 export function canonicalUrl(value: string): string {
   const url = new URL(value)
@@ -118,7 +123,33 @@ export async function fetchSource(source: ImportSource): Promise<Opportunity[]> 
     !officialProfiles.some((p) => p.id === source.id && p.url === source.url)
   )
     throw new Error('Official source URL does not match the reviewed allowlist')
-  const url = new URL(source.url)
+  const bytes = await fetchDocument(
+    source.url,
+    source.kind === 'official'
+      ? 'text/html'
+      : source.kind === 'json'
+        ? 'application/json'
+        : 'application/rss+xml, application/atom+xml, application/xml',
+  )
+  if (source.kind === 'official') {
+    const digest = await crypto.subtle.digest('SHA-256', bytes)
+    const hash = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
+    return parseOfficial(new TextDecoder().decode(bytes), source, new Date().toISOString(), hash)
+  }
+  return deduplicate(
+    (source.kind === 'json' ? jsonAdapter : rssAdapter).parse(
+      new TextDecoder().decode(bytes),
+      source,
+      new Date().toISOString(),
+    ),
+  )
+}
+
+export async function fetchDocument(
+  address: string,
+  accept = 'text/html',
+): Promise<Uint8Array<ArrayBuffer>> {
+  const url = new URL(address)
   if (
     url.protocol !== 'https:' ||
     url.username ||
@@ -133,19 +164,14 @@ export async function fetchSource(source: ImportSource): Promise<Opportunity[]> 
     redirect: 'manual',
     signal: AbortSignal.timeout(12000),
     headers: {
-      Accept:
-        source.kind === 'official'
-          ? 'text/html'
-          : source.kind === 'json'
-            ? 'application/json'
-            : 'application/rss+xml, application/atom+xml, application/xml',
+      Accept: accept,
       'User-Agent': 'MatrixFellows-Opportunities/1.0',
     },
   })
   if (response.status >= 300 && response.status < 400)
-    throw new Error('Source redirects are not allowed')
+    throw new SourceRedirectError(response.headers.get('location'))
   if (!response.ok) throw new Error(`Source returned HTTP ${response.status}`)
-  if (source.kind === 'official' && !response.headers.get('content-type')?.includes('text/html'))
+  if (accept === 'text/html' && !response.headers.get('content-type')?.includes('text/html'))
     throw new Error('Expected official HTML page, not a redirect or challenge')
   if (!response.body) throw new Error('Empty response')
   const reader = response.body.getReader(),
@@ -171,16 +197,5 @@ export async function fetchSource(source: ImportSource): Promise<Opportunity[]> 
     bytes.set(chunk, offset)
     offset += chunk.length
   })
-  if (source.kind === 'official') {
-    const digest = await crypto.subtle.digest('SHA-256', bytes)
-    const hash = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
-    return parseOfficial(new TextDecoder().decode(bytes), source, new Date().toISOString(), hash)
-  }
-  return deduplicate(
-    (source.kind === 'json' ? jsonAdapter : rssAdapter).parse(
-      new TextDecoder().decode(bytes),
-      source,
-      new Date().toISOString(),
-    ),
-  )
+  return bytes
 }

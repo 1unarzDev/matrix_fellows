@@ -4,6 +4,7 @@
   "main": "import.ts",
   "compatibility_date": "2026-09-01",
   "compatibility_flags": ["nodejs_compat"],
-  "triggers": { "crons": ["0 11 * * *"] },
+  "triggers": { "crons": ["0 11 * * *", "15 */3 * * *"] },
+  "ai": { "binding": "AI" },
   "observability": { "enabled": true },
 }

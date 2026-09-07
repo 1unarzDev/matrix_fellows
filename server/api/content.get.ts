@@ -16,7 +16,7 @@ export default defineEventHandler(async (event): Promise<PublicContent> => {
         fetch: (input, init) => fetch(input, { ...init, signal: AbortSignal.timeout(6000) }),
       },
     })
-    const [site, listings] = await Promise.all([
+    const [site, listings, health] = await Promise.all([
       client
         .from('site_content')
         .select('data')
@@ -28,15 +28,34 @@ export default defineEventHandler(async (event): Promise<PublicContent> => {
         .select('id,data,overrides,published')
         .eq('published', true)
         .eq('suppressed', false),
+      client.rpc('opportunity_monitor_health'),
     ])
     if (site.error || listings.error) throw new Error('Content query failed')
     const parsed = contentSchema.safeParse(site.data?.data)
     const opportunities = (listings.data || []).flatMap((row) => {
+      const monitor = (health.data || []).find((entry: { id: string }) => entry.id === row.id)
       const result = opportunitySchema.safeParse({
         ...row.data,
         ...row.overrides,
         id: row.id,
         published: row.published,
+        ...(monitor
+          ? {
+              monitoring: {
+                lastCheckedAt: monitor.last_checked_at,
+                lastSuccessAt: monitor.last_success_at,
+                issue: monitor.issue,
+              },
+            }
+          : health.error
+            ? {
+                monitoring: {
+                  lastCheckedAt: null,
+                  lastSuccessAt: row.data.verifiedAt || null,
+                  issue: true,
+                },
+              }
+            : {}),
       })
       return result.success ? [result.data] : []
     })

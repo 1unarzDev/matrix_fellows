@@ -29,9 +29,10 @@ export interface SiteContent {
 }
 export type OpportunityKind = 'Competition' | 'Conference' | 'Workshop' | 'Publication' | 'Program'
 export interface OpportunityMilestone {
+  superseded?: boolean
   label: string
   date: string
-  kind: 'deadline' | 'event'
+  kind: 'deadline' | 'event' | 'opens' | 'results'
   timezone: string | null
   evidence: string
   url: string
@@ -55,6 +56,12 @@ export interface Opportunity {
   published: boolean
   milestones?: OpportunityMilestone[]
   provenance?: { url: string; contentHash: string; parserVersion: string }
+  lifecycle?: 'announced' | 'awaiting-announcement' | 'discontinued' | 'replaced' | 'unknown'
+  lifecycleEvidence?: string
+  edition?: string
+  cost?: string
+  effort?: string
+  monitoring?: { lastCheckedAt: string | null; lastSuccessAt: string | null; issue: boolean }
 }
 export interface PublicContent {
   content: SiteContent

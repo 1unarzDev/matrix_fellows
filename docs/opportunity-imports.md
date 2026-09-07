@@ -1,5 +1,7 @@
 # Official opportunity monitoring
 
+**Current architecture:** the larger catalog now uses [annual opportunity monitoring](opportunity-monitoring.md), including evidence-validated AI extraction and two-observation automatic publication. The edition-specific adapters described below remain available as legacy/manual-review adapters; they are paused where annual monitors replace them.
+
 The `matrix-fellows-opportunities` Cloudflare Worker checks enabled sources daily at **11:00 UTC**. Supabase stores listings, source health, and review proposals. The Worker has no public HTTP trigger; its service-role key stays in Cloudflare secrets.
 
 ## Owner workflow

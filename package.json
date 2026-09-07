@@ -11,6 +11,7 @@
     "test": "vitest run",
     "check:sources": "tsx scripts/check-official-sources.mjs",
     "check:live": "tsx scripts/check-live.mjs",
+    "seed:catalog": "tsx scripts/seed-opportunity-catalog.mjs",
     "test:e2e": "playwright test",
     "deploy": "npm run build && wrangler deploy",
     "deploy:imports": "wrangler deploy --config workers/wrangler.jsonc",

@@ -78,13 +78,14 @@ export const opportunitySchema = z.object({
       z.object({
         label: shortText.min(1),
         date,
-        kind: z.enum(['deadline', 'event']),
+        kind: z.enum(['deadline', 'event', 'opens', 'results']),
         timezone: timezone.nullable(),
         evidence: z.string().min(1).max(700),
+        superseded: z.boolean().optional(),
         url: httpsUrl,
       }),
     )
-    .max(30)
+    .max(120)
     .optional(),
   provenance: z
     .object({
@@ -92,6 +93,16 @@ export const opportunitySchema = z.object({
       contentHash: z.string().regex(/^[a-f0-9]{64}$/),
       parserVersion: shortText,
     })
+    .optional(),
+  lifecycle: z
+    .enum(['announced', 'awaiting-announcement', 'discontinued', 'replaced', 'unknown'])
+    .optional(),
+  lifecycleEvidence: z.string().max(1000).optional(),
+  edition: z.string().max(80).optional(),
+  cost: z.string().max(500).optional(),
+  effort: z.string().max(500).optional(),
+  monitoring: z
+    .object({ lastCheckedAt: date.nullable(), lastSuccessAt: date.nullable(), issue: z.boolean() })
     .optional(),
 })
 export const sourceSchema = z.object({

@@ -1,0 +1,765 @@
+[
+  {
+    "id": "breakthrough-junior-challenge",
+    "title": "Breakthrough Junior Challenge",
+    "url": "https://breakthroughjuniorchallenge.org/",
+    "kind": "Competition",
+    "discipline": "Science communication",
+    "description": "Explain a science or mathematics concept in an original video; the winner receives a $250,000 post-secondary scholarship.",
+    "eligibility": "Worldwide individuals ages 13–18 under the precise 2026 age cutoffs; sanctions restrictions and parental permission apply.",
+    "location": "Online / worldwide",
+    "priority": 3,
+    "edition": 2026,
+    "lifecycle": "announced",
+    "lifecycleEvidence": "The Competition begins May 11, 2026 at 12:01 AM PDT",
+    "sourceUrls": [
+      "https://breakthroughjuniorchallenge.org/",
+      "https://breakthroughjuniorchallenge.org/rules"
+    ],
+    "cost": "No purchase or payment necessary.",
+    "milestones": [
+      {
+        "label": "Applications open",
+        "date": "2026-05-11",
+        "kind": "opens",
+        "timezone": null,
+        "evidence": "The Competition begins May 11, 2026 at 12:01 AM PDT",
+        "url": "https://breakthroughjuniorchallenge.org/rules"
+      },
+      {
+        "label": "Video and application deadline",
+        "date": "2026-09-15T23:59:00-07:00",
+        "kind": "deadline",
+        "timezone": "America/Los_Angeles",
+        "evidence": "ends September 15, 2026 at 11:59 PM PDT",
+        "url": "https://breakthroughjuniorchallenge.org/rules"
+      }
+    ]
+  },
+  {
+    "id": "blue-ocean",
+    "title": "Blue Ocean Student Entrepreneur Competition",
+    "url": "https://blueoceancompetition.org/",
+    "kind": "Competition",
+    "discipline": "Entrepreneurship",
+    "description": "Global virtual competition for an original business concept presented in an English video under five minutes.",
+    "eligibility": "High-school-age students 14–18 at registration; individuals or teams of up to five; required online mini-course.",
+    "location": "Online / worldwide",
+    "priority": 3,
+    "edition": 2027,
+    "lifecycle": "announced",
+    "lifecycleEvidence": "2027 Competition Timeline",
+    "sourceUrls": [
+      "https://blueoceancompetition.org/",
+      "https://blueoceancompetition.org/compete/"
+    ],
+    "milestones": [
+      {
+        "label": "Pitch submission deadline",
+        "date": "2027-02-21",
+        "kind": "deadline",
+        "timezone": null,
+        "evidence": "Submit your pitch by February 21, 2027 at midnight in the time zone where you are located.",
+        "url": "https://blueoceancompetition.org/compete/"
+      },
+      {
+        "label": "Top 100 announced",
+        "date": "2027-04-05",
+        "kind": "results",
+        "timezone": null,
+        "evidence": "Top 100 Announcement Find out who made it to the Top 100! 5 April 2027",
+        "url": "https://blueoceancompetition.org/compete/"
+      },
+      {
+        "label": "Top 30 announced",
+        "date": "2027-04-22",
+        "kind": "results",
+        "timezone": null,
+        "evidence": "Top 30 Announcement Check out who made it to the top 30! 22 April 2027",
+        "url": "https://blueoceancompetition.org/compete/"
+      },
+      {
+        "label": "Top 10 announced",
+        "date": "2027-05-04",
+        "kind": "results",
+        "timezone": null,
+        "evidence": "Top 10 Announcement Check out who made it to the top 10! 4 May 2027",
+        "url": "https://blueoceancompetition.org/compete/"
+      },
+      {
+        "label": "Winners announced",
+        "date": "2027-05-13",
+        "kind": "results",
+        "timezone": null,
+        "evidence": "Winners Announcement! Join us online for the live finale and see if you won the competition this year! 13 MAY 2027",
+        "url": "https://blueoceancompetition.org/compete/"
+      }
+    ]
+  },
+  {
+    "id": "conrad-challenge",
+    "title": "Conrad Challenge",
+    "url": "https://conrad.spacecenter.org/",
+    "kind": "Competition",
+    "discipline": "Engineering and entrepreneurship",
+    "description": "Teams develop an innovation, business case, video and website; finalists pitch at the Innovation Summit.",
+    "eligibility": "Worldwide teams of 2–5 students ages 13–18 with an adult coach.",
+    "location": "Online; finalist summit",
+    "priority": 3,
+    "edition": 2027,
+    "lifecycle": "announced",
+    "lifecycleEvidence": "The submission deadline for all Innovation Stage content is January 7, 2027.",
+    "sourceUrls": [
+      "https://conrad.spacecenter.org/",
+      "https://conrad.spacecenter.org/the-challenge/innovation-stage/",
+      "https://conrad.spacecenter.org/the-challenge/activation-stage/",
+      "https://conrad.spacecenter.org/the-challenge/rules-and-regulations/"
+    ],
+    "cost": "$499 per team for Innovation Stage; Activation free; summit $499 per guest; financial aid available.",
+    "milestones": [
+      {
+        "label": "Activation opens",
+        "date": "2026-08-27",
+        "kind": "opens",
+        "timezone": null,
+        "evidence": "Start: August 27, 2026",
+        "url": "https://conrad.spacecenter.org/the-challenge/activation-stage/"
+      },
+      {
+        "label": "Activation deadline",
+        "date": "2026-10-29",
+        "kind": "deadline",
+        "timezone": null,
+        "evidence": "End: October 29, 2026",
+        "url": "https://conrad.spacecenter.org/the-challenge/activation-stage/"
+      },
+      {
+        "label": "Innovation submission deadline",
+        "date": "2027-01-07",
+        "kind": "deadline",
+        "timezone": null,
+        "evidence": "The submission deadline for all Innovation Stage content is January 7, 2027.",
+        "url": "https://conrad.spacecenter.org/the-challenge/innovation-stage/"
+      },
+      {
+        "label": "Finalists announced",
+        "date": "2027-02-26",
+        "kind": "results",
+        "timezone": null,
+        "evidence": "Finalist announcement: February 26, 2027",
+        "url": "https://conrad.spacecenter.org/the-challenge/innovation-stage/"
+      },
+      {
+        "label": "Innovation Summit begins",
+        "date": "2027-04-21",
+        "kind": "event",
+        "timezone": null,
+        "evidence": "Innovation Summit: April 21-24, 2027",
+        "url": "https://conrad.spacecenter.org/the-challenge/innovation-stage/"
+      }
+    ]
+  },
+  {
+    "id": "yau-north-america",
+    "title": "S.-T. Yau High School Science Award — North America",
+    "url": "https://www.yau-science-awards.org/",
+    "kind": "Competition",
+    "discipline": "Research, mathematics and science",
+    "description": "Original research in mathematics, physics, biology, chemistry, computer science or economic modeling; regional evaluation leads to a global oral defense.",
+    "eligibility": "North American high-school students; students must be in high school during registration; team members must attend the same school.",
+    "location": "North America; global final at Tsinghua University, China",
+    "priority": 3,
+    "edition": 2026,
+    "lifecycle": "announced",
+    "lifecycleEvidence": "Schedule for the 19th S.-T. Yau High School Science Award (2026)",
+    "sourceUrls": [
+      "https://www.yau-science-awards.org/",
+      "https://www.yau-science-awards.org/bulletin/show-102053.html"
+    ],
+    "milestones": [
+      {
+        "label": "Registration and submission opens",
+        "date": "2026-07-01",
+        "kind": "opens",
+        "timezone": null,
+        "evidence": "July 1 - September 15 Online registration and submission of application materials.",
+        "url": "https://www.yau-science-awards.org/bulletin/show-102053.html"
+      },
+      {
+        "label": "Research submission deadline",
+        "date": "2026-09-15",
+        "kind": "deadline",
+        "timezone": null,
+        "evidence": "July 1 - September 15 Online registration and submission of application materials.",
+        "url": "https://www.yau-science-awards.org/bulletin/show-102053.html"
+      },
+      {
+        "label": "Global final begins",
+        "date": "2026-12-05",
+        "kind": "event",
+        "timezone": null,
+        "evidence": "December 5 - December 6 Global Final and Awards Ceremony.",
+        "url": "https://www.yau-science-awards.org/bulletin/show-102053.html"
+      },
+      {
+        "label": "Science Forum",
+        "date": "2026-12-06",
+        "kind": "event",
+        "timezone": null,
+        "evidence": "December 6 Science Forum",
+        "url": "https://www.yau-science-awards.org/bulletin/show-102053.html"
+      }
+    ]
+  },
+  {
+    "id": "usaco",
+    "title": "USA Computing Olympiad (USACO)",
+    "url": "https://usaco.org/",
+    "kind": "Competition",
+    "discipline": "Computer science",
+    "description": "Algorithmic programming contests with divisions from bronze to platinum; a selection route to the IOI and European Girls Olympiad in Informatics.",
+    "eligibility": "Online contests open worldwide; only pre-college students in the USA can become training-camp finalists and contend for USA teams.",
+    "location": "Online; selected USA training camp",
+    "priority": 3,
+    "edition": 2026,
+    "lifecycle": "awaiting-announcement",
+    "lifecycleEvidence": "2025-2026 Competition Schedule Recap",
+    "sourceUrls": [
+      "https://usaco.org/",
+      "https://usaco.org/index.php?page=instructions"
+    ],
+    "cost": "There is never any fee for participation.",
+    "milestones": [
+      {
+        "label": "First contest begins (2026 season)",
+        "date": "2026-01-09",
+        "kind": "event",
+        "timezone": null,
+        "evidence": "2025-2026 Schedule Jan 9-12: First Contest",
+        "url": "https://usaco.org/"
+      },
+      {
+        "label": "Second contest begins (2026 season)",
+        "date": "2026-01-30",
+        "kind": "event",
+        "timezone": null,
+        "evidence": "Jan 30-Feb 2: Second Contest",
+        "url": "https://usaco.org/"
+      },
+      {
+        "label": "Third contest begins (2026 season)",
+        "date": "2026-02-20",
+        "kind": "event",
+        "timezone": null,
+        "evidence": "Feb 20-23: Third Contest",
+        "url": "https://usaco.org/"
+      },
+      {
+        "label": "Proctored US Open (2026 season)",
+        "date": "2026-03-28",
+        "kind": "event",
+        "timezone": null,
+        "evidence": "Mar 28: US Open (Proctored)",
+        "url": "https://usaco.org/"
+      }
+    ]
+  },
+  {
+    "id": "mit-think",
+    "title": "MIT THINK Scholars Program",
+    "url": "https://think.mit.edu/",
+    "kind": "Program",
+    "discipline": "STEM research",
+    "description": "Research-proposal selection program offering mentoring and up to $1,000 in project funding; intended for ideas needing support to become completed research.",
+    "eligibility": "Full-time high-school students with permanent US residency during the academic year; citizenship not required; individuals or pairs.",
+    "location": "United States; mentoring and possible MIT campus visit",
+    "priority": 3,
+    "edition": 2026,
+    "lifecycle": "awaiting-announcement",
+    "lifecycleEvidence": "Finalists are announced for THINK 2025-26:",
+    "sourceUrls": [
+      "https://think.mit.edu/",
+      "https://think.mit.edu/assets/index-CAOLWejZ.js",
+      "https://think.mit.edu/static_files/THINK_Program_Guidelines_2026.pdf"
+    ],
+    "milestones": [
+      {
+        "label": "Applications open (2026 program)",
+        "date": "2025-11-01",
+        "kind": "opens",
+        "timezone": null,
+        "evidence": "Applications Open 1 November 2025",
+        "url": "https://think.mit.edu/static_files/THINK_Program_Guidelines_2026.pdf"
+      },
+      {
+        "label": "Proposal deadline (2026 program)",
+        "date": "2026-01-01",
+        "kind": "deadline",
+        "timezone": null,
+        "evidence": "Application Deadline 1 January 2026",
+        "url": "https://think.mit.edu/static_files/THINK_Program_Guidelines_2026.pdf"
+      },
+      {
+        "label": "Semifinalists announced (2026 program)",
+        "date": "2026-01-30",
+        "kind": "results",
+        "timezone": null,
+        "evidence": "{month:\"Jan\",monthLong:\"uary\",dayYear:\" 30, 2026\",body:\"Semifinalists are announced and interviewed.\"}",
+        "url": "https://think.mit.edu/assets/index-CAOLWejZ.js"
+      }
+    ]
+  },
+  {
+    "id": "science-olympiad",
+    "title": "Science Olympiad — Division C",
+    "url": "https://www.soinc.org/",
+    "kind": "Competition",
+    "discipline": "Science and engineering",
+    "description": "School team competition blending science knowledge, laboratory skills and engineering devices; regional/state qualification precedes nationals.",
+    "eligibility": "US school teams; high-school Division C. Contact the state chapter for registration and local eligibility.",
+    "location": "United States; 2027 nationals at Ohio State University",
+    "priority": 3,
+    "edition": 2027,
+    "lifecycle": "announced",
+    "lifecycleEvidence": "2027 National Tournament; hosted by The Ohio State University, May 14-15, 2027",
+    "sourceUrls": [
+      "https://www.soinc.org/",
+      "https://www.soinc.org/future-national-tournaments",
+      "https://www.soinc.org/tournaments"
+    ],
+    "milestones": [
+      {
+        "label": "2027 rules available",
+        "date": "2026-09-08",
+        "kind": "opens",
+        "timezone": null,
+        "evidence": "2027 Rules available as free PDFs Tuesday, 9/8/26!",
+        "url": "https://www.soinc.org/"
+      },
+      {
+        "label": "National Tournament begins",
+        "date": "2027-05-14",
+        "kind": "event",
+        "timezone": null,
+        "evidence": "2027 National Tournament; hosted by The Ohio State University, May 14-15, 2027",
+        "url": "https://www.soinc.org/future-national-tournaments"
+      },
+      {
+        "label": "National Tournament ends",
+        "date": "2027-05-15",
+        "kind": "event",
+        "timezone": null,
+        "evidence": "2027 National Tournament; hosted by The Ohio State University, May 14-15, 2027",
+        "url": "https://www.soinc.org/future-national-tournaments"
+      }
+    ]
+  },
+  {
+    "id": "samsung-solve",
+    "title": "Samsung Solve for Tomorrow — United States",
+    "url": "https://www.samsung.com/us/solvefortomorrow/",
+    "kind": "Competition",
+    "discipline": "Community STEM innovation",
+    "description": "School teams use STEM to address a community problem and compete for school technology and resources.",
+    "eligibility": "Grades 6–12 at schools at least 50% publicly funded; applications submitted by a school employee age 21 or older.",
+    "location": "United States",
+    "priority": 3,
+    "edition": 2026,
+    "lifecycle": "awaiting-announcement",
+    "lifecycleEvidence": "Thank you to all of the 2025-2026 Samsung Solve for Tomorrow participants!",
+    "sourceUrls": [
+      "https://www.samsung.com/us/solvefortomorrow/",
+      "https://www.samsung.com/us/solvefortomorrow/about/"
+    ],
+    "milestones": []
+  },
+  {
+    "id": "usabo",
+    "title": "USA Biolympiad (USABO)",
+    "url": "https://www.usabo-trc.org/",
+    "kind": "Competition",
+    "discipline": "Biology",
+    "description": "Biology exams lead to a residential national final and selection of the US team for the International Biology Olympiad.",
+    "eligibility": "High-school students participate through a registered host school or approved test center; US team selection has additional nationality rules.",
+    "location": "United States; international team pathway",
+    "priority": 3,
+    "edition": 2027,
+    "lifecycle": "announced",
+    "lifecycleEvidence": "Students should click here to register for the 2027 USABO.",
+    "sourceUrls": [
+      "https://www.usabo-trc.org/",
+      "https://www.usabo-trc.org/usabo-guidelines-and-eligibility",
+      "https://www.usabo-trc.org/usabo-2027-calendar"
+    ],
+    "cost": "$125 school or authorized test-center registration fee.",
+    "milestones": [
+      {
+        "label": "School payment deadline",
+        "date": "2026-10-23",
+        "kind": "deadline",
+        "timezone": null,
+        "evidence": "Payment is due no later than October 23, 2026",
+        "url": "https://www.usabo-trc.org/usabo-guidelines-and-eligibility"
+      }
+    ]
+  },
+  {
+    "id": "us-physics-team",
+    "title": "F=ma / U.S. Physics Team",
+    "url": "https://www.aapt.org/physicsteam/2026/",
+    "kind": "Competition",
+    "discipline": "Physics",
+    "description": "F=ma is the first exam in the US Physics Team pathway; qualified students advance to USAPhO and subsequent selection.",
+    "eligibility": "F=ma: US citizens, permanent residents or students attending a US school, physically within the US under AAPT territorial rules. USAPhO requires US citizenship or permanent residency. In-person non-family proctor required.",
+    "location": "United States",
+    "priority": 3,
+    "edition": 2026,
+    "lifecycle": "awaiting-announcement",
+    "lifecycleEvidence": "2026 U.S. Physics Team - ImportantDates",
+    "sourceUrls": [
+      "https://www.aapt.org/physicsteam/2026/",
+      "https://www.aapt.org/physicsteam/2026/ImportantDates.cfm",
+      "https://www.aapt.org/physicsteam/2026/Registration.cfm"
+    ],
+    "cost": "$75 school fee ($37.50 for AAPT members) plus $15.50 per student in 2026.",
+    "milestones": [
+      {
+        "label": "Extended registration deadline (2026)",
+        "date": "2026-01-21T23:59:00-05:00",
+        "kind": "deadline",
+        "timezone": "America/New_York",
+        "evidence": "DEADLINE EXTENDED to January 21st, 11:59pm EST",
+        "url": "https://www.aapt.org/physicsteam/2026/ImportantDates.cfm"
+      },
+      {
+        "label": "F=ma exam (2026)",
+        "date": "2026-02-12",
+        "kind": "event",
+        "timezone": null,
+        "evidence": "February 12, 2026, 1 pm to 4 pm EST - F=ma Exam",
+        "url": "https://www.aapt.org/physicsteam/2026/ImportantDates.cfm"
+      },
+      {
+        "label": "USAPhO exam (updated 2026 date)",
+        "date": "2026-04-10",
+        "kind": "event",
+        "timezone": null,
+        "evidence": "April 10, 2026, 1 pm to 5 pm EDT - USAPhO Exam UPDATED DATE",
+        "url": "https://www.aapt.org/physicsteam/2026/ImportantDates.cfm"
+      }
+    ]
+  },
+  {
+    "id": "jshs",
+    "title": "Junior Science and Humanities Symposium (JSHS)",
+    "url": "https://jshs.org/",
+    "kind": "Competition",
+    "discipline": "Original STEM research",
+    "description": "Present original STEM research at a regional symposium to compete for recognition and advancement to the national symposium. The official sponsor says the program has returned.",
+    "eligibility": "Grades 9–12; United States, US territories and listed Department of War schools abroad; regional selection required.",
+    "location": "United States and participating territories / schools abroad",
+    "priority": 3,
+    "edition": 2026,
+    "lifecycle": "awaiting-announcement",
+    "lifecycleEvidence": "We’re excited to announce that JSHS has officially returned! Our website is currently being updated to reflect the latest information. Please check back soon as we roll out updates – more details are on the way.",
+    "sourceUrls": [
+      "https://jshs.org/",
+      "https://www.usaeop.com/program/jshs/"
+    ],
+    "milestones": []
+  },
+  {
+    "id": "genes-in-space",
+    "title": "Genes in Space",
+    "url": "https://www.genesinspace.org/",
+    "kind": "Competition",
+    "discipline": "Biotechnology and space biology",
+    "description": "Propose a biotechnology experiment for space; the winning design can fly to the ISS pending approval. No lab access or hands-on experience is required.",
+    "eligibility": "Students in grades 7–12 studying within the US or US territories; individuals or pairs; adult sponsor required.",
+    "location": "United States / territories; 2026 finals in Houston",
+    "priority": 3,
+    "edition": 2026,
+    "lifecycle": "awaiting-announcement",
+    "lifecycleEvidence": "The Genes in Space 2026 Contest is now closed. Next year's contest will be announced in the fall.",
+    "sourceUrls": [
+      "https://www.genesinspace.org/",
+      "https://www.genesinspace.org/us-contest/"
+    ],
+    "milestones": [
+      {
+        "label": "2026 contest opens",
+        "date": "2026-01-05",
+        "kind": "opens",
+        "timezone": null,
+        "evidence": "Open January 5, 2026",
+        "url": "https://www.genesinspace.org/us-contest/"
+      },
+      {
+        "label": "2026 proposal deadline",
+        "date": "2026-04-10T23:59:00-07:00",
+        "kind": "deadline",
+        "timezone": "America/Los_Angeles",
+        "evidence": "You must submit your experimental idea online on or before April 10, 2026 at 11:59 pm PDT.",
+        "url": "https://www.genesinspace.org/us-contest/"
+      },
+      {
+        "label": "2026 finalist presentations begin",
+        "date": "2026-07-28",
+        "kind": "event",
+        "timezone": null,
+        "evidence": "2026 finalists will present their ideas July 28-30 to contest judges at Countdown to Discovery in Houston, TX.",
+        "url": "https://www.genesinspace.org/us-contest/"
+      }
+    ]
+  },
+  {
+    "id": "exploravision",
+    "title": "Toshiba/NSTA ExploraVision",
+    "url": "https://www.exploravision.org/",
+    "kind": "Competition",
+    "discipline": "Engineering and future technology",
+    "description": "Team research competition that projects how an existing technology could evolve at least ten years into the future.",
+    "eligibility": "Teams of 2–4; K–12 categories including grades 10–12; US/Canadian citizens in eligible schools/geographies; age no older than 21; adult coach.",
+    "location": "United States, Canada, eligible territories and DoWEA schools",
+    "priority": 3,
+    "edition": 2027,
+    "lifecycle": "announced",
+    "lifecycleEvidence": "The coach submits a team’s project online before the deadline of 8:00 PM ET, January 27, 2027.",
+    "sourceUrls": [
+      "https://www.exploravision.org/",
+      "https://www.exploravision.org/rules-requirements/"
+    ],
+    "milestones": [
+      {
+        "label": "Project deadline",
+        "date": "2027-01-27T20:00:00-05:00",
+        "kind": "deadline",
+        "timezone": "America/New_York",
+        "evidence": "The coach submits a team’s project online before the deadline of 8:00 PM ET, January 27, 2027.",
+        "url": "https://www.exploravision.org/rules-requirements/"
+      }
+    ]
+  },
+  {
+    "id": "nasa-space-apps",
+    "title": "NASA International Space Apps Challenge",
+    "url": "https://www.spaceappschallenge.org/",
+    "kind": "Competition",
+    "discipline": "Space science and computing",
+    "description": "Global two-day hackathon using NASA and partner data to address problems on Earth and in space; projects compete for global awards.",
+    "eligibility": "All ages, skill levels and professional backgrounds welcome; register for a local or supported virtual event and consult minor participation requirements.",
+    "location": "Worldwide local events",
+    "priority": 3,
+    "edition": 2026,
+    "lifecycle": "announced",
+    "lifecycleEvidence": "Registration for the 2026 NASA Space Apps Challenge is open! Be a part of the largest annual global hackathon on November 14-15, 2026.",
+    "sourceUrls": [
+      "https://www.spaceappschallenge.org/"
+    ],
+    "milestones": [
+      {
+        "label": "Hackathon begins",
+        "date": "2026-11-14",
+        "kind": "event",
+        "timezone": null,
+        "evidence": "JOIN NASA SPACE APPS CHALLENGE NOVEMBER 14-15, 2026",
+        "url": "https://www.spaceappschallenge.org/"
+      },
+      {
+        "label": "Hackathon ends",
+        "date": "2026-11-15",
+        "kind": "event",
+        "timezone": null,
+        "evidence": "JOIN NASA SPACE APPS CHALLENGE NOVEMBER 14-15, 2026",
+        "url": "https://www.spaceappschallenge.org/"
+      }
+    ]
+  },
+  {
+    "id": "icbs-high-school-posters",
+    "title": "ICBS High School Poster Session",
+    "url": "https://www.yau-science-awards.org/bulletin/show-102054.html",
+    "kind": "Conference",
+    "discipline": "Mathematics, physics and computer science",
+    "description": "Selective high-school original-research poster session at the International Congress of Basic Sciences; up to 100 works selected for presentation.",
+    "eligibility": "School-nominated high-school students; up to five posters per school; original research in mathematics, physics, computer science or economic/financial modeling. Invitation addresses international schools; attached details also say nationwide, so overseas eligibility should be confirmed.",
+    "location": "Beijing, China",
+    "priority": 2,
+    "edition": 2026,
+    "lifecycle": "awaiting-announcement",
+    "lifecycleEvidence": "2026 HS Poster Session Invitation",
+    "sourceUrls": [
+      "https://www.yau-science-awards.org/bulletin/show-102054.html"
+    ],
+    "cost": "Selected first authors and leading teacher receive complimentary conference passes, lunch and dinner; school covers transportation and lodging.",
+    "milestones": [
+      {
+        "label": "Submission opens (2026)",
+        "date": "2026-05-12",
+        "kind": "opens",
+        "timezone": null,
+        "evidence": "Website submission opens: May 12, 2026",
+        "url": "https://www.yau-science-awards.org/bulletin/show-102054.html"
+      },
+      {
+        "label": "Poster submission deadline (2026)",
+        "date": "2026-07-20",
+        "kind": "deadline",
+        "timezone": null,
+        "evidence": "Submission deadline: July 20, 2026",
+        "url": "https://www.yau-science-awards.org/bulletin/show-102054.html"
+      },
+      {
+        "label": "Poster exhibition begins (2026)",
+        "date": "2026-08-19",
+        "kind": "event",
+        "timezone": null,
+        "evidence": "Poster exhibition: August 19 - August 21, 2026",
+        "url": "https://www.yau-science-awards.org/bulletin/show-102054.html"
+      },
+      {
+        "label": "Poster exhibition ends (2026)",
+        "date": "2026-08-21",
+        "kind": "event",
+        "timezone": null,
+        "evidence": "Poster exhibition: August 19 - August 21, 2026",
+        "url": "https://www.yau-science-awards.org/bulletin/show-102054.html"
+      }
+    ]
+  },
+  {
+    "id": "txsef",
+    "title": "Texas Science and Engineering Fair (TXSEF)",
+    "url": "https://txsef.tamu.edu/",
+    "kind": "Competition",
+    "discipline": "Original STEM research",
+    "description": "Texas state science and engineering fair for students advancing from affiliated regional fairs; an advanced research competition and ISEF qualification opportunity.",
+    "eligibility": "Students must first compete in a Texas regional fair and qualify for TXSEF. The state directory lists Fort Worth as the affiliated fair serving Tarrant County; home-school students may participate through regional fairs.",
+    "location": "Texas A&M University Student Recreation Center, College Station, Texas",
+    "priority": 4,
+    "edition": 2027,
+    "lifecycle": "announced",
+    "lifecycleEvidence": "2027 Texas Science and Engineering Fair | April 2–3, 2027",
+    "sourceUrls": [
+      "https://txsef.tamu.edu/",
+      "https://txsef.tamu.edu/faqs/",
+      "https://txsef.tamu.edu/texas-regional-fairs/"
+    ],
+    "cost": "$50 per student; school/district or parent/guardian may pay.",
+    "milestones": [
+      {
+        "label": "State fair begins",
+        "date": "2027-04-02",
+        "kind": "event",
+        "timezone": null,
+        "evidence": "2027 Texas Science and Engineering Fair | April 2–3, 2027",
+        "url": "https://txsef.tamu.edu/"
+      },
+      {
+        "label": "State fair concludes",
+        "date": "2027-04-03",
+        "kind": "event",
+        "timezone": null,
+        "evidence": "2027 Texas Science and Engineering Fair | April 2–3, 2027",
+        "url": "https://txsef.tamu.edu/"
+      }
+    ]
+  },
+  {
+    "id": "fort-worth-regional-science-fair",
+    "title": "Fort Worth Regional Science and Engineering Fair (FWRSEF)",
+    "url": "https://fwrsef.org/",
+    "kind": "Competition",
+    "discipline": "Original STEM research",
+    "description": "Regional science fair serving Tarrant County and neighboring counties, with advancement to TXSEF. Official past results include Martin High School and Martin STEM School participants.",
+    "eligibility": "Grades 6–12 in the fair region; an adult sponsor/representative handles registration. Organizer lists Cooke, Denton, Erath, Hood, Johnson, Palo Pinto, Parker, Somervell, Tarrant and Wise counties. TXSEF also lists Eastland, so confirm that county with the organizer. School-level SRC/IRB review and required project approvals apply.",
+    "location": "College Park Events Center, University of Texas at Arlington, Texas",
+    "priority": 4,
+    "edition": 2027,
+    "lifecycle": "announced",
+    "lifecycleEvidence": "Fort Worth Regional Science and Engineering Fair 2027",
+    "sourceUrls": [
+      "https://fwrsef.org/",
+      "https://txsef.tamu.edu/texas-regional-fairs/",
+      "https://www.aisd.net/district-news/maya-shah-honored-for-research/"
+    ],
+    "milestones": [
+      {
+        "label": "Registration opens",
+        "date": "2026-08-10",
+        "kind": "opens",
+        "timezone": null,
+        "evidence": "Registration Begins Monday, Aug. 10th 2026",
+        "url": "https://fwrsef.org/#fair-year-schedule-current-pane"
+      },
+      {
+        "label": "Local SRC approval deadline",
+        "date": "2026-12-11",
+        "kind": "deadline",
+        "timezone": null,
+        "evidence": "SRC Approval Deadline Friday, Dec. 11th 2026",
+        "url": "https://fwrsef.org/#fair-year-schedule-current-pane"
+      },
+      {
+        "label": "Regional registration deadline",
+        "date": "2027-01-21",
+        "kind": "deadline",
+        "timezone": null,
+        "evidence": "Registration Deadline Thursday, Jan. 21st 2027",
+        "url": "https://fwrsef.org/#fair-year-schedule-current-pane"
+      },
+      {
+        "label": "Project category deadline",
+        "date": "2027-01-28",
+        "kind": "deadline",
+        "timezone": null,
+        "evidence": "Category Selection Deadline Thursday, Jan. 28th 2027",
+        "url": "https://fwrsef.org/#fair-year-schedule-current-pane"
+      },
+      {
+        "label": "Digital assets submission deadline",
+        "date": "2027-02-18",
+        "kind": "deadline",
+        "timezone": null,
+        "evidence": "Assets Submission Deadline Thursday, Feb. 18th 2027",
+        "url": "https://fwrsef.org/#fair-year-schedule-current-pane"
+      },
+      {
+        "label": "Required setup day",
+        "date": "2027-02-28",
+        "kind": "event",
+        "timezone": null,
+        "evidence": "Setup Day Sunday, Feb. 28th 2027",
+        "url": "https://fwrsef.org/#fair-year-schedule-current-pane"
+      },
+      {
+        "label": "Regional fair day",
+        "date": "2027-03-01",
+        "kind": "event",
+        "timezone": null,
+        "evidence": "Fair Day Monday, Mar. 1st 2027",
+        "url": "https://fwrsef.org/#fair-year-schedule-current-pane"
+      }
+    ]
+  },
+  {
+    "id": "texas-jshs",
+    "title": "Texas Junior Science and Humanities Symposium",
+    "url": "https://www.jshs.org/region/texas/",
+    "kind": "Competition",
+    "discipline": "Original STEM research",
+    "description": "Texas regional symposium for presenting original research, competing for scholarships and advancing through the JSHS program. The official region page is preparing the 2026–27 cycle.",
+    "eligibility": "Grades 9–12 in public, private or home schools. All Texas high schools except those in the Trans-Pecos region or west of I-27, US-87 or I-20; those schools use Southwest JSHS. Consult the regional director if the boundary is unclear.",
+    "location": "Texas; 2026–27 regional host and venue not yet specified",
+    "priority": 4,
+    "edition": 2027,
+    "lifecycle": "awaiting-announcement",
+    "lifecycleEvidence": "Information and dates for 2026-27 regional events will be posted in the fall of 2026. Symposium dates: TBD Deadline for student applications: TBD",
+    "sourceUrls": [
+      "https://www.jshs.org/region/texas/",
+      "https://www.jshs.org/regional-competitions/core-rules-of-competition/"
+    ],
+    "cost": "There is no cost to register for or participate in a regional JSHS event.",
+    "milestones": []
+  }
+]

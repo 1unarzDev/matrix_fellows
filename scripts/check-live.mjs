@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { parse } from 'node-html-parser'
 import { officialProfiles } from '../workers/official-sources.ts'
+import { catalogSeeds } from '../workers/catalog.ts'
 import { opportunitySchema } from '../shared/utils/validation.ts'
 
 const origin = 'https://matrixfellows.com'
@@ -58,4 +59,10 @@ for (const profile of officialProfiles) {
     `${profile.id}: missing date evidence`,
   )
   console.log(`${profile.name}: published with source provenance`)
+}
+for (const { item: expected } of catalogSeeds) {
+  const item = opportunitySchema.parse(data.opportunities.find((item) => item.id === expected.id))
+  assert.equal(item.published, true)
+  assert.ok(item.monitoring, 'Annual monitoring health missing from public record')
+  console.log(`${item.title}: catalog + timeline + monitoring health OK`)
 }

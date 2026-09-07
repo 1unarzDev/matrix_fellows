@@ -32,6 +32,26 @@ const draft = ref<SiteContent>(JSON.parse(JSON.stringify(props.initialContent)))
 const listings = ref<Opportunity[]>([...props.opportunities])
 const sources = ref<Array<ImportSource & { last_run?: string; last_error?: string }>>([])
 const candidates = ref<Opportunity[]>([])
+const monitors = ref<
+  Array<{
+    id: string
+    url: string
+    seed: Opportunity
+    enabled: boolean
+    last_attempt_at: string | null
+    last_success_at: string | null
+    last_error: string | null
+    next_check_at: string
+  }>
+>([])
+async function toggleMonitor(id: string, enabled: boolean) {
+  if (!client) return
+  busy.value = true
+  const result = await client.from('opportunity_monitors').update({ enabled }).eq('id', id)
+  if (result.error) error.value = result.error.message
+  else await authorize()
+  busy.value = false
+}
 async function reviewCandidate(item: Opportunity, approve: boolean) {
   if (!client || !item.provenance) return
   busy.value = true
@@ -91,7 +111,7 @@ async function authorize() {
     error.value = 'This account does not have editing access.'
     return
   }
-  const [site, rows, feeds, proposals] = await Promise.all([
+  const [site, rows, feeds, proposals, monitoring] = await Promise.all([
     client.from('site_content').select('data,draft').eq('id', 'main').maybeSingle(),
     client.from('opportunities').select('*').order('updated_at', { ascending: false }),
     client.from('import_sources').select('*'),
@@ -100,9 +120,10 @@ async function authorize() {
       .select('data')
       .eq('status', 'pending')
       .order('fetched_at', { ascending: false }),
+    client.from('opportunity_monitors').select('*').order('id'),
   ])
   if (disposed) return
-  if (site.error || rows.error || feeds.error || proposals.error) {
+  if (site.error || rows.error || feeds.error || proposals.error || monitoring.error) {
     error.value = 'Could not load all editor data. Please retry.'
     return
   }
@@ -114,6 +135,7 @@ async function authorize() {
     published: row.published && !row.suppressed,
   }))
   sources.value = feeds.data || []
+  monitors.value = monitoring.data || []
   candidates.value = (proposals.data || []).flatMap((row) => {
     const parsed = opportunitySchema.safeParse(row.data)
     return parsed.success ? [parsed.data] : []
@@ -533,9 +555,59 @@ onBeforeUnmount(() => {
             </div>
             <div v-if="tab === 'Sources'" class="space-y-6">
               <p class="text-xs leading-relaxed text-paper/55">
-                Official sources are checked daily and propose dates for your approval below. Only
-                registered official URLs are supported. Trusted JSON / RSS feeds publish
-                automatically.
+                Annual monitors validate exact source evidence and automatically publish new facts
+                after two matching observations at least six hours apart. Failed checks preserve
+                confirmed information. Owner edits and hidden listings are never reset.
+              </p>
+              <section
+                v-if="monitors.length"
+                class="space-y-3"
+                aria-label="Annual opportunity monitors"
+              >
+                <h3 class="text-lg">Annual monitors · {{ monitors.length }}</h3>
+                <details
+                  v-for="monitor in monitors"
+                  :key="monitor.id"
+                  class="rounded-xl border border-paper/15 p-4 text-xs"
+                >
+                  <summary class="cursor-pointer leading-relaxed">
+                    {{ monitor.seed.title }}
+                    <span class="text-paper/45"
+                      >·
+                      {{
+                        !monitor.enabled
+                          ? 'Paused'
+                          : monitor.last_error
+                            ? 'Needs attention'
+                            : 'Monitoring'
+                      }}</span
+                    >
+                  </summary>
+                  <div class="mt-4 space-y-3 text-paper/55">
+                    <p>Last attempt: {{ monitor.last_attempt_at || 'Scheduled' }}</p>
+                    <p>Last confirmed: {{ monitor.last_success_at || 'Awaiting confirmation' }}</p>
+                    <p>Next check: {{ monitor.next_check_at }}</p>
+                    <p v-if="monitor.last_error" class="text-amber-200">{{ monitor.last_error }}</p>
+                    <a
+                      :href="monitor.url"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="block text-acid underline"
+                      >Official source ↗</a
+                    >
+                    <button
+                      :disabled="busy"
+                      class="rounded-full border border-paper/20 px-4 py-2 text-paper disabled:opacity-40"
+                      @click="toggleMonitor(monitor.id, !monitor.enabled)"
+                    >
+                      {{ monitor.enabled ? 'Pause monitor' : 'Resume monitor' }}
+                    </button>
+                  </div>
+                </details>
+              </section>
+              <p class="text-xs text-paper/45">
+                Legacy adapters below retain their original approval/curated-feed policies.
+                Edition-specific sources have been paused where annual monitors replace them.
               </p>
               <section
                 v-if="candidates.length"

@@ -1,0 +1,478 @@
+[
+  {
+    "id": "rsi",
+    "title": "Research Science Institute (RSI)",
+    "url": "https://www.cee.org/programs/research-science-institute",
+    "description": "Cost-free summer STEM coursework and mentored original research hosted at MIT.",
+    "eligibility": "High-school juniors / one year before graduation; US citizens and permanent residents apply directly; international selection depends on participating country.",
+    "discipline": "Multidisciplinary STEM",
+    "kind": "Program",
+    "edition": 2026,
+    "location": "MIT, Cambridge, Massachusetts, USA",
+    "priority": "high",
+    "lifecycle": "awaiting-announcement",
+    "lifecycleEvidence": "Applications for RSI 2026 are now closed. No late applications will be considered. No 2027 dates in inspected pages.",
+    "milestones": [],
+    "sourceUrls": [
+      "https://www.cee.org/programs/research-science-institute",
+      "https://www.cee.org/apply-rsi"
+    ]
+  },
+  {
+    "id": "ssp",
+    "title": "Summer Science Program",
+    "url": "https://ssp.org/",
+    "description": "Five-week residential team research in astrophysics, biochemistry, bacterial genomics or cell biology; need-blind admission and need-based support.",
+    "eligibility": "Current high-school juniors, ages 15–18 during program, with track-specific coursework; domestic and international applicants. Free at family income $75,000 or less assuming typical expenses/assets.",
+    "discipline": "Multidisciplinary STEM",
+    "kind": "Program",
+    "edition": 2026,
+    "location": "Multiple US university campuses",
+    "priority": "high",
+    "lifecycle": "awaiting-announcement",
+    "lifecycleEvidence": "Applications are now closed for Summer Science Program 2026. Interest form for 2027 exists; no exact 2027 dates announced.",
+    "milestones": [
+      {
+        "label": "Applications open (2026 cycle)",
+        "date": "2025-12-31",
+        "kind": "opens",
+        "evidence": "December 31, 2025: Applications Open",
+        "timezone": null,
+        "url": "https://ssp.org/application/"
+      },
+      {
+        "label": "International application deadline (2026 cycle)",
+        "date": "2026-01-29",
+        "kind": "deadline",
+        "evidence": "January 29, 2026: Deadline for international applications",
+        "timezone": null,
+        "url": "https://ssp.org/application/"
+      },
+      {
+        "label": "Domestic application deadline (2026 cycle)",
+        "date": "2026-02-19",
+        "kind": "deadline",
+        "evidence": "February 19, 2026: Deadline for domestic applications",
+        "timezone": null,
+        "url": "https://ssp.org/application/"
+      }
+    ],
+    "sourceUrls": [
+      "https://ssp.org/",
+      "https://ssp.org/application/",
+      "https://ssp.org/getting-started/"
+    ]
+  },
+  {
+    "id": "mit-primes-usa",
+    "title": "MIT PRIMES-USA",
+    "url": "https://math.mit.edu/research/highschool/primes/usa/",
+    "description": "Free, year-long mentored mathematics research, including theoretical computer science and computational biology.",
+    "eligibility": "US-resident high-school sophomores and juniors outside Greater Boston; local students use MIT PRIMES. Advanced mathematical preparation expected.",
+    "discipline": "Mathematics",
+    "kind": "Program",
+    "edition": 2027,
+    "location": "Remote, United States outside Greater Boston",
+    "priority": "high",
+    "lifecycle": "awaiting-announcement",
+    "lifecycleEvidence": "An application link for the 2027 cycle will appear on this page in September 2026. Exact opening day and 2027 deadline not yet published.",
+    "milestones": [],
+    "sourceUrls": [
+      "https://math.mit.edu/research/highschool/primes/usa/",
+      "https://math.mit.edu/research/highschool/primes/usa/apply-usa.html"
+    ]
+  },
+  {
+    "id": "stanford-simr",
+    "title": "Stanford Institutes of Medicine Summer Research (SIMR)",
+    "url": "https://simr.stanford.edu/",
+    "description": "Eight-week medically oriented research with Stanford faculty and researchers.",
+    "eligibility": "Juniors or seniors as of fall 2026 (graduating 2027 or 2028), age 16+ by program start; living and attending high school in US; US citizen or permanent resident; strong Bay Area preference.",
+    "discipline": "Biomedical science",
+    "kind": "Program",
+    "edition": 2027,
+    "location": "Stanford, California, USA",
+    "priority": "high",
+    "lifecycle": "announced",
+    "lifecycleEvidence": "SUMMER 2027 UPDATE lists tentative June 7–July 29, 2027 program dates, Dec. 18th, 2026 at 5pm PST application availability, and late February 2027 deadline without a day. Opening sentence says 'was available' despite future date; verify before automated alert.",
+    "milestones": [
+      {
+        "label": "Applications available (source wording needs review)",
+        "date": "2026-12-18",
+        "kind": "opens",
+        "evidence": "The online application and program information document was available on our website on Dec. 18th, 2026 (at 5pm PST).",
+        "timezone": "PST",
+        "url": "https://simr.stanford.edu/"
+      },
+      {
+        "label": "Program begins (tentative)",
+        "date": "2027-06-07",
+        "kind": "event",
+        "evidence": "Summer 2027 Program TENTATIVE Dates: June 7- July 29, 2027 (8 weeks)",
+        "timezone": null,
+        "url": "https://simr.stanford.edu/"
+      },
+      {
+        "label": "Program ends (tentative)",
+        "date": "2027-07-29",
+        "kind": "event",
+        "evidence": "Summer 2027 Program TENTATIVE Dates: June 7- July 29, 2027 (8 weeks)",
+        "timezone": null,
+        "url": "https://simr.stanford.edu/"
+      }
+    ],
+    "sourceUrls": [
+      "https://simr.stanford.edu/"
+    ]
+  },
+  {
+    "id": "simons-summer-research",
+    "title": "Simons Summer Research Program",
+    "url": "https://www.stonybrook.edu/commcms/simons/",
+    "description": "Faculty-mentored research in science, mathematics and engineering at Stony Brook.",
+    "eligibility": "Grade 11 at application; US citizens/permanent residents; age 16+ at start. School nomination required, maximum two nominees per school.",
+    "discipline": "Multidisciplinary STEM",
+    "kind": "Program",
+    "edition": 2026,
+    "location": "Stony Brook, New York, USA",
+    "priority": "high",
+    "lifecycle": "awaiting-announcement",
+    "lifecycleEvidence": "Homepage says Applications for SimonsSRP 2026 are closed; latest guidelines are 2026. No 2027 dates found.",
+    "milestones": [
+      {
+        "label": "School nomination deadline (2026 cycle)",
+        "date": "2026-01-30",
+        "kind": "deadline",
+        "evidence": "School nomination deadline: January 30, 2026",
+        "timezone": null,
+        "url": "https://www.stonybrook.edu/commcms/simons/applying_to/how-to-apply.php"
+      },
+      {
+        "label": "Application deadline (2026 cycle)",
+        "date": "2026-02-05",
+        "kind": "deadline",
+        "evidence": "Application deadline: FEBRUARY 5, 2026 (11:59 PM EST)",
+        "timezone": "EST",
+        "url": "https://www.stonybrook.edu/commcms/simons/applying_to/how-to-apply.php"
+      },
+      {
+        "label": "Recommendations deadline (2026 cycle)",
+        "date": "2026-02-13",
+        "kind": "deadline",
+        "evidence": "Letter of Recommendation deadline: FEBRUARY 13, 2026 (11:59 PM EST)",
+        "timezone": "EST",
+        "url": "https://www.stonybrook.edu/commcms/simons/applying_to/how-to-apply.php"
+      },
+      {
+        "label": "Admissions results (2026 cycle)",
+        "date": "2026-03-11",
+        "kind": "results",
+        "evidence": "All applicants were notified of their admissions status at 6pm on March 11,2026!",
+        "timezone": null,
+        "url": "https://www.stonybrook.edu/commcms/simons/applying_to/how-to-apply.php"
+      },
+      {
+        "label": "Program begins (2026 cycle)",
+        "date": "2026-06-29",
+        "kind": "event",
+        "evidence": "Dates of Program: June 29 - August 7, 2026",
+        "timezone": null,
+        "url": "https://www.stonybrook.edu/commcms/simons/applying_to/how-to-apply.php"
+      },
+      {
+        "label": "Program ends (2026 cycle)",
+        "date": "2026-08-07",
+        "kind": "event",
+        "evidence": "Dates of Program: June 29 - August 7, 2026",
+        "timezone": null,
+        "url": "https://www.stonybrook.edu/commcms/simons/applying_to/how-to-apply.php"
+      }
+    ],
+    "sourceUrls": [
+      "https://www.stonybrook.edu/commcms/simons/",
+      "https://www.stonybrook.edu/commcms/simons/applying_to/how-to-apply.php"
+    ]
+  },
+  {
+    "id": "rockefeller-ssrp",
+    "title": "Rockefeller Summer Science Research Program",
+    "url": "https://www.rockefeller.edu/outreach/ssrp/",
+    "description": "Team-based, mentored laboratory research at Rockefeller University; full-time seven-week commitment.",
+    "eligibility": "Current high-school juniors/seniors, age 16+ at program start. Research from SSRP may not be submitted to science competitions.",
+    "discipline": "Biomedical science",
+    "kind": "Program",
+    "edition": 2026,
+    "location": "New York City, New York, USA",
+    "priority": "high",
+    "lifecycle": "awaiting-announcement",
+    "lifecycleEvidence": "Applications for SSRP 2026 are closed. No 2027 calendar in inspected source.",
+    "milestones": [
+      {
+        "label": "Application deadline (2026 cycle)",
+        "date": "2026-01-02",
+        "kind": "deadline",
+        "evidence": "Applications are due on Friday, January 2, 2026 at 11:59pm Eastern Time.",
+        "timezone": "Eastern Time",
+        "url": "https://www.rockefeller.edu/outreach/ssrp/"
+      },
+      {
+        "label": "Recommendation deadline (2026 cycle)",
+        "date": "2026-01-05",
+        "kind": "deadline",
+        "evidence": "Letters of Recommendation are due on Monday, January 5, 2026.",
+        "timezone": null,
+        "url": "https://www.rockefeller.edu/outreach/ssrp/"
+      },
+      {
+        "label": "Program begins (2026 cycle)",
+        "date": "2026-06-22",
+        "kind": "event",
+        "evidence": "Monday, June 22 – Thursday, August 6, 2026",
+        "timezone": null,
+        "url": "https://www.rockefeller.edu/outreach/ssrp/"
+      },
+      {
+        "label": "Program ends (2026 cycle)",
+        "date": "2026-08-06",
+        "kind": "event",
+        "evidence": "Monday, June 22 – Thursday, August 6, 2026",
+        "timezone": null,
+        "url": "https://www.rockefeller.edu/outreach/ssrp/"
+      }
+    ],
+    "sourceUrls": [
+      "https://www.rockefeller.edu/outreach/ssrp/"
+    ]
+  },
+  {
+    "id": "bu-rise",
+    "title": "Boston University RISE Internship / Practicum",
+    "url": "https://www.bu.edu/summer/high-school-programs/rise-internship-practicum/",
+    "description": "Six weeks of university research: mentored internship or structured computational neurobiology/data-science practicum.",
+    "eligibility": "Domestic students currently in junior year of high school; residential and commuter options. Tuition not verified in this source.",
+    "discipline": "Multidisciplinary STEM",
+    "kind": "Program",
+    "edition": 2026,
+    "location": "Boston, Massachusetts, USA",
+    "priority": "high",
+    "lifecycle": "awaiting-announcement",
+    "lifecycleEvidence": "The 2026 session of RISE was a great success. Please check back on December 17 for details about next summer’s program and to submit an application. December 17 lacks explicit year; not emitted as exact opening.",
+    "milestones": [
+      {
+        "label": "Residential program begins (2026 cycle)",
+        "date": "2026-06-28",
+        "kind": "event",
+        "evidence": "2026 RISE calendar: Residential begins June 28",
+        "timezone": null,
+        "url": "https://www.bu.edu/summer/high-school-programs/rise-internship-practicum/"
+      },
+      {
+        "label": "Program ends (2026 cycle)",
+        "date": "2026-08-07",
+        "kind": "event",
+        "evidence": "2026 RISE calendar: Residential ends August 7; Commuter ends August 7",
+        "timezone": null,
+        "url": "https://www.bu.edu/summer/high-school-programs/rise-internship-practicum/"
+      }
+    ],
+    "sourceUrls": [
+      "https://www.bu.edu/summer/high-school-programs/rise-internship-practicum/"
+    ]
+  },
+  {
+    "id": "garcia-research",
+    "title": "Garcia Research Scholars Program",
+    "url": "https://www.stonybrook.edu/garcia/summer-program/",
+    "description": "Interdisciplinary materials and polymer-interface research; students may develop work for Materials Research Society abstracts.",
+    "eligibility": "2026 high-school applicants age 16 by July 4, GPA 3.8/4.0, test scores at least 60th percentile and subject requirements. International students with legal US presence accepted; no visa support. 2026 lab fee $4,000 excludes room/board; $50 registration.",
+    "discipline": "Materials science",
+    "kind": "Program",
+    "edition": 2026,
+    "location": "Stony Brook, New York, USA",
+    "priority": "high",
+    "lifecycle": "awaiting-announcement",
+    "lifecycleEvidence": "Summer Research Program - 2026 June 24 – August 7; Applications Closed. No 2027 dates found.",
+    "milestones": [
+      {
+        "label": "Program begins (2026 cycle)",
+        "date": "2026-06-24",
+        "kind": "event",
+        "evidence": "Summer Research Program - 2026 June 24 – August 7",
+        "timezone": null,
+        "url": "https://www.stonybrook.edu/garcia/summer-program/apply.html"
+      },
+      {
+        "label": "Program ends (2026 cycle)",
+        "date": "2026-08-07",
+        "kind": "event",
+        "evidence": "Summer Research Program - 2026 June 24 – August 7",
+        "timezone": null,
+        "url": "https://www.stonybrook.edu/garcia/summer-program/apply.html"
+      }
+    ],
+    "sourceUrls": [
+      "https://www.stonybrook.edu/garcia/summer-program/",
+      "https://www.stonybrook.edu/garcia/summer-program/apply.html",
+      "https://www.stonybrook.edu/garcia/summer-program/eligibility.html"
+    ]
+  },
+  {
+    "id": "nasa-sees",
+    "title": "NASA / UT Austin SEES Internship",
+    "url": "https://www.csr.utexas.edu/sees-internship/",
+    "description": "Mission-data research with NASA, academic and industry experts, with on-site and virtual projects.",
+    "eligibility": "Current high-school sophomores/juniors, first-time SEES interns, US citizens, age 16 by July 5, 2026. Scholarship and fee-based on-site places; limited travel scholarships.",
+    "discipline": "Earth and space science",
+    "kind": "Program",
+    "edition": 2026,
+    "location": "Austin, Texas, USA / virtual",
+    "priority": "high",
+    "lifecycle": "awaiting-announcement",
+    "lifecycleEvidence": "SEES notification emails have been sent to all applicants. Latest cycle 2026; continuation and expansion explicitly contingent on future funding.",
+    "milestones": [
+      {
+        "label": "Application deadline (2026 cycle)",
+        "date": "2026-02-22",
+        "kind": "deadline",
+        "evidence": "SEES APPLICATION DEADLINE: FEBRUARY 22, 2026 at 8:00 pm PT",
+        "timezone": "PT",
+        "url": "https://www.csr.utexas.edu/sees-internship/"
+      },
+      {
+        "label": "On-site program begins (2026 cycle)",
+        "date": "2026-07-05",
+        "kind": "event",
+        "evidence": "The on-site internship will be July 5 – July 18, 2026.",
+        "timezone": null,
+        "url": "https://www.csr.utexas.edu/sees-internship/"
+      },
+      {
+        "label": "On-site program ends (2026 cycle)",
+        "date": "2026-07-18",
+        "kind": "event",
+        "evidence": "The on-site internship will be July 5 – July 18, 2026.",
+        "timezone": null,
+        "url": "https://www.csr.utexas.edu/sees-internship/"
+      },
+      {
+        "label": "Virtual Science Symposium begins (2026 cycle)",
+        "date": "2026-07-20",
+        "kind": "event",
+        "evidence": "Virtual SEES Science Symposium July 20-21, 2026.",
+        "timezone": null,
+        "url": "https://www.csr.utexas.edu/sees-internship/"
+      }
+    ],
+    "sourceUrls": [
+      "https://www.csr.utexas.edu/sees-internship/",
+      "https://www.csr.utexas.edu/education-outreach/high-school-internships/sees/eligibility/"
+    ]
+  },
+  {
+    "id": "promys",
+    "title": "PROMYS",
+    "url": "https://promys.org/programs/promys/for-students/",
+    "description": "Six-week residential mathematical exploration at Boston University with proof-based problem solving.",
+    "eligibility": "Worldwide students ages 14–18, completed grade 9, not yet full-time university students. Free for domestic families under $80,000; international aid case-by-case; 2026 fee up to $8,000.",
+    "discipline": "Mathematics",
+    "kind": "Program",
+    "edition": 2027,
+    "location": "Boston University, Massachusetts, USA",
+    "priority": "high",
+    "lifecycle": "announced",
+    "lifecycleEvidence": "PROMYS 2027: June 27 – August 7, 2027. Application Deadline: end of February 2027 TBD; Admissions Decisions: end of April 2027 TBD. No exact deadline/result day.",
+    "milestones": [
+      {
+        "label": "Program begins",
+        "date": "2027-06-27",
+        "kind": "event",
+        "evidence": "PROMYS 2027: June 27 – August 7, 2027",
+        "timezone": null,
+        "url": "https://promys.org/programs/promys/for-students/"
+      },
+      {
+        "label": "Program ends",
+        "date": "2027-08-07",
+        "kind": "event",
+        "evidence": "PROMYS 2027: June 27 – August 7, 2027",
+        "timezone": null,
+        "url": "https://promys.org/programs/promys/for-students/"
+      }
+    ],
+    "sourceUrls": [
+      "https://promys.org/programs/promys/for-students/"
+    ]
+  },
+  {
+    "id": "ross-mathematics",
+    "title": "Ross Mathematics Program",
+    "url": "https://rossprogram.org/",
+    "description": "Six-week residential immersion in number theory and rigorous proof; preparation for independent mathematical research.",
+    "eligibility": "Pre-college students, first-year participants usually 15–18 with rare age exceptions. 2026 fee $7,500 includes tuition, housing and meals; need-based aid available.",
+    "discipline": "Mathematics",
+    "kind": "Program",
+    "edition": 2026,
+    "location": "Otterbein University, Ohio / Rose-Hulman, Indiana, USA",
+    "priority": "high",
+    "lifecycle": "awaiting-announcement",
+    "lifecycleEvidence": "Official application page says applications for Summer 2026 closed; participants page lists June 14–July 24, 2026. No 2027 dates announced.",
+    "milestones": [
+      {
+        "label": "Program begins (2026 cycle)",
+        "date": "2026-06-14",
+        "kind": "event",
+        "evidence": "Otterbein University ... June 14 through July 24, 2026, and ... Rose-Hulman ... June 14 through July 24, 2026.",
+        "timezone": null,
+        "url": "https://rossprogram.org/participants/"
+      },
+      {
+        "label": "Program ends (2026 cycle)",
+        "date": "2026-07-24",
+        "kind": "event",
+        "evidence": "Otterbein University ... June 14 through July 24, 2026, and ... Rose-Hulman ... June 14 through July 24, 2026.",
+        "timezone": null,
+        "url": "https://rossprogram.org/participants/"
+      }
+    ],
+    "sourceUrls": [
+      "https://rossprogram.org/",
+      "https://rossprogram.org/participants/",
+      "https://rossprogram.org/participants/application/"
+    ]
+  },
+  {
+    "id": "nyas-junior-academy",
+    "title": "New York Academy of Sciences Junior Academy",
+    "url": "https://www.nyas.org/learning/high-school-research-programs/the-junior-academy/",
+    "description": "Free virtual international STEM innovation challenges, team research and access to mentors through Launchpad.",
+    "eligibility": "Worldwide ages 13–17 with English proficiency and guardian consent; 3–4 hours weekly during challenges. Students cannot participate after turning 18.",
+    "discipline": "Multidisciplinary STEM",
+    "kind": "Program",
+    "edition": 2026,
+    "location": "Virtual, worldwide",
+    "priority": "high",
+    "lifecycle": "awaiting-announcement",
+    "lifecycleEvidence": "Fall 2026 student recruitment is closed. Main application section says July 9, 2026; FAQ says July 2, 2026, so conflicting close date withheld. No exact next intake dates announced.",
+    "milestones": [
+      {
+        "label": "Student applications open (Fall 2026)",
+        "date": "2026-04-01",
+        "kind": "opens",
+        "evidence": "Fall of 2026 opened on April 1, 2026",
+        "timezone": null,
+        "url": "https://www.nyas.org/learning/high-school-research-programs/the-junior-academy/"
+      },
+      {
+        "label": "Admissions decisions (Fall 2026)",
+        "date": "2026-08-31",
+        "kind": "results",
+        "evidence": "Admission decisions for the Fall 2026 recruitment period will be sent out on August 31, 2026.",
+        "timezone": null,
+        "url": "https://www.nyas.org/learning/high-school-research-programs/the-junior-academy/"
+      }
+    ],
+    "sourceUrls": [
+      "https://www.nyas.org/learning/high-school-research-programs/the-junior-academy/"
+    ]
+  }
+]

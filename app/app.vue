@@ -653,14 +653,10 @@ onBeforeUnmount(() => {
         <div class="grid min-w-0 grid-rows-[auto_minmax(44px,auto)_auto]">
           <h3 class="text-xs font-medium text-paper/85">Get in touch</h3>
           <a
-            v-if="content.links.contact"
-            :href="content.links.contact"
-            class="tactile inline-flex min-h-11 w-fit items-center gap-2 py-2 text-[11px] text-paper/75 hover:text-acid"
-            >Contact us <SiteIcon :size="14"
-          /></a>
-          <p v-else class="flex min-h-11 items-center py-2 text-[11px] leading-4 text-paper/45">
-            Contact coming soon.
-          </p>
+            href="mailto:contact@matrixfellows.com"
+            class="tactile inline-flex min-h-11 max-w-full items-center py-2 text-[11px] text-paper/75 hover:text-acid"
+            ><span class="[overflow-wrap:anywhere]">contact@matrixfellows.com</span></a
+          >
           <a
             href="#community"
             class="tactile flex min-h-11 w-fit items-center gap-2 py-2 text-[11px] text-paper/65 hover:text-paper"

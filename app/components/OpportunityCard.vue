@@ -60,9 +60,9 @@ onMounted(() => {
 <template>
   <article
     :aria-labelledby="`${id}-title`"
-    class="min-w-0 overflow-hidden rounded-2xl border border-paper/15 bg-paper/[.015] transition-[border-color,background-color,box-shadow] duration-1000 ease-[cubic-bezier(.22,1,.36,1)] hover:border-paper/30 hover:bg-paper/[.025] hover:shadow-[0_16px_48px_#00000012] motion-reduce:transition-none"
+    class="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-paper/15 bg-paper/[.015] transition-[border-color,background-color,box-shadow] duration-1000 ease-[cubic-bezier(.22,1,.36,1)] hover:border-paper/30 hover:bg-paper/[.025] hover:shadow-[0_16px_48px_#00000012] motion-reduce:transition-none"
   >
-    <div class="p-6 sm:p-7">
+    <div class="flex-1 p-6 sm:p-7">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <span class="text-[9px] uppercase tracking-[.16em] text-paper/55"
           >{{ item.kind }}
@@ -103,7 +103,7 @@ onMounted(() => {
       </details>
     </div>
     <div class="border-t border-paper/10">
-      <div class="flex items-center justify-between gap-3 px-6 pt-5 sm:px-7">
+      <div class="flex min-h-14 items-center justify-between gap-3 px-6 pt-5 sm:px-7">
         <p class="text-[9px] uppercase tracking-[.16em] text-paper/40">
           The timeline
           <span v-if="timeline.length" class="ml-2 text-paper/25"
@@ -136,7 +136,7 @@ onMounted(() => {
         ref="rail"
         role="tablist"
         :aria-label="`${item.title} checkpoints`"
-        class="relative mt-4 flex snap-x snap-proximity overflow-x-auto overscroll-x-contain px-6 pb-3 [scrollbar-width:thin] [scrollbar-color:var(--color-acid)_transparent] sm:px-7"
+        class="relative mt-4 flex snap-x snap-proximity overflow-x-auto overscroll-x-contain px-6 pb-3 [scrollbar-width:thin] [scrollbar-color:var(--color-acid)_transparent] [mask-image:linear-gradient(to_right,transparent,black_20px,black_calc(100%-20px),transparent)] sm:px-7"
         @keydown="keyboard"
       >
         <button
@@ -148,12 +148,17 @@ onMounted(() => {
           :aria-selected="selected === index"
           :aria-controls="`${id}-panel`"
           :tabindex="selected === index ? 0 : -1"
-          class="group relative w-40 shrink-0 snap-center pb-2 pr-5 pt-2 text-left focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-acid"
+          class="group relative flex w-40 shrink-0 snap-center flex-col items-start justify-start pb-2 pr-5 pt-2 text-left focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-acid"
           @click="select(index)"
         >
-          <span class="absolute left-0 right-0 top-[13px] h-px bg-paper/15" aria-hidden="true" />
           <span
-            class="relative block h-3 w-3 rounded-full border transition-[background-color,border-color,box-shadow] duration-700 motion-reduce:transition-none"
+            data-timeline-line
+            class="absolute left-[6px] right-[-6px] top-[14px] h-px -translate-y-1/2 bg-paper/15 group-last:right-5 group-last:bg-transparent group-last:bg-linear-to-r group-last:from-paper/15 group-last:to-transparent"
+            aria-hidden="true"
+          />
+          <span
+            data-timeline-dot
+            class="relative block h-3 w-3 shrink-0 rounded-full border transition-[background-color,border-color,box-shadow] duration-700 motion-reduce:transition-none"
             :class="
               selected === index
                 ? 'border-acid bg-acid shadow-[0_0_18px_#d4f57130]'
@@ -224,8 +229,8 @@ onMounted(() => {
                 target="_blank"
                 rel="noopener noreferrer"
                 class="mt-2 inline-block text-acid underline underline-offset-4"
-                >View checkpoint source <SiteIcon :size="13" class="ml-1 inline-block" /></a
-              >
+                >View checkpoint source <SiteIcon :size="13" class="ml-1 inline-block"
+              /></a>
             </details>
           </div>
           <div v-else key="unannounced">

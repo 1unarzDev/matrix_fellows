@@ -90,8 +90,14 @@ test('catalog pagination, search, and status/type filters retain past editions',
   await openBoard(page)
   const board = page.locator('section[aria-labelledby="opportunities-title"]')
   await expect(board.getByRole('article')).toHaveCount(6)
-  await board.getByRole('button', { name: /Show 6 more/ }).click()
-  await expect(board.getByRole('article')).toHaveCount(12)
+  await board.getByRole('button', { name: 'Opportunity page 2', exact: true }).click()
+  await expect(
+    board.getByRole('button', { name: 'Opportunity page 2', exact: true }),
+  ).toHaveAttribute('aria-current', 'page')
+  await expect(board.getByRole('article')).toHaveCount(6)
+  await board.getByRole('button', { name: 'View all opportunities', exact: true }).click()
+  await expect(board.getByRole('article')).toHaveCount(32)
+  await board.getByRole('button', { name: 'Browse by page', exact: true }).click()
   await page.getByRole('searchbox').fill('Research opening 32')
   await expect(board.getByRole('article')).toHaveCount(1)
   await expect(card(page, 'Research opening 32')).toBeVisible()
@@ -117,6 +123,14 @@ test('timeline selects the next date, exposes evidence, and supports buttons and
   const selected = first.getByRole('tab', { selected: true })
   await expect(selected).toContainText('Checkpoint 4')
   await expect(selected).toContainText('Up next')
+  const centers = await first.getByRole('tab').evaluateAll((tabs) =>
+    tabs.map((tab) => {
+      const dot = tab.querySelector('[data-timeline-dot]')!.getBoundingClientRect()
+      const line = tab.querySelector('[data-timeline-line]')!.getBoundingClientRect()
+      return Math.abs(dot.y + dot.height / 2 - line.y - line.height / 2)
+    }),
+  )
+  expect(Math.max(...centers)).toBeLessThan(1)
   await expect(first.getByRole('tabpanel')).toContainText('Checkpoint 4')
   await first.getByRole('button', { name: 'Previous checkpoint' }).click()
   await expect(selected).toContainText('Checkpoint 3')
@@ -144,6 +158,29 @@ test('timeline selects the next date, exposes evidence, and supports buttons and
   await expect(first.getByRole('tabpanel')).toContainText('Date only')
 })
 
+test('paired cards align and filter changes have a deliberate transition', async ({
+  page,
+}, info) => {
+  await openBoard(page)
+  const board = page.locator('section[aria-labelledby="opportunities-title"]')
+  if (info.project.name === 'desktop') {
+    const boxes = await board.getByRole('article').evaluateAll((items) =>
+      items.slice(0, 2).map((item) => {
+        const box = item.getBoundingClientRect()
+        return { top: box.top, bottom: box.bottom }
+      }),
+    )
+    expect(Math.abs(boxes[0]!.top - boxes[1]!.top)).toBeLessThan(1)
+    expect(Math.abs(boxes[0]!.bottom - boxes[1]!.bottom)).toBeLessThan(1)
+  }
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await page.getByRole('button', { name: 'Opportunity type: All types' }).click()
+  await page.getByRole('option', { name: 'Workshop', exact: true }).click()
+  await expect(board.locator('.opacity-0').first()).toBeAttached()
+  await expect(board.getByRole('article').first()).toContainText('Research opening 05')
+  await expect(board.getByRole('article').first().locator('..')).toHaveCSS('opacity', '1')
+})
+
 test('past-only and unannounced timelines remain readable', async ({ page }) => {
   await openBoard(page)
   const archived = card(page, 'Archived research edition')
@@ -162,6 +199,14 @@ test('narrow viewport confines horizontal scrolling and honors reduced motion', 
   await page.setViewportSize({ width: 390, height: 844 })
   await openBoard(page)
   const first = card(page)
+  const typeBox = await page
+    .getByRole('button', { name: 'Opportunity type: All types' })
+    .boundingBox()
+  const statusBox = await page
+    .getByRole('button', { name: 'Opportunity status: All statuses' })
+    .boundingBox()
+  expect(Math.abs(typeBox!.y - statusBox!.y)).toBeLessThan(1)
+  expect(statusBox!.x).toBeGreaterThan(typeBox!.x)
   const rail = first.getByRole('tablist')
   expect(await rail.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true)
   expect(await rail.evaluate((el) => el.scrollLeft)).toBeGreaterThan(0)

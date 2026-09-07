@@ -69,16 +69,16 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', outside))
       aria-haspopup="listbox"
       :aria-expanded="open"
       :aria-controls="id"
-      class="tactile flex w-full items-center justify-between gap-5 rounded-xl border border-paper/15 bg-paper/[.025] px-4 py-3.5 text-left text-sm text-paper/85 hover:border-acid/45 hover:bg-paper/5"
+      class="tactile flex w-full items-center justify-between gap-2 rounded-xl border border-paper/15 bg-paper/[.025] px-3 py-3.5 text-left text-xs text-paper/85 hover:border-acid/45 hover:bg-paper/5 sm:px-4 sm:text-sm"
       @click="open ? close() : show()"
       @keydown.down.prevent="show"
       @keydown.up.prevent="show"
     >
-      {{ modelValue }}
+      <span class="min-w-0 truncate">{{ modelValue }}</span>
       <SiteIcon
         name="down"
         :size="14"
-        class="text-acid transition-transform duration-300 motion-reduce:transition-none"
+        class="shrink-0 text-acid transition-transform duration-500 motion-reduce:transition-none"
         :class="open ? 'rotate-180' : ''"
       />
     </button>

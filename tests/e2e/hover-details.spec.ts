@@ -1,5 +1,18 @@
 import { test, expect } from '@playwright/test'
 
+test('hover gestures use slow easing without delaying interaction', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop')
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await page.goto('/#community')
+  const dot = page.locator('[data-timeline-dot]').first()
+  await expect(dot).toHaveCSS('transition-duration', '2s')
+  await expect(dot).toHaveCSS('transition-timing-function', 'cubic-bezier(0.45, 0, 0.25, 1)')
+  await expect(dot).toHaveCSS('transition-delay', '0s')
+  const orbit = page.locator('[data-hero-detail] ellipse')
+  await expect(orbit).toHaveCSS('transition-duration', '2.4s')
+  await expect(orbit).toHaveCSS('transition-timing-function', 'cubic-bezier(0.45, 0, 0.25, 1)')
+})
+
 test('unexplored marker draws an orbit on hover and returns cleanly', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop')
   await page.emulateMedia({ reducedMotion: 'reduce' })

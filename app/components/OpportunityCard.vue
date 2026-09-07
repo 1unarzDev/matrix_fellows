@@ -120,7 +120,7 @@ onMounted(() => {
             type="button"
             aria-label="Previous checkpoint"
             :disabled="selected <= 0"
-            class="flex h-9 w-9 items-center justify-center rounded-full border border-paper/15 text-paper/65 transition-colors duration-700 hover:border-acid/50 hover:text-acid focus-visible:outline-2 focus-visible:outline-acid disabled:cursor-default disabled:opacity-20 motion-reduce:transition-none"
+            class="flex h-9 w-9 items-center justify-center rounded-full border border-paper/15 text-paper/65 transition-colors duration-[1800ms] ease-[cubic-bezier(.45,0,.25,1)] hover:border-acid/50 hover:text-acid focus-visible:outline-2 focus-visible:outline-acid disabled:cursor-default disabled:opacity-20 motion-reduce:transition-none"
             @click="select(selected - 1)"
           >
             <SiteIcon name="right" :size="16" class="rotate-180" />
@@ -129,7 +129,7 @@ onMounted(() => {
             type="button"
             aria-label="Next checkpoint"
             :disabled="selected >= timeline.length - 1"
-            class="flex h-9 w-9 items-center justify-center rounded-full border border-paper/15 text-paper/65 transition-colors duration-700 hover:border-acid/50 hover:text-acid focus-visible:outline-2 focus-visible:outline-acid disabled:cursor-default disabled:opacity-20 motion-reduce:transition-none"
+            class="flex h-9 w-9 items-center justify-center rounded-full border border-paper/15 text-paper/65 transition-colors duration-[1800ms] ease-[cubic-bezier(.45,0,.25,1)] hover:border-acid/50 hover:text-acid focus-visible:outline-2 focus-visible:outline-acid disabled:cursor-default disabled:opacity-20 motion-reduce:transition-none"
             @click="select(selected + 1)"
           >
             <SiteIcon name="right" :size="16" />
@@ -158,12 +158,12 @@ onMounted(() => {
         >
           <span
             data-timeline-line
-            class="absolute left-[18px] right-[-18px] top-[14px] h-px -translate-y-1/2 bg-paper/15 transition-colors duration-1000 group-hover:bg-acid/25 group-focus-visible:bg-acid/25 group-last:right-5 group-last:bg-transparent group-last:bg-linear-to-r group-last:from-paper/15 group-last:to-transparent motion-reduce:transition-none"
+            class="absolute left-[18px] right-[-18px] top-[14px] h-px -translate-y-1/2 bg-paper/15 transition-colors duration-[2000ms] ease-[cubic-bezier(.45,0,.25,1)] group-hover:bg-acid/25 group-focus-visible:bg-acid/25 group-last:right-5 group-last:bg-transparent group-last:bg-linear-to-r group-last:from-paper/15 group-last:to-transparent motion-reduce:transition-none"
             aria-hidden="true"
           />
           <span
             data-timeline-dot
-            class="relative block h-3 w-3 shrink-0 rounded-full border transition-[transform,background-color,border-color,box-shadow] duration-1000 ease-[cubic-bezier(.4,0,.2,1)] group-hover:scale-[1.18] group-hover:shadow-[0_0_16px_color-mix(in_srgb,var(--color-acid)_25%,transparent)] group-focus-visible:scale-[1.18] motion-reduce:transform-none motion-reduce:transition-none"
+            class="relative block h-3 w-3 shrink-0 rounded-full border transition-[transform,background-color,border-color,box-shadow] duration-[2000ms] ease-[cubic-bezier(.45,0,.25,1)] group-hover:scale-[1.10] group-hover:shadow-[0_0_16px_color-mix(in_srgb,var(--color-acid)_25%,transparent)] group-focus-visible:scale-[1.10] motion-reduce:transform-none motion-reduce:transition-none"
             :class="
               selected === index
                 ? 'border-acid bg-acid shadow-[0_0_14px_color-mix(in_srgb,var(--color-acid)_20%,transparent)]'
@@ -185,12 +185,12 @@ onMounted(() => {
             }}</span
           >
           <span
-            class="mt-1 block text-xs transition-[color,transform] duration-1000 ease-[cubic-bezier(.4,0,.2,1)] group-hover:translate-x-0.5 group-hover:text-acid group-focus-visible:text-acid motion-reduce:transform-none motion-reduce:transition-none"
+            class="mt-1 block text-xs transition-[color,transform] duration-[2000ms] ease-[cubic-bezier(.45,0,.25,1)] group-hover:translate-x-0.5 group-hover:text-acid group-focus-visible:text-acid motion-reduce:transform-none motion-reduce:transition-none"
             :class="selected === index ? 'text-paper' : 'text-paper/45'"
             >{{ displayDate(milestone.date, milestone.timezone || 'UTC') }}</span
           >
           <span
-            class="mt-1 block text-[10px] leading-relaxed text-paper/45 transition-colors duration-1000 group-hover:text-paper/75 group-focus-visible:text-paper/75 motion-reduce:transition-none"
+            class="mt-1 block text-[10px] leading-relaxed text-paper/45 transition-colors duration-[2000ms] ease-[cubic-bezier(.45,0,.25,1)] group-hover:text-paper/75 group-focus-visible:text-paper/75 motion-reduce:transition-none"
             >{{ milestone.label }}</span
           >
         </button>

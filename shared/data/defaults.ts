@@ -2,45 +2,75 @@ import type { SiteContent, Opportunity } from '../types/content'
 
 export const defaultContent: SiteContent = {
   meeting: {
-    title: 'Our next exchange of ideas.',
-    date: '',
-    time: '',
+    title: 'Our first exchange of ideas.',
+    date: '2026-09-25',
+    time: 'During lunch',
     timezone: 'America/Chicago',
-    location: '',
+    location: 'Martin HS · Room 185B',
     topics: ['Meeting topics will be announced here.'],
     url: '',
   },
   projects: [
     {
       id: '01',
-      title: 'A question worth pursuing.',
-      field: 'Research dossier 01',
-      summary: 'The first of three Matrix Fellows research projects. A closer look is coming soon.',
-      details:
-        'Project title, research question, methods, contributors, and findings will be shared here.',
-      status: 'Details forthcoming',
-      url: '',
+      title: 'CRANE sim',
+      field: 'Robotics · Simulation infrastructure',
+      summary:
+        'A modular Unity physics and sensor simulation platform for testing autonomous vehicles and establishing baseline parameters before real-world deployment.',
+      details: `How much can we learn about a robot before putting it in the water—or on the road?
+
+CRANE sim is the simulation foundation of the Cross-Domain Robotics Autonomous Navigation Engine. Composable physics modules model vehicle dynamics, actuation, buoyancy, drag, wind, and currents across ground, surface, and underwater platforms.
+
+Configurable simulated sensors—including LiDAR, cameras, IMUs, and positioning systems—support testing navigation and localization under controlled conditions. Shared ROS interfaces connect simulated and physical hardware, allowing navigation components to be tested and baseline parameters tuned in Unity before transferring to a real vehicle.
+
+The project explores reusable autonomy across different vehicle configurations, with simulation-first validation intended to reduce deployment risk and repeated hardware iteration. This project advanced to the Texas Science & Engineering Fair (TXSEF).`,
+      status: 'Advanced to TXSEF',
+      url: 'https://github.com/1unarzDev/crane_sim',
     },
     {
       id: '02',
-      title: 'A different way of seeing.',
-      field: 'Research dossier 02',
+      title: 'Branching vine robots',
+      field: 'Soft robotics · Autonomous exploration',
       summary:
-        'New perspectives begin with careful observation. Our second project will be introduced here.',
-      details:
-        'Project title, research question, methods, contributors, and findings will be shared here.',
-      status: 'Details forthcoming',
+        'Building on Stanford vine-robot research, multiple growing branches explore divergent paths simultaneously instead of repeatedly backtracking through an environment.',
+      details: `What if a robot could explore more than one route at once?
+
+Inspired by Stanford research on soft, tip-growing vine robots, this project develops an autonomous branching system for navigating and mapping complex, confined environments. Independently controlled branches can pursue separate paths simultaneously, reducing the need for sequential exploration and retraction.
+
+The design combines regulated pneumatic growth, cable-driven steering, depth-camera and IMU feedback, and a ROS 2-based controller. Parametric mechanical components and modular electronics support multiple branches, while experiments examine growth speed, branching response, energy use, and exploration time.
+
+The research investigates whether parallel branching can dramatically reduce navigation time as environments become more complex. The benefit depends on the number of available branches, path structure, and branching and retraction overhead—not a universal exponential speedup. This project advanced to the Texas Science & Engineering Fair (TXSEF).`,
+      status: 'Advanced to TXSEF',
       url: '',
     },
     {
       id: '03',
-      title: 'One idea. Further possibilities.',
-      field: 'Research dossier 03',
+      title: 'CRANE: robust autonomy',
+      field: 'Navigation · Optimization · Interpretability',
       summary:
-        'Explore the third research project from the Matrix Fellows community. Details to follow.',
-      details:
-        'Project title, research question, methods, contributors, and findings will be shared here.',
-      status: 'Details forthcoming',
+        'An ongoing, multi-part study using simulation to make classical ROS 2/Nav2 navigation more robust, automatically tunable, interpretable, and adaptable before deployment.',
+      details: `The central question: how can simulation help us understand—and improve—classical autonomous navigation before a robot enters the real world?
+
+Study 1 — Sensor noise & localization robustness
+Model noise, bias, drift, latency, dropout, and correlated sensor error. Measure how localization and SLAM degrade, tune filter and localization parameters, and evaluate how well those settings transfer from simulation to physical vehicles.
+
+Study 2 — Environmental randomization & navigation robustness
+Run large, seeded test suites with varied obstacle layouts, moving objects, currents, wind, starting conditions, perception quality, and tasks. Map Nav2’s robustness envelope: where it succeeds, where it fails, and which conditions push it beyond reliable operation.
+
+Study 3 — Automated Nav2 hyperparameter tuning
+Evaluate sample-efficient methods such as Bayesian optimization and CMA-ES to tune Nav2/MPPI parameters without replacing navigation with reinforcement learning. Compare speed, safety, success rate, path efficiency, energy use, and compute cost.
+
+Interpretability
+Turn optimization data into parameter-sensitivity views, pairwise interactions, response surfaces, Pareto fronts, failure regions, and convergence plots. The goal is not just a better configuration, but a clearer explanation of why it works and where its tradeoffs lie.
+
+Simulation & replay
+Use stripped-down, headless Unity simulations with minimal ROS and data overhead across many randomized episodes. Store compact trajectories, parameter sets, events, seeds, and metrics. Reconstruct experiments separately in a dedicated HDRP replay scene with ghost trajectories, GPU-instanced boats, parameter-space heatmaps, best-so-far evolution, and cinematic failure comparisons.
+
+Future adaptive extension
+Explore a lightweight ML/RL meta-controller that adjusts selected Nav2 parameters or chooses strategies in response to uncertainty, obstacle density, currents, and path geometry. Keep SLAM backends, global planning, safety systems, control, and thruster allocation primarily classical; investigate ML where it adds value in perception, dynamic-object prediction, learned dynamics, mission selection, and adaptive tuning.
+
+This study is ongoing. These components describe the research program and planned evaluations, not completed findings.`,
+      status: 'Ongoing study',
       url: '',
     },
   ],

@@ -23,7 +23,9 @@ defineProps<{ meeting: Meeting }>()
         rel="noopener noreferrer"
         class="mt-7 inline-flex items-center gap-6 border-b border-acid/40 pb-2 text-xs text-acid"
         >Save your spot <SiteIcon :size="15" /></a
-      ><span v-else class="mt-7 inline-block text-xs text-paper/40"
+      ><span
+        v-else-if="!meeting.date || !meeting.location"
+        class="mt-7 inline-block text-xs text-paper/40"
         >Gathering details will be announced here.</span
       >
     </div>
@@ -32,9 +34,9 @@ defineProps<{ meeting: Meeting }>()
         <dt class="text-paper/40">When</dt>
         <dd>
           {{ meeting.date ? displayDate(meeting.date) : 'Date forthcoming'
-          }}<span v-if="meeting.time" class="mt-1 block text-xs text-paper/55"
-            >{{ meeting.time }} · {{ meeting.timezone }}</span
-          >
+          }}<span v-if="meeting.time" class="mt-1 block text-xs text-paper/55">{{
+            meeting.time
+          }}</span>
         </dd>
         <dt class="text-paper/40">Where</dt>
         <dd>{{ meeting.location || 'Location forthcoming' }}</dd>

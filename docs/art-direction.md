@@ -30,6 +30,11 @@ uncompressed asset payload), retaining authored facets without texture downloads
 The existing warm fog, storm lighting, terrain depth and inundation clipping apply
 to all additions. Source research is in `oasis-terrain-references.md`.
 
+Central bank placements gather around two loose shared anchors, so palms, reeds,
+stones and dry-bank plants form related clusters rather than an evenly scattered
+row. Their inland offsets and scale variation remain; the open gap frames the
+arch, and the outer shoreline silhouettes are unchanged.
+
 `npx tsx scripts/check-discovery-water.mjs` compiles both modified shaders, captures
 contact/expansion/dissolve and a narrow view, and checks that the ripple changes
 oasis pixels but not desert/storm/deep-sea pixels. Full-world desktop captures were

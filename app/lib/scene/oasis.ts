@@ -22,6 +22,13 @@ function ground(x: number, z: number) {
 }
 
 function bank(angle: number, inland = 0) {
+  // Two loose planting islands replace the evenly scattered central shoreline.
+  // Palms, reeds, stones and dry-bank plants share these anchors, while their
+  // inland offsets preserve depth and the outer framing stays untouched.
+  if (angle > -1.85 && angle < -.35) {
+    const cluster = angle < -1.1 ? -1.47 : -.72
+    angle = THREE.MathUtils.lerp(angle, cluster, .46)
+  }
   let radius = 0.6
   const point = new THREE.Vector3()
   for (; radius < 1.7; radius += 0.012) {

@@ -13,6 +13,29 @@ References inspected on 6 September 2026. Reference images are not redistributed
 | Particle continuity         | [Three.js GPU flocking](https://threejs.org/examples/webgl_gpgpu_birds.html), ABZÛ                                                                                                                     | Use persistent particle identity and shader-driven movement. This project does not need flock simulation or a computation texture: analytic seeded trajectories are cheaper and reversible through scroll. Sand, water motes, suspended deep-sea lights, and stars share a single buffer.                                                                                                              |
 | Nebula / constellation      | [Webb Cosmic Cliffs — NASA/ESA/CSA/STScI](https://science.nasa.gov/asset/webb/cosmic-cliffs-in-the-carina-nebula-nircam-image/), Three.js volume cloud                                                 | The Webb image combines contrasting blue/copper regions, a sculpted cloud boundary, layered wisps, dark gaps, and a wide range of stellar intensity. Use a diagonal violet/copper/teal density band and sparse bright stars; avoid a uniform purple fog. Domain-warped noise creates the cloud structure. Connections terminate at the same final coordinates as actual particles.                     |
 
+## Discovery ripple refinement — 7 September 2026
+
+Following the [primary-source water study](./discovery-water-references.md), the oasis
+now has a single discovery event beneath the right-hand palms. Roughly 30 existing
+desktop grains (about six on mobile) gather and descend; a bounded analytic wave
+packet then changes the shared water height and its normals. The existing sunlight,
+Fresnel, depth and shoreline logic produce the highlights—there is no emissive ring
+or added mesh/pass. Slight directional shear softens the perfect-circle appearance.
+Longer crossing currents and reduced fine-wave energy make the oasis less repetitive
+even after the event finishes. The original storm/ocean wave parameters are unchanged.
+
+The event uses the visibility-aware frame clock, gated by master scroll progression.
+Small scroll reversals do not restart it. Leaving the chapter rearms it, direct
+navigation works, and its amplitude fades before flooding. Narrow views receive a
+weaker ripple and adjusted focal point. No timers or new GPU buffers need teardown.
+
+`npx tsx scripts/check-discovery-water.mjs` compiles both modified shaders, captures
+contact/expansion/dissolve and a narrow view, and checks that the ripple changes
+oasis pixels but not desert/storm/deep-sea pixels. Full-world desktop captures were
+also inspected with palms and text present; direct entry and return navigation worked
+without console errors. An RTX 4070 Ti SUPER browser run maintained the 30 fps cap;
+this is not a physical-phone performance claim.
+
 ## Rendering tradeoffs
 
 - The full-screen shader traces an inexpensive heightfield for desert/oasis terrain and evaluates water from the same camera rays. Shared fog and water conceal the expanding basin. Full-ocean rendering skips terrain tracing.

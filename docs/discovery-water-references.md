@@ -1,0 +1,23 @@
+# Discovery ripple: water reference study
+
+Research date: 2026-09-07. Primary-source shader inspection for the oasis “Curiosity finds a way” moment. These are implementation recommendations, not a claim that Matrix Fellows reproduces a fluid simulation. No reference code or artwork is copied.
+
+## Sources and transferable techniques
+
+- **[Evan Wallace — WebGL Water](https://madebyevan.com/webgl-water/)** is an interactive heightfield-water demonstration with reflections, refractions, shadows and caustics. Its [water simulation source](https://github.com/evanw/webgl-water/blob/master/water.js) adds a localized cosine-smoothed height impulse, propagates it through neighboring heights, damps velocity each simulation step, and derives normals from the resulting height differences. Transfer: a discovery ripple needs a soft impulse, expanding crest/trough structure and decay—not a permanently emissive ring laid on top of water. The source's damping factor is per simulation step, so do not transplant that value into frame-dependent animation.
+- Wallace's [renderer source](https://github.com/evanw/webgl-water/blob/master/renderer.js) uses the changed surface normal for reflection and refraction, with view-dependent Fresnel blending and a concentrated solar highlight. Transfer: make the ripple visible primarily by bending existing sky/sun reflections. Alternating lit and shaded arcs should read as water relief, not as a full circle of constant brightness. A small warm highlight can support existing bloom; avoid giving the whole wave a new neon hue.
+- **[Three.js Water source](https://github.com/mrdoob/three.js/blob/dev/examples/jsm/objects/Water.js)** combines four differently scaled and moving normal samples. Its surface shader computes sunlight from the surface normal, distorts reflection sampling with a distance-dependent offset and applies a fifth-power Fresnel approximation. Transfer: combine a broad ripple with existing differently directed wave scales and gentle spatial distortion; coherent low-frequency movement plus finer highlights is more convincing than increasing one repeating sine wave's amplitude.
+- Three.js Water renders a mirrored scene into an additional render target; Wallace uses ping-pong heightfield simulation and a separate caustic pass. These are meaningful GPU costs visible in the source. **Recommendation for this site:** keep the current shared water shader and add a bounded analytic wave packet and a few GPU-driven motes. Do not add reflection/simulation render passes merely for this one moment, especially given existing mobile performance constraints.
+
+## Original composition and animation recommendation
+
+Use the existing [Alto's Adventure palette/composition study](./alto-adventure-references.md) for warm peach light, muted mauve atmosphere and selectively turquoise water. That study cites first-party screenshots; it is an art-direction reference rather than a water-physics reference.
+
+1. Place one water-space focal point below the right-hand palm grouping, leaving the left headline quiet. Check the focal point's actual projection on desktop and mobile; do not draw a screen-space ellipse that slides independently of the environment.
+2. Gather a handful of existing-looking warm dust motes into a small descending gesture. Let them touch the surface before the strongest broad ripple expands. Avoid a dense sparkle fountain or persistent glowing orb.
+3. Use a smooth radial envelope containing two or three soft crest/trough lobes, with increasing radius, decreasing amplitude and gently widening support. Give it mild asymmetric distortion from the existing water field so the event is not a perfect radar pulse.
+4. Feed the height perturbation into surface normals/reflection response. Respect shoreline/depth occlusion and existing atmosphere. A ripple should not illuminate sand or remain visible through dunes.
+5. Keep the event subordinate to master scroll progression, with a long dissolve before the storm. Direct anchor entry and reverse scroll should be deterministic; avoid repeated burst triggers that restart on small scroll reversals. If a time-based idle accent is used, leave a long rest and never reset visible rings abruptly.
+6. Compare captures before contact, at maximum ripple visibility and during dissolve. Confirm that the observer sees sunlight broken across moving water, not a graphic circle; text remains readable, and no new effect survives into the flood/ocean chapter.
+
+The placement, timing and analytic-envelope choices above are original implementation guidance inferred from the sources, not claims about either reference's exact artistic composition.

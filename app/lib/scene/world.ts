@@ -6,7 +6,6 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js'
 import { FXAAShader } from 'three/addons/shaders/FXAAShader.js'
 import { createOasisDressing } from './oasis'
 import { nextFrameTime, settleProgress } from './frame-clock'
-import { advanceDiscovery } from './discovery'
 import { constellationLayout, constellationStarCount } from './constellations'
 import {
   worldFragment,
@@ -47,7 +46,6 @@ export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, on
   const target = new THREE.Vector3()
   const uniforms = {
     uTime: { value: 0 },
-    uDiscoveryTime: { value: 0 },
     uProgress: { value: 0 },
     uAspect: { value: 1 },
     uCamera: { value: camera.position },
@@ -146,7 +144,6 @@ export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, on
   const particleUniforms = {
     uAspect: uniforms.uAspect,
     uTime: uniforms.uTime,
-    uDiscoveryTime: uniforms.uDiscoveryTime,
     uProgress: uniforms.uProgress,
     uPixelRatio: { value: 1 },
   }
@@ -340,8 +337,6 @@ export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, on
     lastRender = now
     last = frameTime
     uniforms.uTime.value = elapsed
-    uniforms.uDiscoveryTime.value = advanceDiscovery(uniforms.uDiscoveryTime.value, progress, seconds)
-    canvas.dataset.discoveryTime = uniforms.uDiscoveryTime.value.toFixed(2)
     const lightning = lightningState(elapsed)
     uniforms.uLightning.value.set(lightning.intensity, lightning.seed)
     canvas.dataset.lightning = (lightning.intensity * stormStrength(progress)).toFixed(3)

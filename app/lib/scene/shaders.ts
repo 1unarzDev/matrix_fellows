@@ -1,5 +1,4 @@
 // Original shaders. Art/technical references and adaptation notes: docs/art-direction.md.
-import { discoveryGLSL } from './discovery'
 export const screenVertex = /* glsl */ `
 varying vec2 vUv;
 void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }
@@ -78,7 +77,6 @@ uniform vec2 uLightning;
 ${terrainGLSL}
 ${weatherGLSL}
 
-${discoveryGLSL}
 
 vec3 swell(vec2 p) {
   float strength=stormStrength(uProgress)*smoothstep(1.32,1.8,uProgress);
@@ -125,7 +123,7 @@ vec3 waves(vec2 p) {
     h+=calm*(.14*sin(a)+.065*sin(b));
     slope+=calm*(.14*.22*cos(a)*d1+.065*.37*cos(b)*d2);
   }
-  return vec3(h,slope)+swell(p)+discoveryRipple(p);
+  return vec3(h,slope)+swell(p);
 }
 float sunCloudCover(vec3 ray, vec3 sun) {
   // A small cloud passes over the light source only. Its feathered footprint
@@ -505,7 +503,6 @@ uniform float uPixelRatio;
 uniform float uAspect;
 attribute float aSeed;
 attribute vec4 aAnchor;
-${discoveryGLSL}
 varying float vAlpha;
 varying vec3 vColor;
 varying float vStorm;
@@ -556,16 +553,6 @@ void main() {
   pos=mix(pos,cosmic,stars);
   pos.y+=floodHeight(uProgress)*(1.0-stars);
   pos=mix(pos,aAnchor.xyz,aAnchor.w*smoothstep(3.2,3.8,uProgress));
-  // A small subset of the SAME grains takes a descending path into the water.
-  // Fade before the surface contact, then let the ripple carry the movement.
-  float discover=discoveryPresence()*step(.9975,aSeed);
-  float gather=smoothstep(.65,3.8,uDiscoveryTime);
-  float moteLife=smoothstep(.3,1.0,uDiscoveryTime)*(1.0-smoothstep(3.25,4.05,uDiscoveryTime));
-  float angle=fract(aSeed*723.17)*6.283185;
-  float orbitRadius=(2.0+fract(aSeed*191.0)*2.8)*(1.0-gather)+.18;
-  vec2 orbit=vec2(cos(angle+gather*.65),sin(angle+gather*.65))*orbitRadius;
-  vec3 mote=vec3(discoveryCenter().x+orbit.x,-.72+(1.0-gather)*(1.4+fract(aSeed*51.0)*2.0),discoveryCenter().y+orbit.y);
-  pos=mix(pos,mote,discover);
   vec4 mv=modelViewMatrix*vec4(pos,1.0);
   gl_Position=projectionMatrix*mv;
   vFish=fish*dive*(1.0-stars);
@@ -594,9 +581,6 @@ void main() {
   vAlpha*=mix(1.0,1.0-smoothstep(waterline-.018,waterline+.018,screen.y),vFish);
   vAlpha*=mix(1.0,.38,stars*(1.0-aAnchor.w));
   vAlpha=mix(vAlpha,mix(.40,.9,anchorDistance),aAnchor.w*stars);
-  vAlpha=mix(vAlpha,moteLife*.75,discover);
-  vColor=mix(vColor,vec3(1.35,1.05,.64),discover);
-  gl_PointSize=mix(gl_PointSize,clamp(3.2*uPixelRatio*24.0/max(4.0,-mv.z),1.0,4.0*uPixelRatio),discover);
   vStorm=(1.0-oasis)*(1.0-dive);
 }
 `

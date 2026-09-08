@@ -1,5 +1,8 @@
 # Discovery ripple: water reference study
 
+Archived experiment: the ripple and gathering particles were removed at the
+user's request. Only the slower crossing currents and reduced fine shimmer remain.
+
 Research date: 2026-09-07. Primary-source shader inspection for the oasis “Curiosity finds a way” moment. These are implementation recommendations, not a claim that Matrix Fellows reproduces a fluid simulation. No reference code or artwork is copied.
 
 ## Sources and transferable techniques

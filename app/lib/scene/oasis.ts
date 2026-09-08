@@ -89,6 +89,7 @@ export function createOasisDressing(scene: THREE.Scene, camera: THREE.Camera) {
   const materials = new Set<THREE.Material>()
   const geometries = new Set<THREE.BufferGeometry>()
   const textures = new Set<THREE.Texture>()
+  const accentMeshes = new Set<THREE.InstancedMesh>()
   const palms: { object: THREE.Object3D; origin: THREE.Vector3 }[] = []
   let disposed = false,
     progress = -1
@@ -244,6 +245,71 @@ export function createOasisDressing(scene: THREE.Scene, camera: THREE.Camera) {
     })
   }
 
+  // Curated low-poly silhouettes sit on the dry bank, not on the water. The
+  // arch is a distant focal point to the right; uneven buttes hide its straight
+  // ends. Small, irregular plant clusters connect it to the existing grove.
+  void (async () => {
+    const { loadDesertGeometry } = await import('./desert-geometry')
+    if (disposed) return
+    type Placement = { origin: THREE.Vector3; scale: THREE.Vector3; rotation: number }
+    const dry = (x: number, z: number, height: number, width = 1, rotation = 0): Placement => ({
+      origin: new THREE.Vector3(x, ground(x, z) - .18, z),
+      scale: new THREE.Vector3(height * width, height, height), rotation,
+    })
+    const plants = (count: number, height: number, offset: number) =>
+      Array.from({ length: count }, (_, i) => {
+        const angle = -1.85 + ((i * .618 + offset) % 1) * 2.1
+        const origin = bank(angle, .15 + random() * .19)
+        return dry(origin.x, origin.z, height * (.65 + random() * .65), .85 + random() * .3, random() * 6.28)
+      })
+    const arch = dry(30, -98, 12, 1.15, -.12)
+    const crown = (x: number, y: number, width: number, rotation: number): Placement => ({
+      origin: new THREE.Vector3(x, arch.origin.y + y, -98),
+      scale: new THREE.Vector3(width, 2.6, 3.2), rotation,
+    })
+    const assets = [
+      { name: 'cliff_cave_rock', tint: '#ad8e74', placements: [arch] },
+      { name: 'rock_largeA', tint: '#ad8e74',
+        placements: [crown(27, 10.3, 4.2, .2), crown(32.5, 10.6, 3.9, -.35)] },
+      { name: 'rock_tallA', tint: '#ad8e74',
+        placements: [dry(23, -98, 8, 1, .3), dry(37, -98, 7, 1, 2.4), dry(-25, -65, 5, .9, .4)] },
+      { name: 'rock_tallH', tint: '#a98c73',
+        placements: [dry(43, -104, 10, .8, 1.5), dry(49, -109, 6, 1, 2), dry(-30, -78, 8, .85, 1)] },
+      { name: 'cactus_tall', tint: '#53644a', placements: plants(9, 3.4, .1) },
+      { name: 'cactus_short', tint: '#68734f', placements: plants(7, 1.9, .3) },
+      { name: 'plant_bush', tint: '#697150', placements: plants(20, 1.3, .15) },
+      { name: 'plant_bushSmall', tint: '#8a8054', placements: plants(16, .7, .21) },
+    ]
+    await Promise.all(assets.map(async (asset) => {
+      try {
+        const geometry = await loadDesertGeometry(asset.name)
+        if (disposed) { geometry.dispose(); return }
+        geometries.add(geometry)
+        const material = new THREE.MeshLambertMaterial({
+          color: '#ffffff', transparent: true, flatShading: true,
+        })
+        groundMaterial(material)
+        materials.add(material)
+        const mesh = new THREE.InstancedMesh(geometry, material, asset.placements.length)
+        mesh.name = `desert-${asset.name}`
+        accentMeshes.add(mesh)
+        mesh.frustumCulled = false
+        asset.placements.forEach((_, index) => {
+          const color = new THREE.Color(asset.tint)
+          color.multiplyScalar(.9 + (index % 4) * .055)
+          mesh.setColorAt(index, color)
+        })
+        updateInstances(mesh, asset.placements, 1)
+        group.add(mesh)
+        setProgress(progress, true)
+      } catch {
+        // Optional dressing must never prevent the main world from rendering.
+      }
+    }))
+  })().catch(() => {
+    // A failed optional module download leaves the original grove intact.
+  })
+
   // The world itself is lazy; prefetch its small palm asset immediately so the
   // grove is populated by the crest, rather than requesting it at the reveal.
   void (async () => {
@@ -317,6 +383,7 @@ export function createOasisDressing(scene: THREE.Scene, camera: THREE.Camera) {
     geometries.forEach((resource) => resource.dispose())
     materials.forEach((resource) => resource.dispose())
     textures.forEach((resource) => resource.dispose())
+    accentMeshes.forEach((mesh) => mesh.dispose())
     group.clear()
   }
   setProgress(0)

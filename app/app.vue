@@ -621,11 +621,11 @@ onBeforeUnmount(() => {
             </h3>
             <button
               @click="joinOpen = true"
-              class="tactile group inline-flex min-h-12 shrink-0 items-center gap-7 rounded-full bg-[#dce5ff] px-6 py-4 text-sm font-medium text-[#182238] hover:bg-white hover:shadow-[0_8px_32px_#b7c8ff20] focus-visible:outline-[#b7c8ff]"
+              class="tactile group inline-flex min-h-12 shrink-0 items-center gap-7 rounded-full border border-[#c4ccef]/45 bg-transparent px-6 py-4 text-sm font-medium text-[#dce5ff] hover:border-[#dce5ff]/80 hover:bg-[#c4ccef]/[.035] hover:shadow-[0_0_28px_#b7c8ff14] focus-visible:outline-[#b7c8ff]"
             >
               Join Matrix Fellows
               <span
-                class="transition-transform duration-300 group-hover:translate-x-1 motion-reduce:transform-none"
+                class="transition-transform duration-[900ms] ease-[cubic-bezier(.45,0,.25,1)] group-hover:translate-x-1 motion-reduce:transform-none motion-reduce:transition-none"
                 ><SiteIcon :size="16"
               /></span>
             </button>

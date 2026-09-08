@@ -12,19 +12,19 @@ export default defineNuxtConfig({
     public: {
       supabaseUrl: '',
       supabaseAnonKey: '',
-      siteUrl: 'http://localhost:3000',
+      siteUrl: 'https://matrixfellows.com',
     },
   },
   app: {
     head: {
       htmlAttrs: { lang: 'en', class: 'bg-ink [color-scheme:dark]' },
       bodyAttrs: { class: 'bg-ink' },
-      title: 'Matrix Fellows — The next question starts with you.',
+      title: 'Matrix Fellows | Student Research Society at Martin HS',
       meta: [
         {
           name: 'description',
           content:
-            'A student-founded research society for curious minds. Explore ideas, find collaborators, and take your first step into scientific research.',
+            'Explore research at Martin High School with Matrix Fellows. Find collaborators, science fair opportunities, workshops, and support for your next project.',
         },
         { name: 'theme-color', content: '#101413' },
         { name: 'color-scheme', content: 'dark' },

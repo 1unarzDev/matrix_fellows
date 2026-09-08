@@ -7,6 +7,31 @@ import type { PublicContent } from '#shared/types/content'
 const publicConfig = useRuntimeConfig().public
 const siteUrl = publicConfig.siteUrl
 const socialImage = new URL('/social-card.png?v=horizon-2', siteUrl).href
+const canonicalUrl = 'https://matrixfellows.com/'
+useHead({
+  link: [{ rel: 'canonical', href: canonicalUrl }],
+  script: [{
+    key: 'organization-schema',
+    type: 'application/ld+json',
+    innerHTML: JSON.stringify({
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'Organization', '@id': `${canonicalUrl}#organization`,
+          name: 'Matrix Fellows', url: canonicalUrl,
+          description: 'A student-founded research society at Martin High School connecting students through research, collaboration, and science fair opportunities.',
+          email: 'contact@matrixfellows.com',
+          logo: `${canonicalUrl}favicon.svg`,
+        },
+        {
+          '@type': 'WebSite', '@id': `${canonicalUrl}#website`,
+          url: canonicalUrl, name: 'Matrix Fellows', inLanguage: 'en',
+          publisher: { '@id': `${canonicalUrl}#organization` },
+        },
+      ],
+    }),
+  }],
+})
 useSeoMeta({
   ogImage: socialImage,
   ogImageWidth: 1200,
@@ -361,7 +386,7 @@ onBeforeUnmount(() => {
             An observation. A possibility you hadn’t seen before.
           </p>
           <p class="mt-5 max-w-md text-base leading-relaxed text-paper/75">
-            Matrix Fellows is a student-founded research society built around that moment. We bring
+            Matrix Fellows is a student-founded research society at Martin High School, built around that moment. We bring
             curious people together to turn a first idea into meaningful inquiry.
           </p>
           <div class="mt-10 flex items-center gap-4 text-xs text-paper/65">
@@ -396,7 +421,7 @@ onBeforeUnmount(() => {
             </div>
             <p class="max-w-xs text-sm leading-relaxed text-paper/65">
               Our research starts small and looks further.<br />Three projects. Many more
-              questions.<br /><span class="mt-3 inline-block text-xs text-paper/45"
+              questions.<br /><span class="mt-3 inline-block text-xs text-paper/70"
                 >Project details are being prepared.</span
               >
             </p>

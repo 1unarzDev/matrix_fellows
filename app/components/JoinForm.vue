@@ -165,12 +165,12 @@ onBeforeUnmount(() => {
       >
         <div
           v-if="visible"
-          class="flex h-full items-center justify-center bg-ink/65 p-3 sm:p-8"
+          class="flex h-full items-center justify-center bg-ink/40 p-3 sm:p-8"
           @click.self="close"
         >
           <section
             data-lenis-prevent
-            class="relative isolate flex max-h-[calc(100dvh-1.5rem)] w-full max-w-2xl flex-col overflow-hidden rounded-[1.75rem] border border-paper/20 bg-[#141b24]/90 shadow-[0_30px_120px_#00000080,inset_0_1px_0_#ffffff12] backdrop-blur-xl sm:max-h-[calc(100dvh-4rem)] sm:rounded-[2rem]"
+            class="relative isolate flex max-h-[calc(100dvh-1.5rem)] w-full max-w-2xl flex-col overflow-hidden rounded-[1.75rem] border border-paper/20 bg-[#141b24]/75 shadow-[0_30px_120px_#00000080,inset_0_1px_0_#ffffff12] backdrop-blur-xl backdrop-saturate-125 sm:max-h-[calc(100dvh-4rem)] sm:rounded-[2rem]"
           >
             <div
               aria-hidden="true"
@@ -178,7 +178,7 @@ onBeforeUnmount(() => {
             />
             <div
               aria-hidden="true"
-              class="pointer-events-none absolute inset-0 bg-[url('/textures/glass-grain.svg')] bg-repeat opacity-[.09] mix-blend-soft-light"
+              class="pointer-events-none absolute inset-0 bg-[url('/textures/glass-grain.svg')] bg-repeat opacity-[.13] mix-blend-soft-light"
             />
             <div
               aria-hidden="true"

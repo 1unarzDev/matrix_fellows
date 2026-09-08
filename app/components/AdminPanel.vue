@@ -10,6 +10,10 @@ const emit = defineEmits<{ close: []; saved: [] }>()
 const config = useRuntimeConfig()
 const configured = Boolean(config.public.supabaseUrl && config.public.supabaseAnonKey)
 const panel = ref<HTMLElement>()
+const visible = ref(false)
+function close() {
+  visible.value = false
+}
 const email = ref(''),
   message = ref(''),
   error = ref('')
@@ -272,7 +276,7 @@ async function saveSource() {
 function handleKeys(event: KeyboardEvent) {
   if (event.key === 'Escape') {
     event.preventDefault()
-    emit('close')
+    close()
   }
   if (event.key !== 'Tab') return
   const elements = panel.value?.querySelectorAll<HTMLElement>(
@@ -294,6 +298,8 @@ onMounted(async () => {
   previousFocus = document.activeElement as HTMLElement
   alreadyLocked = document.body.classList.contains('overflow-hidden')
   document.body.classList.add('overflow-hidden')
+  visible.value = true
+  await nextTick()
   panel.value?.focus()
   if (!configured) return
   client = getAdminClient(config.public.supabaseUrl, config.public.supabaseAnonKey)
@@ -315,447 +321,496 @@ onBeforeUnmount(() => {
 
 <template>
   <Teleport to="body">
-    <div
-      class="fixed inset-0 z-50 flex justify-end bg-black/60 font-sans text-paper backdrop-blur-sm"
-      @mousedown.self="emit('close')"
+    <Transition
+      appear
+      enter-active-class="transition-opacity duration-[1100ms] ease-[cubic-bezier(.22,1,.36,1)] [&>section]:transition-transform [&>section]:duration-[1100ms] [&>section]:ease-[cubic-bezier(.22,1,.36,1)] motion-reduce:transition-none motion-reduce:[&>section]:transition-none"
+      enter-from-class="opacity-0 [&>section]:translate-x-12 motion-reduce:[&>section]:translate-x-0"
+      enter-to-class="opacity-100 [&>section]:translate-x-0"
+      leave-active-class="transition-opacity duration-500 ease-in-out [&>section]:transition-transform [&>section]:duration-500 [&>section]:ease-in-out motion-reduce:transition-none motion-reduce:[&>section]:transition-none"
+      leave-from-class="opacity-100 [&>section]:translate-x-0"
+      leave-to-class="opacity-0 [&>section]:translate-x-8 motion-reduce:[&>section]:translate-x-0"
+      @after-leave="emit('close')"
     >
-      <section
-        ref="panel"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="admin-title"
-        tabindex="-1"
-        class="flex h-dvh w-full max-w-xl flex-col border-l border-paper/15 bg-ink shadow-2xl outline-none"
-        @keydown="handleKeys"
+      <div
+        v-if="visible"
+        class="fixed inset-0 z-50 flex justify-end bg-black/60 font-sans text-paper backdrop-blur-sm"
+        @mousedown.self="close"
       >
-        <header
-          class="flex shrink-0 items-center justify-between border-b border-paper/15 px-6 py-5"
+        <section
+          ref="panel"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="admin-title"
+          tabindex="-1"
+          class="flex h-dvh w-full max-w-xl flex-col border-l border-paper/10 bg-ink bg-[radial-gradient(ellipse_at_top_right,#a9a0ed12,transparent_55%)] shadow-2xl outline-none [--color-acid:#c5c0eb] [&_button]:transition-[color,background-color,border-color,box-shadow] [&_button]:duration-700 [&_button]:ease-[cubic-bezier(.45,0,.25,1)] [&_button]:focus-visible:outline-2 [&_button]:focus-visible:outline-offset-4 [&_button]:focus-visible:outline-acid motion-reduce:[&_button]:transition-none"
+          @keydown="handleKeys"
         >
-          <div>
-            <p class="text-[9px] uppercase tracking-[.2em] text-acid">Matrix Fellows</p>
-            <h2 id="admin-title" class="mt-1 font-display text-xl">The editing room.</h2>
-          </div>
-          <button
-            aria-label="Close editor"
-            class="rounded-full border border-paper/15 p-3 hover:bg-paper/10"
-            @click="emit('close')"
+          <header
+            class="flex shrink-0 items-center justify-between border-b border-paper/10 px-6 pb-5 pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-8"
           >
-            <SiteIcon name="close" :size="18" />
-          </button>
-        </header>
-        <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain p-6">
-          <div v-if="!configured" class="rounded-xl border border-paper/15 p-6">
-            <MatrixMark :size="32" class="text-acid" />
-            <h3 class="mt-5 text-lg">A home for your updates.</h3>
-            <p class="mt-3 text-sm leading-relaxed text-paper/60">
-              The editor is ready to connect. Configure Supabase, apply the included database
-              migration, and authorize the owner account to enable secure editing.
-            </p>
-            <p class="mt-4 text-xs leading-relaxed text-paper/40">
-              Setup instructions are included in the project README. Your content stays visible
-              while setup is pending.
-            </p>
-          </div>
-          <p v-else-if="checking" role="status" class="text-sm text-paper/60">
-            Checking your access…
-          </p>
-          <form v-else-if="!authenticated" class="space-y-5" @submit.prevent="login">
-            <p class="text-sm leading-relaxed text-paper/60">
-              Sign in with the owner email. We’ll send a secure link; no password to remember.
-            </p>
-            <AdminField v-model="email" label="Owner email" type="email" /><button
-              :disabled="busy || !email"
-              class="rounded-full bg-acid px-6 py-3 text-sm text-ink disabled:opacity-40"
+            <div>
+              <p class="text-[9px] uppercase tracking-[.2em] text-acid">Matrix Fellows</p>
+              <h2 id="admin-title" class="mt-1 font-display text-xl">The editing room.</h2>
+            </div>
+            <button
+              aria-label="Close editor"
+              class="rounded-full border border-paper/15 p-3 hover:bg-paper/10"
+              @click="close"
             >
-              {{ busy ? 'Sending…' : 'Send sign-in link' }}
+              <SiteIcon name="close" :size="18" />
             </button>
-          </form>
-          <template v-else>
-            <nav aria-label="Editor sections" class="mb-7 flex flex-wrap gap-2">
-              <button
-                v-for="name in ['Meeting', 'Research', 'Support', 'Links', 'Listings', 'Sources']"
-                :key="name"
-                class="rounded-full px-3 py-2 text-xs"
-                :class="tab === name ? 'bg-acid text-ink' : 'bg-paper/5 text-paper/55'"
-                @click="changeTab(name)"
-              >
-                {{ name }}
-              </button>
-            </nav>
-            <div v-if="tab === 'Meeting'" class="space-y-4">
-              <AdminField v-model="draft.meeting.title" label="Meeting title" />
-              <div class="grid grid-cols-2 gap-4">
-                <AdminField v-model="draft.meeting.date" label="Date" type="date" /><AdminField
-                  v-model="draft.meeting.time"
-                  label="Time"
-                  type="time"
-                />
-              </div>
-              <AdminField v-model="draft.meeting.timezone" label="Timezone" /><AdminField
-                v-model="draft.meeting.location"
-                label="Location"
-              /><AdminField
-                v-model="topics"
-                label="Discussion topics · one per line"
-                multiline
-              /><AdminField
-                v-model="draft.meeting.url"
-                label="RSVP link · optional"
-                placeholder="https://"
-              />
-            </div>
-            <div v-if="tab === 'Research'" class="space-y-8">
-              <fieldset
-                v-for="(project, index) in draft.projects"
-                :key="project.id"
-                class="space-y-4 border-t border-paper/15 pt-5"
-              >
-                <legend class="px-2 text-xs text-acid">Project 0{{ index + 1 }}</legend>
-                <AdminField v-model="project.title" label="Title" /><AdminField
-                  v-model="project.field"
-                  label="Research field"
-                /><AdminField v-model="project.status" label="Status" /><AdminField
-                  v-model="project.summary"
-                  label="Preview"
-                  multiline
-                /><AdminField
-                  v-model="project.details"
-                  label="Research question, methods, contributors, and findings"
-                  multiline
-                /><AdminField
-                  v-model="project.url"
-                  label="Project link · optional"
-                  placeholder="https://"
-                />
-              </fieldset>
-            </div>
-            <div v-if="tab === 'Support'" class="space-y-8">
-              <fieldset
-                v-for="(benefit, index) in draft.benefits"
-                :key="index"
-                class="space-y-4 border-t border-paper/15 pt-5"
-              >
-                <legend class="px-2 text-xs text-acid">Opportunity 0{{ index + 1 }}</legend>
-                <AdminField v-model="benefit.title" label="Title" /><AdminField
-                  v-model="benefit.description"
-                  label="Description"
-                  multiline
-                /><AdminField
-                  v-model="benefit.url"
-                  label="Signup link · optional"
-                  placeholder="https://"
-                />
-              </fieldset>
-            </div>
-            <div v-if="tab === 'Links'" class="space-y-4">
-              <AdminField
-                v-model="draft.links.join"
-                label="Join / community link"
-                placeholder="https://"
-              /><AdminField
-                v-model="draft.links.contact"
-                label="Contact link"
-                placeholder="https:// or mailto:"
-              />
-              <p class="text-xs leading-relaxed text-paper/45">
-                Leave a link blank to show the corresponding forthcoming state.
+          </header>
+          <div
+            data-lenis-prevent
+            class="min-h-0 flex-1 overflow-y-auto overscroll-contain p-6 [scrollbar-width:thin] [scrollbar-color:#c5c0eb40_transparent] sm:p-8"
+          >
+            <div v-if="!configured" class="rounded-xl border border-paper/15 p-6">
+              <MatrixMark :size="32" class="text-acid" />
+              <h3 class="mt-5 text-lg">A home for your updates.</h3>
+              <p class="mt-3 text-sm leading-relaxed text-paper/60">
+                The editor is ready to connect. Configure Supabase, apply the included database
+                migration, and authorize the owner account to enable secure editing.
+              </p>
+              <p class="mt-4 text-xs leading-relaxed text-paper/40">
+                Setup instructions are included in the project README. Your content stays visible
+                while setup is pending.
               </p>
             </div>
-            <div v-if="tab === 'Listings'">
-              <template v-if="!editing"
-                ><button
-                  class="mb-5 rounded-full border border-acid/50 px-4 py-2 text-xs text-acid"
-                  @click="editListing()"
-                >
-                  + Add opportunity
-                </button>
-                <div class="divide-y divide-paper/15">
-                  <button
-                    v-for="item in listings"
-                    :key="item.id"
-                    class="flex w-full items-center justify-between gap-4 py-4 text-left text-sm"
-                    @click="editListing(item)"
-                  >
-                    <span
-                      >{{ item.title
-                      }}<span class="mt-1 block text-[10px] text-paper/40"
-                        >{{ item.sourceId }} · {{ item.published ? 'Published' : 'Hidden' }}</span
-                      ></span
-                    ><SiteIcon :size="14" />
-                  </button>
-                </div>
-                <p v-if="!listings.length" class="text-sm text-paper/50">
-                  No listings yet. Add a curated opportunity or enable a verified source.
-                </p></template
+            <p v-else-if="checking" role="status" class="text-sm text-paper/60">
+              Checking your access…
+            </p>
+            <form v-else-if="!authenticated" class="space-y-5" @submit.prevent="login">
+              <p class="text-sm leading-relaxed text-paper/60">
+                Sign in with the owner email. We’ll send a secure link; no password to remember.
+              </p>
+              <AdminField v-model="email" label="Owner email" type="email" /><button
+                :disabled="busy || !email"
+                class="rounded-full bg-acid px-6 py-3 text-sm text-ink disabled:opacity-40"
               >
-              <form v-else class="space-y-4" @submit.prevent="saveListing">
-                <button type="button" class="text-xs text-acid" @click="editing = null">
-                  ← All listings</button
-                ><AdminField v-model="editing.title" label="Title" /><label
-                  class="block text-xs text-paper/55"
-                  >Type<select
-                    v-model="editing.kind"
-                    class="mt-2 block w-full rounded-lg border border-paper/15 bg-ink p-3 text-sm"
-                  >
-                    <option
-                      v-for="kind in [
-                        'Competition',
-                        'Conference',
-                        'Workshop',
-                        'Publication',
-                        'Program',
-                      ]"
-                      :key="kind"
-                    >
-                      {{ kind }}
-                    </option>
-                  </select></label
-                ><AdminField v-model="editing.discipline" label="Discipline" /><AdminField
-                  v-model="editing.description"
-                  label="Description"
-                  multiline
-                /><AdminField v-model="editing.url" label="Official URL" /><AdminField
-                  v-model="editing.location"
-                  label="Location"
-                /><AdminField v-model="editing.eligibility" label="Eligibility" /><AdminField
-                  :model-value="editing.deadline || ''"
-                  label="Submission deadline · YYYY-MM-DD or ISO timestamp"
-                  @update:model-value="editing.deadline = $event || null"
-                /><AdminField
-                  :model-value="editing.eventDate || ''"
-                  label="Event date · separate from deadline"
-                  @update:model-value="editing.eventDate = $event || null"
-                /><AdminField
-                  :model-value="editing.timezone || ''"
-                  label="Timezone · optional IANA name"
-                  @update:model-value="editing.timezone = $event || null"
-                /><AdminField
-                  :model-value="String(editing.priority)"
-                  label="Priority · 0–100"
-                  type="number"
-                  @update:model-value="editing.priority = Number($event)"
-                /><label class="flex items-center gap-3 text-sm"
-                  ><input
-                    v-model="editing.published"
-                    type="checkbox"
-                    class="accent-acid"
-                  />Published</label
-                >
-                <p class="text-xs text-paper/40">
-                  Edits to imported fields are preserved on future imports. Hiding a listing
-                  suppresses it until you publish it again.
-                </p>
+                {{ busy ? 'Sending…' : 'Send sign-in link' }}
+              </button>
+            </form>
+            <template v-else>
+              <nav
+                aria-label="Editor sections"
+                class="mb-8 grid grid-cols-3 gap-1 rounded-2xl border border-paper/10 bg-paper/[.025] p-1.5"
+              >
                 <button
-                  :disabled="busy"
-                  class="rounded-full bg-acid px-5 py-3 text-sm text-ink disabled:opacity-40"
+                  v-for="name in ['Meeting', 'Research', 'Support', 'Links', 'Listings', 'Sources']"
+                  :key="name"
+                  :aria-current="tab === name ? 'page' : undefined"
+                  class="min-h-11 rounded-xl px-3 py-2 text-xs"
+                  :class="
+                    tab === name
+                      ? 'bg-acid/10 text-acid shadow-[inset_0_0_0_1px_#c5c0eb26]'
+                      : 'text-paper/50 hover:bg-paper/5 hover:text-paper/85'
+                  "
+                  @click="changeTab(name)"
                 >
-                  Save listing
+                  {{ name }}
                 </button>
-              </form>
-            </div>
-            <div v-if="tab === 'Sources'" class="space-y-6">
-              <p class="text-xs leading-relaxed text-paper/55">
-                Annual monitors validate exact source evidence and automatically publish new facts
-                after two matching observations at least six hours apart. Failed checks preserve
-                confirmed information. Owner edits and hidden listings are never reset.
-              </p>
-              <section
-                v-if="monitors.length"
-                class="space-y-3"
-                aria-label="Annual opportunity monitors"
+              </nav>
+              <Transition
+                mode="out-in"
+                enter-active-class="transition-[opacity,transform] duration-700 ease-[cubic-bezier(.22,1,.36,1)] motion-reduce:transition-none"
+                enter-from-class="translate-y-3 opacity-0 motion-reduce:translate-y-0"
+                enter-to-class="translate-y-0 opacity-100"
+                leave-active-class="transition-[opacity,transform] duration-300 ease-in-out motion-reduce:transition-none"
+                leave-from-class="translate-y-0 opacity-100"
+                leave-to-class="-translate-y-1 opacity-0 motion-reduce:translate-y-0"
               >
-                <h3 class="text-lg">Annual monitors · {{ monitors.length }}</h3>
-                <details
-                  v-for="monitor in monitors"
-                  :key="monitor.id"
-                  class="rounded-xl border border-paper/15 p-4 text-xs"
-                >
-                  <summary class="cursor-pointer leading-relaxed">
-                    {{ monitor.seed.title }}
-                    <span class="text-paper/45"
-                      >·
-                      {{
-                        !monitor.enabled
-                          ? 'Paused'
-                          : monitor.last_error
-                            ? 'Needs attention'
-                            : 'Monitoring'
-                      }}</span
-                    >
-                  </summary>
-                  <div class="mt-4 space-y-3 text-paper/55">
-                    <p>Last attempt: {{ monitor.last_attempt_at || 'Scheduled' }}</p>
-                    <p>Last confirmed: {{ monitor.last_success_at || 'Awaiting confirmation' }}</p>
-                    <p>Next check: {{ monitor.next_check_at }}</p>
-                    <p v-if="monitor.last_error" class="text-amber-200">{{ monitor.last_error }}</p>
-                    <a
-                      :href="monitor.url"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="block text-acid underline"
-                      >Official source ↗</a
-                    >
-                    <button
-                      :disabled="busy"
-                      class="rounded-full border border-paper/20 px-4 py-2 text-paper disabled:opacity-40"
-                      @click="toggleMonitor(monitor.id, !monitor.enabled)"
-                    >
-                      {{ monitor.enabled ? 'Pause monitor' : 'Resume monitor' }}
-                    </button>
+                <div :key="tab" class="min-h-64">
+                  <div v-if="tab === 'Meeting'" class="space-y-4">
+                    <AdminField v-model="draft.meeting.title" label="Meeting title" />
+                    <div class="grid grid-cols-2 gap-4">
+                      <AdminField
+                        v-model="draft.meeting.date"
+                        label="Date"
+                        type="date"
+                      /><AdminField v-model="draft.meeting.time" label="Time" type="time" />
+                    </div>
+                    <AdminField v-model="draft.meeting.timezone" label="Timezone" /><AdminField
+                      v-model="draft.meeting.location"
+                      label="Location"
+                    /><AdminField
+                      v-model="topics"
+                      label="Discussion topics · one per line"
+                      multiline
+                    /><AdminField
+                      v-model="draft.meeting.url"
+                      label="RSVP link · optional"
+                      placeholder="https://"
+                    />
                   </div>
-                </details>
-              </section>
-              <p class="text-xs text-paper/45">
-                Legacy adapters below retain their original approval/curated-feed policies.
-                Edition-specific sources have been paused where annual monitors replace them.
-              </p>
-              <section
-                v-if="candidates.length"
-                class="space-y-4"
-                aria-label="Dates awaiting review"
-              >
-                <h3 class="text-lg">Awaiting review · {{ candidates.length }}</h3>
-                <article
-                  v-for="item in candidates"
-                  :key="item.id"
-                  class="space-y-4 rounded-xl border border-acid/20 bg-paper/3 p-5"
-                >
-                  <h4 class="font-medium">{{ item.title }}</h4>
-                  <p class="text-xs leading-relaxed text-paper/65">{{ item.description }}</p>
-                  <p class="text-xs text-paper/50">
-                    Currently published deadline:
-                    {{ listings.find((row) => row.id === item.id)?.deadline || 'None' }}
-                  </p>
-                  <ul class="space-y-3">
-                    <li
-                      v-for="milestone in item.milestones"
-                      :key="milestone.label"
-                      class="text-xs leading-relaxed"
+                  <div v-if="tab === 'Research'" class="space-y-8">
+                    <fieldset
+                      v-for="(project, index) in draft.projects"
+                      :key="project.id"
+                      class="space-y-4 border-t border-paper/15 pt-5"
                     >
-                      <p>
-                        {{ milestone.label }} · {{ milestone.date }}
-                        <span class="text-paper/50">{{
-                          milestone.timezone || 'Date only; confirm local cutoff'
-                        }}</span>
+                      <legend class="px-2 text-xs text-acid">Project 0{{ index + 1 }}</legend>
+                      <AdminField v-model="project.title" label="Title" /><AdminField
+                        v-model="project.field"
+                        label="Research field"
+                      /><AdminField v-model="project.status" label="Status" /><AdminField
+                        v-model="project.summary"
+                        label="Preview"
+                        multiline
+                      /><AdminField
+                        v-model="project.details"
+                        label="Research question, methods, contributors, and findings"
+                        multiline
+                      /><AdminField
+                        v-model="project.url"
+                        label="Project link · optional"
+                        placeholder="https://"
+                      />
+                    </fieldset>
+                  </div>
+                  <div v-if="tab === 'Support'" class="space-y-8">
+                    <fieldset
+                      v-for="(benefit, index) in draft.benefits"
+                      :key="index"
+                      class="space-y-4 border-t border-paper/15 pt-5"
+                    >
+                      <legend class="px-2 text-xs text-acid">Opportunity 0{{ index + 1 }}</legend>
+                      <AdminField v-model="benefit.title" label="Title" /><AdminField
+                        v-model="benefit.description"
+                        label="Description"
+                        multiline
+                      /><AdminField
+                        v-model="benefit.url"
+                        label="Signup link · optional"
+                        placeholder="https://"
+                      />
+                    </fieldset>
+                  </div>
+                  <div v-if="tab === 'Links'" class="space-y-4">
+                    <AdminField
+                      v-model="draft.links.join"
+                      label="Join / community link"
+                      placeholder="https://"
+                    /><AdminField
+                      v-model="draft.links.contact"
+                      label="Contact link"
+                      placeholder="https:// or mailto:"
+                    />
+                    <p class="text-xs leading-relaxed text-paper/45">
+                      Leave a link blank to show the corresponding forthcoming state.
+                    </p>
+                  </div>
+                  <div v-if="tab === 'Listings'">
+                    <template v-if="!editing"
+                      ><button
+                        class="mb-5 rounded-full border border-acid/50 px-4 py-2 text-xs text-acid"
+                        @click="editListing()"
+                      >
+                        + Add opportunity
+                      </button>
+                      <div class="divide-y divide-paper/15">
+                        <button
+                          v-for="item in listings"
+                          :key="item.id"
+                          class="flex w-full items-center justify-between gap-4 py-4 text-left text-sm"
+                          @click="editListing(item)"
+                        >
+                          <span
+                            >{{ item.title
+                            }}<span class="mt-1 block text-[10px] text-paper/40"
+                              >{{ item.sourceId }} ·
+                              {{ item.published ? 'Published' : 'Hidden' }}</span
+                            ></span
+                          ><SiteIcon :size="14" />
+                        </button>
+                      </div>
+                      <p v-if="!listings.length" class="text-sm text-paper/50">
+                        No listings yet. Add a curated opportunity or enable a verified source.
+                      </p></template
+                    >
+                    <form v-else class="space-y-4" @submit.prevent="saveListing">
+                      <button type="button" class="text-xs text-acid" @click="editing = null">
+                        ← All listings</button
+                      ><AdminField v-model="editing.title" label="Title" /><label
+                        class="block text-xs text-paper/55"
+                        >Type<select
+                          v-model="editing.kind"
+                          class="mt-2 block w-full rounded-lg border border-paper/15 bg-ink p-3 text-sm"
+                        >
+                          <option
+                            v-for="kind in [
+                              'Competition',
+                              'Conference',
+                              'Workshop',
+                              'Publication',
+                              'Program',
+                            ]"
+                            :key="kind"
+                          >
+                            {{ kind }}
+                          </option>
+                        </select></label
+                      ><AdminField v-model="editing.discipline" label="Discipline" /><AdminField
+                        v-model="editing.description"
+                        label="Description"
+                        multiline
+                      /><AdminField v-model="editing.url" label="Official URL" /><AdminField
+                        v-model="editing.location"
+                        label="Location"
+                      /><AdminField v-model="editing.eligibility" label="Eligibility" /><AdminField
+                        :model-value="editing.deadline || ''"
+                        label="Submission deadline · YYYY-MM-DD or ISO timestamp"
+                        @update:model-value="editing.deadline = $event || null"
+                      /><AdminField
+                        :model-value="editing.eventDate || ''"
+                        label="Event date · separate from deadline"
+                        @update:model-value="editing.eventDate = $event || null"
+                      /><AdminField
+                        :model-value="editing.timezone || ''"
+                        label="Timezone · optional IANA name"
+                        @update:model-value="editing.timezone = $event || null"
+                      /><AdminField
+                        :model-value="String(editing.priority)"
+                        label="Priority · 0–100"
+                        type="number"
+                        @update:model-value="editing.priority = Number($event)"
+                      /><label class="flex items-center gap-3 text-sm"
+                        ><input
+                          v-model="editing.published"
+                          type="checkbox"
+                          class="accent-acid"
+                        />Published</label
+                      >
+                      <p class="text-xs text-paper/40">
+                        Edits to imported fields are preserved on future imports. Hiding a listing
+                        suppresses it until you publish it again.
                       </p>
-                      <blockquote class="mt-1 text-paper/50">“{{ milestone.evidence }}”</blockquote>
-                    </li>
-                  </ul>
-                  <a
-                    :href="item.url"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="inline-block text-xs text-acid underline underline-offset-4"
-                    >Verify official source ↗</a
-                  >
-                  <p class="text-[10px] text-paper/40">
-                    Fetched {{ item.verifiedAt }} · {{ item.provenance?.parserVersion }}
-                  </p>
-                  <div class="flex flex-wrap gap-3">
-                    <button
-                      :disabled="busy"
-                      class="rounded-full bg-acid px-4 py-2 text-xs text-ink disabled:opacity-40"
-                      @click="reviewCandidate(item, true)"
-                    >
-                      Approve &amp; publish
-                    </button>
-                    <button
-                      :disabled="busy"
-                      class="rounded-full border border-paper/20 px-4 py-2 text-xs disabled:opacity-40"
-                      @click="reviewCandidate(item, false)"
-                    >
-                      Dismiss
-                    </button>
+                      <button
+                        :disabled="busy"
+                        class="rounded-full bg-acid px-5 py-3 text-sm text-ink disabled:opacity-40"
+                      >
+                        Save listing
+                      </button>
+                    </form>
                   </div>
-                </article>
-              </section>
-              <button
-                v-for="feed in sources"
-                :key="feed.id"
-                class="block w-full rounded-lg border border-paper/15 p-4 text-left"
-                @click="
-                  source = {
-                    id: feed.id,
-                    name: feed.name,
-                    kind: feed.kind,
-                    url: feed.url,
-                    enabled: feed.enabled,
-                  }
-                "
+                  <div v-if="tab === 'Sources'" class="space-y-6">
+                    <p class="text-xs leading-relaxed text-paper/55">
+                      Annual monitors validate exact source evidence and automatically publish new
+                      facts after two matching observations at least six hours apart. Failed checks
+                      preserve confirmed information. Owner edits and hidden listings are never
+                      reset.
+                    </p>
+                    <section
+                      v-if="monitors.length"
+                      class="space-y-3"
+                      aria-label="Annual opportunity monitors"
+                    >
+                      <h3 class="text-lg">Annual monitors · {{ monitors.length }}</h3>
+                      <details
+                        v-for="monitor in monitors"
+                        :key="monitor.id"
+                        class="rounded-xl border border-paper/15 p-4 text-xs"
+                      >
+                        <summary class="cursor-pointer leading-relaxed">
+                          {{ monitor.seed.title }}
+                          <span class="text-paper/45"
+                            >·
+                            {{
+                              !monitor.enabled
+                                ? 'Paused'
+                                : monitor.last_error
+                                  ? 'Needs attention'
+                                  : 'Monitoring'
+                            }}</span
+                          >
+                        </summary>
+                        <div class="mt-4 space-y-3 text-paper/55">
+                          <p>Last attempt: {{ monitor.last_attempt_at || 'Scheduled' }}</p>
+                          <p>
+                            Last confirmed: {{ monitor.last_success_at || 'Awaiting confirmation' }}
+                          </p>
+                          <p>Next check: {{ monitor.next_check_at }}</p>
+                          <p v-if="monitor.last_error" class="text-amber-200">
+                            {{ monitor.last_error }}
+                          </p>
+                          <a
+                            :href="monitor.url"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="block text-acid underline"
+                            >Official source ↗</a
+                          >
+                          <button
+                            :disabled="busy"
+                            class="rounded-full border border-paper/20 px-4 py-2 text-paper disabled:opacity-40"
+                            @click="toggleMonitor(monitor.id, !monitor.enabled)"
+                          >
+                            {{ monitor.enabled ? 'Pause monitor' : 'Resume monitor' }}
+                          </button>
+                        </div>
+                      </details>
+                    </section>
+                    <p class="text-xs text-paper/45">
+                      Legacy adapters below retain their original approval/curated-feed policies.
+                      Edition-specific sources have been paused where annual monitors replace them.
+                    </p>
+                    <section
+                      v-if="candidates.length"
+                      class="space-y-4"
+                      aria-label="Dates awaiting review"
+                    >
+                      <h3 class="text-lg">Awaiting review · {{ candidates.length }}</h3>
+                      <article
+                        v-for="item in candidates"
+                        :key="item.id"
+                        class="space-y-4 rounded-xl border border-acid/20 bg-paper/3 p-5"
+                      >
+                        <h4 class="font-medium">{{ item.title }}</h4>
+                        <p class="text-xs leading-relaxed text-paper/65">{{ item.description }}</p>
+                        <p class="text-xs text-paper/50">
+                          Currently published deadline:
+                          {{ listings.find((row) => row.id === item.id)?.deadline || 'None' }}
+                        </p>
+                        <ul class="space-y-3">
+                          <li
+                            v-for="milestone in item.milestones"
+                            :key="milestone.label"
+                            class="text-xs leading-relaxed"
+                          >
+                            <p>
+                              {{ milestone.label }} · {{ milestone.date }}
+                              <span class="text-paper/50">{{
+                                milestone.timezone || 'Date only; confirm local cutoff'
+                              }}</span>
+                            </p>
+                            <blockquote class="mt-1 text-paper/50">
+                              “{{ milestone.evidence }}”
+                            </blockquote>
+                          </li>
+                        </ul>
+                        <a
+                          :href="item.url"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="inline-block text-xs text-acid underline underline-offset-4"
+                          >Verify official source ↗</a
+                        >
+                        <p class="text-[10px] text-paper/40">
+                          Fetched {{ item.verifiedAt }} · {{ item.provenance?.parserVersion }}
+                        </p>
+                        <div class="flex flex-wrap gap-3">
+                          <button
+                            :disabled="busy"
+                            class="rounded-full bg-acid px-4 py-2 text-xs text-ink disabled:opacity-40"
+                            @click="reviewCandidate(item, true)"
+                          >
+                            Approve &amp; publish
+                          </button>
+                          <button
+                            :disabled="busy"
+                            class="rounded-full border border-paper/20 px-4 py-2 text-xs disabled:opacity-40"
+                            @click="reviewCandidate(item, false)"
+                          >
+                            Dismiss
+                          </button>
+                        </div>
+                      </article>
+                    </section>
+                    <button
+                      v-for="feed in sources"
+                      :key="feed.id"
+                      class="block w-full rounded-lg border border-paper/15 p-4 text-left"
+                      @click="
+                        source = {
+                          id: feed.id,
+                          name: feed.name,
+                          kind: feed.kind,
+                          url: feed.url,
+                          enabled: feed.enabled,
+                        }
+                      "
+                    >
+                      <span class="text-sm"
+                        >{{ feed.name }} · {{ feed.enabled ? 'Enabled' : 'Disabled' }}</span
+                      ><span class="mt-2 block text-[10px] text-paper/40">{{
+                        feed.last_run ? `Last run: ${feed.last_run}` : 'Not imported yet'
+                      }}</span
+                      ><span v-if="feed.last_error" class="mt-2 block text-xs text-amber-200">{{
+                        feed.last_error
+                      }}</span>
+                    </button>
+                    <form
+                      class="space-y-4 border-t border-paper/15 pt-6"
+                      @submit.prevent="saveSource"
+                    >
+                      <AdminField
+                        v-model="source.id"
+                        label="Stable ID · lowercase letters, digits, hyphens"
+                      /><AdminField v-model="source.name" label="Name" /><AdminField
+                        v-model="source.url"
+                        label="Verified endpoint URL"
+                      /><label class="block text-xs text-paper/55"
+                        >Adapter<select
+                          v-model="source.kind"
+                          class="mt-2 block w-full rounded-lg border border-paper/15 bg-ink p-3"
+                        >
+                          <option value="json">JSON</option>
+                          <option value="rss">RSS / Atom</option>
+                          <option value="official">Official website (registered profile)</option>
+                        </select></label
+                      ><label class="flex items-center gap-3 text-sm"
+                        ><input
+                          v-model="source.enabled"
+                          type="checkbox"
+                          class="accent-acid"
+                        />Enable daily fetching</label
+                      ><button
+                        :disabled="busy"
+                        class="rounded-full bg-acid px-5 py-3 text-sm text-ink disabled:opacity-40"
+                      >
+                        Save source
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              </Transition>
+            </template>
+            <p
+              v-if="error"
+              role="alert"
+              class="mt-6 whitespace-pre-line rounded-lg border border-red-300/20 bg-red-300/5 p-4 text-xs leading-relaxed text-red-200"
+            >
+              {{ error }}
+            </p>
+            <p
+              v-if="message"
+              role="status"
+              class="mt-6 rounded-lg border border-acid/20 p-4 text-xs leading-relaxed text-acid"
+            >
+              {{ message }}
+            </p>
+          </div>
+          <footer
+            v-if="authenticated"
+            class="flex shrink-0 flex-wrap items-center gap-3 border-t border-paper/10 bg-paper/[.02] px-6 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:px-8"
+          >
+            <template v-if="!['Listings', 'Sources'].includes(tab)"
+              ><button
+                :disabled="busy"
+                class="rounded-full border border-paper/20 px-4 py-3 text-xs disabled:opacity-40"
+                @click="save(false)"
               >
-                <span class="text-sm"
-                  >{{ feed.name }} · {{ feed.enabled ? 'Enabled' : 'Disabled' }}</span
-                ><span class="mt-2 block text-[10px] text-paper/40">{{
-                  feed.last_run ? `Last run: ${feed.last_run}` : 'Not imported yet'
-                }}</span
-                ><span v-if="feed.last_error" class="mt-2 block text-xs text-amber-200">{{
-                  feed.last_error
-                }}</span>
-              </button>
-              <form class="space-y-4 border-t border-paper/15 pt-6" @submit.prevent="saveSource">
-                <AdminField
-                  v-model="source.id"
-                  label="Stable ID · lowercase letters, digits, hyphens"
-                /><AdminField v-model="source.name" label="Name" /><AdminField
-                  v-model="source.url"
-                  label="Verified endpoint URL"
-                /><label class="block text-xs text-paper/55"
-                  >Adapter<select
-                    v-model="source.kind"
-                    class="mt-2 block w-full rounded-lg border border-paper/15 bg-ink p-3"
-                  >
-                    <option value="json">JSON</option>
-                    <option value="rss">RSS / Atom</option>
-                    <option value="official">Official website (registered profile)</option>
-                  </select></label
-                ><label class="flex items-center gap-3 text-sm"
-                  ><input v-model="source.enabled" type="checkbox" class="accent-acid" />Enable
-                  daily fetching</label
-                ><button
-                  :disabled="busy"
-                  class="rounded-full bg-acid px-5 py-3 text-sm text-ink disabled:opacity-40"
-                >
-                  Save source
-                </button>
-              </form>
-            </div>
-          </template>
-          <p
-            v-if="error"
-            role="alert"
-            class="mt-6 whitespace-pre-line rounded-lg border border-red-300/20 bg-red-300/5 p-4 text-xs leading-relaxed text-red-200"
-          >
-            {{ error }}
-          </p>
-          <p
-            v-if="message"
-            role="status"
-            class="mt-6 rounded-lg border border-acid/20 p-4 text-xs leading-relaxed text-acid"
-          >
-            {{ message }}
-          </p>
-        </div>
-        <footer
-          v-if="authenticated"
-          class="flex shrink-0 items-center gap-3 border-t border-paper/15 bg-ink p-5"
-        >
-          <template v-if="!['Listings', 'Sources'].includes(tab)"
-            ><button
-              :disabled="busy"
-              class="rounded-full border border-paper/20 px-4 py-3 text-xs disabled:opacity-40"
-              @click="save(false)"
-            >
-              Save draft</button
-            ><button
-              :disabled="busy"
-              class="rounded-full bg-acid px-5 py-3 text-xs text-ink disabled:opacity-40"
-              @click="save(true)"
-            >
-              {{ busy ? 'Saving…' : 'Publish content' }}
-            </button></template
-          ><button class="ml-auto text-xs text-paper/45" @click="signOut">Sign out</button>
-        </footer>
-      </section>
-    </div>
+                Save draft</button
+              ><button
+                :disabled="busy"
+                class="rounded-full bg-acid px-5 py-3 text-xs text-ink disabled:opacity-40"
+                @click="save(true)"
+              >
+                {{ busy ? 'Saving…' : 'Publish content' }}
+              </button></template
+            ><button class="ml-auto text-xs text-paper/45" @click="signOut">Sign out</button>
+          </footer>
+        </section>
+      </div>
+    </Transition>
   </Teleport>
 </template>

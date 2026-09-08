@@ -9,6 +9,7 @@ test('join flow validates, preserves answers, retries safely and confirms receip
   await page.route('**/api/join', async (route) => {
     const body = route.request().postDataJSON()
     expect(body.consent).toBe(true)
+    expect(body.note).toBe('More hands-on workshops!')
     expect(body.interests).toEqual(['Robotics & engineering'])
     expect(body.goals).toEqual(['Find research partners'])
     if (!firstId) firstId = body.requestId
@@ -41,6 +42,8 @@ test('join flow validates, preserves answers, retries safely and confirms receip
   await page.getByRole('button', { name: 'Continue', exact: true }).click()
   await page.getByRole('button', { name: 'Continue', exact: true }).click()
   await page.getByRole('button', { name: 'Find research partners', exact: true }).click()
+  await page.getByLabel('Anything else? · optional').fill('More hands-on workshops!')
+  await expect(page.getByLabel('Anything else? · optional')).toHaveAttribute('maxlength', '1000')
   await form.getByRole('button', { name: 'Join Matrix Fellows', exact: true }).click()
   await expect(page.getByRole('alert')).toContainText('agree')
   await page.getByRole('checkbox').check()

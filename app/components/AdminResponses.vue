@@ -21,6 +21,7 @@ type Response = {
   interests: string[]
   goals: string[]
   stage: string
+  note: string
 }
 const stats = ref<Analytics>()
 const responses = ref<Response[]>([])
@@ -38,7 +39,7 @@ async function load() {
       props.client.rpc('join_response_analytics'),
       props.client
         .from('join_responses')
-        .select('id,created_at,name,email,grade,interests,goals,stage')
+        .select('id,created_at,name,email,grade,interests,goals,stage,note')
         .order('id', { ascending: false })
         .range(page.value * 20, page.value * 20 + 19),
     ])
@@ -225,6 +226,14 @@ onBeforeUnmount(() => {
             }}</time>
           </div>
           <p class="mt-3 text-xs text-paper/50">{{ response.grade }} · {{ response.stage }}</p>
+          <div v-if="response.note" class="mt-3 rounded-lg bg-paper/[.025] p-3">
+            <h6 class="mb-2 text-[10px] uppercase tracking-wider text-paper/40">
+              Feedback & ideas
+            </h6>
+            <p class="whitespace-pre-wrap break-words text-xs leading-relaxed text-paper/70">
+              {{ response.note }}
+            </p>
+          </div>
           <p class="mt-2 text-xs leading-relaxed text-paper/45">
             {{ response.interests.join(' · ') }}
           </p>

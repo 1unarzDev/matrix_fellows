@@ -12,6 +12,13 @@ const response = {
   consent: true,
 }
 describe('membership response validation', () => {
+  it('keeps feedback optional, trims it and limits its length', () => {
+    expect(joinSchema.parse(response).note).toBe('')
+    expect(joinSchema.parse({ ...response, note: '  More robotics workshops!  ' }).note).toBe(
+      'More robotics workshops!',
+    )
+    expect(joinSchema.safeParse({ ...response, note: 'a'.repeat(1001) }).success).toBe(false)
+  })
   it('normalizes email and provides safe optional defaults', () => {
     expect(joinSchema.parse(response)).toMatchObject({ email: 'fellow@example.org', website: '' })
   })

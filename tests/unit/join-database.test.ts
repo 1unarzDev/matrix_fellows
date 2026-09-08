@@ -11,7 +11,7 @@ const response = {
   interests: ['Still exploring'],
   goals: ['Find research partners'],
   stage: 'No experience yet',
-  note: '',
+  note: 'More hands-on robotics workshops, please.',
 }
 beforeAll(async () => {
   db = new PGlite()
@@ -25,6 +25,7 @@ beforeAll(async () => {
     '004_join_responses.sql',
     '005_lean_join_form.sql',
     '006_shared_network_join_limit.sql',
+    '007_join_feedback.sql',
   ])
     await db.exec(
       await readFile(new URL(`../../supabase/migrations/${file}`, import.meta.url), 'utf8'),
@@ -39,6 +40,7 @@ it('only the server can capture responses and retries are idempotent', async () 
   await db.query('select public.submit_join_response($1,$2)', [JSON.stringify(response), 'hash'])
   await db.query('select public.submit_join_response($1,$2)', [JSON.stringify(response), 'hash'])
   expect((await db.query('select * from public.join_responses')).rows).toHaveLength(1)
+  expect((await db.query<{ note: string }>('select note from public.join_responses')).rows[0]!.note).toBe(response.note)
   await db.exec('set role anon')
   await expect(db.query('select * from public.join_responses')).rejects.toThrow(/permission denied/)
   await expect(

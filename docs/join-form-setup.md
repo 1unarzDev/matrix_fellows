@@ -21,7 +21,7 @@ Totals are response counts, not independently verified membership or attendance.
 ## Server setup
 
 1. Apply migrations `004_join_responses.sql`, `005_lean_join_form.sql`, and
-   `006_shared_network_join_limit.sql` to the Matrix Fellows project
+   `006_shared_network_join_limit.sql`, and `007_join_feedback.sql` to the Matrix Fellows project
    (`xlnjzzbsxzadrvbrggau`). Do not apply it to other projects.
 2. Set these **server secrets**, not public runtime settings:
    - `NUXT_SUPABASE_SERVICE_ROLE_KEY`: existing project service-role key.
@@ -32,6 +32,11 @@ Totals are response counts, not independently verified membership or attendance.
 ## Connect the provided sheet (one-time owner authorization)
 
 Destination: https://docs.google.com/spreadsheets/d/1zOpBa4Z3RACdbAthXltReQa8bdWU2yRPHZiqqQlWkk4/edit
+
+If already installed, replace the Apps Script code with the latest `Code.gs`.
+It adds the feedback column to the original nine-column layout and fills missing
+feedback cells without overwriting existing organizer edits. The existing token
+and scheduled trigger can stay unchanged.
 
 1. Set Google Drive sharing to **Restricted**. Grant access only to organizers who
    need raw responses. An editing link is not service authentication.
@@ -67,7 +72,8 @@ rows or propagate deletions. Do not remove or rename the ID/header columns.
 
 The form discloses database/organizer-sheet storage and requires contact consent.
 Only name and email require typing; grade, experience, interests, and meeting goals
-use selectors. No open-ended note is collected. Share the admin's **sponsor
+use selectors. The final step includes an optional, 1,000-character feedback field.
+Feedback is private to organizers and excluded from sponsor exports. Share the admin's **sponsor
 summary CSV**, never the raw organizer sheet. No response is automatically sent
 to a sponsor. Review even aggregate summaries before external sharing.
 

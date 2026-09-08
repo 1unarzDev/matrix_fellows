@@ -55,6 +55,7 @@ test('authorized response dashboard shows analytics and exports only aggregate c
           email: 'private@example.org',
           grade: '11th grade',
           stage: 'No experience yet',
+          note: 'Private club feedback for organizers only.',
           interests: ['AI & computing'],
           goals: ['Learn research skills'],
           created_at: '2026-09-07T12:00:00Z',
@@ -78,6 +79,7 @@ test('authorized response dashboard shows analytics and exports only aggregate c
     page.getByRole('heading', { name: 'The people behind the questions.' }),
   ).toBeVisible()
   await expect(page.getByText('Private Test Name', { exact: true })).toBeVisible()
+  await expect(page.getByText('Private club feedback for organizers only.', { exact: true })).toBeVisible()
   const downloadEvent = page.waitForEvent('download')
   await page.getByRole('button', { name: 'Download sponsor summary', exact: false }).click()
   const download = await downloadEvent
@@ -89,5 +91,6 @@ test('authorized response dashboard shows analytics and exports only aggregate c
   expect(csv).toContain('<5')
   expect(csv).not.toContain('Private Test Name')
   expect(csv).not.toContain('private@example.org')
+  expect(csv).not.toContain('Private club feedback')
   await page.screenshot({ path: `test-results/admin-responses-${test.info().project.name}.png` })
 })

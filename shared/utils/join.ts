@@ -49,6 +49,11 @@ export const joinSchema = z.object({
     .max(5)
     .transform((value) => [...new Set(value)]),
   stage: z.enum(joinStages, { error: 'Please choose your current experience level.' }),
+  note: z
+    .string()
+    .trim()
+    .max(1000, 'Please keep your feedback under 1,000 characters.')
+    .default(''),
   consent: z.literal(true, { error: 'Please agree to how we use your response.' }),
   website: z.string().max(200).default(''),
 })

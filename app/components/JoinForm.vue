@@ -21,6 +21,7 @@ const draft = useState('join-draft', () => ({
   interests: [] as string[],
   goals: [] as string[],
   stage: '',
+  note: '',
   consent: false,
   website: '',
 }))
@@ -103,7 +104,7 @@ function trapFocus(event: KeyboardEvent) {
   if (event.key !== 'Tab') return
   const elements = Array.from(
     dialog.value?.querySelectorAll<HTMLElement>(
-      'button:not(:disabled),a[href],input:not(:disabled),[tabindex="0"]',
+      'button:not(:disabled),a[href],input:not(:disabled),textarea:not(:disabled),[tabindex="0"]',
     ) || [],
   ).filter((element) => element.tabIndex >= 0 && element.getClientRects().length > 0)
   const first = elements[0],
@@ -364,11 +365,24 @@ onBeforeUnmount(() => {
                           </button>
                         </div>
                       </fieldset>
+                      <div>
+                        <AdminField
+                          v-model="draft.note"
+                          label="Anything else? · optional"
+                          placeholder="Ideas for the club, feedback, or something you’d like to talk about…"
+                          multiline
+                          :maxlength="1000"
+                        />
+                        <p class="mt-2 text-right text-[10px] text-paper/35">
+                          {{ draft.note.length }} / 1,000
+                        </p>
+                      </div>
                       <p class="text-[11px] leading-relaxed text-paper/50">
                         Your response is stored privately in our database and may be copied to an
                         organizer-only Google Sheet. We use it to contact you about Matrix Fellows.
                         Sponsor reports contain aggregate counts, not your name, email, or answers.
-                        Request removal at contact@matrixfellows.com.
+                        Please avoid sensitive personal details. Request removal at
+                        contact@matrixfellows.com.
                       </p>
                       <label
                         class="flex cursor-pointer items-start gap-3 text-xs leading-relaxed text-paper/70"

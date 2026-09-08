@@ -55,6 +55,7 @@ const onCinematicReady = () => {
   pendingAnchor = null
 }
 const adminOpen = ref(false)
+const joinOpen = ref(false)
 const sections = [
   { id: 'beginning', label: 'The question', short: 'Begin' },
   { id: 'discovery', label: 'Discovery', short: 'Discover' },
@@ -319,8 +320,13 @@ onBeforeUnmount(() => {
         aria-labelledby="discovery-title"
         class="relative flex min-h-[110svh] items-center px-6 py-32 outline-none sm:px-10 lg:px-16"
       >
-        <div aria-hidden="true" class="pointer-events-none absolute -inset-x-0 inset-y-0 bg-[radial-gradient(ellipse_at_35%_50%,#101a17d9,transparent_72%)] sm:hidden" />
-        <div class="relative max-w-xl max-sm:[text-shadow:0_2px_18px_#06100de6] max-sm:[&_p]:text-paper/90">
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute -inset-x-0 inset-y-0 bg-[radial-gradient(ellipse_at_35%_50%,#101a17d9,transparent_72%)] sm:hidden"
+        />
+        <div
+          class="relative max-w-xl max-sm:[text-shadow:0_2px_18px_#06100de6] max-sm:[&_p]:text-paper/90"
+        >
           <p class="mb-8 text-[10px] uppercase tracking-[.25em] text-acid">
             02 — A first discovery
           </p>
@@ -459,7 +465,10 @@ onBeforeUnmount(() => {
             id="frontiers-title"
             class="font-display text-5xl font-medium leading-[1.08] tracking-[-.055em] sm:text-7xl"
           >
-            The <span class="font-serif font-normal italic tracking-[-.065em] text-[#c4dadd]">unknown</span><br />is an invitation.
+            The
+            <span class="font-serif font-normal italic tracking-[-.065em] text-[#c4dadd]"
+              >unknown</span
+            ><br />is an invitation.
           </h2>
           <p class="mt-8 max-w-md text-base leading-relaxed text-paper/70">
             Research asks us to stay with the difficult questions. To look closer when the answer
@@ -590,21 +599,16 @@ onBeforeUnmount(() => {
                 >what’s possible.</span
               >
             </h3>
-            <a
-              v-if="content.links.join"
-              :href="content.links.join"
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              @click="joinOpen = true"
               class="tactile group inline-flex min-h-12 shrink-0 items-center gap-7 rounded-full bg-[#dce5ff] px-6 py-4 text-sm font-medium text-[#182238] hover:bg-white hover:shadow-[0_8px_32px_#b7c8ff20] focus-visible:outline-[#b7c8ff]"
-              >Join Matrix Fellows
+            >
+              Join Matrix Fellows
               <span
                 class="transition-transform duration-300 group-hover:translate-x-1 motion-reduce:transform-none"
-                ><SiteIcon :size="16" /></span></a
-            ><span
-              v-else
-              class="rounded-full border border-[#b0bdd8]/25 px-6 py-4 text-xs text-[#b0bdd8]"
-              >Membership opens soon</span
-            >
+                ><SiteIcon :size="16"
+              /></span>
+            </button>
           </div>
         </div>
         <p v-if="data?.unavailable" role="status" class="mt-6 text-xs text-paper/45">
@@ -632,17 +636,12 @@ onBeforeUnmount(() => {
         </div>
         <div class="grid min-w-0 grid-rows-[auto_minmax(44px,auto)_auto]">
           <h3 class="text-xs font-medium text-paper/85">Become a fellow</h3>
-          <a
-            v-if="content.links.join"
-            :href="content.links.join"
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            @click="joinOpen = true"
             class="tactile inline-flex min-h-11 w-fit items-center gap-2 py-2 text-[11px] text-paper/75 hover:text-acid"
-            >Open join form <SiteIcon :size="14"
-          /></a>
-          <p v-else class="flex min-h-11 items-center py-2 text-[11px] leading-4 text-paper/45">
-            Join form coming soon.
-          </p>
+          >
+            Open join form <SiteIcon :size="14" />
+          </button>
           <a
             href="#community"
             class="tactile flex min-h-11 w-fit items-center gap-2 py-2 text-[11px] text-paper/65 hover:text-paper"
@@ -681,6 +680,7 @@ onBeforeUnmount(() => {
         >
       </div>
     </footer>
+    <LazyJoinForm v-if="joinOpen" @close="joinOpen = false" />
     <LazyAdminPanel
       v-if="adminOpen"
       :initial-content="content"

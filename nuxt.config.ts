@@ -7,6 +7,8 @@ export default defineNuxtConfig({
   vite: { plugins: [tailwindcss()] },
   nitro: { preset: 'cloudflare-module' },
   runtimeConfig: {
+    supabaseServiceRoleKey: '',
+    sheetsSyncToken: '',
     public: {
       supabaseUrl: '',
       supabaseAnonKey: '',
@@ -43,11 +45,13 @@ export default defineNuxtConfig({
           href: 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=Manrope:wght@400;500;600;650;700;750;800&display=swap',
         },
       ],
-      script: [{
-        key: 'arrival-first-paint',
-        innerHTML: "document.documentElement.classList.add('has-js')",
-        tagPosition: 'head',
-      }],
+      script: [
+        {
+          key: 'arrival-first-paint',
+          innerHTML: "document.documentElement.classList.add('has-js')",
+          tagPosition: 'head',
+        },
+      ],
     },
   },
 })

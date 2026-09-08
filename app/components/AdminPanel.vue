@@ -396,7 +396,15 @@ onBeforeUnmount(() => {
                 class="mb-8 grid grid-cols-3 gap-1 rounded-2xl border border-paper/10 bg-paper/[.025] p-1.5"
               >
                 <button
-                  v-for="name in ['Meeting', 'Research', 'Support', 'Links', 'Listings', 'Sources']"
+                  v-for="name in [
+                    'Meeting',
+                    'Research',
+                    'Support',
+                    'Links',
+                    'Listings',
+                    'Sources',
+                    'Responses',
+                  ]"
                   :key="name"
                   :aria-current="tab === name ? 'page' : undefined"
                   class="min-h-11 rounded-xl px-3 py-2 text-xs"
@@ -420,6 +428,7 @@ onBeforeUnmount(() => {
                 leave-to-class="-translate-y-1 opacity-0 motion-reduce:translate-y-0"
               >
                 <div :key="tab" class="min-h-64">
+                  <AdminResponses v-if="tab === 'Responses' && client" :client="client" />
                   <div v-if="tab === 'Meeting'" class="space-y-4">
                     <AdminField v-model="draft.meeting.title" label="Meeting title" />
                     <div class="grid grid-cols-2 gap-4">
@@ -488,7 +497,7 @@ onBeforeUnmount(() => {
                   <div v-if="tab === 'Links'" class="space-y-4">
                     <AdminField
                       v-model="draft.links.join"
-                      label="Join / community link"
+                      label="External community link · reserved"
                       placeholder="https://"
                     /><AdminField
                       v-model="draft.links.contact"
@@ -496,7 +505,9 @@ onBeforeUnmount(() => {
                       placeholder="https:// or mailto:"
                     />
                     <p class="text-xs leading-relaxed text-paper/45">
-                      Leave a link blank to show the corresponding forthcoming state.
+                      The website now uses its built-in membership form and
+                      contact@matrixfellows.com. These legacy links are retained for future external
+                      community integrations.
                     </p>
                   </div>
                   <div v-if="tab === 'Listings'">
@@ -793,7 +804,7 @@ onBeforeUnmount(() => {
             v-if="authenticated"
             class="flex shrink-0 flex-wrap items-center gap-3 border-t border-paper/10 bg-paper/[.02] px-6 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:px-8"
           >
-            <template v-if="!['Listings', 'Sources'].includes(tab)"
+            <template v-if="!['Listings', 'Sources', 'Responses'].includes(tab)"
               ><button
                 :disabled="busy"
                 class="rounded-full border border-paper/20 px-4 py-3 text-xs disabled:opacity-40"

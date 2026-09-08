@@ -163,11 +163,11 @@ onMounted(() => {
           />
           <span
             data-timeline-dot
-            class="relative block h-3 w-3 shrink-0 rounded-full border transition-[transform,background-color,border-color,box-shadow] duration-[2000ms] ease-[cubic-bezier(.45,0,.25,1)] group-hover:scale-[1.10] group-hover:shadow-[0_0_16px_color-mix(in_srgb,var(--color-acid)_25%,transparent)] group-focus-visible:scale-[1.10] motion-reduce:transform-none motion-reduce:transition-none"
+            class="relative block h-3 w-3 shrink-0 rounded-full border transition-[background-color,border-color,box-shadow] duration-[2000ms] ease-[cubic-bezier(.45,0,.25,1)] group-hover:shadow-[0_0_18px_color-mix(in_srgb,var(--color-acid)_20%,transparent)] group-focus-visible:shadow-[0_0_18px_color-mix(in_srgb,var(--color-acid)_20%,transparent)] motion-reduce:transition-none"
             :class="
               selected === index
                 ? 'border-acid bg-acid shadow-[0_0_14px_color-mix(in_srgb,var(--color-acid)_20%,transparent)]'
-                : 'border-paper/35 bg-ink group-hover:border-acid/60'
+                : 'border-paper/35 bg-ink group-hover:border-acid/60 group-focus-visible:border-acid/60'
             "
             aria-hidden="true"
           />
@@ -185,7 +185,8 @@ onMounted(() => {
             }}</span
           >
           <span
-            class="mt-1 block text-xs transition-[color,transform] duration-[2000ms] ease-[cubic-bezier(.45,0,.25,1)] group-hover:translate-x-0.5 group-hover:text-acid group-focus-visible:text-acid motion-reduce:transform-none motion-reduce:transition-none"
+            data-timeline-date
+            class="mt-1 block text-xs transition-colors duration-[2000ms] ease-[cubic-bezier(.45,0,.25,1)] group-hover:text-paper/85 group-focus-visible:text-paper/85 motion-reduce:transition-none"
             :class="selected === index ? 'text-paper' : 'text-paper/45'"
             >{{ displayDate(milestone.date, milestone.timezone || 'UTC') }}</span
           >

@@ -1,5 +1,22 @@
 import { test, expect } from '@playwright/test'
 
+test('timeline hover keeps dates and checkpoint markers stationary', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop')
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/#community')
+  await expect(page.locator('[data-ready="true"]')).toBeVisible()
+  const tab = page.getByRole('tablist').first().getByRole('tab').first()
+  await tab.hover()
+  for (const selector of ['[data-timeline-date]', '[data-timeline-dot]']) {
+    const element = tab.locator(selector)
+    await expect(element).toHaveCSS('translate', 'none')
+    await expect(element).toHaveCSS('transform', 'none')
+    await expect(element).toHaveCSS('scale', 'none')
+  }
+  await tab.focus()
+  await expect(tab.locator('[data-timeline-date]')).toHaveCSS('translate', 'none')
+})
+
 test('hover gestures use slow easing without delaying interaction', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop')
   await page.emulateMedia({ reducedMotion: 'no-preference' })

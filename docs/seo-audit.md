@@ -55,6 +55,14 @@ or Lighthouse. Use Search Console/CrUX field data when sufficient traffic exists
 
 ## Owner actions
 
+Post-deployment verification: `node scripts/check-seo.mjs` passed against
+`https://matrixfellows.com`, including the permanent HTTP→HTTPS redirect.
+The live repeat Lighthouse SEO/accessibility run scored **100/100 in both**
+(baseline 91/97). Raw report: ignored `test-results/seo/after-live.json`.
+93 unit/database tests, typecheck and production build passed. Deployed Cloudflare
+version: `ab9acae3-1e92-400b-b5b3-c6e1f7fb1db0`. Search Console ownership and
+indexing remain unverified; these test scores are not ranking predictions.
+
 1. Add Domain property `matrixfellows.com` in Search Console.
 2. In Cloudflare DNS, add the exact Google-provided TXT record at `@` with TTL
    Auto. Add it alongside existing records; never replace email/SPF/DKIM records.

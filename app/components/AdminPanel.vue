@@ -153,7 +153,7 @@ async function login() {
   message.value = ''
   const { error: loginError } = await client.auth.signInWithOtp({
     email: email.value,
-    options: { shouldCreateUser: false, emailRedirectTo: `${config.public.siteUrl}/?admin=1` },
+    options: { shouldCreateUser: false, emailRedirectTo: `${config.public.siteUrl}/` },
   })
   busy.value = false
   if (loginError) error.value = loginError.message
@@ -391,12 +391,13 @@ onBeforeUnmount(() => {
               </button>
             </form>
             <template v-else>
-              <nav
-                aria-label="Editor sections"
-                class="mb-8 grid grid-cols-3 gap-1 rounded-2xl border border-paper/10 bg-paper/[.025] p-1.5"
-              >
-                <button
-                  v-for="name in [
+              <div class="relative z-20 mb-8">
+                <p class="mb-2.5 text-[10px] uppercase tracking-[.16em] text-paper/40">
+                  Editor section
+                </p>
+                <ThemedSelect
+                  :model-value="tab"
+                  :options="[
                     'Meeting',
                     'Research',
                     'Support',
@@ -405,19 +406,11 @@ onBeforeUnmount(() => {
                     'Sources',
                     'Responses',
                   ]"
-                  :key="name"
-                  :aria-current="tab === name ? 'page' : undefined"
-                  class="min-h-11 rounded-xl px-3 py-2 text-xs"
-                  :class="
-                    tab === name
-                      ? 'bg-acid/10 text-acid shadow-[inset_0_0_0_1px_#c5c0eb26]'
-                      : 'text-paper/50 hover:bg-paper/5 hover:text-paper/85'
-                  "
-                  @click="changeTab(name)"
-                >
-                  {{ name }}
-                </button>
-              </nav>
+                  label="Editor section"
+                  class="sm:w-full"
+                  @update:model-value="changeTab"
+                />
+              </div>
               <Transition
                 mode="out-in"
                 enter-active-class="transition-[opacity,transform] duration-700 ease-[cubic-bezier(.22,1,.36,1)] motion-reduce:transition-none"

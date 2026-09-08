@@ -62,8 +62,18 @@ test('authorized response dashboard shows analytics and exports only aggregate c
       ]
     await route.fulfill({ json: data })
   })
+  await page.goto('/?admin=1#community')
+  await expect(page.locator('[data-ready="true"]')).toBeVisible()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(page).toHaveURL(/\/#community$/)
+  await page.reload()
+  await expect(page.locator('[data-ready="true"]')).toBeVisible()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
   await page.getByRole('button', { name: 'Member admin' }).click()
-  await page.getByRole('button', { name: 'Responses', exact: true }).click()
+  const picker = page.getByRole('button', { name: 'Editor section: Meeting' })
+  await picker.click()
+  await page.getByRole('option', { name: 'Responses', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Editor section: Responses' })).toBeFocused()
   await expect(
     page.getByRole('heading', { name: 'The people behind the questions.' }),
   ).toBeVisible()

@@ -4,7 +4,8 @@ import ArrivalVeil from '~/components/ArrivalVeil.vue'
 import { defaultContent, defaultOpportunities } from '#shared/data/defaults'
 import type { PublicContent } from '#shared/types/content'
 
-const siteUrl = useRuntimeConfig().public.siteUrl
+const publicConfig = useRuntimeConfig().public
+const siteUrl = publicConfig.siteUrl
 const socialImage = new URL('/social-card.png?v=horizon-2', siteUrl).href
 useSeoMeta({
   ogImage: socialImage,
@@ -114,7 +115,26 @@ onMounted(() => {
     if (sceneStatus.value === 'pending') sceneStatus.value = 'fallback'
   }, 12000)
   window.addEventListener('keydown', keydown)
-  if (new URLSearchParams(window.location.search).get('admin') === '1') adminOpen.value = true
+  const url = new URL(window.location.href)
+  // Complete email sign-in quietly, without opening the editor or leaving a
+  // persistent auto-open flag on reload. Keep other query parameters and hashes.
+  if (url.searchParams.has('admin')) {
+    url.searchParams.delete('admin')
+    history.replaceState(history.state, '', `${url.pathname}${url.search}${url.hash}`)
+  }
+  if (
+    (new URLSearchParams(url.hash.slice(1)).has('access_token') || url.searchParams.has('code')) &&
+    publicConfig.supabaseUrl &&
+    publicConfig.supabaseAnonKey
+  ) {
+    void import('~/lib/admin-client')
+      .then(({ getAdminClient }) =>
+        getAdminClient(publicConfig.supabaseUrl, publicConfig.supabaseAnonKey).auth.getSession(),
+      )
+      .catch(() => {
+        /* The editor will report sign-in problems when opened. */
+      })
+  }
 })
 onBeforeUnmount(() => {
   clearTimeout(loadingTimeout)

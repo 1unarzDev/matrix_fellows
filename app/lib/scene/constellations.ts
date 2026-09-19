@@ -1,5 +1,5 @@
 // Selected J2000 star positions from d3-celestial / IAU chart patterns.
-// Sources, projection notes, and BSD license: docs/constellation-references.md.
+// Sources and projection notes: docs/design/references/constellations.md.
 const patterns = [
   // Keep every star within a pattern coplanar to preserve its recognizable shape.
   {

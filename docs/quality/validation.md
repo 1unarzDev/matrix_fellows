@@ -1,16 +1,21 @@
-# Validation — 6 September 2026
+# Validation
 
 ## Completed
 
 - Nuxt and scheduled-Worker TypeScript checks pass.
-- 13 unit/database tests pass, including tests against the actual migration in embedded PostgreSQL.
-- 8 Playwright tests pass against the built application running in Cloudflare's local Worker runtime, across desktop and mobile Chromium profiles.
+- 93 unit/database tests across 14 files pass, including tests against the actual migrations in embedded PostgreSQL.
+- Eight Playwright suites cover the built application across desktop and mobile Chromium profiles.
 - Browser coverage includes direct deep links, reverse scene synchronization, early section navigation, expandable research details, opportunity search/empty states, editor opening/closing, reduced motion, and unavailable WebGL.
-- Production Nuxt build passes. Frontend and scheduled importer both pass Wrangler deployment dry runs; no remote resources were deployed.
+- Production Nuxt build passes. Frontend and scheduled importer are deployed independently through Wrangler/GitHub automation.
 - Vue components contain no CSS style blocks or inline style attributes. The stylesheet contains Tailwind import/theme configuration only.
-- Desktop and mobile-emulated screenshots were inspected for typography, framing, atmosphere, reading contrast, and the oasis silhouette. References and visual changes are documented in `art-direction.md`.
+- Desktop and mobile-emulated screenshots were inspected for typography, framing, atmosphere, reading contrast, and the oasis silhouette. References and visual changes are documented in [art direction](../design/art-direction.md).
+- `npm run docs:check` verifies that the repository README and documentation have no broken local Markdown links.
 
 ## Performance observations
+
+The authoritative implementation guide and current caveats live in
+[performance and rendering](../architecture/performance.md). The figures below
+are recorded observations, not universal device guarantees.
 
 Hardware-accelerated Chromium using an NVIDIA GeForce RTX 4070 Ti SUPER through ANGLE/OpenGL ES measured approximately **30 fps** at all six stationary chapter positions. Measurements used 1440 × 960 desktop and an iPhone 13 viewport profile, with canvas pixel ratio capped at 1 in these runs. Rendering intentionally caps at 30 fps.
 

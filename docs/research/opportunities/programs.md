@@ -1,6 +1,8 @@
 # High-school research and advanced-program catalog
 
-Checked against live primary organizer pages on **2026-09-07**. Twelve additions; no inferred annual rollover dates. JSON records are in `workers/catalog-programs.json`; the requested integration schema is in `docs/research/program-catalog.json`.
+Checked against live primary organizer pages on **2026-09-07**. Twelve additions;
+no inferred annual rollover dates. Structured records are in the
+[program catalog](../catalogs/program.json).
 
 `edition` is the latest specifically identified cycle, not an assertion that applications remain open. `awaiting-announcement` means the next precise application calendar is unavailable: historical dates remain evidence, not upcoming alerts. Date-only records do not imply a midnight deadline. Tentative dates and source contradictions must remain visible in the UI. Programs are distinguished from competitions; the list is a curated advanced-opportunity selection, not an independently measured prestige ranking.
 
@@ -10,7 +12,7 @@ Checked against live primary organizer pages on **2026-09-07**. Twelve additions
 
 Cost-free summer STEM coursework and mentored original research hosted at MIT.
 
-Eligibility/access: High-school juniors / one year before graduation; US citizens and permanent residents apply directly; international selection depends on participating country. 
+Eligibility/access: High-school juniors / one year before graduation; US citizens and permanent residents apply directly; international selection depends on participating country.
 
 Latest edition: 2026. Status: `awaiting-announcement`. Applications for RSI 2026 are now closed. No late applications will be considered. No 2027 dates in inspected pages.
 
@@ -36,7 +38,7 @@ Latest edition: 2026. Status: `awaiting-announcement`. Applications are now clos
 
 Free, year-long mentored mathematics research, including theoretical computer science and computational biology.
 
-Eligibility/access: US-resident high-school sophomores and juniors outside Greater Boston; local students use MIT PRIMES. Advanced mathematical preparation expected. 
+Eligibility/access: US-resident high-school sophomores and juniors outside Greater Boston; local students use MIT PRIMES. Advanced mathematical preparation expected.
 
 Latest edition: 2027. Status: `awaiting-announcement`. An application link for the 2027 cycle will appear on this page in September 2026. Exact opening day and 2027 deadline not yet published.
 
@@ -48,7 +50,7 @@ No precise upcoming milestone is verified.
 
 Eight-week medically oriented research with Stanford faculty and researchers.
 
-Eligibility/access: Juniors or seniors as of fall 2026 (graduating 2027 or 2028), age 16+ by program start; living and attending high school in US; US citizen or permanent resident; strong Bay Area preference. 
+Eligibility/access: Juniors or seniors as of fall 2026 (graduating 2027 or 2028), age 16+ by program start; living and attending high school in US; US citizen or permanent resident; strong Bay Area preference.
 
 Latest edition: 2027. Status: `announced`. SUMMER 2027 UPDATE lists tentative June 7–July 29, 2027 program dates, Dec. 18th, 2026 at 5pm PST application availability, and late February 2027 deadline without a day. Opening sentence says 'was available' despite future date; verify before automated alert.
 
@@ -62,7 +64,7 @@ Latest edition: 2027. Status: `announced`. SUMMER 2027 UPDATE lists tentative Ju
 
 Faculty-mentored research in science, mathematics and engineering at Stony Brook.
 
-Eligibility/access: Grade 11 at application; US citizens/permanent residents; age 16+ at start. School nomination required, maximum two nominees per school. 
+Eligibility/access: Grade 11 at application; US citizens/permanent residents; age 16+ at start. School nomination required, maximum two nominees per school.
 
 Latest edition: 2026. Status: `awaiting-announcement`. Homepage says Applications for SimonsSRP 2026 are closed; latest guidelines are 2026. No 2027 dates found.
 
@@ -79,7 +81,7 @@ Latest edition: 2026. Status: `awaiting-announcement`. Homepage says Application
 
 Team-based, mentored laboratory research at Rockefeller University; full-time seven-week commitment.
 
-Eligibility/access: Current high-school juniors/seniors, age 16+ at program start. Research from SSRP may not be submitted to science competitions. 
+Eligibility/access: Current high-school juniors/seniors, age 16+ at program start. Research from SSRP may not be submitted to science competitions.
 
 Latest edition: 2026. Status: `awaiting-announcement`. Applications for SSRP 2026 are closed. No 2027 calendar in inspected source.
 
@@ -94,7 +96,7 @@ Latest edition: 2026. Status: `awaiting-announcement`. Applications for SSRP 202
 
 Six weeks of university research: mentored internship or structured computational neurobiology/data-science practicum.
 
-Eligibility/access: Domestic students currently in junior year of high school; residential and commuter options. Tuition not verified in this source. 
+Eligibility/access: Domestic students currently in junior year of high school; residential and commuter options. Tuition not verified in this source.
 
 Latest edition: 2026. Status: `awaiting-announcement`. The 2026 session of RISE was a great success. Please check back on December 17 for details about next summer’s program and to submit an application. December 17 lacks explicit year; not emitted as exact opening.
 
@@ -135,7 +137,7 @@ Latest edition: 2026. Status: `awaiting-announcement`. SEES notification emails 
 
 Six-week residential mathematical exploration at Boston University with proof-based problem solving.
 
-Eligibility/access: Worldwide students ages 14–18, completed grade 9, not yet full-time university students. Free for domestic families under $80,000; international aid case-by-case; 2026 fee up to $8,000. 
+Eligibility/access: Worldwide students ages 14–18, completed grade 9, not yet full-time university students. Free for domestic families under $80,000; international aid case-by-case; 2026 fee up to $8,000.
 
 Latest edition: 2027. Status: `announced`. PROMYS 2027: June 27 – August 7, 2027. Application Deadline: end of February 2027 TBD; Admissions Decisions: end of April 2027 TBD. No exact deadline/result day.
 
@@ -161,7 +163,7 @@ Latest edition: 2026. Status: `awaiting-announcement`. Official application page
 
 Free virtual international STEM innovation challenges, team research and access to mentors through Launchpad.
 
-Eligibility/access: Worldwide ages 13–17 with English proficiency and guardian consent; 3–4 hours weekly during challenges. Students cannot participate after turning 18. 
+Eligibility/access: Worldwide ages 13–17 with English proficiency and guardian consent; 3–4 hours weekly during challenges. Students cannot participate after turning 18.
 
 Latest edition: 2026. Status: `awaiting-announcement`. Fall 2026 student recruitment is closed. Main application section says July 9, 2026; FAQ says July 2, 2026, so conflicting close date withheld. No exact next intake dates announced.
 

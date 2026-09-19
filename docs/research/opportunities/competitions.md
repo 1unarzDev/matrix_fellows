@@ -1,6 +1,12 @@
 # High-school competitions and research opportunities
 
-Reviewed 2026-09-07 against official primary sources. Structured companion: [competition-catalog.json](research/competition-catalog.json). Fifteen additions; no automatic year rollover. `awaiting-announcement` refers to the next cycle, while an explicitly verified historical edition stays attached. `announced` does not guarantee applications remain open. Quotes normalize HTML whitespace/entities. Costs omitted when unverified. The selection mixes selective research, olympiad pathways and accessible engineering competitions; it does not imply identical prestige.
+Reviewed 2026-09-07 against official primary sources. Structured companion:
+[competition catalog](../catalogs/competition.json). Fifteen additions; no automatic
+year rollover. `awaiting-announcement` refers to the next cycle, while an explicitly
+verified historical edition stays attached. `announced` does not guarantee applications
+remain open. Quotes normalize HTML whitespace/entities. Costs omitted when unverified.
+The selection mixes selective research, olympiad pathways and accessible engineering
+competitions; it does not imply identical prestige.
 
 ## Breakthrough Junior Challenge
 
@@ -16,10 +22,10 @@ Rules anchor the year, exact cutoff and timezone.
 
 Primary sources: [1](https://breakthroughjuniorchallenge.org/), [2](https://breakthroughjuniorchallenge.org/rules).
 
-| Milestone | Date | Verbatim evidence |
-| --- | --- | --- |
-| Applications open | 2026-05-11 | “The Competition begins May 11, 2026 at 12:01 AM PDT” [Source](https://breakthroughjuniorchallenge.org/rules) |
-| Video and application deadline | 2026-09-15T23:59:00-07:00 | “ends September 15, 2026 at 11:59 PM PDT” [Source](https://breakthroughjuniorchallenge.org/rules) |
+| Milestone                      | Date                      | Verbatim evidence                                                                                             |
+| ------------------------------ | ------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Applications open              | 2026-05-11                | “The Competition begins May 11, 2026 at 12:01 AM PDT” [Source](https://breakthroughjuniorchallenge.org/rules) |
+| Video and application deadline | 2026-09-15T23:59:00-07:00 | “ends September 15, 2026 at 11:59 PM PDT” [Source](https://breakthroughjuniorchallenge.org/rules)             |
 
 ## Blue Ocean Student Entrepreneur Competition
 
@@ -33,13 +39,13 @@ Participant-local midnight remains date-only. The dated timeline says Top 30, al
 
 Primary sources: [1](https://blueoceancompetition.org/), [2](https://blueoceancompetition.org/compete/).
 
-| Milestone | Date | Verbatim evidence |
-| --- | --- | --- |
-| Pitch submission deadline | 2027-02-21 | “Submit your pitch by February 21, 2027 at midnight in the time zone where you are located.” [Source](https://blueoceancompetition.org/compete/) |
-| Top 100 announced | 2027-04-05 | “Top 100 Announcement Find out who made it to the Top 100! 5 April 2027” [Source](https://blueoceancompetition.org/compete/) |
-| Top 30 announced | 2027-04-22 | “Top 30 Announcement Check out who made it to the top 30! 22 April 2027” [Source](https://blueoceancompetition.org/compete/) |
-| Top 10 announced | 2027-05-04 | “Top 10 Announcement Check out who made it to the top 10! 4 May 2027” [Source](https://blueoceancompetition.org/compete/) |
-| Winners announced | 2027-05-13 | “Winners Announcement! Join us online for the live finale and see if you won the competition this year! 13 MAY 2027” [Source](https://blueoceancompetition.org/compete/) |
+| Milestone                 | Date       | Verbatim evidence                                                                                                                                                        |
+| ------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Pitch submission deadline | 2027-02-21 | “Submit your pitch by February 21, 2027 at midnight in the time zone where you are located.” [Source](https://blueoceancompetition.org/compete/)                         |
+| Top 100 announced         | 2027-04-05 | “Top 100 Announcement Find out who made it to the Top 100! 5 April 2027” [Source](https://blueoceancompetition.org/compete/)                                             |
+| Top 30 announced          | 2027-04-22 | “Top 30 Announcement Check out who made it to the top 30! 22 April 2027” [Source](https://blueoceancompetition.org/compete/)                                             |
+| Top 10 announced          | 2027-05-04 | “Top 10 Announcement Check out who made it to the top 10! 4 May 2027” [Source](https://blueoceancompetition.org/compete/)                                                |
+| Winners announced         | 2027-05-13 | “Winners Announcement! Join us online for the live finale and see if you won the competition this year! 13 MAY 2027” [Source](https://blueoceancompetition.org/compete/) |
 
 ## Conrad Challenge
 
@@ -55,13 +61,13 @@ Date conflict: homepage phase cards show October 30 / January 8, while dedicated
 
 Primary sources: [1](https://conrad.spacecenter.org/), [2](https://conrad.spacecenter.org/the-challenge/innovation-stage/), [3](https://conrad.spacecenter.org/the-challenge/activation-stage/), [4](https://conrad.spacecenter.org/the-challenge/rules-and-regulations/).
 
-| Milestone | Date | Verbatim evidence |
-| --- | --- | --- |
-| Activation opens | 2026-08-27 | “Start: August 27, 2026” [Source](https://conrad.spacecenter.org/the-challenge/activation-stage/) |
-| Activation deadline | 2026-10-29 | “End: October 29, 2026” [Source](https://conrad.spacecenter.org/the-challenge/activation-stage/) |
+| Milestone                      | Date       | Verbatim evidence                                                                                                                                       |
+| ------------------------------ | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Activation opens               | 2026-08-27 | “Start: August 27, 2026” [Source](https://conrad.spacecenter.org/the-challenge/activation-stage/)                                                       |
+| Activation deadline            | 2026-10-29 | “End: October 29, 2026” [Source](https://conrad.spacecenter.org/the-challenge/activation-stage/)                                                        |
 | Innovation submission deadline | 2027-01-07 | “The submission deadline for all Innovation Stage content is January 7, 2027.” [Source](https://conrad.spacecenter.org/the-challenge/innovation-stage/) |
-| Finalists announced | 2027-02-26 | “Finalist announcement: February 26, 2027” [Source](https://conrad.spacecenter.org/the-challenge/innovation-stage/) |
-| Innovation Summit begins | 2027-04-21 | “Innovation Summit: April 21-24, 2027” [Source](https://conrad.spacecenter.org/the-challenge/innovation-stage/) |
+| Finalists announced            | 2027-02-26 | “Finalist announcement: February 26, 2027” [Source](https://conrad.spacecenter.org/the-challenge/innovation-stage/)                                     |
+| Innovation Summit begins       | 2027-04-21 | “Innovation Summit: April 21-24, 2027” [Source](https://conrad.spacecenter.org/the-challenge/innovation-stage/)                                         |
 
 ## S.-T. Yau High School Science Award — North America
 
@@ -73,12 +79,12 @@ Latest verified edition: 2026; lifecycle `announced`. “Schedule for the 19th S
 
 Primary sources: [1](https://www.yau-science-awards.org/), [2](https://www.yau-science-awards.org/bulletin/show-102053.html).
 
-| Milestone | Date | Verbatim evidence |
-| --- | --- | --- |
+| Milestone                         | Date       | Verbatim evidence                                                                                                                                           |
+| --------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Registration and submission opens | 2026-07-01 | “July 1 - September 15 Online registration and submission of application materials.” [Source](https://www.yau-science-awards.org/bulletin/show-102053.html) |
-| Research submission deadline | 2026-09-15 | “July 1 - September 15 Online registration and submission of application materials.” [Source](https://www.yau-science-awards.org/bulletin/show-102053.html) |
-| Global final begins | 2026-12-05 | “December 5 - December 6 Global Final and Awards Ceremony.” [Source](https://www.yau-science-awards.org/bulletin/show-102053.html) |
-| Science Forum | 2026-12-06 | “December 6 Science Forum” [Source](https://www.yau-science-awards.org/bulletin/show-102053.html) |
+| Research submission deadline      | 2026-09-15 | “July 1 - September 15 Online registration and submission of application materials.” [Source](https://www.yau-science-awards.org/bulletin/show-102053.html) |
+| Global final begins               | 2026-12-05 | “December 5 - December 6 Global Final and Awards Ceremony.” [Source](https://www.yau-science-awards.org/bulletin/show-102053.html)                          |
+| Science Forum                     | 2026-12-06 | “December 6 Science Forum” [Source](https://www.yau-science-awards.org/bulletin/show-102053.html)                                                           |
 
 ## USA Computing Olympiad (USACO)
 
@@ -94,12 +100,12 @@ No 2026–27 schedule found. The 2025–26 season changed to three online contes
 
 Primary sources: [1](https://usaco.org/), [2](https://usaco.org/index.php?page=instructions).
 
-| Milestone | Date | Verbatim evidence |
-| --- | --- | --- |
-| First contest begins (2026 season) | 2026-01-09 | “2025-2026 Schedule Jan 9-12: First Contest” [Source](https://usaco.org/) |
-| Second contest begins (2026 season) | 2026-01-30 | “Jan 30-Feb 2: Second Contest” [Source](https://usaco.org/) |
-| Third contest begins (2026 season) | 2026-02-20 | “Feb 20-23: Third Contest” [Source](https://usaco.org/) |
-| Proctored US Open (2026 season) | 2026-03-28 | “Mar 28: US Open (Proctored)” [Source](https://usaco.org/) |
+| Milestone                           | Date       | Verbatim evidence                                                         |
+| ----------------------------------- | ---------- | ------------------------------------------------------------------------- |
+| First contest begins (2026 season)  | 2026-01-09 | “2025-2026 Schedule Jan 9-12: First Contest” [Source](https://usaco.org/) |
+| Second contest begins (2026 season) | 2026-01-30 | “Jan 30-Feb 2: Second Contest” [Source](https://usaco.org/)               |
+| Third contest begins (2026 season)  | 2026-02-20 | “Feb 20-23: Third Contest” [Source](https://usaco.org/)                   |
+| Proctored US Open (2026 season)     | 2026-03-28 | “Mar 28: US Open (Proctored)” [Source](https://usaco.org/)                |
 
 ## MIT THINK Scholars Program
 
@@ -113,10 +119,10 @@ Client-rendered site; the published JavaScript timeline was verified against off
 
 Primary sources: [1](https://think.mit.edu/), [2](https://think.mit.edu/assets/index-CAOLWejZ.js), [3](https://think.mit.edu/static_files/THINK_Program_Guidelines_2026.pdf).
 
-| Milestone | Date | Verbatim evidence |
-| --- | --- | --- |
-| Applications open (2026 program) | 2025-11-01 | “Applications Open 1 November 2025” [Source](https://think.mit.edu/static_files/THINK_Program_Guidelines_2026.pdf) |
-| Proposal deadline (2026 program) | 2026-01-01 | “Application Deadline 1 January 2026” [Source](https://think.mit.edu/static_files/THINK_Program_Guidelines_2026.pdf) |
+| Milestone                              | Date       | Verbatim evidence                                                                                                                                                                            |
+| -------------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Applications open (2026 program)       | 2025-11-01 | “Applications Open 1 November 2025” [Source](https://think.mit.edu/static_files/THINK_Program_Guidelines_2026.pdf)                                                                           |
+| Proposal deadline (2026 program)       | 2026-01-01 | “Application Deadline 1 January 2026” [Source](https://think.mit.edu/static_files/THINK_Program_Guidelines_2026.pdf)                                                                         |
 | Semifinalists announced (2026 program) | 2026-01-30 | JavaScript timeline tuple: `{month:"Jan",monthLong:"uary",dayYear:" 30, 2026",body:"Semifinalists are announced and interviewed."}` [Source](https://think.mit.edu/assets/index-CAOLWejZ.js) |
 
 ## Science Olympiad — Division C
@@ -131,11 +137,11 @@ National tournament dates are not registration deadlines. State organizations se
 
 Primary sources: [1](https://www.soinc.org/), [2](https://www.soinc.org/future-national-tournaments), [3](https://www.soinc.org/tournaments).
 
-| Milestone | Date | Verbatim evidence |
-| --- | --- | --- |
-| 2027 rules available | 2026-09-08 | “2027 Rules available as free PDFs Tuesday, 9/8/26!” [Source](https://www.soinc.org/) |
+| Milestone                  | Date       | Verbatim evidence                                                                                                                            |
+| -------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2027 rules available       | 2026-09-08 | “2027 Rules available as free PDFs Tuesday, 9/8/26!” [Source](https://www.soinc.org/)                                                        |
 | National Tournament begins | 2027-05-14 | “2027 National Tournament; hosted by The Ohio State University, May 14-15, 2027” [Source](https://www.soinc.org/future-national-tournaments) |
-| National Tournament ends | 2027-05-15 | “2027 National Tournament; hosted by The Ohio State University, May 14-15, 2027” [Source](https://www.soinc.org/future-national-tournaments) |
+| National Tournament ends   | 2027-05-15 | “2027 National Tournament; hosted by The Ohio State University, May 14-15, 2027” [Source](https://www.soinc.org/future-national-tournaments) |
 
 ## Samsung Solve for Tomorrow — United States
 
@@ -165,8 +171,8 @@ The 2027 calendar page exposes only a heading; do not infer exam dates. The expl
 
 Primary sources: [1](https://www.usabo-trc.org/), [2](https://www.usabo-trc.org/usabo-guidelines-and-eligibility), [3](https://www.usabo-trc.org/usabo-2027-calendar).
 
-| Milestone | Date | Verbatim evidence |
-| --- | --- | --- |
+| Milestone               | Date       | Verbatim evidence                                                                                                    |
+| ----------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------- |
 | School payment deadline | 2026-10-23 | “Payment is due no later than October 23, 2026” [Source](https://www.usabo-trc.org/usabo-guidelines-and-eligibility) |
 
 ## F=ma / U.S. Physics Team
@@ -183,11 +189,11 @@ Extended January 21 registration and updated April 10 exam dates are historical 
 
 Primary sources: [1](https://www.aapt.org/physicsteam/2026/), [2](https://www.aapt.org/physicsteam/2026/ImportantDates.cfm), [3](https://www.aapt.org/physicsteam/2026/Registration.cfm).
 
-| Milestone | Date | Verbatim evidence |
-| --- | --- | --- |
-| Extended registration deadline (2026) | 2026-01-21T23:59:00-05:00 | “DEADLINE EXTENDED to January 21st, 11:59pm EST” [Source](https://www.aapt.org/physicsteam/2026/ImportantDates.cfm) |
-| F=ma exam (2026) | 2026-02-12 | “February 12, 2026, 1 pm to 4 pm EST - F=ma Exam” [Source](https://www.aapt.org/physicsteam/2026/ImportantDates.cfm) |
-| USAPhO exam (updated 2026 date) | 2026-04-10 | “April 10, 2026, 1 pm to 5 pm EDT - USAPhO Exam UPDATED DATE” [Source](https://www.aapt.org/physicsteam/2026/ImportantDates.cfm) |
+| Milestone                             | Date                      | Verbatim evidence                                                                                                                |
+| ------------------------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Extended registration deadline (2026) | 2026-01-21T23:59:00-05:00 | “DEADLINE EXTENDED to January 21st, 11:59pm EST” [Source](https://www.aapt.org/physicsteam/2026/ImportantDates.cfm)              |
+| F=ma exam (2026)                      | 2026-02-12                | “February 12, 2026, 1 pm to 4 pm EST - F=ma Exam” [Source](https://www.aapt.org/physicsteam/2026/ImportantDates.cfm)             |
+| USAPhO exam (updated 2026 date)       | 2026-04-10                | “April 10, 2026, 1 pm to 5 pm EDT - USAPhO Exam UPDATED DATE” [Source](https://www.aapt.org/physicsteam/2026/ImportantDates.cfm) |
 
 ## Junior Science and Humanities Symposium (JSHS)
 
@@ -215,11 +221,11 @@ Official page says the 2026 contest is closed and next year will be announced in
 
 Primary sources: [1](https://www.genesinspace.org/), [2](https://www.genesinspace.org/us-contest/).
 
-| Milestone | Date | Verbatim evidence |
-| --- | --- | --- |
-| 2026 contest opens | 2026-01-05 | “Open January 5, 2026” [Source](https://www.genesinspace.org/us-contest/) |
-| 2026 proposal deadline | 2026-04-10T23:59:00-07:00 | “You must submit your experimental idea online on or before April 10, 2026 at 11:59 pm PDT.” [Source](https://www.genesinspace.org/us-contest/) |
-| 2026 finalist presentations begin | 2026-07-28 | “2026 finalists will present their ideas July 28-30 to contest judges at Countdown to Discovery in Houston, TX.” [Source](https://www.genesinspace.org/us-contest/) |
+| Milestone                         | Date                      | Verbatim evidence                                                                                                                                                   |
+| --------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026 contest opens                | 2026-01-05                | “Open January 5, 2026” [Source](https://www.genesinspace.org/us-contest/)                                                                                           |
+| 2026 proposal deadline            | 2026-04-10T23:59:00-07:00 | “You must submit your experimental idea online on or before April 10, 2026 at 11:59 pm PDT.” [Source](https://www.genesinspace.org/us-contest/)                     |
+| 2026 finalist presentations begin | 2026-07-28                | “2026 finalists will present their ideas July 28-30 to contest judges at Countdown to Discovery in Houston, TX.” [Source](https://www.genesinspace.org/us-contest/) |
 
 ## Toshiba/NSTA ExploraVision
 
@@ -231,8 +237,8 @@ Latest verified edition: 2027; lifecycle `announced`. “The coach submits a tea
 
 Primary sources: [1](https://www.exploravision.org/), [2](https://www.exploravision.org/rules-requirements/).
 
-| Milestone | Date | Verbatim evidence |
-| --- | --- | --- |
+| Milestone        | Date                      | Verbatim evidence                                                                                                                                            |
+| ---------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Project deadline | 2027-01-27T20:00:00-05:00 | “The coach submits a team’s project online before the deadline of 8:00 PM ET, January 27, 2027.” [Source](https://www.exploravision.org/rules-requirements/) |
 
 ## NASA International Space Apps Challenge
@@ -247,10 +253,10 @@ Current published dates are November 14–15, 2026, not the October pattern from
 
 Primary sources: [1](https://www.spaceappschallenge.org/).
 
-| Milestone | Date | Verbatim evidence |
-| --- | --- | --- |
+| Milestone        | Date       | Verbatim evidence                                                                                   |
+| ---------------- | ---------- | --------------------------------------------------------------------------------------------------- |
 | Hackathon begins | 2026-11-14 | “JOIN NASA SPACE APPS CHALLENGE NOVEMBER 14-15, 2026” [Source](https://www.spaceappschallenge.org/) |
-| Hackathon ends | 2026-11-15 | “JOIN NASA SPACE APPS CHALLENGE NOVEMBER 14-15, 2026” [Source](https://www.spaceappschallenge.org/) |
+| Hackathon ends   | 2026-11-15 | “JOIN NASA SPACE APPS CHALLENGE NOVEMBER 14-15, 2026” [Source](https://www.spaceappschallenge.org/) |
 
 ## ICBS High School Poster Session
 
@@ -266,12 +272,12 @@ Invitation addresses international schools but attached details say nationwide; 
 
 Primary sources: [1](https://www.yau-science-awards.org/bulletin/show-102054.html).
 
-| Milestone | Date | Verbatim evidence |
-| --- | --- | --- |
-| Submission opens (2026) | 2026-05-12 | “Website submission opens: May 12, 2026” [Source](https://www.yau-science-awards.org/bulletin/show-102054.html) |
-| Poster submission deadline (2026) | 2026-07-20 | “Submission deadline: July 20, 2026” [Source](https://www.yau-science-awards.org/bulletin/show-102054.html) |
-| Poster exhibition begins (2026) | 2026-08-19 | “Poster exhibition: August 19 - August 21, 2026” [Source](https://www.yau-science-awards.org/bulletin/show-102054.html) |
-| Poster exhibition ends (2026) | 2026-08-21 | “Poster exhibition: August 19 - August 21, 2026” [Source](https://www.yau-science-awards.org/bulletin/show-102054.html) |
+| Milestone                         | Date       | Verbatim evidence                                                                                                       |
+| --------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Submission opens (2026)           | 2026-05-12 | “Website submission opens: May 12, 2026” [Source](https://www.yau-science-awards.org/bulletin/show-102054.html)         |
+| Poster submission deadline (2026) | 2026-07-20 | “Submission deadline: July 20, 2026” [Source](https://www.yau-science-awards.org/bulletin/show-102054.html)             |
+| Poster exhibition begins (2026)   | 2026-08-19 | “Poster exhibition: August 19 - August 21, 2026” [Source](https://www.yau-science-awards.org/bulletin/show-102054.html) |
+| Poster exhibition ends (2026)     | 2026-08-21 | “Poster exhibition: August 19 - August 21, 2026” [Source](https://www.yau-science-awards.org/bulletin/show-102054.html) |
 
 ## Follow-up gaps
 
@@ -291,9 +297,9 @@ Latest edition 2027; lifecycle `announced`. “2027 Texas Science and Engineerin
 
 Cost: $50 per student; school/district or parent/guardian may pay. [Official source](https://txsef.tamu.edu/faqs/).
 
-| Milestone | Date | Verbatim evidence |
-| --- | --- | --- |
-| State fair begins | 2027-04-02 | “2027 Texas Science and Engineering Fair | April 2–3, 2027” [Source](https://txsef.tamu.edu/) |
+| Milestone            | Date       | Verbatim evidence                        |
+| -------------------- | ---------- | ---------------------------------------- |
+| State fair begins    | 2027-04-02 | “2027 Texas Science and Engineering Fair | April 2–3, 2027” [Source](https://txsef.tamu.edu/) |
 | State fair concludes | 2027-04-03 | “2027 Texas Science and Engineering Fair | April 2–3, 2027” [Source](https://txsef.tamu.edu/) |
 
 Primary sources: [1](https://txsef.tamu.edu/), [2](https://txsef.tamu.edu/faqs/), [3](https://txsef.tamu.edu/texas-regional-fairs/).
@@ -306,15 +312,15 @@ Eligibility: Grades 6–12 in the fair region; an adult sponsor/representative h
 
 Latest edition 2027; lifecycle `announced`. “Fort Worth Regional Science and Engineering Fair 2027” [Official source](https://fwrsef.org/).
 
-| Milestone | Date | Verbatim evidence |
-| --- | --- | --- |
-| Registration opens | 2026-08-10 | “Registration Begins Monday, Aug. 10th 2026” [Source](https://fwrsef.org/#fair-year-schedule-current-pane) |
-| Local SRC approval deadline | 2026-12-11 | “SRC Approval Deadline Friday, Dec. 11th 2026” [Source](https://fwrsef.org/#fair-year-schedule-current-pane) |
-| Regional registration deadline | 2027-01-21 | “Registration Deadline Thursday, Jan. 21st 2027” [Source](https://fwrsef.org/#fair-year-schedule-current-pane) |
-| Project category deadline | 2027-01-28 | “Category Selection Deadline Thursday, Jan. 28th 2027” [Source](https://fwrsef.org/#fair-year-schedule-current-pane) |
-| Digital assets submission deadline | 2027-02-18 | “Assets Submission Deadline Thursday, Feb. 18th 2027” [Source](https://fwrsef.org/#fair-year-schedule-current-pane) |
-| Required setup day | 2027-02-28 | “Setup Day Sunday, Feb. 28th 2027” [Source](https://fwrsef.org/#fair-year-schedule-current-pane) |
-| Regional fair day | 2027-03-01 | “Fair Day Monday, Mar. 1st 2027” [Source](https://fwrsef.org/#fair-year-schedule-current-pane) |
+| Milestone                          | Date       | Verbatim evidence                                                                                                    |
+| ---------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------- |
+| Registration opens                 | 2026-08-10 | “Registration Begins Monday, Aug. 10th 2026” [Source](https://fwrsef.org/#fair-year-schedule-current-pane)           |
+| Local SRC approval deadline        | 2026-12-11 | “SRC Approval Deadline Friday, Dec. 11th 2026” [Source](https://fwrsef.org/#fair-year-schedule-current-pane)         |
+| Regional registration deadline     | 2027-01-21 | “Registration Deadline Thursday, Jan. 21st 2027” [Source](https://fwrsef.org/#fair-year-schedule-current-pane)       |
+| Project category deadline          | 2027-01-28 | “Category Selection Deadline Thursday, Jan. 28th 2027” [Source](https://fwrsef.org/#fair-year-schedule-current-pane) |
+| Digital assets submission deadline | 2027-02-18 | “Assets Submission Deadline Thursday, Feb. 18th 2027” [Source](https://fwrsef.org/#fair-year-schedule-current-pane)  |
+| Required setup day                 | 2027-02-28 | “Setup Day Sunday, Feb. 28th 2027” [Source](https://fwrsef.org/#fair-year-schedule-current-pane)                     |
+| Regional fair day                  | 2027-03-01 | “Fair Day Monday, Mar. 1st 2027” [Source](https://fwrsef.org/#fair-year-schedule-current-pane)                       |
 
 Primary sources: [1](https://fwrsef.org/), [2](https://txsef.tamu.edu/texas-regional-fairs/), [3](https://www.aisd.net/district-news/maya-shah-honored-for-research/).
 

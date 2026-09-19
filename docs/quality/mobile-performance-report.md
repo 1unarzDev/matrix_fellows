@@ -22,7 +22,7 @@ Changes:
   vertical swell envelope, preserving the512-step limit and distant coverage.
 - A sustained50 ms cadence now triggers mobile quality adaptation instead of
   being considered healthy by the previous52 ms threshold.
--75 ms exponential camera settling operates only on mobile, once per rendered
+  -75 ms exponential camera settling operates only on mobile, once per rendered
   frame. Native scrolling remains untouched; initial hash positioning is exact.
 
 Checks: frame-rate independence and no overshoot unit test; mobile camera

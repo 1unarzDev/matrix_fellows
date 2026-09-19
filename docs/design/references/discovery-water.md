@@ -14,7 +14,7 @@ Research date: 2026-09-07. Primary-source shader inspection for the oasis “Cur
 
 ## Original composition and animation recommendation
 
-Use the existing [Alto's Adventure palette/composition study](./alto-adventure-references.md) for warm peach light, muted mauve atmosphere and selectively turquoise water. That study cites first-party screenshots; it is an art-direction reference rather than a water-physics reference.
+Use the existing [Alto's Adventure palette/composition study](alto-adventure.md) for warm peach light, muted mauve atmosphere and selectively turquoise water. That study cites first-party screenshots; it is an art-direction reference rather than a water-physics reference.
 
 1. Place one water-space focal point below the right-hand palm grouping, leaving the left headline quiet. Check the focal point's actual projection on desktop and mobile; do not draw a screen-space ellipse that slides independently of the environment.
 2. Gather a handful of existing-looking warm dust motes into a small descending gesture. Let them touch the surface before the strongest broad ripple expands. Avoid a dense sparkle fountain or persistent glowing orb.

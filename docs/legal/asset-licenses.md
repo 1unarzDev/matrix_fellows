@@ -26,7 +26,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 - License: CC0 1.0 Universal. Original notice ships in `public/models/desert/LICENSE.txt`.
 - Shipped GLBs: `cactus_tall`, `cactus_short`, `plant_bush`, `plant_bushSmall`,
   `cliff_cave_rock`, `rock_tallA`, `rock_tallH`, and `rock_largeA`, in `public/models/desert/`.
-- Official download and inspection notes: [oasis-terrain-references.md](oasis-terrain-references.md).
+- Official download and inspection notes: [oasis terrain references](../design/references/oasis-terrain.md).
 - Runtime changes: normalize and merge source meshes, replace metallic materials
   with muted sandstone/sage diffuse lighting, instance plants and rocks, compose
   the cave opening with buttes and an uneven boulder crown. Terrain/water clipping
@@ -34,7 +34,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ## Typography and references
 
-Constellation coordinates are adapted from Olaf Frohn's d3-celestial, BSD-3-Clause. The complete notice is included in `public/constellation-license.txt` and ships with the website. Research and specific pattern choices are documented in `docs/constellation-references.md`.
+Constellation coordinates are adapted from Olaf Frohn's d3-celestial, BSD-3-Clause. The complete notice is included in `public/constellation-license.txt` and ships with the website. Research and specific pattern choices are documented in [constellation references](../design/references/constellations.md).
 
 Small shoreline stones and grass/reed geometry are original code-native assets.
 The larger desert formations use the Kenney models credited above. Alto’s Odyssey

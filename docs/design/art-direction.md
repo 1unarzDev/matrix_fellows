@@ -1,6 +1,6 @@
 # Matrix Fellows art direction
 
-References inspected on 6–7 September 2026. Reference images are not redistributed or used as backgrounds. The website's shader imagery, layout, motion, and identity are original. The palm and desert dressing use the third-party models credited in `asset-licenses.md`.
+References inspected on 6–7 September 2026. Reference images are not redistributed or used as backgrounds. The website's shader imagery, layout, motion, and identity are original. The palm and desert dressing use the third-party models credited in [asset licenses](../legal/asset-licenses.md).
 
 ## Visual references and adaptations
 
@@ -15,7 +15,7 @@ References inspected on 6–7 September 2026. Reference images are not redistrib
 
 ## Oasis water refinement — 7 September 2026
 
-Following the [primary-source water study](./discovery-water-references.md), longer
+Following the [primary-source water study](references/discovery-water.md), longer
 crossing currents and reduced fine-wave energy make the oasis less repetitive.
 The experimental ripple and gathering particles were removed following feedback.
 The original camera path and storm/ocean wave parameters are unchanged.

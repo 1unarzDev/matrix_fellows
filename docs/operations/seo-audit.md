@@ -4,16 +4,16 @@
 
 Public HTTP checks against `matrixfellows.com` found:
 
-| Before | Change |
-| --- | --- |
-| `/robots.txt` returned homepage HTML, HTTP 200 | Plain-text crawler rules with sitemap discovery |
-| `/sitemap.xml` returned homepage HTML, HTTP 200 | XML sitemap containing the canonical homepage only |
-| Arbitrary page paths returned duplicate homepage HTML, HTTP 200 | Unknown page routes return 404 with noindex |
-| HTTP homepage returned 200 | Production HTTP redirects permanently to HTTPS |
-| No canonical link | Explicit `https://matrixfellows.com/` canonical |
-| Generic search title/description | Accurate student research/Martin HS title and description |
-| No organization structured data | Truthful Organization and WebSite JSON-LD, email and logo |
-| One caption failed Lighthouse contrast | Increased caption opacity from 45% to 70% |
+| Before                                                          | Change                                                    |
+| --------------------------------------------------------------- | --------------------------------------------------------- |
+| `/robots.txt` returned homepage HTML, HTTP 200                  | Plain-text crawler rules with sitemap discovery           |
+| `/sitemap.xml` returned homepage HTML, HTTP 200                 | XML sitemap containing the canonical homepage only        |
+| Arbitrary page paths returned duplicate homepage HTML, HTTP 200 | Unknown page routes return 404 with noindex               |
+| HTTP homepage returned 200                                      | Production HTTP redirects permanently to HTTPS            |
+| No canonical link                                               | Explicit `https://matrixfellows.com/` canonical           |
+| Generic search title/description                                | Accurate student research/Martin HS title and description |
+| No organization structured data                                 | Truthful Organization and WebSite JSON-LD, email and logo |
+| One caption failed Lighthouse contrast                          | Increased caption opacity from 45% to 70%                 |
 
 The main content already arrives in server-rendered HTML: one H1, research
 summaries, meeting details and contact information. A JavaScript-disabled browser
@@ -32,17 +32,17 @@ claim the Search Console TXT record has been installed.
 Lighthouse 12.8.2 mobile-default lab run on the live pre-change site, with
 hardware-accelerated Chromium on the development workstation:
 
-| Category/metric | Baseline |
-| --- | ---: |
-| SEO | 91/100 |
-| Accessibility | 97/100 |
-| Best practices | 100/100 |
-| Performance | 57/100 |
-| First contentful paint | 2.3 seconds |
+| Category/metric          |    Baseline |
+| ------------------------ | ----------: |
+| SEO                      |      91/100 |
+| Accessibility            |      97/100 |
+| Best practices           |     100/100 |
+| Performance              |      57/100 |
+| First contentful paint   | 2.3 seconds |
 | Largest contentful paint | 3.5 seconds |
-| Total blocking time | 1,600 ms |
-| Cumulative layout shift | 0 |
-| Speed index | 5.6 seconds |
+| Total blocking time      |    1,600 ms |
+| Cumulative layout shift  |           0 |
+| Speed index              | 5.6 seconds |
 
 Raw report: ignored `test-results/seo/before-gpu.json`. A prior software-GPU run
 had extreme rendering overhead and is not used as a representative performance
@@ -72,7 +72,7 @@ indexing remain unverified; these test scores are not ranking predictions.
 6. Monitor indexing and query impressions over the following weeks. Verification,
    submission and actual indexing are separate steps, none completed by a deploy.
 
-See [official-source guidance](seo-references.md) for citations and alternative
+See [official-source guidance](seo-setup.md) for citations and alternative
 URL-prefix verification if DNS access is unavailable.
 
 ## Sustainable ranking priorities

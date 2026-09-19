@@ -1,4 +1,4 @@
-// Original shaders. Art/technical references and adaptation notes: docs/art-direction.md.
+// Original shaders. Art/technical references: docs/design/art-direction.md.
 export const screenVertex = /* glsl */ `
 varying vec2 vUv;
 void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }

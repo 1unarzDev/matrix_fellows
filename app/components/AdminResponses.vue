@@ -183,7 +183,7 @@ onBeforeUnmount(() => {
         <p class="mt-3 text-xs leading-relaxed text-paper/45">
           Responses are saved here first. The Google Sheets sync requires a one-time Apps Script
           setup by the sheet owner; it is not active simply because this link is present. Follow
-          docs/join-form-setup.md in the repository. Keep the sheet restricted to organizers. Never
+          docs/operations/join-form.md in the repository. Keep the sheet restricted to organizers. Never
           share the raw response sheet with sponsors.
         </p>
         <a

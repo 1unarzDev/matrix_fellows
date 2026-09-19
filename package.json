@@ -9,6 +9,7 @@
     "postinstall": "nuxt prepare",
     "typecheck": "nuxt typecheck && tsc --noEmit -p workers/tsconfig.json",
     "test": "vitest run",
+    "docs:check": "node scripts/check-doc-links.mjs",
     "check:sources": "tsx scripts/check-official-sources.mjs",
     "check:live": "tsx scripts/check-live.mjs",
     "seed:catalog": "tsx scripts/seed-opportunity-catalog.mjs",

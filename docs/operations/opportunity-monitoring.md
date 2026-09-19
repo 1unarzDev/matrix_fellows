@@ -1,6 +1,10 @@
 # Living opportunity catalog
 
-The researched catalog and evidence live in `docs/research/*-catalog.json`, with source-by-source notes in `high-school-programs.md` and `high-school-competitions.md`. These are curated starting observations, **not recurring date templates**. Historical dates are deliberately retained and labeled as past. No date is advanced by adding a year.
+The researched catalog and evidence live in `docs/research/catalogs/*.json`, with
+source-by-source notes in [programs](../research/opportunities/programs.md) and
+[competitions](../research/opportunities/competitions.md). These are curated
+starting observations, **not recurring date templates**. Historical dates are
+deliberately retained and labeled as past. No date is advanced by adding a year.
 
 ## Runtime and interfaces
 

@@ -2,6 +2,9 @@
 
 A Nuxt 4 research-society website with a continuous Three.js/GSAP journey, Tailwind v4 styling, a Supabase owner editor, and a scheduled Cloudflare opportunity importer.
 
+For system design, rendering/performance details, operational runbooks, visual
+research, and validation history, use the [documentation index](docs/README.md).
+
 ## Run locally
 
 Use Node **22.18+** (or current Node 24/26).
@@ -105,7 +108,10 @@ The initial official links are Regeneron ISEF, Regeneron STS, JSHS, and NeurIPS.
 
 ## Visual work and performance
 
-See [art direction](docs/art-direction.md) for references, adaptation choices, and iteration notes, and [asset licenses](docs/asset-licenses.md) for palm provenance.
+Start with the [documentation index](docs/README.md). The current rendering and
+performance approach is documented in [performance](docs/architecture/performance.md);
+visual decisions live in [art direction](docs/design/art-direction.md), and third-party
+provenance lives in [asset licenses](docs/legal/asset-licenses.md).
 
 One master ScrollTrigger maps measured section positions to a continuous 0–5 progression. Camera position/target, terrain/water/atmosphere, particle motion, and constellation visibility follow it. Native scrolling and anchor navigation use the same state. The canvas initializes after HTML; Three.js and the palm loader are lazy chunks. Teardown disposes resources and all event/timeline subscriptions. Reduced motion and WebGL failure retain a static gradient and all page content.
 

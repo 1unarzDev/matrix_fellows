@@ -1,9 +1,9 @@
 import { opportunitySchema } from '../shared/utils/validation'
 import { officialProfiles } from './official-sources'
-import programs from '../docs/research/program-catalog.json'
-import competitions from '../docs/research/competition-catalog.json'
-import publications from '../docs/research/publication-catalog.json'
-import workshops from '../docs/research/workshop-catalog.json'
+import programs from '../docs/research/catalogs/program.json'
+import competitions from '../docs/research/catalogs/competition.json'
+import publications from '../docs/research/catalogs/publication.json'
+import workshops from '../docs/research/catalogs/workshop.json'
 import type { Opportunity } from '../shared/types/content'
 
 export const catalogSeeds = [...programs, ...competitions, ...publications, ...workshops].map(

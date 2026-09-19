@@ -17,9 +17,13 @@
     "deploy": "npm run build && wrangler deploy",
     "deploy:imports": "wrangler deploy --config workers/wrangler.jsonc",
     "seed": "node --env-file-if-exists=.env scripts/seed.mjs",
-    "capture": "node scripts/capture.mjs"
+    "capture": "node scripts/capture.mjs",
+    "perf:mobile": "node scripts/mobile-performance.mjs",
+    "perf:profile": "node scripts/profile-performance.mjs",
+    "perf:shader": "node scripts/benchmark-world-shader.mjs"
   },
   "dependencies": {
+    "@nuxt/fonts": "^0.14.0",
     "@supabase/supabase-js": "^2.57.0",
     "@tailwindcss/vite": "^4.1.0",
     "fast-xml-parser": "^5.3.0",

@@ -3,6 +3,20 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineNuxtConfig({
   compatibilityDate: '2026-09-01',
   devtools: { enabled: false },
+  modules: ['@nuxt/fonts'],
+  fonts: {
+    provider: 'google',
+    defaults: {
+      formats: ['woff2'],
+      styles: ['normal'],
+      subsets: ['latin'],
+      weights: [400, 500, 700],
+    },
+    families: [
+      { name: 'DM Sans', weights: [400, 500, 700], preload: true },
+      { name: 'Manrope', weights: [400, 500, 700], preload: true },
+    ],
+  },
   css: ['~/assets/main.css'],
   vite: { plugins: [tailwindcss()] },
   nitro: { preset: 'cloudflare-module' },
@@ -36,15 +50,7 @@ export default defineNuxtConfig({
         },
         { property: 'og:type', content: 'website' },
       ],
-      link: [
-        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg?v=matrix-mark-2' },
-        { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
-        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
-        {
-          rel: 'stylesheet',
-          href: 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=Manrope:wght@400;500;600;650;700;750;800&display=swap',
-        },
-      ],
+      link: [{ rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg?v=matrix-mark-2' }],
       script: [
         {
           key: 'arrival-first-paint',

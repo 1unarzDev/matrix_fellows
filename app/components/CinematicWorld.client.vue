@@ -20,44 +20,58 @@ onMounted(() => {
   media = window.matchMedia('(prefers-reduced-motion: reduce)')
   if (media.matches) emit('scene', 'fallback')
   const init = async () => {
-    const [{ gsap }, { ScrollTrigger }, { default: Lenis }] = await Promise.all([
+    const touchLayout = window.matchMedia('(pointer: coarse)').matches
+    // Fetch the world while the animation libraries initialize. Construction
+    // still waits for stable layout, but its large module no longer sits behind
+    // font/layout work on the critical path.
+    const worldModule = media.matches ? undefined : import('~/lib/scene/world')
+    const [{ gsap }, { ScrollTrigger }, lenisModule] = await Promise.all([
       import('gsap'),
       import('gsap/ScrollTrigger'),
-      import('lenis'),
+      touchLayout ? Promise.resolve(undefined) : import('lenis'),
     ])
     if (disposed) return
     gsap.registerPlugin(ScrollTrigger)
-    const touchLayout = window.matchMedia('(pointer: coarse)').matches
     ScrollTrigger.config({ ignoreMobileResize: true })
     // One clock and one smoothed scroll position for both the DOM and camera.
     // Touch keeps its native inertia; nested menus/dialogs keep their own scroll.
-    const smoothScroll = new Lenis({
-      autoRaf: false,
-      duration: 0.7,
-      wheelMultiplier: 0.7,
-      easing: (t: number) => 1 - Math.pow(1 - t, 3),
-      syncTouch: false,
-      allowNestedScroll: true,
-      prevent: (node: HTMLElement) => Boolean(node.closest('[role="dialog"], [role="listbox"]')),
-    })
-    const tickScroll = (seconds: number) => smoothScroll.raf(seconds * 1000)
-    smoothScroll.on('scroll', ScrollTrigger.update)
-    gsap.ticker.add(tickScroll)
+    const smoothScroll = lenisModule
+      ? new lenisModule.default({
+          autoRaf: false,
+          duration: 0.7,
+          wheelMultiplier: 0.7,
+          easing: (t: number) => 1 - Math.pow(1 - t, 3),
+          syncTouch: false,
+          allowNestedScroll: true,
+          prevent: (node: HTMLElement) =>
+            Boolean(node.closest('[role="dialog"], [role="listbox"]')),
+        })
+      : undefined
+    const tickScroll = smoothScroll
+      ? (seconds: number) => smoothScroll.raf(seconds * 1000)
+      : undefined
+    if (smoothScroll && tickScroll) {
+      smoothScroll.on('scroll', ScrollTrigger.update)
+      gsap.ticker.add(tickScroll)
+    }
     const navigate = (event: Event) => {
       const target = (event as CustomEvent<HTMLElement>).detail
       if (!target?.isConnected) return
       event.preventDefault()
-      smoothScroll.scrollTo(target, {
-        duration: 1.4,
-        offset:
-          target.id === 'research' && !media.matches
-            ? Math.max(
-                0,
-                (document.getElementById('frontiers')!.offsetTop - target.offsetTop) * 0.13,
-              )
-            : 0,
-        onComplete: () => target.focus({ preventScroll: true }),
-      })
+      const offset =
+        target.id === 'research' && !media.matches
+          ? Math.max(0, (document.getElementById('frontiers')!.offsetTop - target.offsetTop) * 0.13)
+          : 0
+      if (smoothScroll)
+        smoothScroll.scrollTo(target, {
+          duration: 1.4,
+          offset,
+          onComplete: () => target.focus({ preventScroll: true }),
+        })
+      else {
+        window.scrollTo({ top: target.offsetTop + offset, behavior: 'smooth' })
+        window.setTimeout(() => target.focus({ preventScroll: true }), 750)
+      }
     }
     window.addEventListener('matrix:navigate', navigate)
     const chapters = Array.from(document.querySelectorAll<HTMLElement>('[data-chapter]'))
@@ -73,9 +87,14 @@ onMounted(() => {
           ),
         ).filter((el) => !el.hasAttribute('aria-hidden') && !el.classList.contains('absolute')),
       )
-      .map((el) => ({ el, top: 0, height: 0, inactive: false,
+      .map((el) => ({
+        el,
+        top: 0,
+        height: 0,
+        inactive: false,
         discovery: Boolean(el.closest('#discovery')),
-        beginning: Boolean(el.closest('#beginning')) }))
+        beginning: Boolean(el.closest('#beginning')),
+      }))
     const documentTop = (element: HTMLElement) => {
       let top = 0
       for (
@@ -134,7 +153,9 @@ onMounted(() => {
         const inactive = top > viewportHeight * 1.15 || bottom < -viewportHeight * 0.6
         if (inactive && layer.inactive) return
         layer.inactive = inactive
-        let entry = ease((viewportHeight * 0.98 - top) / (viewportHeight * (touchLayout ? 0.30 : 0.43)))
+        let entry = ease(
+          (viewportHeight * 0.98 - top) / (viewportHeight * (touchLayout ? 0.3 : 0.43)),
+        )
         if (layer.discovery) entry *= ease((stage - 0.62) / 0.25)
         if (layer.el.hasAttribute('data-ocean-intro')) entry *= ease((stage - 2.01) / 0.12)
         let exit = ease((viewportHeight * 0.22 - bottom) / (viewportHeight * 0.5))
@@ -180,28 +201,43 @@ onMounted(() => {
       }
     })
     if (main) resizeObserver.observe(main)
-    const layoutReady = document.fonts.ready.then(() => new Promise<void>((resolve) => {
-      if (disposed) { resolve(); return }
-      ScrollTrigger.refresh()
-      requestAnimationFrame(() => {
-        if (disposed) { resolve(); return }
-        emit('ready')
-        // The parent restores the hash destination while the veil is covering
-        // the page. Synchronize the camera before its first visible frame.
-        requestAnimationFrame(() => {
-          if (!disposed) {
-            ScrollTrigger.refresh()
-            timeline.progress(Math.max(0, Math.min(1, window.scrollY/maxScroll)))
-            apply()
+    // Only the faces that establish the narrative geometry gate measurement;
+    // icon/metadata faces must not delay the renderer handoff.
+    const criticalFonts = Promise.all([
+      document.fonts.load('400 1em "DM Sans"'),
+      document.fonts.load('500 1em "Manrope"'),
+    ])
+    const layoutReady = criticalFonts.then(
+      () =>
+        new Promise<void>((resolve) => {
+          if (disposed) {
+            resolve()
+            return
           }
-          resolve()
-        })
-      })
-    }))
+          ScrollTrigger.refresh()
+          requestAnimationFrame(() => {
+            if (disposed) {
+              resolve()
+              return
+            }
+            emit('ready')
+            // The parent restores the hash destination while the veil is covering
+            // the page. Synchronize the camera before its first visible frame.
+            requestAnimationFrame(() => {
+              if (!disposed) {
+                ScrollTrigger.refresh()
+                timeline.progress(Math.max(0, Math.min(1, window.scrollY / maxScroll)))
+                apply()
+              }
+              resolve()
+            })
+          })
+        }),
+    )
     const initWorld = async () => {
       if (media.matches || disposed || world || failed.value) return
       try {
-        const { createWorld } = await import('~/lib/scene/world')
+        const { createWorld } = await (worldModule || import('~/lib/scene/world'))
         await layoutReady
         if (disposed || media.matches || !canvas.value) return
         world = createWorld(
@@ -242,8 +278,8 @@ onMounted(() => {
     void initWorld()
     cleanup = () => {
       window.removeEventListener('matrix:navigate', navigate)
-      gsap.ticker.remove(tickScroll)
-      smoothScroll.destroy()
+      if (tickScroll) gsap.ticker.remove(tickScroll)
+      smoothScroll?.destroy()
       clearTimeout(layoutRefresh)
       gsap.set('[data-hero-detail]', { clearProps: 'opacity' })
       timeline.scrollTrigger?.kill()

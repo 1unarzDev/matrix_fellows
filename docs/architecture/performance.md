@@ -25,11 +25,20 @@ The server renders the full information hierarchy first. The page has a static
 atmospheric background and horizon preview, so it does not wait for Three.js to
 be readable or visually coherent.
 
-After mount, the cinematic module waits 100 ms, then dynamically imports GSAP,
-ScrollTrigger, and Lenis. The heavy world module is imported only inside
-`initWorld()`, after the document fonts and scroll measurements are ready.
+After mount, the cinematic module waits 100 ms, then dynamically imports GSAP
+and ScrollTrigger. Lenis is imported only for fine-pointer layouts; touch uses
+native inertia and does not download or initialize it. The heavy world module
+starts downloading in parallel with the animation libraries, while construction
+still waits for stable scroll measurements. Only the two faces that establish
+the narrative layout gate that measurement; unrelated document fonts do not.
 `JoinForm` and `AdminPanel` use Nuxt lazy components and are created only when
 opened. Reduced-motion users skip world construction entirely.
+
+DM Sans and Manrope are resolved at build time by `@nuxt/fonts`, served as two
+same-origin variable WOFF2 files, and paired with metric-adjusted local fallbacks.
+There are no runtime Google Fonts requests. The renderer asynchronously compiles
+the background and foreground programs behind the arrival veil before starting
+its RAF loop; compilation failure falls back to normal first-use compilation.
 
 The arrival veil is a separate low-resolution 2D canvas capped at 30 fps. It
 hides renderer/deep-link handoff and releases after the first WebGL frame; a
@@ -66,10 +75,10 @@ terrain can correctly occlude models.
 | ---------------------- | ----------------------------- | ------------------------------------------------------------- |
 | Initial particle count | 12,000                        | 2,600                                                         |
 | Initial pixel ratio    | `min(devicePixelRatio, 1.5)`  | background `min(devicePixelRatio, 0.7)`; foreground at most 1 |
-| HDR target samples     | up to 4× MSAA                 | up to 2× MSAA                                                 |
+| HDR target samples     | up to 4× MSAA                 | none; avoids a redundant full-screen multisample resolve      |
 | Background             | rendered directly in composer | separate half-float color/depth target                        |
 | Bloom                  | UnrealBloom multi-mip pass    | eight symmetric highlight taps in grading shader              |
-| Final edge treatment   | MSAA                          | MSAA plus FXAA                                                |
+| Final edge treatment   | MSAA                          | full-resolution foreground plus FXAA                          |
 | Adaptive ratio floor   | 0.65                          | 0.45 for procedural background                                |
 
 Splitting the mobile background is important: the expensive procedural ray work
@@ -115,7 +124,8 @@ After 30 slow samples, quality changes by:
 This is one-way within a session to prevent quality oscillation. On mobile, only
 the expensive atmosphere target follows the adaptive ratio; the foreground stays
 at its capped sharp ratio. The page exposes `data-fps`, `data-pixel-ratio`,
-`data-atmosphere-ratio`, `data-renderer`, and scene-state diagnostics on the canvas.
+`data-atmosphere-ratio`, `data-renderer`, shader compile state/time, program count,
+draw calls, triangles, points, and scene-state diagnostics on the canvas.
 
 ## Pausing, failure, and teardown
 
@@ -134,8 +144,10 @@ event/media listeners.
 ## Network and server performance
 
 - `/api/content` starts three Supabase reads concurrently, uses a 6-second fetch
-  timeout, and validates results. Successful responses use `Cache-Control` value
-  `public, max-age=30, stale-while-revalidate=120`.
+  timeout, and validates results. Validated successful aggregation is reused by a
+  Nitro cached function for 30 seconds with 120 seconds stale-while-revalidate;
+  the event is retained so edge refresh can attach to `waitUntil`. Successful
+  responses use `Cache-Control: public, max-age=30, stale-while-revalidate=120`.
 - Failed public reads use local validated defaults and `no-store`, so a transient
   failure is not cached as healthy content.
 - The public HTML is server-rendered; essential copy is not delayed until a
@@ -150,18 +162,17 @@ event/media listeners.
 The latest recorded hardware-accelerated chapter captures held about 30 fps on an
 RTX 4070 Ti SUPER at desktop and mobile-emulated viewports. That verifies the cap
 and shader correctness on that GPU, not phone performance. The dated
-[mobile report](../quality/mobile-performance-report.md) improved a SwiftShader
-scroll run from a median 83.4 ms / p95 150.1 ms to 66.6 ms / 83.3 ms, but still
-failed its 50 ms software-rendering budget. The [SEO audit](../operations/seo-audit.md)
+[mobile report](../quality/mobile-performance-report.md) now records a controlled
+SwiftShader scroll improvement from 66.6 ms median / 83.4 ms p95 to 16.7 ms /
+33.4 ms after removing redundant mobile MSAA. The [SEO audit](../operations/seo-audit.md)
 recorded a simulated-mobile LCP of 3.5 s and 1,600 ms total blocking time before
 the SEO changes; the report explicitly treats animation/bootstrap cost as open.
 
 Current risks:
 
 - physical iPhone Safari performance, thermal throttling, and low-power mode;
-- main-thread startup from animation libraries and hydration;
+- main-thread startup from animation libraries and hydration on real devices;
 - procedural fragment cost during the ocean/descent transition;
-- external Google Fonts on the render path; and
 - adaptive quality only decreases—it does not recover after a temporary spike.
 
 ## Verification and profiling
@@ -171,7 +182,9 @@ Run a dev or production-preview server first where required.
 | Command                                   | What it verifies                                                          |
 | ----------------------------------------- | ------------------------------------------------------------------------- |
 | `npm run capture`                         | Six chapter captures, canvas diagnostics, desktop/mobile emulation        |
-| `node scripts/mobile-performance.mjs`     | Controlled SwiftShader scroll comparison; intentionally not a phone claim |
+| `npm run perf:mobile`                     | Controlled SwiftShader scroll comparison; intentionally not a phone claim |
+| `npm run perf:profile`                    | Startup, Web Vitals, LoAF/long-task, and WebGL-vs-DOM attribution         |
+| `npm run perf:shader`                     | Isolated world-fragment timing at the storm/ocean hot spot                |
 | `node scripts/check-oasis-dressing.mjs`   | Desktop/mobile assets, reveal, flood, and reverse navigation              |
 | `npx tsx scripts/check-hero-water.mjs`    | No water leaks into the hero across aspect ratios                         |
 | `npx tsx scripts/check-waterline.mjs`     | Hardware-WebGL waterline samples contain no NaNs                          |

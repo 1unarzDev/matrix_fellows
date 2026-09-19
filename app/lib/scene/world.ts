@@ -23,7 +23,11 @@ export interface World {
   dispose(): void
 }
 
-export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, onFirstFrame?: () => void): World {
+export function createWorld(
+  canvas: HTMLCanvasElement,
+  onFailure: () => void,
+  onFirstFrame?: () => void,
+): World {
   let firstFrame = true
   const mobile = window.matchMedia('(max-width: 767px)').matches
   const renderer = new THREE.WebGLRenderer({
@@ -34,6 +38,9 @@ export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, on
   })
   renderer.outputColorSpace = THREE.LinearSRGBColorSpace
   renderer.autoClear = false
+  // The world uses several render calls per logical frame. Disable Three's
+  // per-call reset so the exposed diagnostics describe the complete frame.
+  renderer.info.autoReset = false
   const gl = renderer.getContext()
   const debugInfo = gl.getExtension('WEBGL_debug_renderer_info')
   if (debugInfo)
@@ -65,24 +72,32 @@ export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, on
   // The procedural landscape dominates fragment cost. On phones render only
   // that layer at a lower resolution; retain a sharp multisampled foreground
   // for palm leaves, rocks, particles and constellation lines.
-  const atmosphereTarget = mobile ? new THREE.WebGLRenderTarget(1, 1, {
-    type: THREE.HalfFloatType,
-    depthTexture: new THREE.DepthTexture(1, 1, THREE.UnsignedIntType),
-    minFilter: THREE.LinearFilter,
-    magFilter: THREE.LinearFilter,
-  }) : undefined
-  const atmosphereCopy = atmosphereTarget ? new THREE.ShaderMaterial({
-    uniforms: { colorBuffer: { value: atmosphereTarget.texture }, depthBuffer: { value: atmosphereTarget.depthTexture } },
-    vertexShader: screenVertex,
-    fragmentShader: `uniform sampler2D colorBuffer; uniform sampler2D depthBuffer; varying vec2 vUv;
+  const atmosphereTarget = mobile
+    ? new THREE.WebGLRenderTarget(1, 1, {
+        type: THREE.HalfFloatType,
+        depthTexture: new THREE.DepthTexture(1, 1, THREE.UnsignedIntType),
+        minFilter: THREE.LinearFilter,
+        magFilter: THREE.LinearFilter,
+      })
+    : undefined
+  const atmosphereCopy = atmosphereTarget
+    ? new THREE.ShaderMaterial({
+        uniforms: {
+          colorBuffer: { value: atmosphereTarget.texture },
+          depthBuffer: { value: atmosphereTarget.depthTexture },
+        },
+        vertexShader: screenVertex,
+        fragmentShader: `uniform sampler2D colorBuffer; uniform sampler2D depthBuffer; varying vec2 vUv;
       void main(){gl_FragColor=texture2D(colorBuffer,vUv);gl_FragDepth=texture2D(depthBuffer,vUv).r;}`,
-    depthTest: true, depthWrite: true,
-  }) : undefined
+        depthTest: true,
+        depthWrite: true,
+      })
+    : undefined
   const compositeBackground = new THREE.Scene()
   if (atmosphereCopy) compositeBackground.add(new THREE.Mesh(quadGeometry, atmosphereCopy))
   const renderTarget = new THREE.WebGLRenderTarget(1, 1, {
     type: THREE.HalfFloatType,
-    samples: Math.min(mobile ? 2 : 4, renderer.capabilities.maxSamples),
+    samples: mobile ? 0 : Math.min(4, renderer.capabilities.maxSamples),
     depthBuffer: true,
   })
   const composer = new EffectComposer(renderer, renderTarget)
@@ -99,7 +114,9 @@ export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, on
     vertexShader: screenVertex,
     fragmentShader: `uniform sampler2D tDiffuse; uniform vec2 texel; varying vec2 vUv;
       void main(){vec3 c=max(texture2D(tDiffuse,vUv).rgb,vec3(0));
-      ${mobile ? `
+      ${
+        mobile
+          ? `
       // Eight symmetric highlight taps folded into color grading replace the
       // desktop multi-mip bloom chain. The world shader retains broad glare.
       vec3 halo=vec3(0.0);
@@ -109,7 +126,9 @@ export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, on
         halo+=max(texture2D(tDiffuse,vUv+offset).rgb-vec3(1.05),vec3(0.0));
       }
       c+=halo*.045;
-      ` : ''}
+      `
+          : ''
+      }
       gl_FragColor=vec4(pow(vec3(1)-exp(-c*1.35),vec3(.92)),1);}`,
   })
   composer.addPass(backgroundPass)
@@ -194,7 +213,8 @@ export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, on
   let progress = 0
   let requestedProgress = 0
   let hasScrollPosition = false
-  let surfaceWidth = 0, surfaceHeight = 0
+  let surfaceWidth = 0,
+    surfaceHeight = 0
   // Explicit crest, basin, waterline, and submerged control points keep the reveals spatial.
   const cameraKeys = [
     { at: 0, position: [0, 6.5, 30], target: [0, 3, -40] },
@@ -228,9 +248,10 @@ export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, on
     const width = window.innerWidth
     // Safari toolbar movement changes innerHeight during a swipe. Keep the
     // large viewport surface stable, including its expensive bloom targets.
-    const height = mobile && width === surfaceWidth
-      ? surfaceHeight
-      : Math.round(canvas.getBoundingClientRect().height) || window.innerHeight
+    const height =
+      mobile && width === surfaceWidth
+        ? surfaceHeight
+        : Math.round(canvas.getBoundingClientRect().height) || window.innerHeight
     surfaceWidth = width
     surfaceHeight = height
     const foregroundRatio = mobile ? Math.min(window.devicePixelRatio, 1) : ratio
@@ -238,9 +259,15 @@ export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, on
     renderer.setSize(width, height, false)
     composer.setPixelRatio(foregroundRatio)
     composer.setSize(width, height)
-    atmosphereTarget?.setSize(Math.max(1, Math.round(width * ratio)), Math.max(1, Math.round(height * ratio)))
+    atmosphereTarget?.setSize(
+      Math.max(1, Math.round(width * ratio)),
+      Math.max(1, Math.round(height * ratio)),
+    )
     grade.uniforms.texel!.value.set(1 / (width * foregroundRatio), 1 / (height * foregroundRatio))
-    edgeResolve?.uniforms.resolution!.value.set(1 / (width * foregroundRatio), 1 / (height * foregroundRatio))
+    edgeResolve?.uniforms.resolution!.value.set(
+      1 / (width * foregroundRatio),
+      1 / (height * foregroundRatio),
+    )
     camera.aspect = width / height
     camera.updateProjectionMatrix()
     uniforms.uAspect.value = width / height
@@ -280,12 +307,12 @@ export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, on
     for (const boundary of [5, 6]) {
       const key = cameraKeys[boundary]!
       const x = progress - key.at
-      const width = .045
+      const width = 0.045
       if (Math.abs(x) >= width) continue
       const incoming = 1 / (key.at - cameraKeys[boundary - 1]!.at)
       const outgoing = 1 / (cameraKeys[boundary + 1]!.at - key.at)
       const u = (x + width) / (2 * width)
-      const softHinge = 2 * width * (u * u * u - .5 * u * u * u * u)
+      const softHinge = 2 * width * (u * u * u - 0.5 * u * u * u * u)
       pathIndex += (outgoing - incoming) * (softHinge - Math.max(0, x))
     }
     const t = pathIndex / (cameraKeys.length - 1)
@@ -343,13 +370,16 @@ export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, on
     oasisDressing.setTime(elapsed)
     // Only a top-of-page arrival gets a low-to-high reveal. A restored/deep-link
     // chapter uses its normal camera immediately, never a trip through the desert.
-    const emergence = (1-THREE.MathUtils.smoothstep(elapsed,0,1.8))
-      *(1-THREE.MathUtils.smoothstep(progress,0,.08))
-    const cameraY = camera.position.y, targetY = target.y
-    camera.position.y -= emergence*1.8
-    target.y -= emergence*3.2
+    const emergence =
+      (1 - THREE.MathUtils.smoothstep(elapsed, 0, 1.8)) *
+      (1 - THREE.MathUtils.smoothstep(progress, 0, 0.08))
+    const cameraY = camera.position.y,
+      targetY = target.y
+    camera.position.y -= emergence * 1.8
+    target.y -= emergence * 3.2
     camera.lookAt(target)
     const start = performance.now()
+    renderer.info.reset()
     if (atmosphereTarget) {
       renderer.setRenderTarget(atmosphereTarget)
       renderer.clear()
@@ -366,6 +396,10 @@ export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, on
     sampleFrames++
     if (now - sampleStart > 2000) {
       canvas.dataset.fps = ((sampleFrames * 1000) / (now - sampleStart)).toFixed(1)
+      canvas.dataset.drawCalls = String(renderer.info.render.calls)
+      canvas.dataset.triangles = String(renderer.info.render.triangles)
+      canvas.dataset.points = String(renderer.info.render.points)
+      canvas.dataset.programs = String(renderer.info.programs?.length || 0)
       sampleStart = now
       sampleFrames = 0
     }
@@ -402,7 +436,28 @@ export function createWorld(canvas: HTMLCanvasElement, onFailure: () => void, on
   window.addEventListener('resize', onResize, { passive: true })
   resize()
   updateCamera(0)
-  frame = requestAnimationFrame(draw)
+  // Compile the expensive world and foreground programs behind the arrival
+  // veil. On supporting drivers this uses parallel shader compilation and
+  // avoids paying the whole link cost in the first visible frame.
+  const compileStarted = performance.now()
+  canvas.dataset.compileState = 'pending'
+  Promise.all([
+    renderer.compileAsync(background, screenCamera),
+    renderer.compileAsync(scene, camera),
+    ...(atmosphereCopy ? [renderer.compileAsync(compositeBackground, screenCamera)] : []),
+  ])
+    .then(() => {
+      canvas.dataset.compileState = 'ready'
+    })
+    .catch(() => {
+      // Some older drivers do not expose a reliable parallel-compile path.
+      // Rendering remains the functional fallback and will compile on demand.
+      canvas.dataset.compileState = 'fallback'
+    })
+    .finally(() => {
+      canvas.dataset.compileMs = (performance.now() - compileStarted).toFixed(1)
+      if (!disposed) frame = requestAnimationFrame(draw)
+    })
   return {
     setProgress,
     dispose() {

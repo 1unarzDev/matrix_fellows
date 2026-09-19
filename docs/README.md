@@ -56,6 +56,8 @@ Verification instructions and dated investigation records.
 - [Validation matrix](quality/validation.md)
 - [Mobile performance report](quality/mobile-performance-report.md) — a dated
   SwiftShader comparison, not a physical-device benchmark.
+- [Performance source review](research/performance/optimization-sources.md) —
+  primary-source constraints behind the current optimization pass.
 - [Ocean gap regression](quality/regressions/ocean-gap.md)
 
 ### Research data

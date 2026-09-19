@@ -2,14 +2,13 @@ import { createClient } from '@supabase/supabase-js'
 import { defaultContent, defaultOpportunities } from '../../shared/data/defaults'
 import { contentSchema, opportunitySchema } from '../../shared/utils/validation'
 import type { PublicContent } from '../../shared/types/content'
+import type { H3Event } from 'h3'
 
-export default defineEventHandler(async (event): Promise<PublicContent> => {
-  const config = useRuntimeConfig(event)
-  const { supabaseUrl, supabaseAnonKey } = config.public
-  setHeader(event, 'Cache-Control', 'public, max-age=30, stale-while-revalidate=120')
-  if (!supabaseUrl || !supabaseAnonKey)
-    return { content: defaultContent, opportunities: defaultOpportunities, configured: false }
-  try {
+const loadPublicContent = defineCachedFunction(
+  async (event: H3Event): Promise<PublicContent> => {
+    const config = useRuntimeConfig(event)
+    const { supabaseUrl, supabaseAnonKey } = config.public
+    if (!supabaseUrl || !supabaseAnonKey) throw new Error('Content storage is not configured')
     const client = createClient(supabaseUrl, supabaseAnonKey, {
       auth: { persistSession: false },
       global: {
@@ -64,6 +63,26 @@ export default defineEventHandler(async (event): Promise<PublicContent> => {
       opportunities,
       configured: true,
     }
+  },
+  {
+    name: 'public-content',
+    getKey: () => 'main',
+    maxAge: 30,
+    staleMaxAge: 120,
+    swr: true,
+  },
+)
+
+export default defineEventHandler(async (event): Promise<PublicContent> => {
+  const config = useRuntimeConfig(event)
+  if (!config.public.supabaseUrl || !config.public.supabaseAnonKey) {
+    setHeader(event, 'Cache-Control', 'public, max-age=30, stale-while-revalidate=120')
+    return { content: defaultContent, opportunities: defaultOpportunities, configured: false }
+  }
+  try {
+    const result = await loadPublicContent(event)
+    setHeader(event, 'Cache-Control', 'public, max-age=30, stale-while-revalidate=120')
+    return result
   } catch {
     setHeader(event, 'Cache-Control', 'no-store')
     return {

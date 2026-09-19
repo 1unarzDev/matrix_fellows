@@ -16,7 +16,7 @@ try {
   page.on('console', (message) => {
     if (message.type() === 'error') errors.push(message.text())
   })
-  await page.goto('http://localhost:3000')
+  await page.goto(process.env.TEST_BASE_URL || 'http://localhost:3000')
   await page.locator('[data-ready="true"]').waitFor()
   const samples = []
   for (let frame = 0; frame <= 80; frame++) {

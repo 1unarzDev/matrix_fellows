@@ -20,7 +20,8 @@
     "capture": "node scripts/capture.mjs",
     "perf:mobile": "node scripts/mobile-performance.mjs",
     "perf:profile": "node scripts/profile-performance.mjs",
-    "perf:shader": "node scripts/benchmark-world-shader.mjs"
+    "perf:shader": "node scripts/benchmark-world-shader.mjs",
+    "perf:soak": "node scripts/mobile-soak.mjs"
   },
   "dependencies": {
     "@nuxt/fonts": "^0.14.0",

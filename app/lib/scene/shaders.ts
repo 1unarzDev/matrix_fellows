@@ -14,9 +14,11 @@ export const cameraFloodRise = (progress: number, baseHeight?: number) => {
   const flood = floodHeight(progress)
   // During the first two units of flooding, compensate the actual descent
   // instead of introducing a second independently timed upward motion.
-  const lift = baseHeight !== undefined && progress >= 1.35 && progress <= 2.1
-    ? Math.max(0, flood - 2) + Math.min(2, flood) * Math.max(0, Math.min(1, (4.4 - baseHeight) / 2.8))
-    : flood * smooth(1.58, 1.65, progress)
+  const lift =
+    baseHeight !== undefined && progress >= 1.35 && progress <= 2.1
+      ? Math.max(0, flood - 2) +
+        Math.min(2, flood) * Math.max(0, Math.min(1, (4.4 - baseHeight) / 2.8))
+      : flood * smooth(1.58, 1.65, progress)
   return lift * (1 - smooth(3.15, 4.15, progress))
 }
 export function lightningState(seconds: number) {
@@ -74,10 +76,16 @@ uniform vec3 uCamera;
 uniform vec3 uTarget;
 uniform vec2 uClip;
 uniform vec2 uLightning;
+uniform float uDetail;
 ${terrainGLSL}
 ${weatherGLSL}
 
-
+float atmosphericFbm(vec2 p) {
+  if(uDetail>.5) return fbm(p);
+  float f=0.0, a=0.5;
+  for(int i=0;i<2;i++){ f+=a*noise(p); p=mat2(1.6,-1.2,1.2,1.6)*p+13.1; a*=0.5; }
+  return f;
+}
 vec3 swell(vec2 p) {
   float strength=stormStrength(uProgress)*smoothstep(1.32,1.8,uProgress);
   // Keep the immediate camera surface calm enough to avoid an accidental dive;
@@ -105,6 +113,7 @@ vec3 waves(vec2 p) {
   float amplitude=mix(.24,.85,stormStrength(uProgress)), frequency=.34;
   vec2 domain=p+vec2(noise(p*.055+uTime*.025),noise(p*.047-uTime*.021))*2.4;
   for(int i=0;i<7;i++) {
+    if(i>=4 && uDetail<.5) break;
     float fi=float(i), angle=fi*2.39996+.27*sin(fi*3.1);
     vec2 direction=vec2(cos(angle),sin(angle));
     float phase=dot(direction,domain)*frequency+uTime*sqrt(frequency)*.85+fi*8.31;
@@ -130,7 +139,7 @@ float sunCloudCover(vec3 ray, vec3 sun) {
   // must not become an extra full-sky weather transition.
   vec2 local=ray.xy-sun.xy;
   float ceiling=mix(.45,-.32,smoothstep(1.08,1.4,uProgress));
-  float billow=fbm(local*7.0+vec2(uTime*.009,-uTime*.012));
+  float billow=atmosphericFbm(local*7.0+vec2(uTime*.009,-uTime*.012));
   float density=smoothstep(ceiling-.14,ceiling+.14,local.y+(billow-.5)*.15);
   float footprint=1.0-smoothstep(.13,.32,length(local*vec2(1.0,1.2)));
   return density*footprint*smoothstep(1.08,1.2,uProgress);
@@ -171,8 +180,8 @@ vec3 sky(vec3 rd, vec3 sun) {
   float storm=stormStrength(uProgress);
   if(storm>.001) {
     vec2 cloudUV=rd.xz/(.3+max(rd.y,0.0))*1.25+vec2(uTime*.035,-uTime*.012);
-    float cloud=fbm(cloudUV+fbm(cloudUV*.7)*2.5);
-    float fold=fbm(cloudUV*2.8+cloud*3.0);
+    float cloud=atmosphericFbm(cloudUV+atmosphericFbm(cloudUV*.7)*2.5);
+    float fold=atmosphericFbm(cloudUV*2.8+cloud*3.0);
     vec3 overcast=mix(vec3(.008,.016,.028),vec3(.18,.24,.27),smoothstep(.22,.72,cloud));
     overcast+=vec3(.09,.12,.14)*pow(max(0.0,fold),3.0);
     overcast=mix(vec3(.105,.155,.18),overcast,smoothstep(-.05,.45,rd.y));
@@ -369,8 +378,8 @@ void main() {
       col=mix(col,atmosphere,fog);
     }
     if(oasis<.999) {
-    float dust=fbm(vec2(uv.x*3.0-uTime*.16,uv.y*8.0+uTime*.035));
-    float wisps=fbm(vec2(uv.x*1.4-uTime*.22,uv.y*16.0+sin(uv.x*2.0)*1.3));
+    float dust=atmosphericFbm(vec2(uv.x*3.0-uTime*.16,uv.y*8.0+uTime*.035));
+    float wisps=atmosphericFbm(vec2(uv.x*1.4-uTime*.22,uv.y*16.0+sin(uv.x*2.0)*1.3));
     float dustStorm=(1.0-oasis)*(.08+pow(dust,1.5)*.62+wisps*.19);
     col=mix(col,vec3(.62,.36,.18),dustStorm*.65);
     col+=vec3(.16,.08,.035)*pow(wisps,2.0)*(1.0-oasis);
@@ -406,7 +415,7 @@ void main() {
         float drop=exp(-abs(local.x-.5)*45.0)*smoothstep(.0,.14,local.y)*(1.0-smoothstep(.5,.95,local.y));
         rain+=drop*step(.75,hash(cell))/scale;
       }
-      float mist=fbm(uv*vec2(4,8)+vec2(-uTime*.18,uTime*.02));
+      float mist=atmosphericFbm(uv*vec2(4,8)+vec2(-uTime*.18,uTime*.02));
       float curtain=smoothstep(1.4,1.59,p)*(1.0-smoothstep(1.94,2.12,p));
       float veil=clamp(storm*(.10+mist*.2)+curtain*(.55+mist*.3),0.0,.94);
       vec3 rainHaze=mix(vec3(.085,.14,.17),vec3(.095,.12,.125),exposedGround);
@@ -421,8 +430,8 @@ void main() {
     float crest=-.25+1.5*inundation+sin(uv.x*9.0+uTime*1.7)*.065+sin(uv.x*21.0-uTime*2.1)*.025;
     float cover=1.0-smoothstep(crest-.055,crest+.055,uv.y);
     vec2 current=uv*vec2(3.0,5.0)+vec2(uTime*.16,-uTime*.3);
-    float churn=fbm(current+fbm(current*1.8)*2.5);
-    float foam=smoothstep(.5,.72,fbm(current*4.0+churn*3.0));
+    float churn=atmosphericFbm(current+atmosphericFbm(current*1.8)*2.5);
+    float foam=smoothstep(.5,.72,atmosphericFbm(current*4.0+churn*3.0));
     vec3 surge=mix(vec3(.014,.028,.035),vec3(.055,.085,.095),churn);
     surge+=vec3(.075,.09,.095)*foam*.45;
     col=mix(col,surge,cover);
@@ -431,7 +440,7 @@ void main() {
 
   if(submerged>0.0 && cosmos<.999) {
   vec2 warp=uv+vec2(sin(uv.y*9.0+uTime*.24),cos(uv.x*7.0-uTime*.19))*.022;
-  float shaft=pow(max(0.0,sin((warp.x+warp.y*.3)*24.0+fbm(warp*3.0)*3.0)),8.0);
+  float shaft=pow(max(0.0,sin((warp.x+warp.y*.3)*24.0+atmosphericFbm(warp*3.0)*3.0)),8.0);
   // Refraction can move UVs below the frame. Fractional powers of negative
   // height produce NaNs on hardware GPUs and contaminate HDR bloom buffers.
   float lightHeight=clamp(uv.y,0.0,1.0);
@@ -458,7 +467,7 @@ void main() {
   float beam1=exp(-pow((uv.x-.16-uv.y*.19)*14.0,2.0));
   float beam2=exp(-pow((uv.x-.45+uv.y*.04)*25.0,2.0));
   deep+=vec3(.035,.15,.18)*(beam1+beam2*.55)*pow(lightHeight,1.4);
-  deep+=vec3(.015,.035,.058)*fbm(warp*7.0+uTime*.015);
+  deep+=vec3(.015,.035,.058)*atmosphericFbm(warp*7.0+uTime*.015);
   // A restrained violet-blue distant glow bridges the sea and later nebula.
   deep+=vec3(.055,.028,.11)*exp(-length((uv-vec2(.84,.38))*vec2(2.0,3.0))*3.5);
   float windowLight=exp(-length((uv-vec2(.55,1.12))*vec2(1.3,.9))*5.0);
@@ -471,8 +480,8 @@ void main() {
   if(cosmos>0.0) {
     vec2 q=screen*1.75;
     q*=mat2(.91,-.41,.41,.91);
-    float n=fbm(q*2.0+vec2(uTime*.006,0));
-    float clouds=fbm(q*3.0+vec2(n*3.0,-uTime*.008));
+    float n=atmosphericFbm(q*2.0+vec2(uTime*.006,0));
+    float clouds=atmosphericFbm(q*3.0+vec2(n*3.0,-uTime*.008));
     float band=exp(-pow((q.y+sin(q.x*1.4)*.2+n*.5)*2.4,2.0));
     float veil=pow(clouds,2.0)*band;
     vec3 nebula=vec3(.008,.011,.026);

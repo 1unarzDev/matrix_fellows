@@ -27,7 +27,9 @@ try {
         await new Promise((resolve) => setTimeout(resolve, 1200))
         await route.continue()
       })
-    await page.goto('http://localhost:3000', { waitUntil: 'domcontentloaded' })
+    await page.goto(process.env.TEST_BASE_URL || 'http://localhost:3000', {
+      waitUntil: 'domcontentloaded',
+    })
     await page.locator('[data-ready="true"]').waitFor()
     if (mode === 'normal') {
       assert.equal(

@@ -3,7 +3,7 @@
 ## Completed
 
 - Nuxt and scheduled-Worker TypeScript checks pass.
-- 93 unit/database tests across 14 files pass, including tests against the actual migrations in embedded PostgreSQL.
+- 97 unit/database tests across 15 files pass, including tests against the actual migrations in embedded PostgreSQL.
 - Eight Playwright suites cover the built application across desktop and mobile Chromium profiles.
 - Browser coverage includes direct deep links, reverse scene synchronization, early section navigation, expandable research details, opportunity search/empty states, editor opening/closing, reduced motion, and unavailable WebGL.
 - Production Nuxt build passes. Frontend and scheduled importer are deployed independently through Wrangler/GitHub automation.
@@ -19,7 +19,13 @@ are recorded observations, not universal device guarantees.
 
 Hardware-accelerated Chromium using an NVIDIA GeForce RTX 4070 Ti SUPER through ANGLE/OpenGL ES measured approximately **30 fps** at all six stationary chapter positions. Measurements used 1440 × 960 desktop and an iPhone 13 viewport profile, with canvas pixel ratio capped at 1 in these runs. Rendering intentionally caps at 30 fps.
 
-The mobile profile is browser emulation on the same desktop GPU, **not a physical phone benchmark**. Initial tests using SwiftShader were much slower and are not representative of hardware GPU performance. The runtime adapts pixel ratio and particle count under sustained load.
+The owner's phone reported roughly **10 fps** before the 2026-09-22 efficient-path
+pass. That is the authoritative failing baseline. A subsequent 120-second
+SwiftShader proxy held 28.9–30 fps in every ten-second window without >100 ms
+stalls, but it does not establish physical-phone success. The optimized live
+build must be rerun on that phone. The runtime adapts procedural detail and
+particle count under sustained load while keeping DOM and foreground resolution
+stable.
 
 Regenerate screenshots and measured canvas diagnostics with `npm run capture` (requires a running app and Playwright Chromium). Output is stored in `test-results/visual`; browser test traces use the separate `test-results/e2e` directory.
 

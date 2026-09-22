@@ -4,7 +4,7 @@ test('custom opportunity picker supports keyboard selection and dismissal', asyn
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('/#community')
   await page.locator('[data-ready="true"]').waitFor()
-  const trigger = page.getByRole('button', { name: 'Opportunity type: All opportunities' })
+  const trigger = page.getByRole('button', { name: 'Opportunity type: All types' })
   await trigger.click()
   await expect(page.getByRole('listbox', { name: 'Opportunity type' })).toBeVisible()
   await page.keyboard.press('w')

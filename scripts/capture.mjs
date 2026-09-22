@@ -48,7 +48,9 @@ try {
     await page
       .locator('#beginning')
       .evaluate((element) => element.scrollIntoView({ behavior: 'instant' }))
-    await page.waitForTimeout(1500)
+    // World diagnostics intentionally update on a two-second sample cadence so
+    // production rendering never writes DOM state every frame.
+    await page.waitForTimeout(2500)
     if (Number(await page.locator('canvas').getAttribute('data-progress')) > 0.01)
       throw new Error('Reverse scroll did not reset the world')
     if (errors.length) throw new Error(errors.join('\n'))

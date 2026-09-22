@@ -71,15 +71,20 @@ The procedural environment is a full-screen fragment shader; palms, rocks,
 particles, and constellation lines are foreground geometry. Both share depth so
 terrain can correctly occlude models.
 
-| Setting                | Desktop                       | Mobile (`max-width: 767px`)                                   |
+| Setting                | Cinematic profile             | Efficient profile                                             |
 | ---------------------- | ----------------------------- | ------------------------------------------------------------- |
-| Initial particle count | 12,000                        | 2,600                                                         |
-| Initial pixel ratio    | `min(devicePixelRatio, 1.5)`  | background `min(devicePixelRatio, 0.7)`; foreground at most 1 |
+| Particle buffer / draw | 12,000 / 12,000               | 2,600 / 1,560 initially; one-way floor 1,196                 |
+| Initial pixel ratio    | `min(devicePixelRatio, 1.5)`  | background `min(devicePixelRatio, 0.32)`; foreground at most 1 |
 | HDR target samples     | up to 4× MSAA                 | none; avoids a redundant full-screen multisample resolve      |
 | Background             | rendered directly in composer | separate half-float color/depth target                        |
-| Bloom                  | UnrealBloom multi-mip pass    | eight symmetric highlight taps in grading shader              |
-| Final edge treatment   | MSAA                          | full-resolution foreground plus FXAA                          |
-| Adaptive ratio floor   | 0.65                          | 0.45 for procedural background                                |
+| Bloom                  | UnrealBloom multi-mip pass    | no separate bloom pass                                        |
+| Final edge treatment   | MSAA                          | full-resolution foreground plus combined edge/grade pass      |
+| Adaptive ratio floor   | 0.65                          | 0.32 for procedural background                                |
+
+Profile selection is independent of layout width. Coarse-pointer devices and
+machines reporting at most four logical processors or 4 GB device memory begin
+efficiently, so landscape phones and weak wide displays do not inherit desktop
+MSAA, bloom, and particle settings. CSS breakpoints remain layout-only.
 
 Splitting the mobile background is important: the expensive procedural ray work
 can become softer without making palm cutouts, constellation lines, text-adjacent
@@ -93,10 +98,12 @@ the fish-like current, and stars. Stable per-particle seeds and vertex-shader
 trajectories transform the same identities across the journey. This avoids CPU
 object updates, per-scene particle allocation, and transition-time buffer churn.
 
-Oasis reeds, rocks, cacti, bushes, and formations use instancing. Imported GLBs
+Oasis reeds, rocks, cacti, bushes, formations, and the nine palms use instancing. Imported GLBs
 are normalized and merged once, their unsuitable source materials are replaced,
-and repeated instances share geometry/materials. Palm clones share the loaded
-asset. Optional assets load asynchronously and fail without taking down the world.
+and repeated instances share geometry/materials. This reduced the oasis peak
+from 72 to 18 draw calls. Optional assets load asynchronously and fail without
+taking down the world. Programs, buffers, textures, and the production-format
+framebuffer path warm behind the arrival veil before the first oasis frame.
 
 Shader work is concentrated where it provides visible leverage: procedural
 terrain/atmosphere, water, weather, deep-sea lighting, nebulae, and particle
@@ -116,16 +123,23 @@ pressure increments a slow-frame counter when:
 - render cost exceeds 27 ms; or
 - callback spacing exceeds 42 ms on mobile / 52 ms on desktop.
 
-After 30 slow samples, quality changes by:
+The first decision occurs after 10 slow samples and later decisions after 20.
+The efficient profile starts at its measured steady-state atmosphere tier,
+preventing weak phones from reallocating progressively smaller render targets
+while already missing frames. Later quality changes:
 
-1. multiplying the adaptive ratio by 0.85, down to the platform floor; and
-2. reducing the active particle draw range by 15%.
+1. multiply the adaptive ratio by 0.85, down to the platform floor;
+2. disable the mobile halo and reduce procedural FBM/wave octaves; and
+3. reduce the active particle draw range, down to 46%.
 
 This is one-way within a session to prevent quality oscillation. On mobile, only
 the expensive atmosphere target follows the adaptive ratio; the foreground stays
 at its capped sharp ratio. The page exposes `data-fps`, `data-pixel-ratio`,
 `data-atmosphere-ratio`, `data-renderer`, shader compile state/time, program count,
-draw calls, triangles, points, and scene-state diagnostics on the canvas.
+draw calls, triangles, points, and scene-state diagnostics on the canvas. DOM
+diagnostics update every two seconds rather than every frame. Opt-in
+`?matrixProfile` instrumentation retains rendered-frame data in memory and uses
+asynchronous disjoint timer queries when the driver supports them.
 
 ## Pausing, failure, and teardown
 
@@ -162,9 +176,12 @@ event/media listeners.
 The latest recorded hardware-accelerated chapter captures held about 30 fps on an
 RTX 4070 Ti SUPER at desktop and mobile-emulated viewports. That verifies the cap
 and shader correctness on that GPU, not phone performance. The dated
-[mobile report](../quality/mobile-performance-report.md) now records a controlled
-SwiftShader scroll improvement from 66.6 ms median / 83.4 ms p95 to 16.7 ms /
-33.4 ms after removing redundant mobile MSAA. The [SEO audit](../operations/seo-audit.md)
+[mobile report](../quality/mobile-performance-report.md) records both the older
+MSAA removal and the subsequent weak-phone pass. A 120-second SwiftShader
+forward/reverse soak rendered at 29.49 fps overall, with every ten-second window
+at 28.9–30 fps, rendered-frame p95 at or below 50 ms, and no >100 ms stalls.
+This remains a proxy: the owner's phone reported roughly 10 fps before the
+second pass and must be retested after deployment. The [SEO audit](../operations/seo-audit.md)
 recorded a simulated-mobile LCP of 3.5 s and 1,600 ms total blocking time before
 the SEO changes; the report explicitly treats animation/bootstrap cost as open.
 
@@ -173,7 +190,9 @@ Current risks:
 - physical iPhone Safari performance, thermal throttling, and low-power mode;
 - main-thread startup from animation libraries and hydration on real devices;
 - procedural fragment cost during the ocean/descent transition;
-- adaptive quality only decreases—it does not recover after a temporary spike.
+- adaptive quality only decreases—it does not recover after a temporary spike;
+- the efficient atmosphere is intentionally soft at a 0.32 ratio, while the
+  foreground and DOM remain at a sharp 1 CSS-pixel ratio.
 
 ## Verification and profiling
 
@@ -183,6 +202,7 @@ Run a dev or production-preview server first where required.
 | ----------------------------------------- | ------------------------------------------------------------------------- |
 | `npm run capture`                         | Six chapter captures, canvas diagnostics, desktop/mobile emulation        |
 | `npm run perf:mobile`                     | Controlled SwiftShader scroll comparison; intentionally not a phone claim |
+| `npm run perf:soak`                       | Rendered-frame 120 s forward/reverse trace with 10 s pass/fail windows     |
 | `npm run perf:profile`                    | Startup, Web Vitals, LoAF/long-task, and WebGL-vs-DOM attribution         |
 | `npm run perf:shader`                     | Isolated world-fragment timing at the storm/ocean hot spot                |
 | `node scripts/check-oasis-dressing.mjs`   | Desktop/mobile assets, reveal, flood, and reverse navigation              |

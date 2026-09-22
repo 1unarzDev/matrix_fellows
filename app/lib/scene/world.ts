@@ -3,10 +3,11 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js'
-import { FXAAShader } from 'three/addons/shaders/FXAAShader.js'
 import { createOasisDressing } from './oasis'
 import { nextFrameTime, settleProgress } from './frame-clock'
 import { constellationLayout, constellationStarCount } from './constellations'
+import { createFrameProfiler } from './frame-profiler'
+import { degradeQuality, initialQuality, initialRenderProfile } from './render-quality'
 import {
   worldFragment,
   screenVertex,
@@ -29,7 +30,15 @@ export function createWorld(
   onFirstFrame?: () => void,
 ): World {
   let firstFrame = true
-  const mobile = window.matchMedia('(max-width: 767px)').matches
+  const coarsePointer = window.matchMedia('(pointer: coarse)').matches
+  const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory
+  const renderProfile = initialRenderProfile({
+    coarsePointer,
+    hardwareConcurrency: navigator.hardwareConcurrency,
+    deviceMemory: memory,
+  })
+  const efficient = renderProfile === 'efficient'
+  let quality = initialQuality(renderProfile, window.devicePixelRatio)
   const renderer = new THREE.WebGLRenderer({
     canvas,
     alpha: false,
@@ -43,8 +52,12 @@ export function createWorld(
   renderer.info.autoReset = false
   const gl = renderer.getContext()
   const debugInfo = gl.getExtension('WEBGL_debug_renderer_info')
-  if (debugInfo)
-    canvas.dataset.renderer = String(gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL))
+  const rendererName = debugInfo
+    ? String(gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL))
+    : String(gl.getParameter(gl.RENDERER))
+  canvas.dataset.renderer = rendererName
+  canvas.dataset.renderProfile = renderProfile
+  const frameProfiler = createFrameProfiler(gl, rendererName)
   const background = new THREE.Scene()
   const scene = new THREE.Scene()
   scene.fog = new THREE.Fog(new THREE.Color(0.6, 0.42, 0.25), 35, 150)
@@ -59,6 +72,7 @@ export function createWorld(
     uTarget: { value: target },
     uClip: { value: new THREE.Vector2(camera.near, camera.far) },
     uLightning: { value: new THREE.Vector2() },
+    uDetail: { value: quality.detail ? 1 : 0 },
   }
   const quadGeometry = new THREE.PlaneGeometry(2, 2)
   const quadMaterial = new THREE.ShaderMaterial({
@@ -70,9 +84,9 @@ export function createWorld(
   })
   background.add(new THREE.Mesh(quadGeometry, quadMaterial))
   // The procedural landscape dominates fragment cost. On phones render only
-  // that layer at a lower resolution; retain a sharp multisampled foreground
+  // that layer at a lower resolution; retain a sharp full-resolution foreground
   // for palm leaves, rocks, particles and constellation lines.
-  const atmosphereTarget = mobile
+  const atmosphereTarget = efficient
     ? new THREE.WebGLRenderTarget(1, 1, {
         type: THREE.HalfFloatType,
         depthTexture: new THREE.DepthTexture(1, 1, THREE.UnsignedIntType),
@@ -97,35 +111,50 @@ export function createWorld(
   if (atmosphereCopy) compositeBackground.add(new THREE.Mesh(quadGeometry, atmosphereCopy))
   const renderTarget = new THREE.WebGLRenderTarget(1, 1, {
     type: THREE.HalfFloatType,
-    samples: mobile ? 0 : Math.min(4, renderer.capabilities.maxSamples),
+    samples: efficient ? 0 : Math.min(4, renderer.capabilities.maxSamples),
     depthBuffer: true,
   })
   const composer = new EffectComposer(renderer, renderTarget)
-  const backgroundPass = new RenderPass(mobile ? compositeBackground : background, screenCamera)
+  const backgroundPass = new RenderPass(efficient ? compositeBackground : background, screenCamera)
   const scenePass = new RenderPass(scene, camera)
   scenePass.clear = false
   scenePass.clearDepth = false
-  const bloom = mobile ? undefined : new UnrealBloomPass(new THREE.Vector2(1, 1), 0.48, 0, 1.05)
+  const bloom = efficient ? undefined : new UnrealBloomPass(new THREE.Vector2(1, 1), 0.48, 0, 1.05)
   // Very coarse mip levels create visibly offset/blocky lobes around the sun.
   // Keep bloom's fine halo; the analytic lens shader supplies its broad glow.
   if (bloom) bloom.compositeMaterial.uniforms.bloomFactors!.value = [1, 0.65, 0.25, 0.08, 0.02]
   const grade = new ShaderPass({
-    uniforms: { tDiffuse: { value: null }, texel: { value: new THREE.Vector2() } },
+    uniforms: {
+      tDiffuse: { value: null },
+      texel: { value: new THREE.Vector2() },
+      haloEnabled: { value: quality.halo ? 1 : 0 },
+    },
     vertexShader: screenVertex,
-    fragmentShader: `uniform sampler2D tDiffuse; uniform vec2 texel; varying vec2 vUv;
-      void main(){vec3 c=max(texture2D(tDiffuse,vUv).rgb,vec3(0));
+    fragmentShader: `uniform sampler2D tDiffuse; uniform vec2 texel; uniform float haloEnabled; varying vec2 vUv;
+      void main(){vec3 center=max(texture2D(tDiffuse,vUv).rgb,vec3(0));vec3 c=center;
       ${
-        mobile
+        efficient
           ? `
-      // Eight symmetric highlight taps folded into color grading replace the
-      // desktop multi-mip bloom chain. The world shader retains broad glare.
-      vec3 halo=vec3(0.0);
-      for(int i=0;i<8;i++) {
-        float angle=float(i)*.785398;
-        vec2 offset=vec2(cos(angle),sin(angle))*texel*3.0;
-        halo+=max(texture2D(tDiffuse,vUv+offset).rgb-vec3(1.05),vec3(0.0));
+      // One bounded pass replaces the old grade followed by full FXAA. Four
+      // cardinal taps soften only high-contrast edges; four wider diagonal taps
+      // retain the restrained highlight halo while the quality tier permits it.
+      vec3 n=texture2D(tDiffuse,vUv+vec2(0,texel.y)).rgb;
+      vec3 e=texture2D(tDiffuse,vUv+vec2(texel.x,0)).rgb;
+      vec3 s=texture2D(tDiffuse,vUv-vec2(0,texel.y)).rgb;
+      vec3 w=texture2D(tDiffuse,vUv-vec2(texel.x,0)).rgb;
+      vec3 neighbors=(n+e+s+w)*.25;
+      float centerLuma=dot(center,vec3(.299,.587,.114));
+      float range=max(max(dot(n,vec3(.299,.587,.114)),dot(e,vec3(.299,.587,.114))),max(dot(s,vec3(.299,.587,.114)),dot(w,vec3(.299,.587,.114))))
+        -min(min(dot(n,vec3(.299,.587,.114)),dot(e,vec3(.299,.587,.114))),min(dot(s,vec3(.299,.587,.114)),dot(w,vec3(.299,.587,.114))));
+      c=mix(center,neighbors,smoothstep(.055,.22,max(range,abs(centerLuma-dot(neighbors,vec3(.299,.587,.114)))))*.28);
+      if(haloEnabled>.5) {
+        vec2 radius=texel*3.0;
+        vec3 halo=max(texture2D(tDiffuse,vUv+radius).rgb-vec3(1.05),vec3(0.0));
+        halo+=max(texture2D(tDiffuse,vUv+vec2(-radius.x,radius.y)).rgb-vec3(1.05),vec3(0.0));
+        halo+=max(texture2D(tDiffuse,vUv+vec2(radius.x,-radius.y)).rgb-vec3(1.05),vec3(0.0));
+        halo+=max(texture2D(tDiffuse,vUv-radius).rgb-vec3(1.05),vec3(0.0));
+        c+=halo*.07;
       }
-      c+=halo*.045;
       `
           : ''
       }
@@ -135,10 +164,6 @@ export function createWorld(
   composer.addPass(scenePass)
   if (bloom) composer.addPass(bloom)
   composer.addPass(grade)
-  // MSAA handles silhouette coverage; a final mobile-only edge resolve also
-  // softens texture cutouts and high-contrast wave highlights at bounded DPR.
-  const edgeResolve = mobile ? new ShaderPass(FXAAShader) : undefined
-  if (edgeResolve) composer.addPass(edgeResolve)
 
   // Stable seeds allow every particle to survive the entire journey.
   let seed = 1709
@@ -146,7 +171,7 @@ export function createWorld(
     seed = (seed * 16807) % 2147483647
     return (seed - 1) / 2147483646
   }
-  const count = mobile ? 2600 : 12000
+  const count = efficient ? 2600 : 12000
   const positions = new Float32Array(count * 3)
   const seeds = new Float32Array(count)
   for (let i = 0; i < count; i++) {
@@ -160,6 +185,7 @@ export function createWorld(
   geometry.setAttribute('aSeed', new THREE.BufferAttribute(seeds, 1))
   const anchors = new THREE.BufferAttribute(new Float32Array(count * 4), 4)
   geometry.setAttribute('aAnchor', anchors)
+  geometry.setDrawRange(0, Math.floor(count * quality.particleFraction))
   const particleUniforms = {
     uAspect: uniforms.uAspect,
     uTime: uniforms.uTime,
@@ -200,7 +226,7 @@ export function createWorld(
 
   const oasisDressing = createOasisDressing(scene, camera)
 
-  let ratio = Math.min(window.devicePixelRatio, mobile ? 0.7 : 1.5)
+  let ratio = quality.atmosphereRatio
   let disposed = false,
     visible = true,
     frame = 0,
@@ -249,12 +275,12 @@ export function createWorld(
     // Safari toolbar movement changes innerHeight during a swipe. Keep the
     // large viewport surface stable, including its expensive bloom targets.
     const height =
-      mobile && width === surfaceWidth
+      coarsePointer && width === surfaceWidth
         ? surfaceHeight
         : Math.round(canvas.getBoundingClientRect().height) || window.innerHeight
     surfaceWidth = width
     surfaceHeight = height
-    const foregroundRatio = mobile ? Math.min(window.devicePixelRatio, 1) : ratio
+    const foregroundRatio = efficient ? Math.min(window.devicePixelRatio, 1) : ratio
     renderer.setPixelRatio(foregroundRatio)
     renderer.setSize(width, height, false)
     composer.setPixelRatio(foregroundRatio)
@@ -264,10 +290,6 @@ export function createWorld(
       Math.max(1, Math.round(height * ratio)),
     )
     grade.uniforms.texel!.value.set(1 / (width * foregroundRatio), 1 / (height * foregroundRatio))
-    edgeResolve?.uniforms.resolution!.value.set(
-      1 / (width * foregroundRatio),
-      1 / (height * foregroundRatio),
-    )
     camera.aspect = width / height
     camera.updateProjectionMatrix()
     uniforms.uAspect.value = width / height
@@ -288,11 +310,11 @@ export function createWorld(
     particleUniforms.uPixelRatio.value = foregroundRatio
     canvas.dataset.pixelRatio = foregroundRatio.toFixed(2)
     canvas.dataset.atmosphereRatio = ratio.toFixed(2)
+    canvas.dataset.qualityStep = String(quality.step)
   }
   function updateCamera(value: number) {
     progress = THREE.MathUtils.clamp(value, 0, 5)
     uniforms.uProgress.value = progress
-    canvas.dataset.progress = progress.toFixed(3)
     let index = cameraKeys.findIndex(
       (key, i) =>
         i < cameraKeys.length - 1 && progress >= key.at && progress <= cameraKeys[i + 1]!.at,
@@ -330,16 +352,13 @@ export function createWorld(
     fog.near = THREE.MathUtils.lerp(35, 12, curtain)
     fog.far = THREE.MathUtils.lerp(150, 62, curtain)
     scene.fog!.color.setRGB(0.6, 0.42, 0.25).lerp(new THREE.Color(0.095, 0.12, 0.125), weather)
-    canvas.dataset.cameraHeight = camera.position.y.toFixed(2)
-    canvas.dataset.waterHeight = (-1 + floodHeight(progress)).toFixed(2)
-    canvas.dataset.storm = weather.toFixed(2)
     camera.lookAt(target)
     lineMaterial.opacity = THREE.MathUtils.smoothstep(progress, 3.75, 4.15) * 0.25
     oasisDressing.setProgress(progress)
   }
   function setProgress(value: number) {
     requestedProgress = THREE.MathUtils.clamp(value, 0, 5)
-    if (!mobile || !hasScrollPosition || document.hidden) updateCamera(requestedProgress)
+    if (!coarsePointer || !hasScrollPosition || document.hidden) updateCamera(requestedProgress)
     hasScrollPosition = true
   }
   function draw(now: number) {
@@ -359,14 +378,13 @@ export function createWorld(
     if (frameTime === null) return
     const seconds = Math.min(now - lastRender, 100) / 1000
     elapsed += seconds
-    if (mobile && requestedProgress !== progress)
+    if (coarsePointer && requestedProgress !== progress)
       updateCamera(settleProgress(progress, requestedProgress, seconds))
     lastRender = now
     last = frameTime
     uniforms.uTime.value = elapsed
     const lightning = lightningState(elapsed)
     uniforms.uLightning.value.set(lightning.intensity, lightning.seed)
-    canvas.dataset.lightning = (lightning.intensity * stormStrength(progress)).toFixed(3)
     oasisDressing.setTime(elapsed)
     // Only a top-of-page arrival gets a low-to-high reveal. A restored/deep-link
     // chapter uses its normal camera immediately, never a trip through the desert.
@@ -379,6 +397,7 @@ export function createWorld(
     target.y -= emergence * 3.2
     camera.lookAt(target)
     const start = performance.now()
+    frameProfiler?.begin(now)
     renderer.info.reset()
     if (atmosphereTarget) {
       renderer.setRenderTarget(atmosphereTarget)
@@ -387,6 +406,8 @@ export function createWorld(
       renderer.setRenderTarget(null)
     }
     composer.render()
+    const cost = performance.now() - start
+    frameProfiler?.end(now, cost, renderer.info, quality, progress)
     camera.position.y = cameraY
     target.y = targetY
     if (firstFrame) {
@@ -400,23 +421,41 @@ export function createWorld(
       canvas.dataset.triangles = String(renderer.info.render.triangles)
       canvas.dataset.points = String(renderer.info.render.points)
       canvas.dataset.programs = String(renderer.info.programs?.length || 0)
+      canvas.dataset.progress = progress.toFixed(3)
+      canvas.dataset.cameraHeight = camera.position.y.toFixed(2)
+      canvas.dataset.waterHeight = (-1 + floodHeight(progress)).toFixed(2)
+      canvas.dataset.storm = stormStrength(progress).toFixed(2)
+      canvas.dataset.lightning = (lightning.intensity * stormStrength(progress)).toFixed(3)
+      canvas.dataset.qualityStep = String(quality.step)
       sampleStart = now
       sampleFrames = 0
     }
-    const cost = performance.now() - start
     // A sustained 50 ms cadence is only 20 fps. The old 52 ms threshold
     // mistakenly treated that common missed-vsync cadence as healthy.
-    slow = cost > 27 || delta > (mobile ? 42 : 52) ? slow + 1 : Math.max(0, slow - 1)
-    const minimumRatio = mobile ? 0.45 : 0.65
-    if (slow > 30 && ratio > minimumRatio) {
-      ratio = Math.max(minimumRatio, ratio * 0.85)
-      geometry.setDrawRange(
-        0,
-        Math.floor(
-          geometry.drawRange.count === Infinity ? count * 0.8 : geometry.drawRange.count * 0.85,
-        ),
-      )
-      resize()
+    slow = cost > 27 || delta > (efficient ? 42 : 52) ? slow + 1 : Math.max(0, slow - 1)
+    const adaptationSamples = quality.step === 0 ? 10 : 20
+    if (slow > adaptationSamples) {
+      let next = degradeQuality(quality)
+      // A device missing the 30 fps budget by more than one full frame needs a
+      // decisive initial response, not several seconds at each intermediate
+      // resolution. Both steps are precompiled/allocation-free except resizing.
+      if (efficient && cost > 55) next = degradeQuality(next)
+      if (next !== quality) {
+        const resized = next.atmosphereRatio !== quality.atmosphereRatio
+        quality = next
+        ratio = quality.atmosphereRatio
+        uniforms.uDetail.value = quality.detail ? 1 : 0
+        grade.uniforms.haloEnabled!.value = quality.halo ? 1 : 0
+        geometry.setDrawRange(0, Math.floor(count * quality.particleFraction))
+        frameProfiler?.event('quality-degraded', {
+          step: quality.step,
+          ratio,
+          particles: geometry.drawRange.count,
+          halo: quality.halo,
+          detail: quality.detail,
+        })
+        if (resized) resize()
+      }
       slow = 0
     }
   }
@@ -430,7 +469,7 @@ export function createWorld(
   observer.observe(canvas)
   canvas.addEventListener('webglcontextlost', contextLost)
   const onResize = () => {
-    if (mobile && window.innerWidth === surfaceWidth) return
+    if (coarsePointer && window.innerWidth === surfaceWidth) return
     resize()
   }
   window.addEventListener('resize', onResize, { passive: true })
@@ -443,7 +482,28 @@ export function createWorld(
   canvas.dataset.compileState = 'pending'
   Promise.all([
     renderer.compileAsync(background, screenCamera),
-    renderer.compileAsync(scene, camera),
+    oasisDressing.ready.then(async () => {
+      // Hidden objects are skipped by WebGLRenderer.compileAsync. Reveal the
+      // complete grove only behind the arrival cover, compile it, then restore
+      // the actual scroll state before the first presented frame.
+      oasisDressing.setProgress(0.8, true)
+      try {
+        await renderer.compileAsync(scene, camera)
+        // compileAsync links programs but some mobile drivers defer geometry,
+        // texture and framebuffer work until an actual draw. Warm the same
+        // full-size half-float target used by the composer; a 1px target does
+        // not exercise the expensive mobile framebuffer path.
+        if (efficient) {
+          const previousTarget = renderer.getRenderTarget()
+          renderer.setRenderTarget(renderTarget)
+          renderer.clear()
+          renderer.render(scene, camera)
+          renderer.setRenderTarget(previousTarget)
+        }
+      } finally {
+        oasisDressing.setProgress(progress, true)
+      }
+    }),
     ...(atmosphereCopy ? [renderer.compileAsync(compositeBackground, screenCamera)] : []),
   ])
     .then(() => {
@@ -479,7 +539,7 @@ export function createWorld(
       scenePass.dispose()
       bloom?.dispose()
       grade.dispose()
-      edgeResolve?.dispose()
+      frameProfiler?.dispose()
       composer.dispose()
       renderer.dispose()
       renderer.forceContextLoss()

@@ -48,9 +48,9 @@ this is not a physical-phone performance claim.
 - Water reflects the analytic sky and sun, not all scene objects. The distant palm silhouettes do not require a costly planar reflection render.
 - Camera-aligned glare, grain, and depth haze are computed inside the shaders. Three.js UnrealBloomPass adds multiscale HDR bloom before the final exposure curve; only the WebGL world is processed, so DOM text stays sharp. Bloom uses the existing adaptive resolution and its render targets are disposed with the page.
 - The deep-sea beams are volumetric-looking analytic fields, not physical participating-media simulation. The nebula uses layered procedural density, not a detailed model.
-- Maximum particle count is 12,000 on desktop and 4,200 on mobile, with stable seeded positions. Pixel ratio and draw count reduce under sustained load. The frame loop targets 30 fps.
+- Maximum particle buffers are 12,000 on the cinematic profile and 2,600 on the efficient profile, with 1,560 initially drawn on efficient devices. Stable seeded positions preserve continuity while the active range can reduce under sustained load. The frame loop targets 30 fps.
 - All DOM presentation uses Tailwind utilities. The CSS entry contains only the Tailwind import and theme tokens.
-- The analytic world writes perspective-correct depth, retained by the model pass, so dunes occlude the grove. The HDR render targets use up to 4× MSAA on desktop and 2× on mobile; palm cutouts use alpha-to-coverage. This avoids blurring DOM typography.
+- The analytic world writes perspective-correct depth, retained by the model pass, so dunes occlude the grove. The cinematic HDR target uses up to 4× MSAA; the efficient path uses a separate low-resolution atmosphere and sharp 1× foreground without MSAA. Palm cutouts retain alpha-tested silhouettes. DOM typography is never rendered into WebGL.
 
 ## Visual iteration record
 

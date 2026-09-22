@@ -76,5 +76,4 @@ test('join form animates in, traps keyboard focus and retains an unfinished draf
     await page.keyboard.press('Tab')
     expect(await dialog.evaluate((el) => el.contains(document.activeElement))).toBe(true)
   }
-  await page.screenshot({ path: `test-results/join-form-${test.info().project.name}.png` })
 })

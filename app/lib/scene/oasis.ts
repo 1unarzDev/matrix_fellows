@@ -97,7 +97,10 @@ export function createOasisDressing(scene: THREE.Scene, camera: THREE.Camera) {
   const geometries = new Set<THREE.BufferGeometry>()
   const textures = new Set<THREE.Texture>()
   const accentMeshes = new Set<THREE.InstancedMesh>()
-  const palms: { object: THREE.Object3D; origin: THREE.Vector3 }[] = []
+  const palmPlacements: { origin: THREE.Vector3; scale: number; rotation: number }[] = []
+  let palmInstances: THREE.InstancedMesh | undefined
+  let palmBaseMatrix: THREE.Matrix4 | undefined
+  const groveCenter = new THREE.Vector3(7, 0, -44)
   let disposed = false,
     progress = -1
   let seed = 3241
@@ -242,20 +245,13 @@ export function createOasisDressing(scene: THREE.Scene, camera: THREE.Camera) {
     const expansion = 1
     updateInstances(rocks, rockPlacements, expansion)
     updateInstances(foliage, leafPlacements, expansion)
-    palms.forEach(({ object, origin }) => {
-      object.position.set(
-        7 + (origin.x - 7) * expansion,
-        origin.y,
-        -44 + (origin.z + 44) * expansion,
-      )
-      object.visible = object.position.distanceTo(camera.position) < 140
-    })
+    if (palmInstances) palmInstances.visible = camera.position.distanceTo(groveCenter) < 140
   }
 
   // Curated low-poly silhouettes sit on the dry bank, not on the water. The
   // arch is a distant focal point to the right; uneven buttes hide its straight
   // ends. Small, irregular plant clusters connect it to the existing grove.
-  void (async () => {
+  const desertReady = (async () => {
     const { loadDesertGeometry } = await import('./desert-geometry')
     if (disposed) return
     type Placement = { origin: THREE.Vector3; scale: THREE.Vector3; rotation: number }
@@ -319,16 +315,21 @@ export function createOasisDressing(scene: THREE.Scene, camera: THREE.Camera) {
 
   // The world itself is lazy; prefetch its small palm asset immediately so the
   // grove is populated by the crest, rather than requesting it at the reveal.
-  void (async () => {
+  const palmsReady = (async () => {
     try {
       const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js')
       if (disposed) return
       const asset = await new GLTFLoader().loadAsync('/models/palm.glb')
       const tree = asset.scene
+      const replacements = new Map<THREE.Material, THREE.Material>()
+      let source: THREE.Mesh | undefined
       tree.traverse((object) => {
         if (!(object instanceof THREE.Mesh)) return
+        source = object
         geometries.add(object.geometry)
         const replace = (original: THREE.Material) => {
+          const existing = replacements.get(original)
+          if (existing) return existing
           const old = original as THREE.MeshBasicMaterial
           if (old.map) textures.add(old.map)
           const material = new THREE.MeshLambertMaterial({
@@ -358,6 +359,7 @@ export function createOasisDressing(scene: THREE.Scene, camera: THREE.Camera) {
             )
           }
           materials.add(material)
+          replacements.set(original, material)
           groundMaterial(material)
           original.dispose()
           return material
@@ -366,16 +368,22 @@ export function createOasisDressing(scene: THREE.Scene, camera: THREE.Camera) {
           ? object.material.map(replace)
           : replace(object.material)
       })
+      if (!source) return
+      tree.updateMatrixWorld(true)
+      palmBaseMatrix = source.matrixWorld.clone()
+      palmInstances = new THREE.InstancedMesh(source.geometry, source.material, 9)
+      palmInstances.name = 'oasis-palms'
+      palmInstances.frustumCulled = false
+      group.add(palmInstances)
       for (const [i, angle] of [
         -1.65, -1.43, -1.25, -1.1, -0.92, -0.75, -0.52, -2.55, -2.72,
       ].entries()) {
-        const object = i === 0 ? tree : tree.clone(true)
         const origin = bank(angle, 0.035 + (i % 3) * 0.035)
-        object.position.copy(origin)
-        object.scale.multiplyScalar([1.35, 1.8, 1.15, 1.65, 1.3, 1.7, 1.0, 1.05, 0.8][i]!)
-        object.rotation.y = i * 2.4
-        group.add(object)
-        palms.push({ object, origin })
+        palmPlacements.push({
+          origin,
+          scale: [1.35, 1.8, 1.15, 1.65, 1.3, 1.7, 1.0, 1.05, 0.8][i]!,
+          rotation: i * 2.4,
+        })
       }
       if (disposed) dispose()
       else setProgress(progress, true)
@@ -391,10 +399,15 @@ export function createOasisDressing(scene: THREE.Scene, camera: THREE.Camera) {
     materials.forEach((resource) => resource.dispose())
     textures.forEach((resource) => resource.dispose())
     accentMeshes.forEach((mesh) => mesh.dispose())
+    palmInstances?.dispose()
     group.clear()
   }
   setProgress(0)
   return {
+    // The renderer waits for the optional silhouettes before compiling the
+    // foreground once. Otherwise their first visible oasis frame can force a
+    // synchronous driver compile and produce a several-hundred-ms hitch.
+    ready: Promise.all([desertReady, palmsReady]).then(() => undefined),
     setProgress,
     setTime: (seconds: number) => {
       wind.value = seconds
@@ -404,14 +417,23 @@ export function createOasisDressing(scene: THREE.Scene, camera: THREE.Camera) {
       // quick navigation cannot snap the canopy into a different wind pose.
       windStrength.value += (stormStrength(progress)-windStrength.value)*(1-Math.exp(-dt*3))
       if (!group.visible) return
-      palms.forEach(({ object, origin }, index) => {
+      palmPlacements.forEach(({ origin, scale, rotation }, index) => {
         const strength = windStrength.value
         const gust = Math.sin(seconds * .65 + origin.x * .055)
         const sway = Math.sin(seconds * .55 + index * .7) + strength * .3 * Math.sin(seconds * .95 + index * .7)
         // Rotate about the grounded asset origin; no translation or sinking.
-        object.rotation.z = sway * (.0015 + strength * .032) - strength * (.022 + gust * .009)
-        object.rotation.x = Math.sin(seconds * .47 + index) * (.001 + strength * .014)
+        transform.position.copy(origin)
+        transform.scale.setScalar(scale)
+        transform.rotation.set(
+          Math.sin(seconds * .47 + index) * (.001 + strength * .014),
+          rotation,
+          sway * (.0015 + strength * .032) - strength * (.022 + gust * .009),
+        )
+        transform.updateMatrix()
+        transform.matrix.multiply(palmBaseMatrix!)
+        palmInstances!.setMatrixAt(index, transform.matrix)
       })
+      if (palmInstances) palmInstances.instanceMatrix.needsUpdate = true
     },
     dispose,
   }

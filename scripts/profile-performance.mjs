@@ -54,12 +54,16 @@ try {
     const domReady = performance.now() - started
     await page.locator('[data-ready="true"]').waitFor()
     const hydrated = performance.now() - started
-    const canvas = page.locator('canvas[data-progress]')
+    const canvas = page.locator('canvas[data-first-scene-ms]')
     await canvas.waitFor({ timeout: 30000 })
     await page.locator('canvas.opacity-100').waitFor({ timeout: 30000 })
     const cinematicReady = performance.now() - started
-    await page.locator('[data-arrival-shell]').waitFor({ state: 'detached', timeout: 30000 })
-    const veilRemoved = performance.now() - started
+    await page.locator('[data-horizon-preview][data-scene-state="ready"]').waitFor({
+      state: 'attached',
+      timeout: 30000,
+    })
+    await page.waitForTimeout(350)
+    const previewSettled = performance.now() - started
     if (mode === 'paused-webgl') {
       await canvas.evaluate((element) => {
         element.style.display = 'none'
@@ -96,7 +100,7 @@ try {
         longFrameCount: profile.longFrames.length,
         transferBytes: resources.reduce((sum, entry) => sum + (entry.transferSize || 0), 0),
         resourceCount: resources.length,
-        canvas: { ...document.querySelector('canvas[data-progress]')?.dataset },
+        canvas: { ...document.querySelector('canvas[data-first-scene-ms]')?.dataset },
       }
     })
     reports.push({
@@ -105,7 +109,7 @@ try {
       domReady,
       hydrated,
       cinematicReady,
-      veilRemoved,
+      previewSettled,
       ...journey,
       errors,
     })

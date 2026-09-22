@@ -16,7 +16,10 @@ values ('main', ${literal(defaultContent)}, ${literal(defaultContent)}, true)
 on conflict (id) do update
 set data = jsonb_set(jsonb_set(current_content.data, '{meeting}', coalesce(current_content.data->'meeting','{}'::jsonb) || ${meeting}), '{projects}', ${projects}),
     draft = jsonb_set(jsonb_set(coalesce(current_content.draft,current_content.data), '{meeting}', coalesce(coalesce(current_content.draft,current_content.data)->'meeting','{}'::jsonb) || ${meeting}), '{projects}', ${projects})
-returning id, published, data->'meeting'->>'date' as meeting_date, jsonb_array_length(data->'projects') as project_count;
+returning id, published, data->'meeting'->>'date' as meeting_date,
+  data->'meeting'->>'location' as meeting_location,
+  draft->'meeting'->>'location' as draft_meeting_location,
+  jsonb_array_length(data->'projects') as project_count;
 `
 const result = execFileSync(
   'npx',

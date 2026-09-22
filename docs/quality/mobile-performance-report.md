@@ -8,11 +8,11 @@ draw statistics, and browser/shader errors. Its p95 budget is 50 ms.
 
 ## Result
 
-| Production path                | RAF median | RAF p95 | Callbacks | Canvas FPS | Result |
-| ------------------------------ | ---------: | ------: | --------: | ---------: | ------ |
-| Previous mobile 2× MSAA + FXAA |    66.6 ms | 83.4 ms |        94 |       16.9 | Fail   |
-| First pass without mobile MSAA |    16.7 ms | 33.4 ms |       271 |       30.0 | Proxy pass |
-| Current efficient path (three trials) | 16.7 ms | 16.7–16.8 ms | 361 | 30.0 | Proxy pass |
+| Production path                       | RAF median |      RAF p95 | Callbacks | Canvas FPS | Result     |
+| ------------------------------------- | ---------: | -----------: | --------: | ---------: | ---------- |
+| Previous mobile 2× MSAA + FXAA        |    66.6 ms |      83.4 ms |        94 |       16.9 | Fail       |
+| First pass without mobile MSAA        |    16.7 ms |      33.4 ms |       271 |       30.0 | Proxy pass |
+| Current efficient path (three trials) |    16.7 ms | 16.7–16.8 ms |       361 |       30.0 | Proxy pass |
 
 The first improvement came from removing the mobile composer's redundant 2×
 multisample render target. The foreground was already followed by FXAA, so the
@@ -90,3 +90,36 @@ iPhone, in normal and Low Power Mode, including a 60–120 second soak for therm
 behavior. Lab emulation cannot prove iOS GPU timing, battery use, or Safari's
 compositor behavior. Adaptive quality also remains intentionally one-way within
 a session and may be revisited only with physical-device evidence.
+
+## Focused refinement follow-up
+
+The nebula/loading refinement retained the same efficient quality floor and did
+not add a render pass, target, particle buffer, or FBM octave. The six-second
+SwiftShader mobile transition again reported 30.0 rendered fps at a 0.32
+atmosphere ratio and 1× foreground, with a 16.7 ms browser-RAF p95. The isolated
+storm/ocean shader measured 31.4 ms median / 34.3 ms p95 under SwiftShader; the
+cosmic additions are gated outside that chapter.
+
+A four-times CPU-throttled, 150 ms latency / 1.5 Mbps production-build run kept
+SSR content and the new meeting summary usable immediately after DOM readiness.
+Early mobile navigation responded in 96 ms. The cold scene became usable in
+6.83 s and a warm reload in 1.85 s; shader preparation accounted for 2.94 s of
+the cold throttled run. Six long tasks totaled 1,081 ms, including one 575 ms
+task. This is a deliberately severe desktop emulation result, not an iPhone
+claim, and it shows why the loader was simplified instead of trying to conceal
+startup work with another animated canvas.
+
+The static preview now yields through one 300 ms scene reveal. A normal
+production SwiftShader profile recorded LCP at 236 ms, first-scene time 461 ms
+from cinematic component mount, 20 ms synchronous world construction, and
+106 ms asynchronous shader preparation in that run. Natural run-to-run and
+cold-cache variance applies. The owner's approximately 10 fps physical-phone
+baseline remains unresolved pending retest of the deployed build.
+
+The final 120-second hardware-accelerated mobile-emulation soak rendered 3,600
+frames at 30.00 fps. Rendered-frame median/p95 were 33.3/33.4 ms, the maximum
+interval was 50 ms, and there were no stalls above 100 ms in any ten-second
+window. GPU timer-query p95 was 1.97 ms on the RTX 4070 Ti SUPER; this confirms
+the added cosmic motion is inexpensive on that GPU, not that a phone will match
+it. The deterministic cosmic clock produced five isolated streak events during
+the forward/reverse journey and paused while outside its chapter.

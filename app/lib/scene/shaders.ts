@@ -4,6 +4,18 @@ varying vec2 vUv;
 void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }
 `
 
+const constellationMotionGLSL = /* glsl */ `
+vec2 constellationDrift(float group, float depth, float seconds) {
+  float distanceMix=clamp((-depth-10.0)/72.0,0.0,1.0);
+  float phase=group<-.5 ? depth*.173 : group*1.713;
+  float amplitude=mix(.32,.075,distanceMix);
+  return vec2(
+    sin(seconds*.071+phase)+.35*sin(seconds*.031+phase*1.7),
+    cos(seconds*.057+phase*.83)+.25*sin(seconds*.023+phase)
+  )*amplitude;
+}
+`
+
 const smooth = (a: number, b: number, value: number) => {
   const t = Math.max(0, Math.min(1, (value - a) / (b - a)))
   return t * t * (3 - 2 * t)
@@ -76,6 +88,8 @@ uniform vec3 uCamera;
 uniform vec3 uTarget;
 uniform vec2 uClip;
 uniform vec2 uLightning;
+uniform vec4 uMeteor;
+uniform float uCosmicTime;
 uniform float uDetail;
 ${terrainGLSL}
 ${weatherGLSL}
@@ -480,15 +494,36 @@ void main() {
   if(cosmos>0.0) {
     vec2 q=screen*1.75;
     q*=mat2(.91,-.41,.41,.91);
-    float n=atmosphericFbm(q*2.0+vec2(uTime*.006,0));
-    float clouds=atmosphericFbm(q*3.0+vec2(n*3.0,-uTime*.008));
+    // Independent, minute-scale currents add depth without pulsing the whole sky.
+    float n=atmosphericFbm(q*2.0+vec2(uCosmicTime*.0045,-uCosmicTime*.0018));
+    float clouds=atmosphericFbm(q*3.0+vec2(n*3.0-uCosmicTime*.0022,-uCosmicTime*.006));
     float band=exp(-pow((q.y+sin(q.x*1.4)*.2+n*.5)*2.4,2.0));
     float veil=pow(clouds,2.0)*band;
     vec3 nebula=vec3(.008,.011,.026);
     nebula+=mix(vec3(.12,.17,.46),vec3(.52,.13,.20),smoothstep(-.5,.9,q.x))*veil*2.6;
     nebula+=vec3(.11,.28,.31)*pow(n,3.0)*band;
-    float filaments=pow(1.0-abs(clouds*2.0-1.0),9.0)*band;
+    float filamentField=mix(clouds,n,.34+.06*sin(uCosmicTime*.018));
+    float filaments=pow(1.0-abs(filamentField*2.0-1.0),9.0)*band;
     nebula+=vec3(.21,.095,.12)*filaments*.55;
+    // One bounded analytic streak. Its CPU-provided phase advances only while
+    // this chapter is active, so leaving the chapter neither costs work nor
+    // replays events on return.
+    if(uMeteor.x>=0.0) {
+      float side=step(.5,fract(uMeteor.y*17.13));
+      vec2 start=mix(vec2(.04,.89),vec2(.96,.86),side);
+      vec2 direction=normalize(mix(vec2(.82,-.12),vec2(-.80,-.10),side));
+      float travel=mix(-.05,.55,uMeteor.x);
+      vec2 head=start+direction*travel;
+      vec2 delta=uv-head;
+      float along=dot(delta,direction);
+      float across=abs(delta.x*direction.y-delta.y*direction.x);
+      float tail=smoothstep(-.19,.012,along)*(1.0-smoothstep(.0,.022,along));
+      float streak=exp(-across*across*22000.0)*tail;
+      float headGlow=exp(-dot(delta,delta)*4200.0);
+      float eventFade=smoothstep(0.0,.16,uMeteor.x)*(1.0-smoothstep(.72,1.0,uMeteor.x));
+      nebula+=mix(vec3(.20,.32,.42),vec3(.38,.25,.30),fract(uMeteor.y*3.7))
+        *(streak*.27+headGlow*.52)*eventFade;
+    }
     col=mix(col,nebula,cosmos);
   }
   float vignette=1.0-smoothstep(.25,.95,length((uv-.5)*vec2(1.0,.82)))*.4;
@@ -510,13 +545,16 @@ uniform float uTime;
 uniform float uProgress;
 uniform float uPixelRatio;
 uniform float uAspect;
+uniform float uCosmicTime;
 attribute float aSeed;
 attribute vec4 aAnchor;
+attribute float aGroup;
 varying float vAlpha;
 varying vec3 vColor;
 varying float vStorm;
 varying float vFish;
 varying float vRain;
+${constellationMotionGLSL}
 void main() {
   float oasis=smoothstep(.35,1.2,uProgress);
   float dive=smoothstep(1.7,2.9,uProgress);
@@ -550,6 +588,7 @@ void main() {
   cosmic.xy=mat2(cos(.12),-sin(.12),sin(.12),cos(.12))*cosmic.xy;
   cosmic.x+=sin(cosmic.y*.13)*2.5;
   cosmic=mix(cosmic,aAnchor.xyz,aAnchor.w);
+  cosmic.xy+=constellationDrift(aGroup,cosmic.z,uCosmicTime);
   vec3 pos=mix(sand,water,oasis*(1.0-dive));
   float storm=stormStrength(uProgress);
   float rainfall=rainStrength(uProgress);
@@ -580,7 +619,9 @@ void main() {
   vColor=mix(vColor,mix(vec3(.53,.66,1.0),vec3(1.0,.78,.53),aSeed),stars);
   vColor=mix(vColor,vec3(.85,1.1,1.35),aAnchor.w*stars);
   vColor=mix(vColor,vec3(.42,.62,.72),vRain);
-  vAlpha*=.8+.2*sin(uTime*.5+aSeed*100.0);
+  // Most stars remain steady; a seeded minority vary gently and out of phase.
+  float twinkle=step(.88,aSeed)*(.08+.08*sin(uCosmicTime*.21+aSeed*91.0));
+  vAlpha*=1.0-twinkle;
   vAlpha=mix(vAlpha,.28+aSeed*.3,vFish);
   vAlpha*=mix(1.0,1.0-.35*smoothstep(.0,.8,gl_Position.x/gl_Position.w),vFish);
   vec2 screen=gl_Position.xy/gl_Position.w*.5+.5;
@@ -592,6 +633,26 @@ void main() {
   vAlpha=mix(vAlpha,mix(.40,.9,anchorDistance),aAnchor.w*stars);
   vStorm=(1.0-oasis)*(1.0-dive);
 }
+`
+
+export const constellationLineVertex = /* glsl */ `
+uniform float uCosmicTime;
+attribute vec3 color;
+attribute float aGroup;
+varying vec3 vColor;
+${constellationMotionGLSL}
+void main() {
+  vec3 moved=position;
+  moved.xy+=constellationDrift(aGroup,moved.z,uCosmicTime);
+  vColor=color;
+  gl_Position=projectionMatrix*modelViewMatrix*vec4(moved,1.0);
+}
+`
+
+export const constellationLineFragment = /* glsl */ `
+uniform float uOpacity;
+varying vec3 vColor;
+void main(){gl_FragColor=vec4(vColor,uOpacity);}
 `
 export const particleFragment = /* glsl */ `
 varying float vAlpha;

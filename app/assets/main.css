@@ -7,7 +7,8 @@
 @layer base {
   /* :target is available before hydration: never paint desert dunes over a
      non-desert hash destination while JavaScript is still starting. */
-  html:has(:is(#discovery, #research, #frontiers, #connection, #community):target) [data-horizon-preview] {
+  html:has(:is(#discovery, #research, #frontiers, #connection, #community):target)
+    [data-horizon-preview] {
     @apply invisible;
   }
   a,
@@ -21,19 +22,6 @@
 }
 
 @theme {
-  --animate-arrival-safety: arrival-safety 15s step-end forwards;
-  @keyframes arrival-safety {
-    to { visibility: hidden; }
-  }
-  --animate-orbit-trace: orbit-trace 1.8s linear infinite;
-  @keyframes orbit-trace {
-    from {
-      stroke-dashoffset: 1;
-    }
-    to {
-      stroke-dashoffset: 0;
-    }
-  }
   --font-sans: 'DM Sans', sans-serif;
   --font-display: 'Manrope', sans-serif;
   --color-ink: #101413;

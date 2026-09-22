@@ -156,7 +156,9 @@ export function constellationLayout(aspect: number) {
       ]
   const anchors: number[] = [],
     lines: number[] = [],
-    colors: number[] = []
+    colors: number[] = [],
+    starGroups: number[] = [],
+    lineGroups: number[] = []
   patterns.forEach((pattern, index) => {
     const ra = pattern.stars.reduce((sum, star) => sum + star[0]!, 0) / pattern.stars.length
     const dec = pattern.stars.reduce((sum, star) => sum + star[1]!, 0) / pattern.stars.length
@@ -174,12 +176,16 @@ export function constellationLayout(aspect: number) {
       ((point[1]! / extent) * size! + y! * 15) * perspectiveScale,
       depth!,
     ])
-    points.forEach((point) => anchors.push(...point, 1))
+    points.forEach((point) => {
+      anchors.push(...point, 1)
+      starGroups.push(index)
+    })
     pattern.edges.forEach(([a, b]) => {
       lines.push(...points[a!]!, ...points[b!]!)
+      lineGroups.push(index, index)
       const intensity = index < 3 ? 1 : index === 3 ? 0.46 : 0.3
       colors.push(intensity, intensity, intensity, intensity, intensity, intensity)
     })
   })
-  return { anchors, lines, colors }
+  return { anchors, lines, colors, starGroups, lineGroups }
 }

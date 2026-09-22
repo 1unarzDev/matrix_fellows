@@ -226,13 +226,14 @@ function clearFilters() {
     <nav
       v-if="!showAll && pageCount > 1"
       aria-label="Opportunity pages"
-      class="mt-8 flex flex-wrap items-center justify-center gap-2 pb-2"
+      data-mobile-pagination="compact"
+      class="mt-8 flex flex-nowrap items-center justify-center gap-3 pb-2"
     >
       <button
         type="button"
         aria-label="Previous opportunity page"
         :disabled="page === 1"
-        class="tactile flex h-10 w-10 items-center justify-center rounded-full border border-paper/15 text-paper/65 disabled:cursor-default disabled:opacity-25"
+        class="tactile flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-paper/15 text-paper/65 disabled:cursor-default disabled:opacity-25 sm:h-10 sm:w-10"
         @click="goToPage(page - 1)"
       >
         <SiteIcon name="right" :size="16" class="rotate-180" />
@@ -243,7 +244,7 @@ function clearFilters() {
         type="button"
         :aria-label="`Opportunity page ${number}`"
         :aria-current="number === page ? 'page' : undefined"
-        class="tactile h-10 min-w-10 rounded-full border px-3 text-xs"
+        class="tactile hidden h-10 min-w-10 rounded-full border px-3 text-xs sm:block"
         :class="
           number === page
             ? 'border-acid/40 bg-acid/10 text-acid'
@@ -253,11 +254,14 @@ function clearFilters() {
       >
         {{ number }}
       </button>
+      <span class="min-w-24 text-center text-xs tabular-nums text-paper/65 sm:hidden">
+        Page {{ page }} of {{ pageCount }}
+      </span>
       <button
         type="button"
         aria-label="Next opportunity page"
         :disabled="page === pageCount"
-        class="tactile flex h-10 w-10 items-center justify-center rounded-full border border-paper/15 text-paper/65 disabled:cursor-default disabled:opacity-25"
+        class="tactile flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-paper/15 text-paper/65 disabled:cursor-default disabled:opacity-25 sm:h-10 sm:w-10"
         @click="goToPage(page + 1)"
       >
         <SiteIcon name="right" :size="16" />

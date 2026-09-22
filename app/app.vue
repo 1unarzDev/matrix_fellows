@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import MatrixMark from '~/components/MatrixMark.vue'
-import ArrivalVeil from '~/components/ArrivalVeil.vue'
 import { defaultContent, defaultOpportunities } from '#shared/data/defaults'
 import type { PublicContent } from '#shared/types/content'
+import { displayDate } from '#shared/utils/opportunities'
 
 const publicConfig = useRuntimeConfig().public
 const siteUrl = publicConfig.siteUrl
@@ -10,27 +10,35 @@ const socialImage = new URL('/social-card.png?v=horizon-2', siteUrl).href
 const canonicalUrl = 'https://matrixfellows.com/'
 useHead({
   link: [{ rel: 'canonical', href: canonicalUrl }],
-  script: [{
-    key: 'organization-schema',
-    type: 'application/ld+json',
-    innerHTML: JSON.stringify({
-      '@context': 'https://schema.org',
-      '@graph': [
-        {
-          '@type': 'Organization', '@id': `${canonicalUrl}#organization`,
-          name: 'Matrix Fellows', url: canonicalUrl,
-          description: 'A student-founded research society at Martin High School connecting students through research, collaboration, and science fair opportunities.',
-          email: 'contact@matrixfellows.com',
-          logo: `${canonicalUrl}favicon.svg`,
-        },
-        {
-          '@type': 'WebSite', '@id': `${canonicalUrl}#website`,
-          url: canonicalUrl, name: 'Matrix Fellows', inLanguage: 'en',
-          publisher: { '@id': `${canonicalUrl}#organization` },
-        },
-      ],
-    }),
-  }],
+  script: [
+    {
+      key: 'organization-schema',
+      type: 'application/ld+json',
+      innerHTML: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@graph': [
+          {
+            '@type': 'Organization',
+            '@id': `${canonicalUrl}#organization`,
+            name: 'Matrix Fellows',
+            url: canonicalUrl,
+            description:
+              'A student-founded research society at Martin High School connecting students through research, collaboration, and science fair opportunities.',
+            email: 'contact@matrixfellows.com',
+            logo: `${canonicalUrl}favicon.svg`,
+          },
+          {
+            '@type': 'WebSite',
+            '@id': `${canonicalUrl}#website`,
+            url: canonicalUrl,
+            name: 'Matrix Fellows',
+            inLanguage: 'en',
+            publisher: { '@id': `${canonicalUrl}#organization` },
+          },
+        ],
+      }),
+    },
+  ],
 })
 useSeoMeta({
   ogImage: socialImage,
@@ -55,6 +63,9 @@ const { data, refresh } = await useFetch<PublicContent>('/api/content', {
   }),
 })
 const content = computed(() => data.value?.content || defaultContent)
+const meetingDate = computed(() =>
+  content.value.meeting.date ? displayDate(content.value.meeting.date) : 'Date forthcoming',
+)
 const progress = ref(0)
 const hydrated = ref(false)
 const sceneStatus = ref<'pending' | 'ready' | 'fallback'>('pending')
@@ -68,7 +79,7 @@ let pendingAnchor: string | null = null
 const onCinematicReady = () => {
   cinematicReady = true
   const id = pendingAnchor || window.location.hash.slice(1)
-  if (id && sections.some((section) => section.id === id)) {
+  if (id) {
     const target = document.getElementById(id)
     target?.scrollIntoView({
       behavior:
@@ -185,7 +196,7 @@ onBeforeUnmount(() => {
       data-horizon-preview
       :data-scene-state="sceneStatus"
       aria-hidden="true"
-      class="pointer-events-none fixed inset-0 transition-opacity duration-[1800ms] ease-[cubic-bezier(.4,0,.2,1)] motion-reduce:transition-none"
+      class="pointer-events-none fixed inset-0 transition-opacity duration-300 ease-out motion-reduce:transition-none"
       :class="sceneStatus === 'ready' || progress > 0.2 ? 'opacity-0' : 'opacity-100'"
     >
       <div
@@ -207,7 +218,6 @@ onBeforeUnmount(() => {
       @ready="onCinematicReady"
       @scene="onSceneStatus"
     />
-    <ArrivalVeil :status="sceneStatus" :progress="progress" />
     <div
       aria-hidden="true"
       class="pointer-events-none fixed inset-0 z-[1] bg-linear-to-r from-black/30 via-transparent to-black/5"
@@ -222,7 +232,7 @@ onBeforeUnmount(() => {
         aria-label="Matrix Fellows home"
         @click="scrollTo($event, 'beginning')"
       >
-        <MatrixMark :size="42" :loading="sceneStatus === 'pending'" />
+        <MatrixMark :size="42" />
         <span class="font-display text-lg font-bold tracking-[-0.06em] leading-[1.06]"
           >MATRIX<br />FELLOWS</span
         >
@@ -322,9 +332,31 @@ onBeforeUnmount(() => {
               />
               learning to ask the next one.
             </p>
+            <div
+              class="mt-6 rounded-xl border border-paper/25 bg-ink/35 px-4 py-3.5 shadow-[inset_0_1px_0_#ffffff0d] backdrop-blur-sm"
+            >
+              <p class="text-[9px] font-medium uppercase tracking-[.2em] text-acid">Meetings</p>
+              <p class="mt-2 text-sm font-medium leading-snug text-paper">
+                {{ meetingDate }} · {{ content.meeting.time || 'Time forthcoming' }}
+              </p>
+              <div class="mt-1 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                <p class="text-xs text-paper/75">
+                  {{ content.meeting.location || 'Location forthcoming' }}
+                </p>
+                <a
+                  href="#meeting-details"
+                  class="group inline-flex min-h-8 items-center gap-2 text-[11px] text-acid"
+                  @click="scrollTo($event, 'meeting-details')"
+                  >Meeting details
+                  <SiteIcon
+                    :size="12"
+                    class="transition-transform duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:translate-x-0.5 motion-reduce:transform-none motion-reduce:transition-none"
+                /></a>
+              </div>
+            </div>
             <a
               href="#discovery"
-              class="group mt-7 inline-flex items-center gap-5 border-b border-paper/45 pb-2 text-xs"
+              class="group mt-6 inline-flex items-center gap-5 border-b border-paper/45 pb-2 text-xs"
               @click="scrollTo($event, 'discovery')"
               >Follow your curiosity
               <SiteIcon
@@ -386,8 +418,9 @@ onBeforeUnmount(() => {
             An observation. A possibility you hadn’t seen before.
           </p>
           <p class="mt-5 max-w-md text-base leading-relaxed text-paper/75">
-            Matrix Fellows is a student-founded research society at Martin High School, built around that moment. We bring
-            curious people together to turn a first idea into meaningful inquiry.
+            Matrix Fellows is a student-founded research society at Martin High School, built around
+            that moment. We bring curious people together to turn a first idea into meaningful
+            inquiry.
           </p>
           <div class="mt-10 flex items-center gap-4 text-xs text-paper/65">
             <SiteIcon name="compass" :size="32" class="shrink-0 text-acid/80" /><span

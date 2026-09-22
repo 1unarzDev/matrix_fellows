@@ -6,7 +6,7 @@ export const defaultContent: SiteContent = {
     date: '2026-09-25',
     time: 'During lunch',
     timezone: 'America/Chicago',
-    location: 'Martin HS · Room 185B',
+    location: 'Martin HS · Room 186C',
     topics: ['Meeting topics will be announced here.'],
     url: '',
   },

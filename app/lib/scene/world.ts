@@ -13,6 +13,8 @@ import {
   screenVertex,
   particleVertex,
   particleFragment,
+  constellationLineVertex,
+  constellationLineFragment,
   floodHeight,
   stormStrength,
   cameraFloodRise,
@@ -72,6 +74,8 @@ export function createWorld(
     uTarget: { value: target },
     uClip: { value: new THREE.Vector2(camera.near, camera.far) },
     uLightning: { value: new THREE.Vector2() },
+    uMeteor: { value: new THREE.Vector4(-1, 0, 0, 0) },
+    uCosmicTime: { value: 0 },
     uDetail: { value: quality.detail ? 1 : 0 },
   }
   const quadGeometry = new THREE.PlaneGeometry(2, 2)
@@ -185,11 +189,16 @@ export function createWorld(
   geometry.setAttribute('aSeed', new THREE.BufferAttribute(seeds, 1))
   const anchors = new THREE.BufferAttribute(new Float32Array(count * 4), 4)
   geometry.setAttribute('aAnchor', anchors)
+  const particleGroups = new Float32Array(count)
+  particleGroups.fill(-1)
+  const groupAttribute = new THREE.BufferAttribute(particleGroups, 1)
+  geometry.setAttribute('aGroup', groupAttribute)
   geometry.setDrawRange(0, Math.floor(count * quality.particleFraction))
   const particleUniforms = {
     uAspect: uniforms.uAspect,
     uTime: uniforms.uTime,
     uProgress: uniforms.uProgress,
+    uCosmicTime: uniforms.uCosmicTime,
     uPixelRatio: { value: 1 },
   }
   const material = new THREE.ShaderMaterial({
@@ -210,11 +219,14 @@ export function createWorld(
     'position',
     new THREE.Float32BufferAttribute(constellationLayout(1).lines, 3),
   )
-  const lineMaterial = new THREE.LineBasicMaterial({
-    vertexColors: true,
-    color: '#98c8e8',
+  const lineMaterial = new THREE.ShaderMaterial({
+    vertexShader: constellationLineVertex,
+    fragmentShader: constellationLineFragment,
+    uniforms: {
+      uCosmicTime: uniforms.uCosmicTime,
+      uOpacity: { value: 0 },
+    },
     transparent: true,
-    opacity: 0,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
   })
@@ -222,6 +234,10 @@ export function createWorld(
   lineGeometry.setAttribute(
     'color',
     new THREE.Float32BufferAttribute(constellationLayout(1).colors, 3),
+  )
+  lineGeometry.setAttribute(
+    'aGroup',
+    new THREE.Float32BufferAttribute(constellationLayout(1).lineGroups, 1),
   )
 
   const oasisDressing = createOasisDressing(scene, camera)
@@ -232,7 +248,11 @@ export function createWorld(
     frame = 0,
     last = 0,
     elapsed = 0,
+    cosmicElapsed = 0,
     slow = 0
+  let meteorIndex = 0,
+    meteorStart = 3.8,
+    meteorDuration = 1.1
   let sampleStart = performance.now(),
     sampleFrames = 0,
     lastRender = sampleStart
@@ -294,7 +314,7 @@ export function createWorld(
     camera.updateProjectionMatrix()
     uniforms.uAspect.value = width / height
     const layout = constellationLayout(width / height)
-    for (let i = 0; i < constellationStarCount; i++)
+    for (let i = 0; i < constellationStarCount; i++) {
       anchors.setXYZW(
         i,
         layout.anchors[i * 4]!,
@@ -302,10 +322,16 @@ export function createWorld(
         layout.anchors[i * 4 + 2]!,
         1,
       )
+      groupAttribute.setX(i, layout.starGroups[i]!)
+    }
     anchors.needsUpdate = true
+    groupAttribute.needsUpdate = true
     const lineVertices = lineGeometry.getAttribute('position') as THREE.BufferAttribute
     lineVertices.array.set(layout.lines)
     lineVertices.needsUpdate = true
+    const lineGroupAttribute = lineGeometry.getAttribute('aGroup') as THREE.BufferAttribute
+    lineGroupAttribute.array.set(layout.lineGroups)
+    lineGroupAttribute.needsUpdate = true
     lineGeometry.computeBoundingSphere()
     particleUniforms.uPixelRatio.value = foregroundRatio
     canvas.dataset.pixelRatio = foregroundRatio.toFixed(2)
@@ -353,7 +379,7 @@ export function createWorld(
     fog.far = THREE.MathUtils.lerp(150, 62, curtain)
     scene.fog!.color.setRGB(0.6, 0.42, 0.25).lerp(new THREE.Color(0.095, 0.12, 0.125), weather)
     camera.lookAt(target)
-    lineMaterial.opacity = THREE.MathUtils.smoothstep(progress, 3.75, 4.15) * 0.25
+    lineMaterial.uniforms.uOpacity!.value = THREE.MathUtils.smoothstep(progress, 3.75, 4.15) * 0.25
     oasisDressing.setProgress(progress)
   }
   function setProgress(value: number) {
@@ -378,11 +404,24 @@ export function createWorld(
     if (frameTime === null) return
     const seconds = Math.min(now - lastRender, 100) / 1000
     elapsed += seconds
+    if (progress > 3.45) cosmicElapsed += seconds
     if (coarsePointer && requestedProgress !== progress)
       updateCamera(settleProgress(progress, requestedProgress, seconds))
     lastRender = now
     last = frameTime
     uniforms.uTime.value = elapsed
+    uniforms.uCosmicTime.value = cosmicElapsed
+    if (cosmicElapsed >= meteorStart) {
+      const phase = (cosmicElapsed - meteorStart) / meteorDuration
+      if (phase <= 1) uniforms.uMeteor.value.set(phase, meteorIndex + 0.371, 0, 0)
+      else {
+        meteorIndex++
+        const irregular = Math.sin(meteorIndex * 91.713 + 4.17) * 43758.5453
+        meteorStart = cosmicElapsed + 12 + (irregular - Math.floor(irregular)) * 8
+        meteorDuration = 0.8 + ((((irregular * 1.73) % 1) + 1) % 1) * 0.6
+        uniforms.uMeteor.value.x = -1
+      }
+    } else uniforms.uMeteor.value.x = -1
     const lightning = lightningState(elapsed)
     uniforms.uLightning.value.set(lightning.intensity, lightning.seed)
     oasisDressing.setTime(elapsed)
@@ -426,6 +465,9 @@ export function createWorld(
       canvas.dataset.waterHeight = (-1 + floodHeight(progress)).toFixed(2)
       canvas.dataset.storm = stormStrength(progress).toFixed(2)
       canvas.dataset.lightning = (lightning.intensity * stormStrength(progress)).toFixed(3)
+      canvas.dataset.cosmicTime = cosmicElapsed.toFixed(2)
+      canvas.dataset.meteorCount = String(meteorIndex)
+      canvas.dataset.meteorActive = uniforms.uMeteor.value.x >= 0 ? 'true' : 'false'
       canvas.dataset.qualityStep = String(quality.step)
       sampleStart = now
       sampleFrames = 0
@@ -475,8 +517,8 @@ export function createWorld(
   window.addEventListener('resize', onResize, { passive: true })
   resize()
   updateCamera(0)
-  // Compile the expensive world and foreground programs behind the arrival
-  // veil. On supporting drivers this uses parallel shader compilation and
+  // Compile the expensive world and foreground programs before the static
+  // preview releases. Supporting drivers use parallel shader compilation and
   // avoids paying the whole link cost in the first visible frame.
   const compileStarted = performance.now()
   canvas.dataset.compileState = 'pending'
@@ -484,7 +526,7 @@ export function createWorld(
     renderer.compileAsync(background, screenCamera),
     oasisDressing.ready.then(async () => {
       // Hidden objects are skipped by WebGLRenderer.compileAsync. Reveal the
-      // complete grove only behind the arrival cover, compile it, then restore
+      // complete grove only during preparation, compile it, then restore
       // the actual scroll state before the first presented frame.
       oasisDressing.setProgress(0.8, true)
       try {

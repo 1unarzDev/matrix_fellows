@@ -6,9 +6,11 @@
 - 97 unit/database tests across 15 files pass, including tests against the actual migrations in embedded PostgreSQL.
 - Eight Playwright suites cover the built application across desktop and mobile Chromium profiles.
 - Browser coverage includes direct deep links, reverse scene synchronization, early section navigation, expandable research details, opportunity search/empty states, editor opening/closing, reduced motion, and unavailable WebGL.
+- Narrow opportunity pagination uses a single-row compact control with 44 px mobile targets; meeting information and its direct detail link are present in the opening SSR content.
 - Production Nuxt build passes. Frontend and scheduled importer are deployed independently through Wrangler/GitHub automation.
 - Vue components contain no CSS style blocks or inline style attributes. The stylesheet contains Tailwind import/theme configuration only.
 - Desktop and mobile-emulated screenshots were inspected for typography, framing, atmosphere, reading contrast, and the oasis silhouette. References and visual changes are documented in [art direction](../design/art-direction.md).
+- The nebula has a 30-second stationary recording and forward/reverse transition recording; cold-load recordings retain visible SSR content without a second loading canvas.
 - `npm run docs:check` verifies that the repository README and documentation have no broken local Markdown links.
 
 ## Performance observations

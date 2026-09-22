@@ -7,7 +7,7 @@ it('provides the first meeting and three real research projects', () => {
   expect(defaultContent.meeting).toMatchObject({
     date: '2026-09-25',
     time: 'During lunch',
-    location: 'Martin HS · Room 185B',
+    location: 'Martin HS · Room 186C',
   })
   expect(defaultContent.projects).toHaveLength(3)
   expect(defaultContent.projects.filter((p) => p.status === 'Advanced to TXSEF')).toHaveLength(2)

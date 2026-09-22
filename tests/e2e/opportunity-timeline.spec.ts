@@ -90,10 +90,8 @@ test('catalog pagination, search, and status/type filters retain past editions',
   await openBoard(page)
   const board = page.locator('section[aria-labelledby="opportunities-title"]')
   await expect(board.getByRole('article')).toHaveCount(6)
-  await board.getByRole('button', { name: 'Opportunity page 2', exact: true }).click()
-  await expect(
-    board.getByRole('button', { name: 'Opportunity page 2', exact: true }),
-  ).toHaveAttribute('aria-current', 'page')
+  await board.getByRole('button', { name: 'Next opportunity page', exact: true }).click()
+  await expect(board.getByText(`Page 2`, { exact: false }).first()).toBeVisible()
   await expect(board.getByRole('article')).toHaveCount(6)
   await board.getByRole('button', { name: 'View all opportunities', exact: true }).click()
   await expect(board.getByRole('article')).toHaveCount(32)
@@ -247,4 +245,26 @@ test('narrow viewport confines horizontal scrolling and honors reduced motion', 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   )
+})
+
+test('narrow opportunity pagination remains a single accessible row', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 760 })
+  await openBoard(page)
+  const pager = page.getByRole('navigation', { name: 'Opportunity pages' })
+  await expect(pager).toHaveAttribute('data-mobile-pagination', 'compact')
+  await expect(pager.getByText(/Page 1 of \d+/)).toBeVisible()
+  await expect(pager.getByRole('button', { name: 'Previous opportunity page' })).toHaveCSS(
+    'height',
+    '44px',
+  )
+  await expect(pager.getByRole('button', { name: /^Opportunity page \d+$/ })).toHaveCount(0)
+  const rowHeight = await pager.evaluate((element) => {
+    const children = [...element.children].filter(
+      (child) => getComputedStyle(child).display !== 'none',
+    )
+    const top = Math.min(...children.map((child) => child.getBoundingClientRect().top))
+    const bottom = Math.max(...children.map((child) => child.getBoundingClientRect().bottom))
+    return bottom - top
+  })
+  expect(rowHeight).toBeLessThanOrEqual(44)
 })

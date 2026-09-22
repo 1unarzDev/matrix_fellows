@@ -23,6 +23,7 @@ test('custom opportunity picker supports keyboard selection and dismissal', asyn
 
 test('project panels animate and closed content cannot receive focus', async ({ page }) => {
   await page.goto('/#research')
+  await page.locator('[data-ready="true"]').waitFor()
   const toggle = page.locator('#research button[aria-controls]').first()
   const panel = page.locator(`#${await toggle.getAttribute('aria-controls')}`)
   await expect(panel).toHaveAttribute('inert', '')

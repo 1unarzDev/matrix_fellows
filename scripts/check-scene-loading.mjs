@@ -36,11 +36,13 @@ try {
         await page.locator('[data-horizon-preview]').getAttribute('data-scene-state'),
         'pending',
       )
-      assert.equal(await page.locator('[data-loading-orbit]').count(), 1)
+      assert.equal(await page.locator('[data-arrival-veil]').count(), 0)
+      assert.equal(await page.locator('[data-loading-orbit]').count(), 0)
       await page.screenshot({ path: '/tmp/matrix-loading-preview.png' })
     }
     const expected = mode === 'normal' ? 'ready' : 'fallback'
     await page.locator(`[data-scene-state="${expected}"]`).waitFor({ timeout: 15000 })
+    assert.equal(await page.locator('[data-arrival-veil]').count(), 0)
     assert.equal(await page.locator('[data-loading-orbit]').count(), 0)
     const preview = await page
       .locator('[data-horizon-preview]')

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-withDefaults(defineProps<{ size?: number; loading?: boolean }>(), { size: 40, loading: false })
+withDefaults(defineProps<{ size?: number }>(), { size: 40 })
 </script>
 
 <template>
@@ -44,16 +44,6 @@ withDefaults(defineProps<{ size?: number; loading?: boolean }>(), { size: 40, lo
       class="opacity-75 [stroke-dasharray:.9_.1] [stroke-dashoffset:0] transition-[stroke-dashoffset,opacity] duration-1200 ease-[cubic-bezier(.4,0,.2,1)] group-hover:[stroke-dashoffset:-1] group-hover:opacity-100 group-focus-visible:[stroke-dashoffset:-1] motion-reduce:transition-none motion-reduce:[stroke-dashoffset:0]!"
     />
     <circle cx="56" cy="17" r="2.2" fill="currentColor" class="text-acid" />
-    <path
-      v-if="loading"
-      data-loading-orbit
-      d="M9 28C23 15 45 7 54 13C67 23 24 60 9 51C5 49 5 45 8 41"
-      pathLength="1"
-      stroke="currentColor"
-      stroke-width="2.4"
-      stroke-linecap="round"
-      class="text-acid [stroke-dasharray:.12_.88] motion-safe:animate-orbit-trace motion-reduce:hidden"
-    />
     <path
       d="M56 10V7M62 17H65"
       pathLength="1"

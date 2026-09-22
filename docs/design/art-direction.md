@@ -89,6 +89,21 @@ The oasis now has an irregular, raised shoreline, nine shared-asset palms, 38 em
 
 The subsequent deep sea revisits ABZÛ's layered-school composition, relying on coordinated currents, suspended particles, and light shafts. The experimental jellyfish have been removed. The community section preserves a dim view of the nebula, complemented by broad violet/teal background accents that visually connect the closing invitation to its surroundings.
 
+The nebula's ambient life is time-owned rather than scroll-owned once its framing
+has settled. Existing density layers move on different 45–90 second currents;
+nearer stars drift slightly more than distant stars, and only a seeded minority
+twinkle gently. Each named constellation moves as one group, with the identical
+analytic offset applied to its star anchors and line endpoints. A single faint,
+short streak appears after roughly four active cosmic seconds, followed by seeded
+12–20 second gaps. Cosmic time pauses outside the visible chapter, so returning
+does not replay missed events. No global pulse, pointer camera, or constant zoom
+was added.
+
+A crescent planet was prototyped against the actual centered connection copy and
+six constellation groups, then omitted. The remaining negative-space quadrants
+are what keep the copy and source-backed patterns legible; the planet became a
+second focal badge rather than improving scale, especially in portrait layouts.
+
 Inspected the Three.js r130 `webgl_lightningstrike` Storm showcase for branching bolts, localized glow, and cloud illumination. The implementation uses original analytic cloud fields and seeded lightning paths, not the showcase geometry. Time-driven strikes continue at a stationary scroll position, with one event per seven-second window and varied timing/branching. Illumination is localized rather than a full-screen white flash; reduced-motion mode keeps WebGL disabled.
 
 Storm cloud cover and rainfall have separate envelopes. Clouds remain fully overcast through submersion, preventing the sun from returning before the dive. Rain diminishes at the waterline, is clipped above the surface, and is absent underwater. Flood-relative camera/particle heights preserve the subsequent deep-sea choreography.

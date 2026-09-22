@@ -17,7 +17,7 @@ test('browser chrome has a dark first-paint surface', async ({ page }) => {
 test('mobile toolbar resizing does not reallocate the WebGL surface', async ({ page }, info) => {
   test.skip(info.project.name !== 'mobile')
   await page.goto('/#discovery')
-  const canvas = page.locator('canvas:not([data-arrival-veil])')
+  const canvas = page.locator('canvas[data-engine]')
   await expect(canvas).toHaveAttribute('data-progress', /^1\./, { timeout: 20000 })
   const before = await canvas.getAttribute('height')
   await page.setViewportSize({ width: 390, height: 780 })

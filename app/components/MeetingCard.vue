@@ -5,7 +5,7 @@ defineProps<{ meeting: Meeting }>()
 </script>
 
 <template>
-  <article class="grid gap-10 py-16 md:grid-cols-[1.2fr_1fr]">
+  <article id="meeting-details" class="scroll-mt-24 grid gap-10 py-16 md:grid-cols-[1.2fr_1fr]">
     <div>
       <div class="mb-6 flex items-center gap-2 text-[10px] uppercase tracking-[.2em] text-acid">
         <span class="h-1.5 w-1.5 rounded-full bg-acid" /> Next gathering

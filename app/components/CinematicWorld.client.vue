@@ -15,6 +15,17 @@ let disposed = false
 let idle: ReturnType<typeof setTimeout>
 let media: MediaQueryList
 let mediaChanged: () => void
+const mountedAt = typeof performance === 'undefined' ? 0 : performance.now()
+
+async function yieldToMain() {
+  const browserScheduler = (
+    globalThis as typeof globalThis & {
+      scheduler?: { yield?: () => Promise<void> }
+    }
+  ).scheduler
+  if (browserScheduler?.yield) await browserScheduler.yield()
+  else await new Promise<void>((resolve) => setTimeout(resolve, 0))
+}
 
 onMounted(() => {
   media = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -30,6 +41,8 @@ onMounted(() => {
       import('gsap/ScrollTrigger'),
       touchLayout ? Promise.resolve(undefined) : import('lenis'),
     ])
+    if (canvas.value) canvas.value.dataset.importMs = (performance.now() - mountedAt).toFixed(1)
+    await yieldToMain()
     if (disposed) return
     gsap.registerPlugin(ScrollTrigger)
     ScrollTrigger.config({ ignoreMobileResize: true })
@@ -221,8 +234,8 @@ onMounted(() => {
               return
             }
             emit('ready')
-            // The parent restores the hash destination while the veil is covering
-            // the page. Synchronize the camera before its first visible frame.
+            // The parent restores the hash destination while the static preview
+            // is present. Synchronize the camera before its first visible frame.
             requestAnimationFrame(() => {
               if (!disposed) {
                 ScrollTrigger.refresh()
@@ -239,7 +252,9 @@ onMounted(() => {
       try {
         const { createWorld } = await (worldModule || import('~/lib/scene/world'))
         await layoutReady
+        await yieldToMain()
         if (disposed || media.matches || !canvas.value) return
+        const constructionStarted = performance.now()
         world = createWorld(
           canvas.value,
           () => {
@@ -251,10 +266,13 @@ onMounted(() => {
           },
           () => {
             if (disposed || media.matches) return
+            if (canvas.value)
+              canvas.value.dataset.firstSceneMs = (performance.now() - mountedAt).toFixed(1)
             ready.value = true
             emit('scene', 'ready')
           },
         )
+        canvas.value.dataset.constructionMs = (performance.now() - constructionStarted).toFixed(1)
         apply()
       } catch {
         failed.value = true
@@ -325,7 +343,7 @@ onBeforeUnmount(() => {
   <canvas
     ref="canvas"
     aria-hidden="true"
-    class="pointer-events-none fixed inset-x-0 top-0 z-0 h-lvh w-full transition-opacity duration-[1800ms] ease-[cubic-bezier(.4,0,.2,1)] motion-reduce:transition-none sm:h-dvh"
+    class="pointer-events-none fixed inset-x-0 top-0 z-0 h-lvh w-full transition-opacity duration-300 ease-out motion-reduce:transition-none sm:h-dvh"
     :class="ready && !failed ? 'opacity-100' : 'opacity-0'"
   />
 </template>

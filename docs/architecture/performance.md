@@ -32,17 +32,22 @@ starts downloading in parallel with the animation libraries, while construction
 still waits for stable scroll measurements. Only the two faces that establish
 the narrative layout gate that measurement; unrelated document fonts do not.
 `JoinForm` and `AdminPanel` use Nuxt lazy components and are created only when
-opened. Reduced-motion users skip world construction entirely.
+opened. Reduced-motion users skip world construction entirely. Import/layout and
+scene-construction phases yield through `scheduler.yield()` when available, with
+a timer task fallback that genuinely returns control to painting.
 
 DM Sans and Manrope are resolved at build time by `@nuxt/fonts`, served as two
 same-origin variable WOFF2 files, and paired with metric-adjusted local fallbacks.
 There are no runtime Google Fonts requests. The renderer asynchronously compiles
-the background and foreground programs behind the arrival veil before starting
-its RAF loop; compilation failure falls back to normal first-use compilation.
+the background and foreground programs before starting its RAF loop; compilation
+failure falls back to normal first-use compilation. Import, construction,
+compile, and first-scene timings are exposed as canvas data attributes.
 
-The arrival veil is a separate low-resolution 2D canvas capped at 30 fps. It
-hides renderer/deep-link handoff and releases after the first WebGL frame; a
-12-second safety path falls back if the world never becomes ready.
+The loader is deliberately static. The server-rendered horizon is used only at
+the opening chapter, the identity mark does not animate, and there is no second
+canvas or JavaScript loading loop. A first valid composer frame starts a single
+300 ms opacity reveal. A 12-second safety path falls back if the world never
+becomes ready; page content and navigation remain usable throughout.
 
 ## One scroll clock
 
@@ -57,8 +62,8 @@ measured document scroll to narrative stage `0…5`. The same update:
 Lenis owns desktop wheel smoothing and feeds the GSAP ticker. Touch keeps native
 inertia (`syncTouch: false`). Mobile renderer progress uses a frame-rate-independent
 75 ms exponential settle to absorb stepped touch events without altering document
-scroll. Direct navigation and restored hashes synchronize while the arrival veil
-covers the first visible frame.
+scroll. Direct navigation and restored hashes synchronize before the first scene
+frame; their SSR copy remains visible rather than being covered by a loader.
 
 Layout measurement is cached. A `ResizeObserver` refreshes ScrollTrigger only
 when the main document height changes, with a 90 ms debounce. Safari toolbar
@@ -71,15 +76,15 @@ The procedural environment is a full-screen fragment shader; palms, rocks,
 particles, and constellation lines are foreground geometry. Both share depth so
 terrain can correctly occlude models.
 
-| Setting                | Cinematic profile             | Efficient profile                                             |
-| ---------------------- | ----------------------------- | ------------------------------------------------------------- |
-| Particle buffer / draw | 12,000 / 12,000               | 2,600 / 1,560 initially; one-way floor 1,196                 |
+| Setting                | Cinematic profile             | Efficient profile                                              |
+| ---------------------- | ----------------------------- | -------------------------------------------------------------- |
+| Particle buffer / draw | 12,000 / 12,000               | 2,600 / 1,560 initially; one-way floor 1,196                   |
 | Initial pixel ratio    | `min(devicePixelRatio, 1.5)`  | background `min(devicePixelRatio, 0.32)`; foreground at most 1 |
-| HDR target samples     | up to 4× MSAA                 | none; avoids a redundant full-screen multisample resolve      |
-| Background             | rendered directly in composer | separate half-float color/depth target                        |
-| Bloom                  | UnrealBloom multi-mip pass    | no separate bloom pass                                        |
-| Final edge treatment   | MSAA                          | full-resolution foreground plus combined edge/grade pass      |
-| Adaptive ratio floor   | 0.65                          | 0.32 for procedural background                                |
+| HDR target samples     | up to 4× MSAA                 | none; avoids a redundant full-screen multisample resolve       |
+| Background             | rendered directly in composer | separate half-float color/depth target                         |
+| Bloom                  | UnrealBloom multi-mip pass    | no separate bloom pass                                         |
+| Final edge treatment   | MSAA                          | full-resolution foreground plus combined edge/grade pass       |
+| Adaptive ratio floor   | 0.65                          | 0.32 for procedural background                                 |
 
 Profile selection is independent of layout width. Coarse-pointer devices and
 machines reporting at most four logical processors or 4 GB device memory begin
@@ -103,13 +108,18 @@ are normalized and merged once, their unsuitable source materials are replaced,
 and repeated instances share geometry/materials. This reduced the oasis peak
 from 72 to 18 draw calls. Optional assets load asynchronously and fail without
 taking down the world. Programs, buffers, textures, and the production-format
-framebuffer path warm behind the arrival veil before the first oasis frame.
+framebuffer path warm before the first oasis frame.
 
 Shader work is concentrated where it provides visible leverage: procedural
 terrain/atmosphere, water, weather, deep-sea lighting, nebulae, and particle
 transitions. Distant water filters micro-detail while retaining broad swell
 normals. Fog, darkness, haze, and silhouettes control visibility instead of
 requiring dense geometry.
+
+Nebula ambience uses the same clock and programs: slow shader-time offsets,
+vertex-time coherent group drift, and one bounded analytic streak add no render
+target, pass, particle simulation, or animation loop. Cosmic elapsed time pauses
+outside the chapter. On constrained devices, no optional planet/model is loaded.
 
 ## Frame pacing and adaptive quality
 
@@ -198,20 +208,22 @@ Current risks:
 
 Run a dev or production-preview server first where required.
 
-| Command                                   | What it verifies                                                          |
-| ----------------------------------------- | ------------------------------------------------------------------------- |
-| `npm run capture`                         | Six chapter captures, canvas diagnostics, desktop/mobile emulation        |
-| `npm run perf:mobile`                     | Controlled SwiftShader scroll comparison; intentionally not a phone claim |
-| `npm run perf:soak`                       | Rendered-frame 120 s forward/reverse trace with 10 s pass/fail windows     |
-| `npm run perf:profile`                    | Startup, Web Vitals, LoAF/long-task, and WebGL-vs-DOM attribution         |
-| `npm run perf:shader`                     | Isolated world-fragment timing at the storm/ocean hot spot                |
-| `node scripts/check-oasis-dressing.mjs`   | Desktop/mobile assets, reveal, flood, and reverse navigation              |
-| `npx tsx scripts/check-hero-water.mjs`    | No water leaks into the hero across aspect ratios                         |
-| `npx tsx scripts/check-waterline.mjs`     | Hardware-WebGL waterline samples contain no NaNs                          |
-| `node scripts/check-descent-render.mjs`   | Full-render submersion has no dark-frame discontinuity                    |
-| `npx tsx scripts/check-terrain-depth.mjs` | Terrain depth correctly occludes foreground models                        |
-| `npm test`                                | Frame-clock, weather, domain, database, Worker, and schema invariants     |
-| `npm run typecheck && npm run build`      | Both TypeScript runtimes and production bundling                          |
+| Command                                     | What it verifies                                                          |
+| ------------------------------------------- | ------------------------------------------------------------------------- |
+| `npm run capture`                           | Six chapter captures, canvas diagnostics, desktop/mobile emulation        |
+| `npm run perf:mobile`                       | Controlled SwiftShader scroll comparison; intentionally not a phone claim |
+| `npm run perf:soak`                         | Rendered-frame 120 s forward/reverse trace with 10 s pass/fail windows    |
+| `npm run perf:profile`                      | Startup, Web Vitals, LoAF/long-task, and WebGL-vs-DOM attribution         |
+| `npm run perf:shader`                       | Isolated world-fragment timing at the storm/ocean hot spot                |
+| `node scripts/check-oasis-dressing.mjs`     | Desktop/mobile assets, reveal, flood, and reverse navigation              |
+| `npx tsx scripts/check-hero-water.mjs`      | No water leaks into the hero across aspect ratios                         |
+| `npx tsx scripts/check-waterline.mjs`       | Hardware-WebGL waterline samples contain no NaNs                          |
+| `node scripts/check-descent-render.mjs`     | Full-render submersion has no dark-frame discontinuity                    |
+| `npx tsx scripts/check-terrain-depth.mjs`   | Terrain depth correctly occludes foreground models                        |
+| `npm test`                                  | Frame-clock, weather, domain, database, Worker, and schema invariants     |
+| `npm run typecheck && npm run build`        | Both TypeScript runtimes and production bundling                          |
+| `node scripts/check-slow-start.mjs`         | Throttled cold/warm startup, early navigation, loader absence             |
+| `node scripts/capture-refinement.mjs after` | Narrow layouts and 30 s/transition/cold-load recordings                   |
 
 For physical-device work, use Safari Web Inspector and record device model, OS,
 power mode, thermal state, viewport/orientation, scene range, observed frame

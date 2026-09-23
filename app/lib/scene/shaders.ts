@@ -52,8 +52,7 @@ const NEAR_SWELL_FULL = 30
 export const swellStrength = (progress: number) =>
   stormStrength(progress) * smooth(SWELL_START, SWELL_FULL, progress)
 export const nearSwellFactor = (distance: number) =>
-  NEAR_SWELL_FLOOR +
-  (1 - NEAR_SWELL_FLOOR) * smooth(NEAR_SWELL_START, NEAR_SWELL_FULL, distance)
+  NEAR_SWELL_FLOOR + (1 - NEAR_SWELL_FLOOR) * smooth(NEAR_SWELL_START, NEAR_SWELL_FULL, distance)
 export const weatherGLSL = /* glsl */ `
 float floodHeight(float p) { return 2.0*smoothstep(1.28,1.55,p)+16.0*smoothstep(1.65,1.98,p); }
 float stormStrength(float p) { return smoothstep(1.06,1.42,p)*(1.0-smoothstep(2.9,3.15,p)); }
@@ -663,6 +662,10 @@ void main(){
   float d=length(coord);
   if(d>1.0)discard;
   float glow=exp(-d*d*6.0);
+  // Preserve a small, resolved center inside atmospheric motes and stars.
+  // Their broad halo remains soft, but the sprite no longer reads as one
+  // uniformly blurred disc on high-density mobile screens.
+  glow+=exp(-d*d*30.0)*.48*(1.0-vFish)*(1.0-vRain);
   float body=exp(-(coord.x*coord.x*.8+coord.y*coord.y*9.0)*3.0);
   float tail=step(coord.x,-.2)*step(abs(coord.y),(-coord.x-.18)*.45)*.35;
   glow=mix(glow,body+tail+exp(-d*d*3.0)*.10,vFish);

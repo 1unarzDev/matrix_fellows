@@ -79,15 +79,15 @@ The procedural environment is a full-screen fragment shader; palms, rocks,
 particles, and constellation lines are foreground geometry. Both share depth so
 terrain can correctly occlude models.
 
-| Setting                | Cinematic profile             | Efficient profile                                              |
-| ---------------------- | ----------------------------- | -------------------------------------------------------------- |
-| Particle buffer / draw | 12,000 / 12,000               | 2,600 / 1,560 initially; one-way floor 1,196                   |
-| Initial pixel ratio    | `min(devicePixelRatio, 1.5)`  | background `min(devicePixelRatio, 0.32)`; foreground at most 1.25 |
-| HDR target samples     | up to 4× MSAA                 | none; avoids a redundant full-screen multisample resolve       |
-| Background             | rendered directly in composer | separate half-float color/depth target                         |
-| Bloom                  | UnrealBloom multi-mip pass    | no separate bloom pass                                         |
-| Final edge treatment   | MSAA                          | 1.25× foreground plus four-tap background reconstruction       |
-| Adaptive ratio floor   | 0.65                          | 0.32 for procedural background                                 |
+| Setting                | Cinematic profile             | Efficient profile                                                |
+| ---------------------- | ----------------------------- | ---------------------------------------------------------------- |
+| Particle buffer / draw | 12,000 / 12,000               | 2,600 / 1,560 initially; one-way floor 1,196                     |
+| Initial pixel ratio    | `min(devicePixelRatio, 1.5)`  | background `min(devicePixelRatio, 0.32)`; foreground at most 1.5 |
+| HDR target samples     | up to 4× MSAA                 | none; avoids a redundant full-screen multisample resolve         |
+| Background             | rendered directly in composer | separate half-float color/depth target                           |
+| Bloom                  | UnrealBloom multi-mip pass    | no separate bloom pass                                           |
+| Final edge treatment   | MSAA                          | 1.5× foreground plus sharpened background reconstruction         |
+| Adaptive ratio floor   | 0.65                          | 0.32 for procedural background                                   |
 
 Profile selection is independent of layout width. Coarse-pointer devices and
 machines reporting at most four logical processors or 4 GB device memory begin
@@ -95,11 +95,12 @@ efficiently, so landscape phones and weak wide displays do not inherit desktop
 MSAA, bloom, and particle settings. CSS breakpoints remain layout-only.
 
 Splitting the mobile background is important: the expensive procedural ray work
-can become softer without making palm cutouts, constellation lines, text-adjacent
+can remain bounded without making palm cutouts, constellation lines, text-adjacent
 particles, or wave edges equally blurry. Desktop retains the higher-quality bloom
 chain and a single adaptive composer ratio. The efficient copy shader reconstructs
-the 0.32× atmosphere with four hardware-filtered bicubic taps; the final grade does
-not blur the already supersampled foreground a second time.
+the 0.32× atmosphere with four hardware-filtered bicubic taps, then restores bounded
+local contrast from one bilinear sample, weighted most strongly through the ocean.
+The final grade does not blur the already supersampled foreground a second time.
 
 ## Particle and asset strategy
 
@@ -211,7 +212,7 @@ Current risks:
 - procedural fragment cost during the ocean/descent transition;
 - adaptive quality only decreases—it does not recover after a temporary spike;
 - the efficient atmosphere remains intentionally soft at a 0.32 ratio, with
-  four-tap reconstruction; the foreground is capped at 1.25× and the DOM stays
+  sharpened reconstruction; the foreground is capped at 1.5× and the DOM stays
   at native browser resolution.
 
 ## Verification and profiling

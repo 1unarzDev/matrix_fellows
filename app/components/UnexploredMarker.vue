@@ -65,8 +65,9 @@
       >
       <span
         aria-hidden="true"
-        class="mt-2 translate-y-1 text-[8px] tracking-[.08em] text-paper/0 opacity-0 transition-[color,opacity,transform] duration-500 ease-[cubic-bezier(.22,1,.36,1)] group-hover/unknown:translate-y-0 group-hover/unknown:text-paper/55 group-hover/unknown:opacity-100 group-focus-visible/unknown:translate-y-0 group-focus-visible/unknown:text-paper/55 group-focus-visible/unknown:opacity-100 motion-reduce:transform-none motion-reduce:transition-none"
-        >Find your question&nbsp; ↗</span
+        class="mt-2 flex translate-y-1 items-center gap-1.5 text-[8px] tracking-[.08em] text-paper/0 opacity-0 transition-[color,opacity,transform] duration-500 ease-[cubic-bezier(.22,1,.36,1)] group-hover/unknown:translate-y-0 group-hover/unknown:text-paper/55 group-hover/unknown:opacity-100 group-focus-visible/unknown:translate-y-0 group-focus-visible/unknown:text-paper/55 group-focus-visible/unknown:opacity-100 motion-reduce:transform-none motion-reduce:transition-none"
+        >Find your question <SiteIcon :size="9"
+      /></span>
       >
     </span>
   </NuxtLink>

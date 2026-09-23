@@ -37,7 +37,7 @@ test('landscape phones retain the efficient render path and sharp foreground', a
   const canvas = page.locator('canvas[data-engine]')
   await expect(canvas).toHaveCSS('opacity', '1', { timeout: 20_000 })
   await expect(canvas).toHaveAttribute('data-render-profile', 'efficient')
-  await expect(canvas).toHaveAttribute('data-pixel-ratio', '1.25')
+  await expect(canvas).toHaveAttribute('data-pixel-ratio', '1.50')
   await expect(canvas).toHaveAttribute('data-atmosphere-ratio', '0.32')
   await expect(canvas).toHaveAttribute('data-progress', /^2\./)
 })
@@ -55,7 +55,7 @@ test('mobile camera settles after a touch-sized scroll step and keeps foreground
   const canvas = page.locator('canvas[data-progress]')
   await expect(canvas).toHaveAttribute('data-progress', /^2\./, { timeout: 20000 })
   await expect(canvas).toHaveCSS('opacity', '1', { timeout: 20000 })
-  await expect(canvas).toHaveAttribute('data-pixel-ratio', '1.25')
+  await expect(canvas).toHaveAttribute('data-pixel-ratio', '1.50')
   const before = Number(await canvas.getAttribute('data-progress'))
   await page.evaluate(() => window.scrollBy(0, 160))
   await expect

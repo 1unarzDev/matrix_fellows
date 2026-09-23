@@ -20,9 +20,9 @@ try {
     await page.goto(baseURL, { waitUntil: 'domcontentloaded' })
     await page.locator('[data-ready="true"]').waitFor({ timeout: 60_000 })
 
-    await page.locator('#discovery').evaluate((element) =>
-      element.scrollIntoView({ behavior: 'instant' }),
-    )
+    await page
+      .locator('#discovery')
+      .evaluate((element) => element.scrollIntoView({ behavior: 'instant' }))
     await page.waitForTimeout(1_500)
     await page.screenshot({ path: `${output}/${name}-oasis.png` })
 
@@ -35,9 +35,9 @@ try {
       palmFoliageParts: Number(canvas.dataset.palmFoliageParts),
     }))
 
-    await page.locator('#connection').evaluate((element) =>
-      element.scrollIntoView({ behavior: 'instant' }),
-    )
+    await page
+      .locator('#connection')
+      .evaluate((element) => element.scrollIntoView({ behavior: 'instant' }))
     // The first deterministic event begins at 3.8 active cosmic seconds. A
     // fixed sample avoids relying on the intentionally throttled DOM metrics.
     await page.waitForTimeout(4_150)
@@ -45,7 +45,7 @@ try {
 
     console.log(name, canvasState)
     assert.ok(
-      canvasState.pixelRatio >= 1.25,
+      canvasState.pixelRatio >= 1.5,
       `${name} foreground buffer is only ${canvasState.pixelRatio}x; thin lines and silhouettes will alias`,
     )
     assert.ok(canvasState.palmTrunkParts >= 1, `${name} oasis omitted the palm trunk geometry`)

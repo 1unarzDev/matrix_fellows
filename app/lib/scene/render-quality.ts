@@ -38,7 +38,7 @@ export function initialQuality(profile: RenderProfile, devicePixelRatio: number)
         // bounded retina-aware ratio; only the naturally soft atmosphere is
         // heavily downsampled.
         atmosphereRatio: Math.min(devicePixelRatio, 0.32),
-        foregroundRatio: Math.min(devicePixelRatio, 1.25),
+        foregroundRatio: Math.min(devicePixelRatio, 1.5),
         particleFraction: 0.6,
         halo: false,
         detail: false,

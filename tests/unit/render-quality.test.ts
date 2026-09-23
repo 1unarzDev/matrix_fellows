@@ -24,7 +24,7 @@ describe('render quality policy', () => {
     let state = initialQuality('efficient', 3)
     expect(state).toMatchObject({
       atmosphereRatio: 0.32,
-      foregroundRatio: 1.25,
+      foregroundRatio: 1.5,
       particleFraction: 0.6,
       halo: false,
       detail: false,

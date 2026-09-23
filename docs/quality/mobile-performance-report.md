@@ -200,3 +200,24 @@ palm parts at both sizes. A 30-second SwiftShader rendered-cadence run passed al
 three ten-second windows at 28.2, 30.0, and 30.0 fps; rendered p95 was at most
 50 ms with no stalls over 100 ms. `perf:mobile` remained capped at roughly 30 fps
 with 16.8 ms RAF p95. These remain desktop proxies, not physical Safari evidence.
+
+## Retina resolution follow-up — 2026-09-23
+
+A new regression reproduced the reported softness with the actual efficient path:
+an emulated iPhone 13 (`devicePixelRatio: 3`) and iPad Pro 11 (`devicePixelRatio: 2`)
+both received only a 1.25× foreground drawing buffer. That is roughly 17% and 39%
+of their respective physical pixel counts. The efficient foreground cap is now
+1.5× while the expensive procedural atmosphere remains at 0.32×. This is bounded
+supersampling, not a return to the older mobile MSAA configuration.
+
+The atmosphere copy now blends its stable four-tap B-spline reconstruction with
+one hardware-filtered source sample. The blend restores more local contrast during
+the ocean range without another world evaluation, render target, pass, or draw
+call. Particle sprites retain their soft halo but add a compact resolved center,
+so motes and stars no longer read as uniformly blurred discs at Retina density.
+
+Three controlled SwiftShader transitions each reported 30.0 rendered fps with the
+1.5× foreground, 0.32× atmosphere, five draw calls, and the existing particle
+adaptation. Browser RAF p95 ranged from 16.7 to 33.3 ms, within the 50 ms gate.
+This verifies the quality policy and local regression only; physical iPhone/iPad
+Safari image quality, thermal behavior, and sustained cadence remain outstanding.

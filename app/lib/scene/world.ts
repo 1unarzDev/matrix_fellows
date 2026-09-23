@@ -104,10 +104,11 @@ export function createWorld(
           colorBuffer: { value: atmosphereTarget.texture },
           depthBuffer: { value: atmosphereTarget.depthTexture },
           sourceSize: { value: new THREE.Vector2(1, 1) },
+          progress: uniforms.uProgress,
         },
         vertexShader: screenVertex,
         fragmentShader: `uniform sampler2D colorBuffer; uniform sampler2D depthBuffer;
-      uniform vec2 sourceSize; varying vec2 vUv;
+      uniform vec2 sourceSize; uniform float progress; varying vec2 vUv;
       vec4 cubic(float v) {
         vec4 n=vec4(1.0,2.0,3.0,4.0)-v;
         vec4 s=n*n*n;
@@ -131,7 +132,17 @@ export function createWorld(
         float sx=sum.x/(sum.x+sum.y),sy=sum.z/(sum.z+sum.w);
         return mix(mix(d,c,sx),mix(b,a,sx),sy);
       }
-      void main(){gl_FragColor=bicubic(colorBuffer,vUv);gl_FragDepth=texture2D(depthBuffer,vUv).r;}`,
+      void main(){
+        vec4 reconstructed=bicubic(colorBuffer,vUv);
+        // B-spline reconstruction is stable but visibly soft at the efficient
+        // atmosphere ratio. Restore bounded local contrast from the hardware-
+        // filtered source, especially through the ocean, without another pass
+        // or another procedural world evaluation.
+        vec4 direct=texture2D(colorBuffer,vUv);
+        float ocean=smoothstep(.9,1.35,progress)*(1.0-smoothstep(3.15,3.65,progress));
+        gl_FragColor=mix(reconstructed,direct,mix(.18,.52,ocean));
+        gl_FragDepth=texture2D(depthBuffer,vUv).r;
+      }`,
         depthTest: true,
         depthWrite: true,
       })

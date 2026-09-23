@@ -107,7 +107,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', outside))
       :aria-controls="id"
       class="themed-select__trigger flex min-h-11 w-full items-center justify-between gap-3 border border-paper/15 bg-paper/[.025] text-left text-paper/85"
       :class="
-        compact ? 'rounded-full px-4 text-xs' : 'rounded-xl px-3 py-3.5 text-xs sm:px-4 sm:text-sm'
+        compact ? 'rounded-full px-5 text-xs' : 'rounded-xl px-3 py-3.5 text-xs sm:px-4 sm:text-sm'
       "
       @click="open ? close() : show()"
       @keydown.down.prevent="show(1)"
@@ -123,7 +123,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', outside))
         :id="id"
         role="listbox"
         :aria-label="label"
-        class="themed-select__menu absolute top-full mt-2 min-w-full origin-top overflow-hidden rounded-2xl p-1.5"
+        class="themed-select__menu absolute top-full mt-2 min-w-full origin-top overflow-hidden rounded-2xl p-2.5"
         :class="align === 'right' ? 'right-0' : 'left-0'"
         @keydown="keyboard"
       >
@@ -134,7 +134,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', outside))
           role="option"
           :aria-selected="modelValue === option.value"
           :tabindex="active === index ? 0 : -1"
-          class="themed-select__option group flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left focus:outline-none"
+          class="themed-select__option group flex min-h-12 w-full items-center gap-3.5 rounded-xl px-4 py-3 text-left focus:outline-none"
           :class="modelValue === option.value ? 'bg-acid/10 text-acid' : 'text-paper/70'"
           :style="`--option-index:${index}`"
           @click="choose(option.value)"

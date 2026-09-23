@@ -64,7 +64,7 @@ const schema = z.object({
     .default([]),
   freeSubmission: z.boolean().default(false),
   archival: z.boolean().nullable().default(null),
-  sort: z.enum(['relevance', 'next-deadline', 'verified']).default('relevance'),
+  sort: z.enum(['relevance', 'next-deadline', 'actionable', 'verified']).default('relevance'),
   page: z.number().int().min(1).max(10_000).default(1),
   pageSize: z.number().int().min(1).max(50).default(12),
 })

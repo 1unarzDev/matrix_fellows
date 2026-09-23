@@ -53,7 +53,7 @@ useHead({
 
 <template>
   <div class="guide-page min-h-screen bg-ink text-paper">
-    <GuideHeader />
+    <CatalogHeader />
     <main v-if="guide" class="relative z-[1] mx-auto max-w-[86rem] px-5 pb-24 sm:px-8 lg:px-12">
       <header class="border-b border-paper/14 pb-14 pt-14 lg:pb-18 lg:pt-20">
         <NuxtLink to="/guides" class="text-xs text-paper/45 hover:text-acid">← All guides</NuxtLink>

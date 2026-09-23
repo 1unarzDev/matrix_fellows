@@ -12,8 +12,10 @@ defineEmits<{ toggle: [key: string, value: string] }>()
 
 <template>
   <div class="space-y-7 text-xs">
-    <fieldset>
-      <legend class="mb-3 text-[10px] uppercase tracking-[.16em] text-paper/40">Discipline</legend>
+    <AnimatedDisclosure
+      title="Discipline"
+      :count="disciplines.filter((value) => selected('discipline', value)).length"
+    >
       <label v-for="value in disciplines" :key="value" class="flex min-h-11 items-center gap-3"
         ><input
           type="checkbox"
@@ -21,9 +23,11 @@ defineEmits<{ toggle: [key: string, value: string] }>()
           class="filter-check h-4 w-4 shrink-0"
           @change="$emit('toggle', 'discipline', value)"
         /><span class="flex-1">{{ value }}</span
-        ><span class="text-paper/35">{{ facets?.discipline?.[value] ?? '' }}</span></label
+        ><span class="filter-count text-paper/35">{{
+          facets?.discipline?.[value] ?? ''
+        }}</span></label
       >
-    </fieldset>
+    </AnimatedDisclosure>
     <AnimatedDisclosure
       title="Type"
       :count="kinds.filter((value) => selected('kind', value)).length"
@@ -35,7 +39,7 @@ defineEmits<{ toggle: [key: string, value: string] }>()
           class="filter-check h-4 w-4 shrink-0"
           @change="$emit('toggle', 'kind', value)"
         /><span class="flex-1">{{ value }}</span
-        ><span class="text-paper/35">{{ facets?.kind?.[value] ?? '' }}</span></label
+        ><span class="filter-count text-paper/35">{{ facets?.kind?.[value] ?? '' }}</span></label
       >
     </AnimatedDisclosure>
     <AnimatedDisclosure
@@ -62,7 +66,9 @@ defineEmits<{ toggle: [key: string, value: string] }>()
           class="filter-check h-4 w-4 shrink-0"
           @change="$emit('toggle', 'status', option[0]!)"
         /><span class="flex-1">{{ option[1] }}</span
-        ><span class="text-paper/35">{{ facets?.status?.[option[0]!] ?? '' }}</span></label
+        ><span class="filter-count text-paper/35">{{
+          facets?.status?.[option[0]!] ?? ''
+        }}</span></label
       >
     </AnimatedDisclosure>
     <AnimatedDisclosure
@@ -102,20 +108,23 @@ defineEmits<{ toggle: [key: string, value: string] }>()
 
 <style scoped>
 label {
-  margin-inline: -0.5rem;
-  padding-inline: 0.5rem;
+  padding-inline: 0.625rem;
   border-radius: 0.65rem;
   cursor: pointer;
   transition:
     color 180ms ease,
-    background-color 180ms ease,
-    transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+    background-color 180ms ease;
 }
 label:hover,
 label:focus-within {
   color: color-mix(in srgb, var(--color-paper) 92%, var(--color-acid));
   background: color-mix(in srgb, var(--color-paper) 2.8%, transparent);
-  transform: translate3d(3px, 0, 0);
+}
+.filter-count {
+  min-width: 2ch;
+  flex: 0 0 auto;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 .filter-check {
   appearance: none;
@@ -160,7 +169,6 @@ label:focus-within {
   outline-offset: 3px;
 }
 @media (prefers-reduced-motion: reduce) {
-  label,
   .filter-check,
   .filter-check::before {
     transform: none !important;

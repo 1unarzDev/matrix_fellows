@@ -40,23 +40,6 @@ const now = useState('opportunity-clock', () => Date.now())
       />
       <button type="submit" class="min-h-11 px-3 text-xs text-acid">Search</button>
     </form>
-    <div class="mt-4 flex flex-wrap gap-2">
-      <NuxtLink
-        to="/opportunities?highSchool=supported"
-        class="tactile inline-flex min-h-11 items-center rounded-full border border-paper/15 px-4 text-xs text-paper/65 hover:border-acid/40 hover:text-acid"
-        >High-school routes</NuxtLink
-      >
-      <NuxtLink
-        to="/opportunities?stage=idea&stage=prototype&stage=preliminary-results"
-        class="tactile inline-flex min-h-11 items-center rounded-full border border-paper/15 px-4 text-xs text-paper/65 hover:border-acid/40 hover:text-acid"
-        >Share early research</NuxtLink
-      >
-      <NuxtLink
-        to="/opportunities?kind=Workshop"
-        class="tactile inline-flex min-h-11 items-center rounded-full border border-paper/15 px-4 text-xs text-paper/65 hover:border-acid/40 hover:text-acid"
-        >Workshops &amp; calls</NuxtLink
-      >
-    </div>
     <div class="mt-8 grid items-stretch gap-5 xl:grid-cols-2">
       <OpportunityCard v-for="item in preview" :key="item.id" :item="item" :now="now" />
     </div>

@@ -6,9 +6,10 @@ const router = useRouter()
 const hydrated = ref(false)
 onMounted(() => {
   hydrated.value = true
-  if (route.query.highSchool) {
+  if (route.query.highSchool || route.query.sort === 'verified') {
     const query = { ...route.query }
     delete query.highSchool
+    if (query.sort === 'verified') query.sort = 'actionable'
     void router.replace({ path: '/opportunities', query })
   }
 })
@@ -54,9 +55,9 @@ const sortOptions = [
     description: 'Nearest verified actionable deadline first',
   },
   {
-    value: 'verified',
-    label: 'Recently verified',
-    description: 'Most recently confirmed source evidence',
+    value: 'actionable',
+    label: 'Open & actionable',
+    description: 'Open and rolling routes, then the nearest deadline',
   },
 ]
 const asArray = (value: unknown) =>
@@ -85,6 +86,7 @@ const selected = (key: string, value: string) => asArray(route.query[key]).inclu
 function replaceQuery(changes: Record<string, string | string[] | undefined>, resetPage = true) {
   const next = { ...route.query, ...changes }
   delete next.highSchool
+  if (next.sort === 'verified') next.sort = 'actionable'
   if (resetPage) delete next.page
   for (const key of Object.keys(next))
     if (!next[key] || (Array.isArray(next[key]) && !next[key]!.length)) delete next[key]

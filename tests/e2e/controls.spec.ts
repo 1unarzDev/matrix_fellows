@@ -13,15 +13,20 @@ test('catalog uses custom sorting and an accessible animated mobile filter sheet
   const sort = page.getByRole('button', { name: 'Sort opportunities: Relevance' })
   await sort.click()
   await expect(page.getByRole('listbox', { name: 'Sort opportunities' })).toBeVisible()
-  await page.getByRole('option', { name: /Recently verified/ }).click()
-  await expect(page).toHaveURL(/sort=verified/)
+  await expect(page.getByRole('option', { name: /Recently verified/ })).toHaveCount(0)
+  await page.getByRole('option', { name: /Open & actionable/ }).click()
+  await expect(page).toHaveURL(/sort=actionable/)
   await expect(
-    page.getByRole('button', { name: 'Sort opportunities: Recently verified' }),
+    page.getByRole('button', { name: 'Sort opportunities: Open & actionable' }),
   ).toBeFocused()
   await page.getByRole('button', { name: /^Filters/ }).click()
   const dialog = page.getByRole('dialog', { name: 'Filters' })
   await expect(dialog).toBeVisible()
   await expect(dialog).toHaveClass(/filter-dialog--visible/)
+  const discipline = dialog.getByRole('button', { name: 'Discipline' })
+  await expect(discipline).toHaveAttribute('aria-expanded', 'false')
+  await discipline.click()
+  await expect(dialog.getByText('Robotics', { exact: true })).toBeVisible()
   const type = dialog.getByRole('button', { name: 'Type' })
   await expect(type).toHaveAttribute('aria-expanded', 'false')
   await type.click()
@@ -31,10 +36,25 @@ test('catalog uses custom sorting and an accessible animated mobile filter sheet
   await expect(dialog).not.toBeVisible()
 })
 
-test('catalog discards legacy hidden high-school filters', async ({ page }) => {
+test('guides and opportunities share the resource library header', async ({ page }) => {
+  await page.goto('/guides')
+  const navigation = page.getByRole('navigation', { name: 'Resource library' })
+  await expect(navigation.getByRole('link', { name: 'Guides' })).toHaveAttribute(
+    'aria-current',
+    'page',
+  )
+  await navigation.getByRole('link', { name: 'Opportunities' }).click()
+  await expect(page).toHaveURL('/opportunities')
+  await expect(navigation.getByRole('link', { name: 'Opportunities' })).toHaveAttribute(
+    'aria-current',
+    'page',
+  )
+})
+
+test('catalog replaces legacy hidden filters and obsolete sorting', async ({ page }) => {
   await page.goto('/opportunities?highSchool=supported&sort=verified')
   await page.locator('[data-catalog-ready="true"]').waitFor()
-  await expect(page).toHaveURL(/sort=verified/)
+  await expect(page).toHaveURL(/sort=actionable/)
   await expect(page).not.toHaveURL(/highSchool/)
 })
 

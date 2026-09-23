@@ -10,6 +10,7 @@ export interface QualityState {
   profile: RenderProfile
   step: number
   atmosphereRatio: number
+  foregroundRatio: number
   particleFraction: number
   halo: boolean
   detail: boolean
@@ -33,9 +34,11 @@ export function initialQuality(profile: RenderProfile, devicePixelRatio: number)
         step: 0,
         // Phones previously began at 0.7, then repeatedly reallocated this
         // full-screen target while they were already missing frames. Start at
-        // the measured steady-state tier instead. The foreground remains at a
-        // full 1x ratio; only the naturally soft atmosphere is downsampled.
+        // the measured steady-state tier instead. The foreground retains a
+        // bounded retina-aware ratio; only the naturally soft atmosphere is
+        // heavily downsampled.
         atmosphereRatio: Math.min(devicePixelRatio, 0.32),
+        foregroundRatio: Math.min(devicePixelRatio, 1.25),
         particleFraction: 0.6,
         halo: false,
         detail: false,
@@ -44,6 +47,7 @@ export function initialQuality(profile: RenderProfile, devicePixelRatio: number)
         profile,
         step: 0,
         atmosphereRatio: Math.min(devicePixelRatio, 1.5),
+        foregroundRatio: Math.min(devicePixelRatio, 1.5),
         particleFraction: 1,
         halo: true,
         detail: true,

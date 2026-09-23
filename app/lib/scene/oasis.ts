@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js'
+import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js'
 import { terrainGLSL, stormStrength, floodHeight } from './shaders'
 
 // Placement follows the analytic basin in shaders.ts. The omitted micro-noise
@@ -52,6 +52,7 @@ export function createOasisDressing(scene: THREE.Scene, camera: THREE.Camera) {
   // Buried geometry must not draw through it just because it uses another pass.
   function groundMaterial(material: THREE.Material) {
     const previousCompile = material.onBeforeCompile.bind(material)
+    const previousCacheKey = material.customProgramCacheKey.bind(material)
     material.onBeforeCompile = (shader, renderer) => {
       previousCompile(shader, renderer)
       shader.uniforms.oasisExpansion = expansionUniform
@@ -86,7 +87,7 @@ export function createOasisDressing(scene: THREE.Scene, camera: THREE.Camera) {
         diffuseColor.a *= opacity;`,
         )
     }
-    material.customProgramCacheKey = () => 'oasis-ground-v2'
+    material.customProgramCacheKey = () => `${previousCacheKey()}-oasis-ground-v2`
   }
   scene.add(group)
   const fill = new THREE.HemisphereLight('#f4dfb1', '#46644c', 2.1)
@@ -98,8 +99,8 @@ export function createOasisDressing(scene: THREE.Scene, camera: THREE.Camera) {
   const textures = new Set<THREE.Texture>()
   const accentMeshes = new Set<THREE.InstancedMesh>()
   const palmPlacements: { origin: THREE.Vector3; scale: number; rotation: number }[] = []
-  let palmInstances: THREE.InstancedMesh | undefined
-  let palmBaseMatrix: THREE.Matrix4 | undefined
+  const palmInstances: THREE.InstancedMesh[] = []
+  const palmPartCounts = { trunk: 0, foliage: 0 }
   const groveCenter = new THREE.Vector3(7, 0, -44)
   let disposed = false,
     progress = -1
@@ -245,7 +246,8 @@ export function createOasisDressing(scene: THREE.Scene, camera: THREE.Camera) {
     const expansion = 1
     updateInstances(rocks, rockPlacements, expansion)
     updateInstances(foliage, leafPlacements, expansion)
-    if (palmInstances) palmInstances.visible = camera.position.distanceTo(groveCenter) < 140
+    const palmsVisible = camera.position.distanceTo(groveCenter) < 140
+    palmInstances.forEach((mesh) => (mesh.visible = palmsVisible))
   }
 
   // Curated low-poly silhouettes sit on the dry bank, not on the water. The
@@ -321,60 +323,104 @@ export function createOasisDressing(scene: THREE.Scene, camera: THREE.Camera) {
       if (disposed) return
       const asset = await new GLTFLoader().loadAsync('/models/palm.glb')
       const tree = asset.scene
-      const replacements = new Map<THREE.Material, THREE.Material>()
-      let source: THREE.Mesh | undefined
+      tree.updateMatrixWorld(true)
+      const parts: Record<'trunk' | 'foliage', THREE.BufferGeometry[]> = {
+        trunk: [],
+        foliage: [],
+      }
+      let leafMap: THREE.Texture | null = null
       tree.traverse((object) => {
         if (!(object instanceof THREE.Mesh)) return
-        source = object
-        geometries.add(object.geometry)
-        const replace = (original: THREE.Material) => {
-          const existing = replacements.get(original)
-          if (existing) return existing
-          const old = original as THREE.MeshBasicMaterial
-          if (old.map) textures.add(old.map)
-          const material = new THREE.MeshLambertMaterial({
-            map: old.map,
-            color: old.map ? '#b5d57b' : '#9f8260',
-            alphaTest: 0.45,
-            alphaToCoverage: true,
-            side: THREE.DoubleSide,
-            transparent: true,
-          })
-          object.geometry.computeBoundingBox()
-          const bounds = object.geometry.boundingBox!
-          const foliage = Boolean(old.map)
-          material.onBeforeCompile = (shader) => {
-            shader.uniforms.palmTime = wind
-            shader.uniforms.palmStorm = windStrength
-            shader.uniforms.palmBounds = { value: new THREE.Vector2(bounds.min.y, Math.max(.01, bounds.max.y - bounds.min.y)) }
-            shader.vertexShader = 'uniform float palmTime; uniform float palmStorm; uniform vec2 palmBounds;\n' + shader.vertexShader.replace(
-              '#include <begin_vertex>',
-              `#include <begin_vertex>
-              float tip = clamp((position.y-palmBounds.x)/palmBounds.y,0.0,1.0);
-              float phase = position.x*1.7+position.z*1.3;
-              float breeze = sin(palmTime*.8+phase) + palmStorm*.45*sin(palmTime*2.3+phase);
-              float flutter = sin(palmTime*1.7+phase*2.1) + palmStorm*.35*sin(palmTime*4.2+phase);
-              transformed.x += (breeze+flutter*.22)*tip*tip*palmBounds.y*mix(.0015,.018,palmStorm)*${foliage ? '1.0' : '.15'};
-              transformed.z += flutter*tip*palmBounds.y*mix(.0008,.007,palmStorm)*${foliage ? '1.0' : '.15'};`,
-            )
-          }
-          materials.add(material)
-          replacements.set(original, material)
-          groundMaterial(material)
-          original.dispose()
-          return material
+        const originals = Array.isArray(object.material) ? object.material : [object.material]
+        const foliage = originals.some(
+          (original) => Boolean((original as THREE.MeshBasicMaterial).map),
+        )
+        const mapped = originals.find(
+          (original) => Boolean((original as THREE.MeshBasicMaterial).map),
+        ) as THREE.MeshBasicMaterial | undefined
+        if (mapped?.map) {
+          leafMap = mapped.map
+          textures.add(mapped.map)
         }
-        object.material = Array.isArray(object.material)
-          ? object.material.map(replace)
-          : replace(object.material)
+        const geometry = object.geometry.clone().applyMatrix4(object.matrixWorld)
+        parts[foliage ? 'foliage' : 'trunk'].push(geometry)
+        object.geometry.dispose()
+        originals.forEach((original) => original.dispose())
       })
-      if (!source) return
-      tree.updateMatrixWorld(true)
-      palmBaseMatrix = source.matrixWorld.clone()
-      palmInstances = new THREE.InstancedMesh(source.geometry, source.material, 9)
-      palmInstances.name = 'oasis-palms'
-      palmInstances.frustumCulled = false
-      group.add(palmInstances)
+      palmPartCounts.trunk = parts.trunk.length
+      palmPartCounts.foliage = parts.foliage.length
+      for (const [kind, sourceParts] of Object.entries(parts) as [
+        'trunk' | 'foliage',
+        THREE.BufferGeometry[],
+      ][]) {
+        const value = kind === 'foliage' ? 1 : 0
+        sourceParts.forEach((part) =>
+          part.setAttribute(
+            'aPalmFoliage',
+            new THREE.Float32BufferAttribute(
+              new Float32Array(part.getAttribute('position').count).fill(value),
+              1,
+            ),
+          ),
+        )
+      }
+      const sourceParts = [...parts.trunk, ...parts.foliage]
+      if (!sourceParts.length || !leafMap) return
+      const geometry = mergeGeometries(sourceParts, false)
+      sourceParts.forEach((part) => part.dispose())
+      if (!geometry) throw new Error('Could not merge complete palm geometry')
+      geometries.add(geometry)
+      geometry.computeBoundingBox()
+      const bounds = geometry.boundingBox!
+      const material = new THREE.MeshLambertMaterial({
+        map: leafMap,
+        color: '#ffffff',
+        alphaTest: 0.42,
+        alphaToCoverage: true,
+        side: THREE.DoubleSide,
+        transparent: true,
+      })
+      material.onBeforeCompile = (shader) => {
+        shader.uniforms.palmTime = wind
+        shader.uniforms.palmStorm = windStrength
+        shader.uniforms.palmBounds = {
+          value: new THREE.Vector2(bounds.min.y, Math.max(0.01, bounds.max.y - bounds.min.y)),
+        }
+        shader.uniforms.palmLeafTint = { value: new THREE.Color('#b5d57b') }
+        shader.uniforms.palmTrunkTint = { value: new THREE.Color('#b18d62') }
+        shader.vertexShader =
+          'uniform float palmTime; uniform float palmStorm; uniform vec2 palmBounds; attribute float aPalmFoliage; varying float vPalmFoliage;\n' +
+          shader.vertexShader.replace(
+            '#include <begin_vertex>',
+            `#include <begin_vertex>
+            vPalmFoliage=aPalmFoliage;
+            float tip = clamp((position.y-palmBounds.x)/palmBounds.y,0.0,1.0);
+            float phase = position.x*1.7+position.z*1.3;
+            float breeze = sin(palmTime*.8+phase) + palmStorm*.45*sin(palmTime*2.3+phase);
+            float flutter = sin(palmTime*1.7+phase*2.1) + palmStorm*.35*sin(palmTime*4.2+phase);
+            float windResponse=mix(.15,1.0,aPalmFoliage);
+            transformed.x += (breeze+flutter*.22)*tip*tip*palmBounds.y*mix(.0015,.018,palmStorm)*windResponse;
+            transformed.z += flutter*tip*palmBounds.y*mix(.0008,.007,palmStorm)*windResponse;`,
+          )
+        shader.fragmentShader =
+          'uniform vec3 palmLeafTint; uniform vec3 palmTrunkTint; varying float vPalmFoliage;\n' +
+          shader.fragmentShader.replace(
+            '#include <map_fragment>',
+            `#ifdef USE_MAP
+              vec4 palmLeaf=texture2D(map,vMapUv);
+              vec4 palmSurface=mix(vec4(palmTrunkTint,1.0),vec4(palmLeaf.rgb*palmLeafTint,palmLeaf.a),vPalmFoliage);
+              diffuseColor*=palmSurface;
+            #endif`,
+          )
+      }
+      material.customProgramCacheKey = () => 'oasis-palm-complete-v1'
+      materials.add(material)
+      groundMaterial(material)
+      const mesh = new THREE.InstancedMesh(geometry, material, 9)
+      mesh.name = 'oasis-palms-complete'
+      mesh.frustumCulled = false
+      palmInstances.push(mesh)
+      group.add(mesh)
       for (const [i, angle] of [
         -1.65, -1.43, -1.25, -1.1, -0.92, -0.75, -0.52, -2.55, -2.72,
       ].entries()) {
@@ -399,7 +445,7 @@ export function createOasisDressing(scene: THREE.Scene, camera: THREE.Camera) {
     materials.forEach((resource) => resource.dispose())
     textures.forEach((resource) => resource.dispose())
     accentMeshes.forEach((mesh) => mesh.dispose())
-    palmInstances?.dispose()
+    palmInstances.forEach((mesh) => mesh.dispose())
     group.clear()
   }
   setProgress(0)
@@ -408,6 +454,7 @@ export function createOasisDressing(scene: THREE.Scene, camera: THREE.Camera) {
     // foreground once. Otherwise their first visible oasis frame can force a
     // synchronous driver compile and produce a several-hundred-ms hitch.
     ready: Promise.all([desertReady, palmsReady]).then(() => undefined),
+    getPalmPartCounts: () => ({ ...palmPartCounts }),
     setProgress,
     setTime: (seconds: number) => {
       wind.value = seconds
@@ -430,10 +477,9 @@ export function createOasisDressing(scene: THREE.Scene, camera: THREE.Camera) {
           sway * (.0015 + strength * .032) - strength * (.022 + gust * .009),
         )
         transform.updateMatrix()
-        transform.matrix.multiply(palmBaseMatrix!)
-        palmInstances!.setMatrixAt(index, transform.matrix)
+        palmInstances.forEach((mesh) => mesh.setMatrixAt(index, transform.matrix))
       })
-      if (palmInstances) palmInstances.instanceMatrix.needsUpdate = true
+      palmInstances.forEach((mesh) => (mesh.instanceMatrix.needsUpdate = true))
     },
     dispose,
   }

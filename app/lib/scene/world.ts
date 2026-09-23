@@ -103,10 +103,35 @@ export function createWorld(
         uniforms: {
           colorBuffer: { value: atmosphereTarget.texture },
           depthBuffer: { value: atmosphereTarget.depthTexture },
+          sourceSize: { value: new THREE.Vector2(1, 1) },
         },
         vertexShader: screenVertex,
-        fragmentShader: `uniform sampler2D colorBuffer; uniform sampler2D depthBuffer; varying vec2 vUv;
-      void main(){gl_FragColor=texture2D(colorBuffer,vUv);gl_FragDepth=texture2D(depthBuffer,vUv).r;}`,
+        fragmentShader: `uniform sampler2D colorBuffer; uniform sampler2D depthBuffer;
+      uniform vec2 sourceSize; varying vec2 vUv;
+      vec4 cubic(float v) {
+        vec4 n=vec4(1.0,2.0,3.0,4.0)-v;
+        vec4 s=n*n*n;
+        float x=s.x;
+        float y=s.y-4.0*x;
+        float z=s.z-4.0*y-10.0*x;
+        float w=6.0-x-y-z;
+        return vec4(x,y,z,w)/6.0;
+      }
+      vec4 bicubic(sampler2D image,vec2 uv) {
+        vec2 pixel=uv*sourceSize-.5;
+        vec2 fraction=fract(pixel);
+        pixel-=fraction;
+        vec4 xc=cubic(fraction.x),yc=cubic(fraction.y);
+        vec4 center=vec4(pixel.x-.5,pixel.x+1.5,pixel.y-.5,pixel.y+1.5);
+        vec4 sum=vec4(xc.x+xc.y,xc.z+xc.w,yc.x+yc.y,yc.z+yc.w);
+        vec4 offset=center+vec4(xc.y,xc.w,yc.y,yc.w)/sum;
+        offset/=sourceSize.xxyy;
+        vec4 a=texture2D(image,offset.xz),b=texture2D(image,offset.yz);
+        vec4 c=texture2D(image,offset.xw),d=texture2D(image,offset.yw);
+        float sx=sum.x/(sum.x+sum.y),sy=sum.z/(sum.z+sum.w);
+        return mix(mix(d,c,sx),mix(b,a,sx),sy);
+      }
+      void main(){gl_FragColor=bicubic(colorBuffer,vUv);gl_FragDepth=texture2D(depthBuffer,vUv).r;}`,
         depthTest: true,
         depthWrite: true,
       })
@@ -132,25 +157,19 @@ export function createWorld(
       tDiffuse: { value: null },
       texel: { value: new THREE.Vector2() },
       haloEnabled: { value: quality.halo ? 1 : 0 },
+      meteor: { value: new THREE.Vector4(-1, 0, 0, 0) },
+      aspect: { value: 1 },
     },
     vertexShader: screenVertex,
-    fragmentShader: `uniform sampler2D tDiffuse; uniform vec2 texel; uniform float haloEnabled; varying vec2 vUv;
+    fragmentShader: `uniform sampler2D tDiffuse; uniform vec2 texel; uniform float haloEnabled;
+      uniform vec4 meteor; uniform float aspect; varying vec2 vUv;
       void main(){vec3 center=max(texture2D(tDiffuse,vUv).rgb,vec3(0));vec3 c=center;
       ${
         efficient
           ? `
-      // One bounded pass replaces the old grade followed by full FXAA. Four
-      // cardinal taps soften only high-contrast edges; four wider diagonal taps
-      // retain the restrained highlight halo while the quality tier permits it.
-      vec3 n=texture2D(tDiffuse,vUv+vec2(0,texel.y)).rgb;
-      vec3 e=texture2D(tDiffuse,vUv+vec2(texel.x,0)).rgb;
-      vec3 s=texture2D(tDiffuse,vUv-vec2(0,texel.y)).rgb;
-      vec3 w=texture2D(tDiffuse,vUv-vec2(texel.x,0)).rgb;
-      vec3 neighbors=(n+e+s+w)*.25;
-      float centerLuma=dot(center,vec3(.299,.587,.114));
-      float range=max(max(dot(n,vec3(.299,.587,.114)),dot(e,vec3(.299,.587,.114))),max(dot(s,vec3(.299,.587,.114)),dot(w,vec3(.299,.587,.114))))
-        -min(min(dot(n,vec3(.299,.587,.114)),dot(e,vec3(.299,.587,.114))),min(dot(s,vec3(.299,.587,.114)),dot(w,vec3(.299,.587,.114))));
-      c=mix(center,neighbors,smoothstep(.055,.22,max(range,abs(centerLuma-dot(neighbors,vec3(.299,.587,.114)))))*.28);
+      // The foreground is already supersampled and the low-resolution
+      // atmosphere is reconstructed in its copy shader. Avoid filtering the
+      // combined image a second time; it softened details and duplicated taps.
       if(haloEnabled>.5) {
         vec2 radius=texel*3.0;
         vec3 halo=max(texture2D(tDiffuse,vUv+radius).rgb-vec3(1.05),vec3(0.0));
@@ -161,6 +180,32 @@ export function createWorld(
       }
       `
           : ''
+      }
+      // Keep the streak in this full-resolution pass. Drawing it into the
+      // intentionally soft mobile atmosphere target destroys its tapered edge.
+      if(meteor.x>=0.0) {
+        float seed=fract(meteor.y*3.7);
+        float side=step(.5,fract(meteor.y*17.13));
+        vec2 point=vec2(vUv.x*aspect,vUv.y);
+        vec2 start=mix(vec2(.045*aspect,.86+seed*.055),vec2(.955*aspect,.84+seed*.045),side);
+        float fall=mix(-.12,-.22,seed);
+        vec2 direction=normalize(mix(vec2(.99,fall),vec2(-.99,fall),side));
+        vec2 head=start+direction*(mix(-.025,.58,meteor.x)*aspect);
+        vec2 delta=point-head;
+        float along=dot(delta,direction);
+        float across=abs(delta.x*direction.y-delta.y*direction.x);
+        float tailLength=.25*aspect;
+        float tailPosition=clamp(-along/max(tailLength,.001),0.0,1.0);
+        float behind=step(-tailLength,along)*(1.0-step(0.0,along));
+        float taper=pow(1.0-tailPosition,1.45)*behind;
+        float width=mix(.0011,.0038,pow(1.0-tailPosition,1.7));
+        float tailCore=exp(-pow(across/max(width,.0005),2.0)*1.8)*taper;
+        float tailVeil=exp(-pow(across/.010,2.0)*1.4)*taper*(1.0-tailPosition)*.12;
+        float headCore=exp(-dot(delta,delta)*85000.0);
+        float headGlow=exp(-dot(delta,delta)*4200.0);
+        float eventFade=smoothstep(0.0,.13,meteor.x)*(1.0-smoothstep(.76,1.0,meteor.x));
+        vec3 meteorColor=mix(vec3(.42,.57,.72),vec3(.68,.46,.39),seed);
+        c+=meteorColor*(tailCore*.46+tailVeil+headCore*.92+headGlow*.14)*eventFade;
       }
       gl_FragColor=vec4(pow(vec3(1)-exp(-c*1.35),vec3(.92)),1);}`,
   })
@@ -300,16 +345,17 @@ export function createWorld(
         : Math.round(canvas.getBoundingClientRect().height) || window.innerHeight
     surfaceWidth = width
     surfaceHeight = height
-    const foregroundRatio = efficient ? Math.min(window.devicePixelRatio, 1) : ratio
+    const foregroundRatio = quality.foregroundRatio
     renderer.setPixelRatio(foregroundRatio)
     renderer.setSize(width, height, false)
     composer.setPixelRatio(foregroundRatio)
     composer.setSize(width, height)
-    atmosphereTarget?.setSize(
-      Math.max(1, Math.round(width * ratio)),
-      Math.max(1, Math.round(height * ratio)),
-    )
+    const atmosphereWidth = Math.max(1, Math.round(width * ratio))
+    const atmosphereHeight = Math.max(1, Math.round(height * ratio))
+    atmosphereTarget?.setSize(atmosphereWidth, atmosphereHeight)
+    atmosphereCopy?.uniforms.sourceSize!.value.set(atmosphereWidth, atmosphereHeight)
     grade.uniforms.texel!.value.set(1 / (width * foregroundRatio), 1 / (height * foregroundRatio))
+    grade.uniforms.aspect!.value = width / height
     camera.aspect = width / height
     camera.updateProjectionMatrix()
     uniforms.uAspect.value = width / height
@@ -422,6 +468,8 @@ export function createWorld(
         uniforms.uMeteor.value.x = -1
       }
     } else uniforms.uMeteor.value.x = -1
+    const meteorUniform = grade.uniforms.meteor!.value as THREE.Vector4
+    meteorUniform.copy(uniforms.uMeteor.value)
     const lightning = lightningState(elapsed)
     uniforms.uLightning.value.set(lightning.intensity, lightning.seed)
     oasisDressing.setTime(elapsed)
@@ -525,6 +573,9 @@ export function createWorld(
   Promise.all([
     renderer.compileAsync(background, screenCamera),
     oasisDressing.ready.then(async () => {
+      const palmParts = oasisDressing.getPalmPartCounts()
+      canvas.dataset.palmTrunkParts = String(palmParts.trunk)
+      canvas.dataset.palmFoliageParts = String(palmParts.foliage)
       // Hidden objects are skipped by WebGLRenderer.compileAsync. Reveal the
       // complete grove only during preparation, compile it, then restore
       // the actual scroll state before the first presented frame.

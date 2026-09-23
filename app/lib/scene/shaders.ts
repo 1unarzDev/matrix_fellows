@@ -44,10 +44,21 @@ export const stormStrength = (progress: number) =>
   smooth(1.06, 1.42, progress) * (1 - smooth(2.9, 3.15, progress))
 export const rainStrength = (progress: number) =>
   smooth(1.06, 1.42, progress) * (1 - smooth(2.1, 2.38, progress))
+const SWELL_START = 1.16
+const SWELL_FULL = 1.72
+const NEAR_SWELL_FLOOR = 0.38
+const NEAR_SWELL_START = 6
+const NEAR_SWELL_FULL = 30
+export const swellStrength = (progress: number) =>
+  stormStrength(progress) * smooth(SWELL_START, SWELL_FULL, progress)
+export const nearSwellFactor = (distance: number) =>
+  NEAR_SWELL_FLOOR +
+  (1 - NEAR_SWELL_FLOOR) * smooth(NEAR_SWELL_START, NEAR_SWELL_FULL, distance)
 export const weatherGLSL = /* glsl */ `
 float floodHeight(float p) { return 2.0*smoothstep(1.28,1.55,p)+16.0*smoothstep(1.65,1.98,p); }
 float stormStrength(float p) { return smoothstep(1.06,1.42,p)*(1.0-smoothstep(2.9,3.15,p)); }
 float rainStrength(float p) { return smoothstep(1.06,1.42,p)*(1.0-smoothstep(2.1,2.38,p)); }
+float swellStrength(float p) { return stormStrength(p)*smoothstep(${SWELL_START},${SWELL_FULL},p); }
 `
 
 export const terrainGLSL = /* glsl */ `
@@ -88,7 +99,6 @@ uniform vec3 uCamera;
 uniform vec3 uTarget;
 uniform vec2 uClip;
 uniform vec2 uLightning;
-uniform vec4 uMeteor;
 uniform float uCosmicTime;
 uniform float uDetail;
 ${terrainGLSL}
@@ -101,10 +111,12 @@ float atmosphericFbm(vec2 p) {
   return f;
 }
 vec3 swell(vec2 p) {
-  float strength=stormStrength(uProgress)*smoothstep(1.32,1.8,uProgress);
-  // Keep the immediate camera surface calm enough to avoid an accidental dive;
-  // the large wave field occupies the middle distance and horizon.
-  strength*=smoothstep(9.0,38.0,distance(p,uCamera.xz));
+  float strength=swellStrength(uProgress);
+  // Retain a bounded amount of broad motion in the near field. Fading this to
+  // zero made the advancing camera enter a visibly smooth disc before it met
+  // the fully developed middle-distance swells. The floor remains low enough
+  // to keep crests below the lens during the flood handoff.
+  strength*=mix(${NEAR_SWELL_FLOOR},1.0,smoothstep(${NEAR_SWELL_START}.0,${NEAR_SWELL_FULL}.0,distance(p,uCamera.xz)));
   // Oblique, unequal swells cross the frame instead of charging the lens.
   // Slow cross-modulation breaks up long parallel ridges, with analytic slopes.
   vec2 d1=normalize(vec2(.84,.54)), d2=normalize(vec2(-.92,.39));
@@ -123,7 +135,10 @@ vec3 swell(vec2 p) {
 }
 vec3 waves(vec2 p) {
   float h=0.0; vec2 slope=vec2(0);
-  float calm=smoothstep(.55,.9,uProgress)*(1.0-smoothstep(1.10,1.42,uProgress));
+  // Let the fine oasis chop overlap the first broad swells. Previously it
+  // vanished just as the sun reflection dimmed, before the storm surface had
+  // enough displacement to read, producing an accidental smooth-water beat.
+  float calm=smoothstep(.55,.9,uProgress)*(1.0-smoothstep(1.18,1.65,uProgress));
   float amplitude=mix(.24,.85,stormStrength(uProgress)), frequency=.34;
   vec2 domain=p+vec2(noise(p*.055+uTime*.025),noise(p*.047-uTime*.021))*2.4;
   for(int i=0;i<7;i++) {
@@ -282,12 +297,12 @@ void main() {
     bool inBasin=basinRadius<1.65+ocean*80.0 || ocean>.95;
     vec3 surface=vec3(0);
     bool swellHit=false;
-    if(storm>.1 && p>1.4 && rd.y<.16) {
+    if(swellStrength(p)>.04 && rd.y<.16) {
       float travel=.5, previous=.5;
       // The three swell amplitudes sum to five; their distance envelopes
       // never exceed one. Intersect that exact vertical bound before tracing
       // instead of marching empty sky above (or below) every possible crest.
-      float crestBound=5.0*storm*smoothstep(1.32,1.8,p)+.01;
+      float crestBound=5.0*swellStrength(p)+.01;
       float traceEnd=min(650.0,dist);
       if(abs(rd.y)>.0001) {
         float a=(waterLevel-crestBound-uCamera.y)/rd.y;
@@ -505,25 +520,6 @@ void main() {
     float filamentField=mix(clouds,n,.34+.06*sin(uCosmicTime*.018));
     float filaments=pow(1.0-abs(filamentField*2.0-1.0),9.0)*band;
     nebula+=vec3(.21,.095,.12)*filaments*.55;
-    // One bounded analytic streak. Its CPU-provided phase advances only while
-    // this chapter is active, so leaving the chapter neither costs work nor
-    // replays events on return.
-    if(uMeteor.x>=0.0) {
-      float side=step(.5,fract(uMeteor.y*17.13));
-      vec2 start=mix(vec2(.04,.89),vec2(.96,.86),side);
-      vec2 direction=normalize(mix(vec2(.82,-.12),vec2(-.80,-.10),side));
-      float travel=mix(-.05,.55,uMeteor.x);
-      vec2 head=start+direction*travel;
-      vec2 delta=uv-head;
-      float along=dot(delta,direction);
-      float across=abs(delta.x*direction.y-delta.y*direction.x);
-      float tail=smoothstep(-.19,.012,along)*(1.0-smoothstep(.0,.022,along));
-      float streak=exp(-across*across*22000.0)*tail;
-      float headGlow=exp(-dot(delta,delta)*4200.0);
-      float eventFade=smoothstep(0.0,.16,uMeteor.x)*(1.0-smoothstep(.72,1.0,uMeteor.x));
-      nebula+=mix(vec3(.20,.32,.42),vec3(.38,.25,.30),fract(uMeteor.y*3.7))
-        *(streak*.27+headGlow*.52)*eventFade;
-    }
     col=mix(col,nebula,cosmos);
   }
   float vignette=1.0-smoothstep(.25,.95,length((uv-.5)*vec2(1.0,.82)))*.4;

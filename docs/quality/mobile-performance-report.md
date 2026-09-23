@@ -173,3 +173,30 @@ These results close the actionable local acceptance checks, not the physical
 device requirement. Follow the [physical-device procedure](physical-device-performance-procedure.md)
 on the owner's phone and representative iOS/Android hardware before calling the
 approximately 10 fps report resolved.
+
+## Mobile edge, palm, and nebula follow-up
+
+An iPhone/iPad visual reproduction found that the efficient foreground was held
+to one CSS pixel while Retina device ratios were 2–3×. The atmosphere was also
+enlarged directly from its 0.32× target. The revised path caps foreground
+supersampling at 1.25× and reconstructs only the low-resolution atmosphere with
+four bicubic taps. It does not restore the older mobile MSAA target. The former
+five-tap final edge blur was removed because it duplicated filtering and softened
+the supersampled geometry.
+
+The palm GLB contains two trunk and two foliage primitives. The earlier one-mesh
+instancing conversion retained only the final foliage primitive. The complete
+asset is now transformed, merged with a per-vertex part marker, and instanced in
+one draw; mobile diagnostics confirm two trunk and two foliage source parts while
+the oasis peak remains 18 calls.
+
+The meteor formerly ran inside the 0.32× atmosphere target, where its narrow line
+collapsed into a blurred gray capsule during enlargement. It now uses the existing
+full-resolution grade pass, with a compact head, tapered core, and restrained
+local veil. No pass, target, simulation, or animation loop was added.
+
+The focused iPhone/iPad visual check reports a 1.25 foreground ratio and complete
+palm parts at both sizes. A 30-second SwiftShader rendered-cadence run passed all
+three ten-second windows at 28.2, 30.0, and 30.0 fps; rendered p95 was at most
+50 ms with no stalls over 100 ms. `perf:mobile` remained capped at roughly 30 fps
+with 16.8 ms RAF p95. These remain desktop proxies, not physical Safari evidence.

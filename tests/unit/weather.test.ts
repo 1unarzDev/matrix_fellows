@@ -4,7 +4,9 @@ import {
   stormStrength,
   cameraFloodRise,
   lightningState,
+  nearSwellFactor,
   rainStrength,
+  swellStrength,
 } from '../../app/lib/scene/shaders'
 
 describe('scroll-driven storm and flood', () => {
@@ -34,6 +36,19 @@ describe('scroll-driven storm and flood', () => {
     expect(rainStrength(3)).toBe(0)
     expect(floodHeight(3)).toBe(18)
     expect(floodHeight(0)).toBe(0)
+  })
+  it('overlaps the first surface waves with the growing storm', () => {
+    let previous = 0
+    for (let progress = 1.06; progress <= 1.72; progress += 0.01) {
+      const strength = swellStrength(progress)
+      expect(strength).toBeGreaterThanOrEqual(previous)
+      previous = strength
+    }
+    expect(swellStrength(1.42)).toBeGreaterThan(0.35)
+    expect(swellStrength(1.72)).toBe(1)
+    expect(nearSwellFactor(0)).toBeCloseTo(0.38)
+    expect(nearSwellFactor(18)).toBeGreaterThan(nearSwellFactor(6))
+    expect(nearSwellFactor(30)).toBe(1)
   })
   it('keeps the camera above the flood until the intentional dive', () => {
     expect(cameraFloodRise(1.5)).toBe(0)

@@ -50,7 +50,7 @@ this is not a physical-phone performance claim.
 - The deep-sea beams are volumetric-looking analytic fields, not physical participating-media simulation. The nebula uses layered procedural density, not a detailed model.
 - Maximum particle buffers are 12,000 on the cinematic profile and 2,600 on the efficient profile, with 1,560 initially drawn on efficient devices. Stable seeded positions preserve continuity while the active range can reduce under sustained load. The frame loop targets 30 fps.
 - All DOM presentation uses Tailwind utilities. The CSS entry contains only the Tailwind import and theme tokens.
-- The analytic world writes perspective-correct depth, retained by the model pass, so dunes occlude the grove. The cinematic HDR target uses up to 4× MSAA; the efficient path uses a separate low-resolution atmosphere and sharp 1× foreground without MSAA. Palm cutouts retain alpha-tested silhouettes. DOM typography is never rendered into WebGL.
+- The analytic world writes perspective-correct depth, retained by the model pass, so dunes occlude the grove. The cinematic HDR target uses up to 4× MSAA; the efficient path uses a separate reconstructed low-resolution atmosphere and bounded 1.25× foreground without MSAA. Palm cutouts retain alpha-tested silhouettes. DOM typography is never rendered into WebGL.
 
 ## Visual iteration record
 
@@ -83,7 +83,7 @@ The closing invitation replaces the solid accent-colored banner with a midnight-
 
 Inspected the official [Alto’s Odyssey](https://www.altosodyssey.com/) “Palm Kicker” and “Water Dive” screenshots for clustered vegetation, banks framing water, foreground/background separation, and varied palm heights. Combined these composition cues with the Three.js ocean reflections rather than copying the illustrated style.
 
-The oasis now has an irregular, raised shoreline, nine shared-asset palms, 38 embedded stones, and 640 instanced grass/reed blades in 32 clumps. Leaves use shader-driven wind; the sand no longer transitions to green. The small palm asset starts loading with the already-lazy world, instead of being requested midway into the reveal. The dressing lives in `app/lib/scene/oasis.ts`, shares the terrain GLSL for grounding, and disposes its geometries, materials, and textures on teardown. Hero copy/details recede before the crest, and discovery copy waits until the reveal has had a clear visual beat.
+The oasis now has an irregular, raised shoreline, nine shared-asset palms, 38 embedded stones, and 640 instanced grass/reed blades in 32 clumps. Leaves use shader-driven wind; the sand no longer transitions to green. The palm's two trunk and two foliage primitives are preserved while merging into one typed instanced mesh, preventing the earlier mobile batch from retaining only the final leaf primitive. The small palm asset starts loading with the already-lazy world, instead of being requested midway into the reveal. The dressing lives in `app/lib/scene/oasis.ts`, shares the terrain GLSL for grounding, and disposes its geometries, materials, and textures on teardown. Hero copy/details recede before the crest, and discovery copy waits until the reveal has had a clear visual beat.
 
 ### Storm and flood
 
@@ -96,8 +96,10 @@ twinkle gently. Each named constellation moves as one group, with the identical
 analytic offset applied to its star anchors and line endpoints. A single faint,
 short streak appears after roughly four active cosmic seconds, followed by seeded
 12–20 second gaps. Cosmic time pauses outside the visible chapter, so returning
-does not replay missed events. No global pulse, pointer camera, or constant zoom
-was added.
+does not replay missed events. Its restrained hot head, narrow core, soft local
+veil, and tapered tail are evaluated in the existing full-resolution grade pass;
+the former low-resolution atmosphere placement reduced it to a gray smudge on
+phones. No global pulse, pointer camera, or constant zoom was added.
 
 A crescent planet was prototyped against the actual centered connection copy and
 six constellation groups, then omitted. The remaining negative-space quadrants

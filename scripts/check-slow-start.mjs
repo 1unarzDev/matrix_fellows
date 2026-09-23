@@ -28,7 +28,8 @@ try {
   const domReady = performance.now() - coldStart
   await page.locator('[data-ready="true"]').waitFor()
   assert.ok(await page.getByText('Meetings', { exact: true }).isVisible())
-  assert.equal(await page.locator('[data-arrival-veil], [data-loading-orbit]').count(), 0)
+  assert.equal(await page.locator('[data-arrival-veil]').count(), 0)
+  assert.ok(await page.locator('[data-loading-orbit]').count() <= 1)
 
   const inputStart = performance.now()
   await page

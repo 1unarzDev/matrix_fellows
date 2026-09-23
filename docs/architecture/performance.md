@@ -43,11 +43,14 @@ the background and foreground programs before starting its RAF loop; compilation
 failure falls back to normal first-use compilation. Import, construction,
 compile, and first-scene timings are exposed as canvas data attributes.
 
-The loader is deliberately static. The server-rendered horizon is used only at
-the opening chapter, the identity mark does not animate, and there is no second
-canvas or JavaScript loading loop. A first valid composer frame starts a single
-300 ms opacity reveal. A 12-second safety path falls back if the world never
-becomes ready; page content and navigation remain usable throughout.
+The loader keeps its full-screen artwork static. The server-rendered horizon is
+used only at the opening chapter, and there is no second canvas or JavaScript
+loading loop. One optional 64 px accent rotates around a stable identity mark
+using a compositor-only transform, then stops when the first valid composer
+frame starts the single 300 ms opacity reveal. A 12-second safety path falls
+back if the world never becomes ready; page content and navigation remain
+usable throughout. Static resource-route handoffs reuse that small accent on a
+pointer-transparent, destination-colored veil after a 110 ms anti-flash delay.
 
 ## One scroll clock
 
@@ -79,11 +82,11 @@ terrain can correctly occlude models.
 | Setting                | Cinematic profile             | Efficient profile                                              |
 | ---------------------- | ----------------------------- | -------------------------------------------------------------- |
 | Particle buffer / draw | 12,000 / 12,000               | 2,600 / 1,560 initially; one-way floor 1,196                   |
-| Initial pixel ratio    | `min(devicePixelRatio, 1.5)`  | background `min(devicePixelRatio, 0.32)`; foreground at most 1 |
+| Initial pixel ratio    | `min(devicePixelRatio, 1.5)`  | background `min(devicePixelRatio, 0.32)`; foreground at most 1.25 |
 | HDR target samples     | up to 4× MSAA                 | none; avoids a redundant full-screen multisample resolve       |
 | Background             | rendered directly in composer | separate half-float color/depth target                         |
 | Bloom                  | UnrealBloom multi-mip pass    | no separate bloom pass                                         |
-| Final edge treatment   | MSAA                          | full-resolution foreground plus combined edge/grade pass       |
+| Final edge treatment   | MSAA                          | 1.25× foreground plus four-tap background reconstruction       |
 | Adaptive ratio floor   | 0.65                          | 0.32 for procedural background                                 |
 
 Profile selection is independent of layout width. Coarse-pointer devices and
@@ -94,7 +97,9 @@ MSAA, bloom, and particle settings. CSS breakpoints remain layout-only.
 Splitting the mobile background is important: the expensive procedural ray work
 can become softer without making palm cutouts, constellation lines, text-adjacent
 particles, or wave edges equally blurry. Desktop retains the higher-quality bloom
-chain and a single adaptive composer ratio.
+chain and a single adaptive composer ratio. The efficient copy shader reconstructs
+the 0.32× atmosphere with four hardware-filtered bicubic taps; the final grade does
+not blur the already supersampled foreground a second time.
 
 ## Particle and asset strategy
 
@@ -105,7 +110,9 @@ object updates, per-scene particle allocation, and transition-time buffer churn.
 
 Oasis reeds, rocks, cacti, bushes, formations, and the nine palms use instancing. Imported GLBs
 are normalized and merged once, their unsuitable source materials are replaced,
-and repeated instances share geometry/materials. This reduced the oasis peak
+and repeated instances share geometry/materials. Palm trunk and foliage primitives
+are merged into one typed geometry and shaded in one instanced draw, so neither
+part can be dropped by batching. This reduced the oasis peak
 from 72 to 18 draw calls. Optional assets load asynchronously and fail without
 taking down the world. Programs, buffers, textures, and the production-format
 framebuffer path warm before the first oasis frame.
@@ -119,7 +126,9 @@ requiring dense geometry.
 Nebula ambience uses the same clock and programs: slow shader-time offsets,
 vertex-time coherent group drift, and one bounded analytic streak add no render
 target, pass, particle simulation, or animation loop. Cosmic elapsed time pauses
-outside the chapter. On constrained devices, no optional planet/model is loaded.
+outside the chapter. The streak is composed inside the existing full-resolution
+grade pass rather than the 0.32× atmosphere, preserving its small head and tapered
+tail on mobile. On constrained devices, no optional planet/model is loaded.
 
 ## Frame pacing and adaptive quality
 
@@ -201,8 +210,9 @@ Current risks:
 - main-thread startup from animation libraries and hydration on real devices;
 - procedural fragment cost during the ocean/descent transition;
 - adaptive quality only decreases—it does not recover after a temporary spike;
-- the efficient atmosphere is intentionally soft at a 0.32 ratio, while the
-  foreground and DOM remain at a sharp 1 CSS-pixel ratio.
+- the efficient atmosphere remains intentionally soft at a 0.32 ratio, with
+  four-tap reconstruction; the foreground is capped at 1.25× and the DOM stays
+  at native browser resolution.
 
 ## Verification and profiling
 
@@ -216,6 +226,7 @@ Run a dev or production-preview server first where required.
 | `npm run perf:profile`                      | Startup, Web Vitals, LoAF/long-task, and WebGL-vs-DOM attribution         |
 | `npm run perf:shader`                       | Isolated world-fragment timing at the storm/ocean hot spot                |
 | `node scripts/check-oasis-dressing.mjs`     | Desktop/mobile assets, reveal, flood, and reverse navigation              |
+| `npm run check:mobile-visual`               | iPhone/iPad ratios, complete palms, and deterministic meteor captures     |
 | `npx tsx scripts/check-hero-water.mjs`      | No water leaks into the hero across aspect ratios                         |
 | `npx tsx scripts/check-waterline.mjs`       | Hardware-WebGL waterline samples contain no NaNs                          |
 | `node scripts/check-descent-render.mjs`     | Full-render submersion has no dark-frame discontinuity                    |

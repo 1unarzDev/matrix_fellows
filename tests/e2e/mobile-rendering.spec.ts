@@ -37,7 +37,7 @@ test('landscape phones retain the efficient render path and sharp foreground', a
   const canvas = page.locator('canvas[data-engine]')
   await expect(canvas).toHaveCSS('opacity', '1', { timeout: 20_000 })
   await expect(canvas).toHaveAttribute('data-render-profile', 'efficient')
-  await expect(canvas).toHaveAttribute('data-pixel-ratio', '1.00')
+  await expect(canvas).toHaveAttribute('data-pixel-ratio', '1.25')
   await expect(canvas).toHaveAttribute('data-atmosphere-ratio', '0.32')
   await expect(canvas).toHaveAttribute('data-progress', /^2\./)
 })
@@ -55,7 +55,7 @@ test('mobile camera settles after a touch-sized scroll step and keeps foreground
   const canvas = page.locator('canvas[data-progress]')
   await expect(canvas).toHaveAttribute('data-progress', /^2\./, { timeout: 20000 })
   await expect(canvas).toHaveCSS('opacity', '1', { timeout: 20000 })
-  await expect(canvas).toHaveAttribute('data-pixel-ratio', '1.00')
+  await expect(canvas).toHaveAttribute('data-pixel-ratio', '1.25')
   const before = Number(await canvas.getAttribute('data-progress'))
   await page.evaluate(() => window.scrollBy(0, 160))
   await expect
@@ -106,11 +106,13 @@ test('leaving the homepage disposes the world and stops rendered-frame submissio
     .poll(() => page.evaluate(() => window.__matrixWorldProfile?.frames.length || 0))
     .toBeGreaterThan(3)
   await page.evaluate(() => {
-    const link = document.querySelector<HTMLAnchorElement>('a[href^="/guides/"]')
-    if (!link) throw new Error('Guide route link not found')
+    const link = document.querySelector<HTMLAnchorElement>('a[href="/opportunities"]')
+    if (!link) throw new Error('Opportunity catalog route link not found')
     link.click()
   })
-  await expect(page).toHaveURL(/\/guides\//)
+  // Parallel SwiftShader projects can delay the dev server's first route
+  // compilation; the assertion remains about SPA teardown after navigation.
+  await expect(page).toHaveURL(/\/opportunities/, { timeout: 15_000 })
   await expect(page.locator('canvas')).toHaveCount(0)
   const afterNavigation = await page.evaluate(() => window.__matrixWorldProfile?.frames.length || 0)
   await page.waitForTimeout(500)

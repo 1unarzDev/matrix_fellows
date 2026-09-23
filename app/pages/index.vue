@@ -239,6 +239,10 @@ onBeforeUnmount(() => {
         <path d="M0 740C340 530 520 590 780 750S1290 780 1600 670V1000H0Z" class="fill-[#443328]" />
         <path d="M0 850C330 710 700 760 960 900S1400 820 1600 860V1000H0Z" class="fill-[#282320]" />
       </svg>
+      <OrbitalLoader
+        v-if="sceneStatus === 'pending' && progress <= 0.2"
+        class="absolute right-6 top-32 xl:right-[19%] xl:top-1/2"
+      />
     </div>
     <CinematicWorld
       @progress="progress = $event"
@@ -359,8 +363,18 @@ onBeforeUnmount(() => {
               />
               learning to ask the next one.
             </p>
+            <a
+              href="#discovery"
+              class="group mt-6 inline-flex items-center gap-5 border-b border-paper/45 pb-2 text-xs"
+              @click="scrollTo($event, 'discovery')"
+              >Follow your curiosity
+              <SiteIcon
+                name="down"
+                :size="16"
+                class="transition-transform group-hover:translate-y-1"
+            /></a>
             <div
-              class="relative mt-6 overflow-hidden rounded-xl border border-[#f2d095]/40 bg-[linear-gradient(135deg,rgba(78,52,29,.62)_0%,rgba(34,31,24,.52)_56%,rgba(13,20,20,.46)_100%)] px-4 py-4 shadow-[0_16px_44px_#2a16082e,inset_0_1px_0_#fff3] backdrop-blur-md"
+              class="relative mt-6 overflow-hidden rounded-xl border border-[#f4d39b]/50 bg-[linear-gradient(135deg,rgba(124,84,43,.68)_0%,rgba(72,56,37,.62)_54%,rgba(34,45,42,.58)_100%)] px-4 py-4 shadow-[0_16px_44px_#2a160824,inset_0_1px_0_#fff5] backdrop-blur-md"
             >
               <span
                 aria-hidden="true"
@@ -396,16 +410,6 @@ onBeforeUnmount(() => {
                 </div>
               </div>
             </div>
-            <a
-              href="#discovery"
-              class="group mt-6 inline-flex items-center gap-5 border-b border-paper/45 pb-2 text-xs"
-              @click="scrollTo($event, 'discovery')"
-              >Follow your curiosity
-              <SiteIcon
-                name="down"
-                :size="16"
-                class="transition-transform group-hover:translate-y-1"
-            /></a>
           </div>
         </div>
         <div
@@ -428,7 +432,7 @@ onBeforeUnmount(() => {
           data-hero-detail
           class="absolute right-[16%] top-[48%] hidden xl:block"
         >
-          <UnexploredMarker />
+          <UnexploredMarker v-if="sceneStatus !== 'pending'" />
         </div>
       </section>
 

@@ -24,6 +24,7 @@ describe('render quality policy', () => {
     let state = initialQuality('efficient', 3)
     expect(state).toMatchObject({
       atmosphereRatio: 0.32,
+      foregroundRatio: 1.25,
       particleFraction: 0.6,
       halo: false,
       detail: false,
@@ -39,6 +40,7 @@ describe('render quality policy', () => {
   it('keeps the cinematic profile at its full initial quality', () => {
     expect(initialQuality('cinematic', 2)).toMatchObject({
       atmosphereRatio: 1.5,
+      foregroundRatio: 1.5,
       particleFraction: 1,
       halo: true,
       detail: true,

@@ -37,7 +37,11 @@ try {
         'pending',
       )
       assert.equal(await page.locator('[data-arrival-veil]').count(), 0)
-      assert.equal(await page.locator('[data-loading-orbit]').count(), 0)
+      assert.equal(await page.locator('[data-loading-orbit]').count(), 1)
+      assert.equal(
+        await page.locator('[data-loading-orbit]').evaluate((el) => getComputedStyle(el).pointerEvents),
+        'none',
+      )
       await page.screenshot({ path: '/tmp/matrix-loading-preview.png' })
     }
     const expected = mode === 'normal' ? 'ready' : 'fallback'

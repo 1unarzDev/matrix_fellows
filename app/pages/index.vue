@@ -347,18 +347,18 @@ onBeforeUnmount(() => {
         data-chapter
         tabindex="-1"
         aria-labelledby="hero-title"
-        class="relative flex min-h-[850px] min-h-svh flex-col justify-center px-6 pb-36 pt-44 outline-none sm:px-10 lg:px-16"
+        class="relative flex min-h-[850px] min-h-svh flex-col justify-center px-6 pb-36 pt-36 outline-none sm:px-10 sm:pt-44 lg:px-16"
       >
         <div class="max-w-[1400px]">
           <div
-            class="mb-9 flex items-center gap-3 text-[10px] uppercase tracking-[.25em] text-paper/75 sm:mb-10"
+            class="mb-7 flex items-center gap-3 text-[9px] uppercase tracking-[.23em] text-paper/75 sm:mb-10 sm:text-[10px] sm:tracking-[.25em]"
           >
-            <span class="h-1.5 w-1.5 rounded-full bg-acid shadow-[0_0_12px_var(--color-acid)]" /> A
-            society for the endlessly curious
+            <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-acid shadow-[0_0_12px_var(--color-acid)]" />
+            For the endlessly curious
           </div>
           <h1
             id="hero-title"
-            class="max-w-[1060px] font-display text-[clamp(3.4rem,8.7vw,9rem)] font-medium leading-[.99] tracking-[-.065em]"
+            class="max-w-[1060px] font-display text-[clamp(2.9rem,8.7vw,9rem)] font-medium leading-[.99] tracking-[-.065em]"
           >
             Beyond what<br />we
             <span
@@ -366,31 +366,36 @@ onBeforeUnmount(() => {
               >know.</span
             >
           </h1>
-          <div class="mt-9 max-w-sm sm:mt-11">
-            <p class="text-sm leading-relaxed text-paper/75 sm:text-base">
-              The world is full of unanswered questions.<br />We’re a community of researchers<br
-                class="hidden sm:block"
-              />
-              learning to ask the next one.
-            </p>
-            <p
-              class="mt-4 max-w-xs border-l border-acid/35 pl-3 text-[10px] leading-5 text-paper/52 sm:text-[11px]"
-            >
-              Matrix Fellows is the student-research initiative behind the Martin High School
-              Research Society—its community at Martin.
-            </p>
-            <a
-              href="#discovery"
-              class="group mt-6 inline-flex items-center gap-5 border-b border-paper/45 pb-2 text-xs"
-              @click="scrollTo($event, 'discovery')"
-              >Follow your curiosity
-              <SiteIcon
-                name="down"
-                :size="16"
-                class="transition-transform group-hover:translate-y-1"
-            /></a>
+          <div
+            class="mt-8 grid max-w-[850px] gap-6 sm:mt-10 md:grid-cols-[minmax(0,22rem)_minmax(19rem,24rem)] md:items-end md:gap-10 lg:mt-11 lg:gap-14"
+          >
+            <div>
+              <p class="text-sm leading-relaxed text-paper/75 sm:text-base">
+                The world is full of unanswered questions.<br />We’re a community of researchers<br
+                  class="hidden sm:block"
+                />
+                learning to ask the next one.
+              </p>
+              <p
+                class="mt-4 max-w-sm border-l border-acid/35 pl-3 text-[10px] leading-[1.65] text-paper/52 sm:text-[11px]"
+              >
+                Matrix Fellows is the student-research initiative behind MHS Research Society at
+                Martin.
+              </p>
+              <a
+                href="#discovery"
+                class="group mt-5 inline-flex items-center gap-5 border-b border-paper/45 pb-2 text-xs sm:mt-6"
+                @click="scrollTo($event, 'discovery')"
+                >Follow your curiosity
+                <SiteIcon
+                  name="down"
+                  :size="16"
+                  class="transition-transform group-hover:translate-y-1"
+              /></a>
+            </div>
             <div
-              class="relative mt-6 overflow-hidden rounded-xl border border-[#f4d39b]/50 bg-[linear-gradient(135deg,rgba(124,84,43,.64)_0%,rgba(130,96,59,.4)_54%,rgba(222,190,131,.1)_100%)] px-4 py-4 shadow-[0_16px_44px_rgba(72,43,24,.12),inset_0_1px_0_#fff5] backdrop-blur-md"
+              data-hero-meeting
+              class="relative overflow-hidden rounded-xl border border-[#f4d39b]/45 bg-[linear-gradient(135deg,rgba(124,84,43,.56)_0%,rgba(130,96,59,.34)_58%,rgba(222,190,131,.08)_100%)] px-4 py-3.5 shadow-[0_16px_44px_rgba(72,43,24,.1),inset_0_1px_0_#fff4] backdrop-blur-md sm:px-5 sm:py-4"
             >
               <span
                 aria-hidden="true"
@@ -410,13 +415,13 @@ onBeforeUnmount(() => {
                 <p class="mt-2 text-sm font-medium leading-snug text-paper">
                   {{ meetingDate }} · {{ content.meeting.time || 'Time forthcoming' }}
                 </p>
-                <div class="mt-1 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-                  <p class="text-xs text-paper/80">
+                <div class="mt-0.5 flex items-center justify-between gap-3">
+                  <p class="whitespace-nowrap text-[11px] text-paper/80 sm:text-xs">
                     {{ content.meeting.location || 'Location forthcoming' }}
                   </p>
                   <a
                     href="#meeting-details"
-                    class="group inline-flex min-h-11 items-center gap-2 text-[11px] font-medium text-[#f4ce89]"
+                    class="group inline-flex min-h-10 shrink-0 items-center gap-2 text-[11px] font-medium text-[#f4ce89]"
                     @click="scrollTo($event, 'meeting-details')"
                     >Meeting details
                     <SiteIcon

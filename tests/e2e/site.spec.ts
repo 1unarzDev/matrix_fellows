@@ -119,9 +119,22 @@ test('explains the Matrix Fellows and Martin Research Society relationship', asy
   await page.goto('/#beginning')
   await expect(
     page.getByText(
-      /Matrix Fellows is the student-research initiative behind the Martin High School Research Society/,
+      /Matrix Fellows is the student-research initiative behind MHS Research Society at Martin/,
     ),
   ).toBeVisible()
+})
+
+test('hero priorities remain clear of the journey navigation on narrow screens', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 740 })
+  await page.goto('/#beginning')
+  const meeting = page.locator('[data-hero-meeting]')
+  const navigation = page.getByRole('navigation', { name: 'Mobile sections', exact: true })
+  await expect(meeting).toBeVisible()
+  await expect(navigation).toBeVisible()
+  const bounds = await Promise.all([meeting.boundingBox(), navigation.boundingBox()])
+  expect(bounds[0]).not.toBeNull()
+  expect(bounds[1]).not.toBeNull()
+  expect(bounds[0]!.y + bounds[0]!.height).toBeLessThan(bounds[1]!.y)
 })
 
 test('footer links to the official Instagram profile', async ({ page }) => {

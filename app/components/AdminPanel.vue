@@ -432,7 +432,7 @@ onBeforeUnmount(() => {
                     'Responses',
                   ]"
                   label="Editor section"
-                  class="sm:w-full"
+                  full-width
                   @update:model-value="changeTab"
                 />
               </div>
@@ -559,25 +559,22 @@ onBeforeUnmount(() => {
                     <form v-else class="space-y-4" @submit.prevent="saveListing">
                       <button type="button" class="text-xs text-acid" @click="editing = null">
                         ← All listings</button
-                      ><AdminField v-model="editing.title" label="Title" /><label
-                        class="block text-xs text-paper/55"
-                        >Type<select
+                      ><AdminField v-model="editing.title" label="Title" />
+                      <div>
+                        <p class="mb-2.5 text-xs text-paper/55">Type</p>
+                        <ThemedSelect
                           v-model="editing.kind"
-                          class="mt-2 block w-full rounded-lg border border-paper/15 bg-ink p-3 text-sm"
-                        >
-                          <option
-                            v-for="kind in [
-                              'Competition',
-                              'Conference',
-                              'Workshop',
-                              'Publication',
-                              'Program',
-                            ]"
-                            :key="kind"
-                          >
-                            {{ kind }}
-                          </option>
-                        </select></label
+                          :options="[
+                            'Competition',
+                            'Conference',
+                            'Workshop',
+                            'Publication',
+                            'Program',
+                          ]"
+                          label="Opportunity type"
+                          full-width
+                        />
+                      </div>
                       ><AdminField v-model="editing.discipline" label="Discipline" /><AdminField
                         v-model="editing.description"
                         label="Description"
@@ -800,15 +797,32 @@ onBeforeUnmount(() => {
                       /><AdminField v-model="source.name" label="Name" /><AdminField
                         v-model="source.url"
                         label="Verified endpoint URL"
-                      /><label class="block text-xs text-paper/55"
-                        >Adapter<select
+                      />
+                      <div>
+                        <p class="mb-2.5 text-xs text-paper/55">Adapter</p>
+                        <ThemedSelect
                           v-model="source.kind"
-                          class="mt-2 block w-full rounded-lg border border-paper/15 bg-ink p-3"
-                        >
-                          <option value="json">JSON</option>
-                          <option value="rss">RSS / Atom</option>
-                          <option value="official">Official website (registered profile)</option>
-                        </select></label
+                          :options="[
+                            {
+                              value: 'json',
+                              label: 'JSON',
+                              description: 'Structured endpoint using the catalog schema',
+                            },
+                            {
+                              value: 'rss',
+                              label: 'RSS / Atom',
+                              description: 'Reviewed announcement feed',
+                            },
+                            {
+                              value: 'official',
+                              label: 'Official website',
+                              description: 'Registered evidence-checked source profile',
+                            },
+                          ]"
+                          label="Source adapter"
+                          full-width
+                        />
+                      </div>
                       ><label class="flex items-center gap-3 text-sm"
                         ><input
                           v-model="source.enabled"

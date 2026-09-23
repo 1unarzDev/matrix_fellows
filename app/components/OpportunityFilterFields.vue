@@ -27,7 +27,7 @@ defineEmits<{ toggle: [key: string, value: string] }>()
         ><input
           type="checkbox"
           :checked="selected('highSchool', option[0]!)"
-          class="h-4 w-4 accent-[var(--color-acid)]"
+          class="filter-check h-4 w-4 shrink-0"
           @change="$emit('toggle', 'highSchool', option[0]!)"
         /><span class="flex-1">{{ option[1] }}</span
         ><span class="text-paper/35">{{
@@ -41,65 +41,61 @@ defineEmits<{ toggle: [key: string, value: string] }>()
         ><input
           type="checkbox"
           :checked="selected('discipline', value)"
-          class="h-4 w-4 accent-[var(--color-acid)]"
+          class="filter-check h-4 w-4 shrink-0"
           @change="$emit('toggle', 'discipline', value)"
         /><span class="flex-1">{{ value }}</span
         ><span class="text-paper/35">{{ facets?.discipline?.[value] ?? '' }}</span></label
       >
     </fieldset>
-    <details>
-      <summary
-        class="min-h-11 cursor-pointer py-3 text-[10px] uppercase tracking-[.16em] text-paper/50"
-      >
-        Type
-      </summary>
+    <AnimatedDisclosure
+      title="Type"
+      :count="kinds.filter((value) => selected('kind', value)).length"
+    >
       <label v-for="value in kinds" :key="value" class="flex min-h-11 items-center gap-3"
         ><input
           type="checkbox"
           :checked="selected('kind', value)"
-          class="h-4 w-4 accent-[var(--color-acid)]"
+          class="filter-check h-4 w-4 shrink-0"
           @change="$emit('toggle', 'kind', value)"
         /><span class="flex-1">{{ value }}</span
         ><span class="text-paper/35">{{ facets?.kind?.[value] ?? '' }}</span></label
       >
-    </details>
-    <details>
-      <summary
-        class="min-h-11 cursor-pointer py-3 text-[10px] uppercase tracking-[.16em] text-paper/50"
-      >
-        Preparation
-      </summary>
+    </AnimatedDisclosure>
+    <AnimatedDisclosure
+      title="Preparation"
+      :count="stages.filter((option) => selected('stage', option[0]!)).length"
+    >
       <label v-for="option in stages" :key="option[0]" class="flex min-h-11 items-center gap-3"
         ><input
           type="checkbox"
           :checked="selected('stage', option[0]!)"
-          class="h-4 w-4 accent-[var(--color-acid)]"
+          class="filter-check h-4 w-4 shrink-0"
           @change="$emit('toggle', 'stage', option[0]!)"
         /><span>{{ option[1] }}</span></label
       >
-    </details>
-    <details>
-      <summary
-        class="min-h-11 cursor-pointer py-3 text-[10px] uppercase tracking-[.16em] text-paper/50"
-      >
-        Status
-      </summary>
+    </AnimatedDisclosure>
+    <AnimatedDisclosure
+      title="Status"
+      :count="statuses.filter((option) => selected('status', option[0]!)).length"
+    >
       <label v-for="option in statuses" :key="option[0]" class="flex min-h-11 items-center gap-3"
         ><input
           type="checkbox"
           :checked="selected('status', option[0]!)"
-          class="h-4 w-4 accent-[var(--color-acid)]"
+          class="filter-check h-4 w-4 shrink-0"
           @change="$emit('toggle', 'status', option[0]!)"
         /><span class="flex-1">{{ option[1] }}</span
         ><span class="text-paper/35">{{ facets?.status?.[option[0]!] ?? '' }}</span></label
       >
-    </details>
-    <details>
-      <summary
-        class="min-h-11 cursor-pointer py-3 text-[10px] uppercase tracking-[.16em] text-paper/50"
-      >
-        Participation
-      </summary>
+    </AnimatedDisclosure>
+    <AnimatedDisclosure
+      title="Participation"
+      :count="
+        ['remote-presentation', 'remote-submission', 'in-person', 'hybrid'].filter((value) =>
+          selected('mode', value),
+        ).length + (selected('free', 'true') ? 1 : 0)
+      "
+    >
       <label
         v-for="option in [
           ['remote-presentation', 'Remote presentation'],
@@ -112,17 +108,69 @@ defineEmits<{ toggle: [key: string, value: string] }>()
         ><input
           type="checkbox"
           :checked="selected('mode', option[0]!)"
-          class="h-4 w-4 accent-[var(--color-acid)]"
+          class="filter-check h-4 w-4 shrink-0"
           @change="$emit('toggle', 'mode', option[0]!)"
         /><span>{{ option[1] }}</span></label
       ><label class="flex min-h-11 items-center gap-3"
         ><input
           type="checkbox"
           :checked="selected('free', 'true')"
-          class="h-4 w-4 accent-[var(--color-acid)]"
+          class="filter-check h-4 w-4 shrink-0"
           @change="$emit('toggle', 'free', 'true')"
         /><span>Verified free submission</span></label
       >
-    </details>
+    </AnimatedDisclosure>
   </div>
 </template>
+
+<style scoped>
+.filter-check {
+  appearance: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--color-paper) 35%, transparent);
+  border-radius: 0.2rem;
+  background: color-mix(in srgb, var(--color-paper) 4%, transparent);
+  transition:
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 180ms ease,
+    background-color 180ms ease,
+    box-shadow 260ms ease;
+}
+.filter-check::before {
+  content: '';
+  width: 0.48rem;
+  height: 0.28rem;
+  border-bottom: 1.5px solid var(--color-ink);
+  border-left: 1.5px solid var(--color-ink);
+  opacity: 0;
+  transform: translateY(-1px) rotate(-45deg) scale(0.45);
+  transition:
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 150ms ease;
+}
+.filter-check:hover {
+  border-color: color-mix(in srgb, var(--color-acid) 62%, transparent);
+  transform: scale(1.08);
+}
+.filter-check:checked {
+  border-color: var(--color-acid);
+  background: var(--color-acid);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--color-acid) 18%, transparent);
+}
+.filter-check:checked::before {
+  opacity: 1;
+  transform: translateY(-1px) rotate(-45deg) scale(1);
+}
+.filter-check:focus-visible {
+  outline: 2px solid var(--color-acid);
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .filter-check,
+  .filter-check::before {
+    transform: none !important;
+    transition: none !important;
+  }
+}
+</style>

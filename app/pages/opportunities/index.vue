@@ -37,6 +37,23 @@ const statuses = [
   ['closed', 'Closed'],
   ['historical', 'Historical'],
 ]
+const sortOptions = [
+  {
+    value: 'relevance',
+    label: 'Relevance',
+    description: 'Strongest match to your search and filters',
+  },
+  {
+    value: 'next-deadline',
+    label: 'Next submission',
+    description: 'Nearest verified actionable deadline first',
+  },
+  {
+    value: 'verified',
+    label: 'Recently verified',
+    description: 'Most recently confirmed source evidence',
+  },
+]
 const asArray = (value: unknown) =>
   (Array.isArray(value) ? value : value ? [value] : []).map(String)
 const queryText = ref(String(route.query.q || ''))
@@ -119,9 +136,6 @@ function pageTo(page: number) {
       top: 0,
       behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
     })
-}
-function changeSort(event: Event) {
-  void replaceQuery({ sort: (event.target as HTMLSelectElement).value })
 }
 watch(
   () => route.query.q,
@@ -248,17 +262,14 @@ useHead({
               >
                 Filters<span v-if="activeCount"> ({{ activeCount }})</span>
               </button>
-              <label class="sr-only" for="catalog-sort">Sort opportunities</label>
-              <select
-                id="catalog-sort"
-                :value="String(route.query.sort || 'relevance')"
-                class="min-h-11 rounded-full border border-paper/15 bg-ink px-4 text-xs text-paper/70"
-                @change="changeSort"
-              >
-                <option value="relevance">Relevance</option>
-                <option value="next-deadline">Next submission</option>
-                <option value="verified">Recently verified</option>
-              </select>
+              <ThemedSelect
+                :model-value="String(route.query.sort || 'relevance')"
+                :options="sortOptions"
+                label="Sort opportunities"
+                align="right"
+                compact
+                @update:model-value="replaceQuery({ sort: $event })"
+              />
             </div>
           </div>
 

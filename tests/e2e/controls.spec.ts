@@ -1,18 +1,28 @@
 import { test, expect } from '@playwright/test'
 
-test('catalog uses native sorting and an accessible dismissible mobile filter sheet', async ({
+test('catalog uses custom sorting and an accessible animated mobile filter sheet', async ({
   page,
 }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/opportunities')
   await page.locator('[data-catalog-ready="true"]').waitFor()
-  const sort = page.getByLabel('Sort opportunities')
-  await sort.selectOption('verified')
+  const sort = page.getByRole('button', { name: 'Sort opportunities: Relevance' })
+  await sort.click()
+  await expect(page.getByRole('listbox', { name: 'Sort opportunities' })).toBeVisible()
+  await page.getByRole('option', { name: /Recently verified/ }).click()
   await expect(page).toHaveURL(/sort=verified/)
+  await expect(
+    page.getByRole('button', { name: 'Sort opportunities: Recently verified' }),
+  ).toBeFocused()
   await page.getByRole('button', { name: /^Filters/ }).click()
   const dialog = page.getByRole('dialog', { name: 'Filters' })
   await expect(dialog).toBeVisible()
+  const type = dialog.getByRole('button', { name: 'Type' })
+  await expect(type).toHaveAttribute('aria-expanded', 'false')
+  await type.click()
+  await expect(type).toHaveAttribute('aria-expanded', 'true')
+  await expect(dialog.getByText('Workshop', { exact: true })).toBeVisible()
   await page.keyboard.press('Escape')
   await expect(dialog).not.toBeVisible()
 })

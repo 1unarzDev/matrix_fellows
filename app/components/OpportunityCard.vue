@@ -270,18 +270,26 @@ onMounted(() => {
           }}
         </p>
       </div>
-      <a
-        :href="item.url"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="group inline-flex items-center gap-3 text-xs text-acid transition-colors duration-700 hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acid motion-reduce:transition-none"
-        >Official website
-        <span
-          aria-hidden="true"
-          class="transition-transform duration-700 ease-out group-hover:-translate-y-0.5 group-hover:translate-x-0.5 motion-reduce:transform-none motion-reduce:transition-none"
-          ><SiteIcon :size="16" /></span
-        ><span class="sr-only">for {{ item.title }} (opens in a new tab)</span></a
-      >
+      <div class="flex items-center gap-4">
+        <NuxtLink
+          v-if="item.slug"
+          :to="`/opportunities/${item.slug}`"
+          class="text-xs text-paper/60 hover:text-acid"
+          >Details</NuxtLink
+        >
+        <a
+          :href="item.url"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="group inline-flex items-center gap-3 text-xs text-acid transition-colors duration-700 hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acid motion-reduce:transition-none"
+          >Official website
+          <span
+            aria-hidden="true"
+            class="transition-transform duration-700 ease-out group-hover:-translate-y-0.5 group-hover:translate-x-0.5 motion-reduce:transform-none motion-reduce:transition-none"
+            ><SiteIcon :size="16" /></span
+          ><span class="sr-only">for {{ item.title }} (opens in a new tab)</span></a
+        >
+      </div>
     </div>
   </article>
 </template>

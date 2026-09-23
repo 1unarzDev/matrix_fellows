@@ -16,6 +16,8 @@ Browser
                                            ▼
 Nuxt Cloudflare Worker                Supabase
   ├─ GET /api/content ───────────────► published content + opportunities
+  ├─ GET /api/opportunities ─────────► bounded RLS-protected catalog search
+  ├─ GET /api/opportunities/:slug ───► one published opportunity route
   ├─ POST /api/join ────────────────► validated private responses
   └─ GET /api/join-sheet ───────────► token-protected Sheets synchronization
 
@@ -30,7 +32,7 @@ paused importer does not stop the public site; existing published records remain
 
 ### Page and content
 
-[The page module](../../app/app.vue) owns the one-page narrative, navigation, SEO metadata, editable
+[The homepage module](../../app/pages/index.vue) owns the one-page narrative, navigation, SEO metadata, editable
 content projection, and the open/closed state for lazy dialogs. Its initial
 `useFetch('/api/content')` runs during server rendering, so headings, projects,
 meeting details, and opportunity text exist in the delivered HTML.
@@ -40,6 +42,19 @@ meeting details, and opportunity text exist in the delivered HTML.
 monitor-health reads concurrently, validates every result, and falls back to
 `shared/data/defaults.ts`. Callers do not need to understand Supabase tables or
 failure recovery.
+
+The homepage response deliberately contains only six opportunity previews. The
+full SSR catalog and detail routes live under `/opportunities` and query bounded
+pages through security-invoker database functions. The complete catalog and its
+vectors never enter homepage hydration; searches never trigger source discovery.
+
+The homepage also renders only six lightweight guide summaries. The `/guides`
+index and `/guides/[slug]` pages are separate SSR route chunks. Guide source lives
+as validated Markdown in `content/guides/`; `app/lib/guides.ts` lazily imports one
+file, parses Markdown/MDC, and supplies Matrix prose and instructional components
+to `MDCRenderer`. The static registry in `shared/data/guides.ts` owns ordering,
+route generation, homepage summaries, sitemap membership, and prerender routes.
+No full guide body enters the homepage payload.
 
 ### Cinematic scroll
 
@@ -104,6 +119,7 @@ response from silently publishing arbitrary data. See the
 | Supabase public read failure      | Validated defaults, `unavailable` status, and `no-store` response |
 | Opportunity source failure        | Previous observations remain; source health records the issue     |
 | Owner/admin code unused           | Admin chunks stay out of the initial interaction path             |
+| JavaScript or WebGL unavailable   | Guide text and links remain present in SSR HTML                   |
 | Membership backend unavailable    | Form reports a retryable error; no false success is stored        |
 
 ## Configuration and ownership
@@ -121,7 +137,8 @@ response from silently publishing arbitrary data. See the
 
 | Path                   | Responsibility                                                          |
 | ---------------------- | ----------------------------------------------------------------------- |
-| `app/`                 | SSR page, Tailwind UI, client animation, renderer                       |
+| `app/`                 | SSR pages, Tailwind UI, guide rendering, client animation, renderer     |
+| `content/guides/`      | Validated, Git-reviewed research-guide Markdown                         |
 | `server/`              | Nuxt server endpoints and request middleware                            |
 | `shared/`              | Types, schemas, defaults, domain rules shared by runtimes               |
 | `workers/`             | Scheduled opportunity monitoring Worker                                 |

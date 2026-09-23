@@ -1,6 +1,17 @@
 <script setup lang="ts">
 defineProps<{
-  name?: 'atom' | 'arrow' | 'right' | 'down' | 'plus' | 'close' | 'search' | 'globe' | 'spark' | 'compass'
+  name?:
+    | 'atom'
+    | 'arrow'
+    | 'right'
+    | 'down'
+    | 'plus'
+    | 'close'
+    | 'search'
+    | 'globe'
+    | 'spark'
+    | 'compass'
+    | 'instagram'
   size?: number
 }>()
 </script>
@@ -43,6 +54,11 @@ defineProps<{
     </g>
     <g v-else-if="name === 'spark'">
       <path d="m12 2 2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5Z" />
+    </g>
+    <g v-else-if="name === 'instagram'">
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.4" cy="6.7" r="1" fill="currentColor" stroke="none" />
     </g>
     <g v-else><path d="M5 19 19 5M5 5h14v14" /></g>
   </svg>

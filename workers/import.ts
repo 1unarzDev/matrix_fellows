@@ -3,6 +3,7 @@ import { fetchSource } from './adapters'
 import { sourceSchema } from '../shared/utils/validation'
 import { runMonitoring, discoverFromHubs, discoverUrl, type AiBinding } from './monitoring'
 import { approvedSource } from './catalog'
+import { discoverOpenReview } from './openreview'
 
 interface Env {
   SUPABASE_URL: string
@@ -59,6 +60,52 @@ export async function runImports(env: Env) {
   }
 }
 
+export async function syncOpenReviewDiscoveries(
+  client: ReturnType<typeof database>,
+  fetcher: typeof fetch = fetch,
+  offset = 0,
+) {
+  // Discovery is deliberately review-only. Twelve venue routes cap a run at
+  // 25 public API requests including active_venues; no submissions are read.
+  const candidates = await discoverOpenReview(fetcher, 12, offset)
+  for (const candidate of candidates) {
+    const saved = await client.from('opportunity_discoveries').upsert(
+      {
+        id: `openreview:${candidate.sourceObjectId}`,
+        source_registry_id: candidate.sourceId,
+        source_object_id: candidate.sourceObjectId,
+        canonical_hint: candidate.canonicalHint,
+        data: candidate,
+        evidence: candidate.evidence,
+      },
+      { onConflict: 'source_registry_id,source_object_id' },
+    )
+    if (saved.error) throw new Error(`OpenReview discovery storage failed: ${saved.error.code}`)
+    for (const evidence of candidate.evidence) {
+      const stored = await client.from('opportunity_api_evidence').upsert(
+        {
+          opportunity_id: `openreview:${candidate.sourceObjectId}`,
+          source_registry_id: candidate.sourceId,
+          endpoint: evidence.endpoint,
+          object_id: evidence.objectId,
+          json_field: evidence.jsonField,
+          raw_value: evidence.rawValue,
+          interpreted_at: evidence.interpretedAt,
+          semantic_role: evidence.semanticRole,
+          retrieved_at: evidence.retrievedAt,
+          content_hash: evidence.contentHash,
+        },
+        {
+          onConflict: 'source_registry_id,object_id,json_field,content_hash',
+          ignoreDuplicates: true,
+        },
+      )
+      if (stored.error) throw new Error(`OpenReview evidence storage failed: ${stored.error.code}`)
+    }
+  }
+  return candidates.length
+}
+
 export default {
   async scheduled(_controller: unknown, env: Env) {
     await runImports(env)
@@ -66,8 +113,14 @@ export default {
     const client = database(env)
     console.log('Monitor results', await runMonitoring(client, env.AI))
     // Weekly discovery is bounded to reviewed official hosts and three links.
-    if (new Date().getUTCDay() === 0 && new Date().getUTCHours() === 11)
+    if (new Date().getUTCDay() === 0 && new Date().getUTCHours() === 11) {
       await discoverFromHubs(client, env.AI)
+      const week = Math.floor(Date.now() / (7 * 86400000))
+      console.log(
+        'OpenReview discoveries staged',
+        await syncOpenReviewDiscoveries(client, fetch, week * 12),
+      )
+    }
   },
   async fetch(request: Request, env: Env) {
     const path = new URL(request.url).pathname

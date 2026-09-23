@@ -84,33 +84,17 @@ async function openBoard(page: Page) {
 const card = (page: Page, title = 'Research opening 01') =>
   page.getByRole('article', { name: title, exact: true })
 
-test('catalog pagination, search, and status/type filters retain past editions', async ({
-  page,
-}) => {
+test('homepage keeps a bounded preview and hands search to the SSR catalog', async ({ page }) => {
   await openBoard(page)
   const board = page.locator('section[aria-labelledby="opportunities-title"]')
   await expect(board.getByRole('article')).toHaveCount(6)
-  await board.getByRole('button', { name: 'Next opportunity page', exact: true }).click()
-  await expect(board.getByText(`Page 2`, { exact: false }).first()).toBeVisible()
-  await expect(board.getByRole('article')).toHaveCount(6)
-  await board.getByRole('button', { name: 'View all opportunities', exact: true }).click()
-  await expect(board.getByRole('article')).toHaveCount(32)
-  await board.getByRole('button', { name: 'Browse by page', exact: true }).click()
-  await page.getByRole('searchbox').fill('Research opening 32')
-  await expect(board.getByRole('article')).toHaveCount(1)
-  await expect(card(page, 'Research opening 32')).toBeVisible()
-  await page.getByRole('searchbox').fill('')
-  await expect(board.getByRole('article')).toHaveCount(6)
-  await page.getByRole('button', { name: 'Opportunity status: All statuses' }).click()
-  await page.getByRole('option', { name: 'Completed', exact: true }).click()
-  await expect(board.getByRole('article')).toHaveCount(1)
-  await expect(card(page, 'Archived research edition')).toBeVisible()
-  await page.getByRole('button', { name: 'Opportunity status: Completed' }).click()
-  await page.getByRole('option', { name: 'All statuses', exact: true }).click()
-  await page.getByRole('button', { name: 'Opportunity type: All types' }).click()
-  await page.getByRole('option', { name: 'Workshop', exact: true }).click()
-  await expect(board.getByRole('article')).toHaveCount(6)
-  await expect(board.getByText('28 opportunities', { exact: false })).toBeVisible()
+  await board
+    .getByRole('searchbox', { name: 'Search all research opportunities' })
+    .fill('NeurIPS workshops')
+  await board.getByRole('button', { name: 'Search' }).click()
+  await expect(page).toHaveURL(/\/opportunities\?q=NeurIPS\+workshops/)
+  await expect(page.getByRole('heading', { name: 'Opportunities', exact: true })).toBeVisible()
+  await expect(page.getByRole('article').first()).toContainText('NeurIPS')
 })
 
 test('timeline selects the next date, exposes evidence, and supports buttons and keyboard', async ({
@@ -156,9 +140,7 @@ test('timeline selects the next date, exposes evidence, and supports buttons and
   await expect(first.getByRole('tabpanel')).toContainText('Date only')
 })
 
-test('paired cards align and filter changes have a deliberate transition', async ({
-  page,
-}, info) => {
+test('paired homepage preview cards remain aligned', async ({ page }, info) => {
   await openBoard(page)
   const board = page.locator('section[aria-labelledby="opportunities-title"]')
   if (info.project.name === 'desktop') {
@@ -171,26 +153,7 @@ test('paired cards align and filter changes have a deliberate transition', async
     expect(Math.abs(boxes[0]!.top - boxes[1]!.top)).toBeLessThan(1)
     expect(Math.abs(boxes[0]!.bottom - boxes[1]!.bottom)).toBeLessThan(1)
   }
-  await page.emulateMedia({ reducedMotion: 'no-preference' })
-  await board.evaluate((element) => {
-    const observer = new MutationObserver(() => {
-      if (element.querySelector('.opacity-0')) {
-        element.setAttribute('data-transition-observed', 'true')
-        observer.disconnect()
-      }
-    })
-    observer.observe(element, {
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['class'],
-      childList: true,
-    })
-  })
-  await page.getByRole('button', { name: 'Opportunity type: All types' }).click()
-  await page.getByRole('option', { name: 'Workshop', exact: true }).click()
-  await expect(board).toHaveAttribute('data-transition-observed', 'true')
-  await expect(board.getByRole('article').first()).toContainText('Research opening 05')
-  await expect(board.getByRole('article').first().locator('..')).toHaveCSS('opacity', '1')
+  await expect(board.getByRole('link', { name: 'Browse the full catalog' })).toBeVisible()
 })
 
 test('past-only and unannounced timelines remain readable', async ({ page }) => {
@@ -215,17 +178,6 @@ test('narrow viewport confines horizontal scrolling and honors reduced motion', 
   const first = card(page)
   // Read both in the same frame: hash restoration can scroll between two
   // independent boundingBox calls without changing their relative alignment.
-  const alignment = await page.evaluate(() => {
-    const type = document
-      .querySelector('[aria-label="Opportunity type: All types"]')!
-      .getBoundingClientRect()
-    const status = document
-      .querySelector('[aria-label="Opportunity status: All statuses"]')!
-      .getBoundingClientRect()
-    return { vertical: Math.abs(type.y - status.y), horizontal: status.x - type.x }
-  })
-  expect(alignment.vertical).toBeLessThan(1)
-  expect(alignment.horizontal).toBeGreaterThan(0)
   const rail = first.getByRole('tablist')
   expect(await rail.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true)
   expect(await rail.evaluate((el) => el.scrollLeft)).toBeGreaterThan(0)
@@ -247,17 +199,16 @@ test('narrow viewport confines horizontal scrolling and honors reduced motion', 
   )
 })
 
-test('narrow opportunity pagination remains a single accessible row', async ({ page }) => {
+test('narrow catalog pagination remains a single accessible row', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 760 })
-  await openBoard(page)
-  const pager = page.getByRole('navigation', { name: 'Opportunity pages' })
+  await page.goto('/opportunities')
+  const pager = page.getByRole('navigation', { name: 'Catalog pages' })
   await expect(pager).toHaveAttribute('data-mobile-pagination', 'compact')
   await expect(pager.getByText(/Page 1 of \d+/)).toBeVisible()
-  await expect(pager.getByRole('button', { name: 'Previous opportunity page' })).toHaveCSS(
+  await expect(pager.getByRole('button', { name: 'Previous catalog page' })).toHaveCSS(
     'height',
     '44px',
   )
-  await expect(pager.getByRole('button', { name: /^Opportunity page \d+$/ })).toHaveCount(0)
   const rowHeight = await pager.evaluate((element) => {
     const children = [...element.children].filter(
       (child) => getComputedStyle(child).display !== 'none',

@@ -1,5 +1,9 @@
 # Living opportunity catalog
 
+The public search/detail interface, reviewed source registry, embedding boundary,
+and rollback steps are documented in [opportunity-catalog.md](opportunity-catalog.md).
+This document remains the annual evidence-monitoring contract.
+
 The researched catalog and evidence live in `docs/research/catalogs/*.json`, with
 source-by-source notes in [programs](../research/opportunities/programs.md) and
 [competitions](../research/opportunities/competitions.md). These are curated

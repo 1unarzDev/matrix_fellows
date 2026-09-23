@@ -22,22 +22,31 @@ const loadPublicContent = defineCachedFunction(
         .eq('id', 'main')
         .eq('published', true)
         .maybeSingle(),
-      client
-        .from('opportunities')
-        .select('id,data,overrides,published')
-        .eq('published', true)
-        .eq('suppressed', false),
+      client.rpc('search_opportunities', {
+        p_query: '',
+        p_disciplines: [],
+        p_kinds: [],
+        p_high_school: [],
+        p_stages: [],
+        p_statuses: [],
+        p_modes: [],
+        p_free_submission: false,
+        p_archival: null,
+        p_sort: 'relevance',
+        p_limit: 6,
+        p_offset: 0,
+      }),
       client.rpc('opportunity_monitor_health'),
     ])
     if (site.error || listings.error) throw new Error('Content query failed')
     const parsed = contentSchema.safeParse(site.data?.data)
-    const opportunities = (listings.data || []).flatMap((row) => {
+    const opportunities = (listings.data || []).flatMap((row: Record<string, any>) => {
       const monitor = (health.data || []).find((entry: { id: string }) => entry.id === row.id)
       const result = opportunitySchema.safeParse({
-        ...row.data,
-        ...row.overrides,
+        ...row.item,
         id: row.id,
-        published: row.published,
+        slug: row.slug,
+        published: true,
         ...(monitor
           ? {
               monitoring: {

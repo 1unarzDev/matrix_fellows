@@ -1,9 +1,15 @@
 import tailwindcss from '@tailwindcss/vite'
+import { guideRoutes } from './shared/data/guides'
 
 export default defineNuxtConfig({
   compatibilityDate: '2026-09-01',
   devtools: { enabled: false },
-  modules: ['@nuxt/fonts'],
+  modules: ['@nuxt/fonts', '@nuxtjs/mdc'],
+  mdc: {
+    headings: { anchorLinks: { h2: true, h3: true } },
+    highlight: false,
+    components: { prose: true },
+  },
   fonts: {
     provider: 'google',
     defaults: {
@@ -19,7 +25,10 @@ export default defineNuxtConfig({
   },
   css: ['~/assets/main.css'],
   vite: { plugins: [tailwindcss()] },
-  nitro: { preset: 'cloudflare-module' },
+  nitro: {
+    preset: 'cloudflare-module',
+    prerender: { routes: ['/guides', ...guideRoutes] },
+  },
   runtimeConfig: {
     supabaseServiceRoleKey: '',
     sheetsSyncToken: '',

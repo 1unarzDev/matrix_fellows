@@ -4,37 +4,41 @@ import programs from '../docs/research/catalogs/program.json'
 import competitions from '../docs/research/catalogs/competition.json'
 import publications from '../docs/research/catalogs/publication.json'
 import workshops from '../docs/research/catalogs/workshop.json'
+import { catalogAdditions } from '../shared/data/opportunity-catalog-additions'
 import type { Opportunity } from '../shared/types/content'
 
-export const catalogSeeds = [...programs, ...competitions, ...publications, ...workshops].map(
-  (raw) => {
-    const entry = raw as Record<string, any>
-    const milestones = (entry.milestones || []).map((m: Record<string, any>) => ({
-      ...m,
-      timezone: ['America/Los_Angeles', 'America/New_York'].includes(m.timezone)
-        ? m.timezone
-        : null,
-    }))
-    return {
-      sources: [...new Set([entry.url, ...(entry.sourceUrls || [])])] as string[],
-      item: opportunitySchema.parse({
-        ...entry,
-        id: `catalog:${entry.id}`,
-        sourceId: `catalog-${entry.id}`,
-        externalId: 'main',
-        edition: String(entry.edition || ''),
-        priority: 80,
-        location: entry.location || 'See official eligibility',
-        eventDate: null,
-        deadline: null,
-        timezone: null,
-        milestones,
-        verifiedAt: '2026-09-07',
-        published: true,
-      }) as Opportunity,
-    }
-  },
-)
+const researchedSeeds = [...programs, ...competitions, ...publications, ...workshops].map((raw) => {
+  const entry = raw as Record<string, any>
+  const milestones = (entry.milestones || []).map((m: Record<string, any>) => ({
+    ...m,
+    timezone: ['America/Los_Angeles', 'America/New_York'].includes(m.timezone) ? m.timezone : null,
+  }))
+  return {
+    sources: [...new Set([entry.url, ...(entry.sourceUrls || [])])] as string[],
+    item: opportunitySchema.parse({
+      ...entry,
+      id: `catalog:${entry.id}`,
+      sourceId: `catalog-${entry.id}`,
+      externalId: 'main',
+      edition: String(entry.edition || ''),
+      priority: 80,
+      location: entry.location || 'See official eligibility',
+      eventDate: null,
+      deadline: null,
+      timezone: null,
+      milestones,
+      verifiedAt: '2026-09-07',
+      published: true,
+    }) as Opportunity,
+  }
+})
+export const catalogSeeds = [
+  ...researchedSeeds,
+  ...catalogAdditions.map((item) => ({
+    sources: [...new Set([item.url, ...(item.fieldEvidence || []).map((entry) => entry.url)])],
+    item: opportunitySchema.parse(item) as Opportunity,
+  })),
+]
 
 // New discoveries can expand within reviewed official institutions, never
 // arbitrary domains supplied by a model or an HTTP caller.

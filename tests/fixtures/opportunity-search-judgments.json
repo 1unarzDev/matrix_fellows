@@ -1,0 +1,146 @@
+[
+  { "query": "Regeneron ISEF", "expected": ["isef-2027:main"], "group": "exact" },
+  {
+    "query": "Regeneron Science Talent Search",
+    "expected": ["regeneron-sts-2027:main"],
+    "group": "exact"
+  },
+  { "query": "Davidson Fellows", "expected": ["davidson-fellows-2027:main"], "group": "exact" },
+  {
+    "query": "BMES High School Poster Expo",
+    "expected": ["catalog:bmes-high-school-poster-expo-2026"],
+    "group": "exact"
+  },
+  {
+    "query": "ACS SWRM High School Research in Chemistry",
+    "expected": ["catalog:acs-swrm-high-school-chemistry-2026"],
+    "group": "exact"
+  },
+  { "query": "ICRA", "expected": ["icra-2027:main"], "group": "exact" },
+  { "query": "CVPR", "expected": ["cvpr-2027:main"], "group": "exact" },
+  { "query": "NeurIPS", "expected": ["neurips-2026:main", "neurips"], "group": "exact" },
+  {
+    "query": "ISCAS live demo",
+    "expected": ["catalog:iscas-2027-live-demonstration"],
+    "group": "exact"
+  },
+  { "query": "arXiv", "expected": ["catalog:arxiv-preprints"], "group": "exact" },
+  { "query": "Blue Ocean", "expected": ["catalog:blue-ocean"], "group": "exact" },
+  {
+    "query": "Breakthrough Junior Challenge",
+    "expected": ["catalog:breakthrough-junior-challenge"],
+    "group": "exact"
+  },
+  { "query": "Conrad Challenge", "expected": ["catalog:conrad-challenge"], "group": "exact" },
+  { "query": "CoRL workshops", "expected": ["catalog:corl-workshops"], "group": "exact" },
+  { "query": "FWRSEF", "expected": ["catalog:fort-worth-regional-science-fair"], "group": "exact" },
+  { "query": "Genes in Space", "expected": ["catalog:genes-in-space"], "group": "exact" },
+  { "query": "JOSS", "expected": ["catalog:journal-open-source-software"], "group": "exact" },
+  { "query": "JSHS", "expected": ["catalog:jshs", "catalog:texas-jshs"], "group": "exact" },
+  { "query": "ML4PS", "expected": ["catalog:ml-physical-sciences"], "group": "exact" },
+  { "query": "ML4H", "expected": ["catalog:machine-learning-health"], "group": "exact" },
+  { "query": "MIT THINK", "expected": ["catalog:mit-think"], "group": "exact" },
+  { "query": "NASA SEES", "expected": ["catalog:nasa-sees"], "group": "exact" },
+  { "query": "NASA Space Apps", "expected": ["catalog:nasa-space-apps"], "group": "exact" },
+  { "query": "PROMYS", "expected": ["catalog:promys"], "group": "exact" },
+  { "query": "Research Science Institute", "expected": ["catalog:rsi"], "group": "exact" },
+  { "query": "Science Olympiad", "expected": ["catalog:science-olympiad"], "group": "exact" },
+  { "query": "Summer Science Program", "expected": ["catalog:ssp"], "group": "exact" },
+  { "query": "TXSEF", "expected": ["catalog:txsef"], "group": "exact" },
+  { "query": "ExploraVision", "expected": ["catalog:exploravision"], "group": "exact" },
+  { "query": "USACO", "expected": ["catalog:usaco"], "group": "exact" },
+  {
+    "query": "biomedcal",
+    "expected": ["catalog:bmes-high-school-poster-expo-2026", "catalog:machine-learning-health"],
+    "group": "typo"
+  },
+  {
+    "query": "NeurIPS workshps",
+    "expected": ["neurips", "queer-ai-neurips-2026:main"],
+    "group": "typo"
+  },
+  {
+    "query": "robotcs conference",
+    "expected": ["icra-2027:main", "catalog:corl-workshops"],
+    "group": "typo"
+  },
+  {
+    "query": "chemstry poster",
+    "expected": ["catalog:acs-swrm-high-school-chemistry-2026"],
+    "group": "typo"
+  },
+  { "query": "Exploravison", "expected": ["catalog:exploravision"], "group": "typo" },
+  { "query": "Simons reserch", "expected": ["catalog:simons-summer-research"], "group": "typo" },
+  { "query": "Scipy tutoral", "expected": ["catalog:scipy-tutorials"], "group": "typo" },
+  {
+    "query": "Rockfeller summer science",
+    "expected": ["catalog:rockefeller-ssrp"],
+    "group": "typo"
+  },
+  { "query": "physcs team", "expected": ["catalog:us-physics-team"], "group": "typo" },
+  {
+    "query": "open revew workshop",
+    "expected": ["neurips", "catalog:climate-ai-neurips"],
+    "group": "typo"
+  },
+  {
+    "query": "robotic grippers with preliminary results",
+    "expected": ["catalog:corl-workshops", "icra-2027:main"],
+    "group": "concept"
+  },
+  {
+    "query": "machine learning for medical images",
+    "expected": ["catalog:machine-learning-health"],
+    "group": "concept"
+  },
+  {
+    "query": "chemistry research without lab access",
+    "expected": ["catalog:acs-swrm-high-school-chemistry-2026"],
+    "group": "concept"
+  },
+  {
+    "query": "student biomedical poster idea",
+    "expected": ["catalog:bmes-high-school-poster-expo-2026"],
+    "group": "concept"
+  },
+  {
+    "query": "publish scientific software",
+    "expected": ["catalog:journal-open-source-software"],
+    "group": "concept"
+  },
+  {
+    "query": "climate machine learning workshop",
+    "expected": ["catalog:climate-ai-neurips", "catalog:climate-ai-tutorials"],
+    "group": "concept"
+  },
+  {
+    "query": "Texas high school science fair",
+    "expected": ["catalog:fort-worth-regional-science-fair", "catalog:txsef"],
+    "group": "concept"
+  },
+  {
+    "query": "research program in mathematics",
+    "expected": ["catalog:promys", "catalog:ross-mathematics", "catalog:mit-primes-usa"],
+    "group": "concept"
+  },
+  { "query": "IROS", "expected": [], "group": "negative" },
+  { "query": "ZXQ nonexistent venue", "expected": [], "group": "negative" },
+  {
+    "query": "",
+    "expected": ["catalog:bmes-high-school-poster-expo-2026"],
+    "group": "filtered",
+    "filters": { "highSchool": ["supported"], "disciplines": ["Biomedical engineering"] }
+  },
+  {
+    "query": "chemistry",
+    "expected": [],
+    "group": "filtered-negative",
+    "filters": { "highSchool": ["supported"], "free": true, "modes": ["remote-presentation"] }
+  },
+  {
+    "query": "workshop",
+    "expected": [],
+    "group": "filtered-negative",
+    "filters": { "highSchool": ["supported"], "free": true }
+  }
+]

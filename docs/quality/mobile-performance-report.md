@@ -123,3 +123,53 @@ window. GPU timer-query p95 was 1.97 ms on the RTX 4070 Ti SUPER; this confirms
 the added cosmic motion is inexpensive on that GPU, not that a phone will match
 it. The deterministic cosmic clock produced five isolated streak events during
 the forward/reverse journey and paused while outside its chapter.
+
+## Current-worktree acceptance rerun
+
+The complete local matrix was rerun against the production Cloudflare Worker
+build after the guide library and footer changes, so the results describe the
+current worktree rather than an earlier renderer-only checkout.
+
+- Three identical SwiftShader `perf:mobile` trials each reported 30.0 canvas fps,
+  361 RAF callbacks, 16.7 ms median, and 16.7–16.8 ms RAF p95. All used the
+  efficient profile, 0.32 atmosphere ratio, 1× foreground, five draw calls, ten
+  programs, and 1,560 initial particles.
+- The 120-second SwiftShader forward/reverse soak rendered 3,549 frames at 29.57
+  fps overall. Every ten-second window measured 29.1–30.0 fps with rendered p95
+  at or below 50 ms. Overall rendered median/p95 were 33.3/33.4 ms; the maximum
+  interval was 66.7 ms and there were no intervals above 100 ms. CPU submission
+  p95 was 0.30 ms. GPU timing was unavailable and was not inferred.
+- Both bounded quality steps occurred during the soak: particles fell first to
+  1,248 and then 1,196 while the atmosphere remained at its 0.32 floor. No
+  compilation or allocation stall accompanied either event. The worst frame was
+  in the oasis range at progress 1.178 with 18 calls and a 66.7 ms interval.
+- Sampled mobile-navigation tap-to-paint was 29.9 ms, below the 200 ms lab target.
+- Normal/paused-WebGL profiling recorded 16.7–16.8 ms RAF p95 in both controls.
+  Normal mode adapted to quality step 2 during the three-second journey; startup
+  produced two long tasks totaling 666 ms. This distinguishes startup work from
+  steady-state scroll choreography without pretending RAF is rendered cadence.
+- The isolated production storm/ocean fragment measured 31.7 ms median and 33.0
+  ms p95 over eight SwiftShader samples.
+- With 4× CPU throttling, 150 ms network latency, and 1.5 Mbps throughput, SSR
+  content remained available at DOM readiness. Early navigation responded in
+  40.7 ms; cold usable scene time was 7.68 s and warm usable time was 1.80 s.
+  Six long tasks included a 573 ms shader-preparation task. These startup figures
+  are reported separately from the warmed 120-second journey.
+- Hardware-accelerated desktop and mobile-emulated captures held 30.0 fps at all
+  six chapters. Desktop retained the cinematic profile and 12,000 particles;
+  mobile emulation retained the efficient 0.32-atmosphere/1×-foreground path.
+- The current-worktree 120-second hardware-accelerated mobile-emulation soak
+  rendered 3,600 frames at 30.00 fps, with every ten-second window at 30.0 fps,
+  33.3/33.4 ms rendered median/p95, a 33.5 ms maximum interval, and no >100 ms
+  stalls. `EXT_disjoint_timer_query_webgl2` returned 3,599 valid samples with
+  1.26 ms GPU p95 and zero rejected/disjoint samples. CPU submission p95 was
+  0.30 ms and sampled tap-to-paint was 29.2 ms. This describes the available RTX
+  4070 Ti SUPER, not a phone GPU.
+- Hero water (24 samples), waterline NaNs (804 samples), descent continuity (81
+  frames), terrain depth, all eight oasis assets, reverse navigation, context
+  loss, teardown, toolbar resize, and 844×390 landscape initialization passed.
+
+These results close the actionable local acceptance checks, not the physical
+device requirement. Follow the [physical-device procedure](physical-device-performance-procedure.md)
+on the owner's phone and representative iOS/Android hardware before calling the
+approximately 10 fps report resolved.

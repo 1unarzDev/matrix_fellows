@@ -83,6 +83,24 @@ export const opportunitySchema = z.object({
         evidence: z.string().min(1).max(700),
         superseded: z.boolean().optional(),
         url: httpsUrl,
+        role: z
+          .enum([
+            'abstract',
+            'submission',
+            'qualification',
+            'nomination',
+            'ethics-approval',
+            'registration',
+            'camera-ready',
+            'event',
+            'results',
+          ])
+          .optional(),
+        precision: z.enum(['exact', 'date-only']).optional(),
+        originalTimezone: z.string().max(160).nullable().optional(),
+        tentative: z.boolean().optional(),
+        conflict: z.string().max(700).nullable().optional(),
+        sourceRef: z.string().max(240).optional(),
       }),
     )
     .max(120)
@@ -104,6 +122,104 @@ export const opportunitySchema = z.object({
   monitoring: z
     .object({ lastCheckedAt: date.nullable(), lastSuccessAt: date.nullable(), issue: z.boolean() })
     .optional(),
+  slug: z
+    .string()
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+    .max(180)
+    .optional(),
+  canonicalId: z.string().min(1).max(650).optional(),
+  aliases: z.array(z.string().min(1).max(160)).max(30).optional(),
+  organizer: z.string().max(240).optional(),
+  series: z
+    .object({ id: z.string().max(180), name: z.string().max(240) })
+    .nullable()
+    .optional(),
+  parent: z
+    .object({
+      id: z.string().max(180).optional(),
+      name: z.string().max(240),
+      kind: z.enum(['organization', 'series', 'edition', 'session']),
+    })
+    .nullable()
+    .optional(),
+  routeType: z
+    .enum([
+      'paper',
+      'short-paper',
+      'poster',
+      'workshop-contribution',
+      'challenge',
+      'competition',
+      'program',
+      'publication',
+      'attendance',
+    ])
+    .optional(),
+  contributionFormat: z.string().max(300).optional(),
+  disciplines: z.array(z.string().min(1).max(100)).max(20).optional(),
+  topics: z.array(z.string().min(1).max(120)).max(60).optional(),
+  highSchoolPolicy: z.enum(['supported', 'excluded', 'not-stated']).optional(),
+  highSchoolEvidence: z.string().max(1200).optional(),
+  restrictions: z
+    .object({
+      grades: z.string().max(300).nullable().optional(),
+      ages: z.string().max(300).nullable().optional(),
+      geography: z.string().max(500).nullable().optional(),
+      team: z.string().max(500).nullable().optional(),
+      adultSponsor: z.string().max(500).nullable().optional(),
+      schoolNomination: z.string().max(500).nullable().optional(),
+      authorEligibility: z.string().max(700).nullable().optional(),
+      minorAttendance: z.string().max(700).nullable().optional(),
+      platformAccount: z.string().max(500).nullable().optional(),
+    })
+    .optional(),
+  preparationStages: z
+    .array(
+      z.enum([
+        'idea',
+        'prototype',
+        'preliminary-results',
+        'completed-research',
+        'learning-team-practice',
+      ]),
+    )
+    .max(5)
+    .optional(),
+  prerequisites: z.array(z.string().min(1).max(700)).max(30).optional(),
+  costs: z
+    .object({
+      submission: z.string().max(400).nullable().optional(),
+      registration: z.string().max(400).nullable().optional(),
+      accompanyingAdult: z.string().max(400).nullable().optional(),
+      travel: z.string().max(400).nullable().optional(),
+      materials: z.string().max(400).nullable().optional(),
+      publication: z.string().max(400).nullable().optional(),
+      aid: z.string().max(500).nullable().optional(),
+    })
+    .optional(),
+  outcomes: z.array(z.string().min(1).max(500)).max(30).optional(),
+  participationModes: z
+    .array(z.enum(['in-person', 'remote-submission', 'remote-presentation', 'hybrid']))
+    .max(4)
+    .optional(),
+  archival: z.boolean().nullable().optional(),
+  fieldEvidence: z
+    .array(
+      z.object({
+        field: z.string().min(1).max(120),
+        url: httpsUrl,
+        quote: z.string().max(1200).optional(),
+        observedAt: date,
+        confirmedAt: date.nullable().optional(),
+        contentHash: z
+          .string()
+          .regex(/^[a-f0-9]{64}$/)
+          .optional(),
+      }),
+    )
+    .max(100)
+    .optional(),
+  searchVersion: z.number().int().min(1).max(1000).optional(),
 })
 export const sourceSchema = z.object({
   id: z.string().regex(/^[a-z0-9-]{1,60}$/),

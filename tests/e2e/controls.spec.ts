@@ -1,24 +1,20 @@
 import { test, expect } from '@playwright/test'
 
-test('custom opportunity picker supports keyboard selection and dismissal', async ({ page }) => {
+test('catalog uses native sorting and an accessible dismissible mobile filter sheet', async ({
+  page,
+}) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
-  await page.goto('/#community')
-  await page.locator('[data-ready="true"]').waitFor()
-  const trigger = page.getByRole('button', { name: 'Opportunity type: All types' })
-  await trigger.click()
-  await expect(page.getByRole('listbox', { name: 'Opportunity type' })).toBeVisible()
-  await page.keyboard.press('w')
-  await expect(page.getByRole('option', { name: 'Workshop', exact: true })).toBeFocused()
-  await page.keyboard.press('Enter')
-  await expect(page.getByRole('listbox')).toHaveCount(0)
-  const selected = page.getByRole('button', { name: 'Opportunity type: Workshop' })
-  await expect(selected).toBeFocused()
-  await selected.press('ArrowDown')
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/opportunities')
+  await page.locator('[data-catalog-ready="true"]').waitFor()
+  const sort = page.getByLabel('Sort opportunities')
+  await sort.selectOption('verified')
+  await expect(page).toHaveURL(/sort=verified/)
+  await page.getByRole('button', { name: /^Filters/ }).click()
+  const dialog = page.getByRole('dialog', { name: 'Filters' })
+  await expect(dialog).toBeVisible()
   await page.keyboard.press('Escape')
-  await expect(selected).toBeFocused()
-  await selected.click()
-  await page.getByRole('searchbox').click()
-  await expect(page.getByRole('listbox')).toHaveCount(0)
+  await expect(dialog).not.toBeVisible()
 })
 
 test('project panels animate and closed content cannot receive focus', async ({ page }) => {

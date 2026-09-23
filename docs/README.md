@@ -12,6 +12,7 @@ to local setup and deployment; this index explains how the system works and why.
 | Change or profile the cinematic renderer    | [Performance and rendering](architecture/performance.md)       |
 | Work on visual direction                    | [Art direction](design/art-direction.md)                       |
 | Operate opportunity updates                 | [Opportunity monitoring](operations/opportunity-monitoring.md) |
+| Write or maintain research guides           | [Research-guide authoring](operations/research-guides.md)      |
 | Configure membership responses              | [Membership form and Sheets](operations/join-form.md)          |
 | Run verification or investigate regressions | [Validation](quality/validation.md)                            |
 | Check asset attribution                     | [Asset licenses](legal/asset-licenses.md)                      |
@@ -46,6 +47,8 @@ Owner and maintainer runbooks.
 
 - [Membership form and Google Sheets](operations/join-form.md)
 - [Living opportunity catalog](operations/opportunity-monitoring.md)
+- [Catalog search and source review](operations/opportunity-catalog.md)
+- [Research-guide authoring](operations/research-guides.md)
 - [Legacy/manual opportunity imports](operations/opportunity-imports.md)
 - [Search audit](operations/seo-audit.md) and [Search Console setup](operations/seo-setup.md)
 
@@ -54,8 +57,12 @@ Owner and maintainer runbooks.
 Verification instructions and dated investigation records.
 
 - [Validation matrix](quality/validation.md)
+- [Opportunity catalog report](quality/opportunity-catalog-report.md)
+- [Research-guide implementation report](quality/research-guides-report.md)
 - [Mobile performance report](quality/mobile-performance-report.md) — a dated
   SwiftShader comparison, not a physical-device benchmark.
+- [Physical-device performance procedure](quality/physical-device-performance-procedure.md)
+  — iPhone/Safari and budget-Android acceptance protocol.
 - [Performance source review](research/performance/optimization-sources.md) —
   primary-source constraints behind the current optimization pass.
 - [Ocean gap regression](quality/regressions/ocean-gap.md)
@@ -69,6 +76,8 @@ scheduled Worker.
 - [Programs](research/opportunities/programs.md)
 - [Workshops and publications](research/opportunities/workshops-publications.md)
 - [Deadline-source research](research/opportunities/deadline-sources.md)
+- [Catalog implementation sources](research/opportunities/catalog-implementation-sources.md)
+- [Guide implementation and content sources](research/guides/implementation-sources.md)
 - [Machine-readable catalogs](research/catalogs/) — runtime inputs; preserve their
   schemas and verify `workers/catalog.ts` when moving or editing them.
 

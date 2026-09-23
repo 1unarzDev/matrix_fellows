@@ -2,6 +2,12 @@
 
 A Nuxt 4 research-society website with a continuous Three.js/GSAP journey, Tailwind v4 styling, a Supabase owner editor, and a scheduled Cloudflare opportunity importer.
 
+The cinematic homepage now links to an SSR opportunity catalog at
+`/opportunities`, with crawlable detail pages, RLS-protected lexical/fuzzy
+search, explicit eligibility/preparation/cost fields, and device-local saves.
+It also previews a route-split research library at `/guides`; eleven concise,
+Git-reviewed Markdown guides remain fully readable in server-rendered HTML.
+
 For system design, rendering/performance details, operational runbooks, visual
 research, and validation history, use the [documentation index](docs/README.md).
 

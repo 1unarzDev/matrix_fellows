@@ -9,6 +9,7 @@ import {
 import { defaultOpportunities, defaultContent } from '../../shared/data/defaults'
 import { deadlineTimestamp, isUpcoming, sortOpportunities } from '../../shared/utils/opportunities'
 import { contentSchema, opportunitySchema } from '../../shared/utils/validation'
+import { catalogAdditions } from '../../shared/data/opportunity-catalog-additions'
 
 const source = {
   id: 'test',
@@ -27,6 +28,17 @@ const row = {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('opportunity ingestion', () => {
+  it('validates specific catalog routes and keeps unknown access claims explicit', () => {
+    expect(catalogAdditions.map((item) => opportunitySchema.parse(item))).toHaveLength(3)
+    expect(catalogAdditions.find((item) => item.id.includes('bmes'))).toMatchObject({
+      highSchoolPolicy: 'supported',
+      preparationStages: expect.arrayContaining(['idea']),
+    })
+    expect(catalogAdditions.find((item) => item.id.includes('iscas'))).toMatchObject({
+      highSchoolPolicy: 'not-stated',
+      participationModes: ['in-person'],
+    })
+  })
   it('uses Workers-compatible manual redirects and rejects redirected sources', async () => {
     const mock = vi
       .fn()

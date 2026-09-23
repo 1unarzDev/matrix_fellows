@@ -36,6 +36,16 @@ const draft = ref<SiteContent>(JSON.parse(JSON.stringify(props.initialContent)))
 const listings = ref<Opportunity[]>([...props.opportunities])
 const sources = ref<Array<ImportSource & { last_run?: string; last_error?: string }>>([])
 const candidates = ref<Opportunity[]>([])
+const discoveryCount = ref(0)
+const queueHealth = ref<
+  Array<{
+    kind: string
+    queued: number
+    running: number
+    failed: number
+    oldest_queued_at: string | null
+  }>
+>([])
 const monitors = ref<
   Array<{
     id: string
@@ -115,7 +125,7 @@ async function authorize() {
     error.value = 'This account does not have editing access.'
     return
   }
-  const [site, rows, feeds, proposals, monitoring] = await Promise.all([
+  const [site, rows, feeds, proposals, monitoring, discoveries, queues] = await Promise.all([
     client.from('site_content').select('data,draft').eq('id', 'main').maybeSingle(),
     client.from('opportunities').select('*').order('updated_at', { ascending: false }),
     client.from('import_sources').select('*'),
@@ -125,9 +135,22 @@ async function authorize() {
       .eq('status', 'pending')
       .order('fetched_at', { ascending: false }),
     client.from('opportunity_monitors').select('*').order('id'),
+    client
+      .from('opportunity_discoveries')
+      .select('id', { count: 'exact', head: true })
+      .eq('review_status', 'pending'),
+    client.rpc('opportunity_queue_health'),
   ])
   if (disposed) return
-  if (site.error || rows.error || feeds.error || proposals.error || monitoring.error) {
+  if (
+    site.error ||
+    rows.error ||
+    feeds.error ||
+    proposals.error ||
+    monitoring.error ||
+    discoveries.error ||
+    queues.error
+  ) {
     error.value = 'Could not load all editor data. Please retry.'
     return
   }
@@ -140,6 +163,8 @@ async function authorize() {
   }))
   sources.value = feeds.data || []
   monitors.value = monitoring.data || []
+  discoveryCount.value = discoveries.count || 0
+  queueHealth.value = queues.data || []
   candidates.value = (proposals.data || []).flatMap((row) => {
     const parsed = opportunitySchema.safeParse(row.data)
     return parsed.success ? [parsed.data] : []
@@ -603,6 +628,29 @@ onBeforeUnmount(() => {
                       preserve confirmed information. Owner edits and hidden listings are never
                       reset.
                     </p>
+                    <section
+                      class="grid gap-3 sm:grid-cols-2"
+                      aria-label="Opportunity queue health"
+                    >
+                      <div class="rounded-xl border border-paper/15 p-4 text-xs">
+                        <p class="text-paper/45">OpenReview discoveries awaiting review</p>
+                        <p class="mt-2 text-2xl text-paper">{{ discoveryCount }}</p>
+                      </div>
+                      <div
+                        v-for="queue in queueHealth"
+                        :key="queue.kind"
+                        class="rounded-xl border border-paper/15 p-4 text-xs"
+                      >
+                        <p class="capitalize text-paper/70">{{ queue.kind }} queue</p>
+                        <p class="mt-2 text-paper/50">
+                          Queued {{ queue.queued }} · running {{ queue.running }} · failed
+                          {{ queue.failed }}
+                        </p>
+                        <p class="mt-1 text-paper/40">
+                          Oldest: {{ queue.oldest_queued_at || 'No waiting jobs' }}
+                        </p>
+                      </div>
+                    </section>
                     <section
                       v-if="monitors.length"
                       class="space-y-3"

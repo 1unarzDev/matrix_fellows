@@ -3,11 +3,20 @@
 ## Completed
 
 - Nuxt and scheduled-Worker TypeScript checks pass.
-- 97 unit/database tests across 15 files pass, including tests against the actual migrations in embedded PostgreSQL.
-- Eight Playwright suites cover the built application across desktop and mobile Chromium profiles.
+- 104 unit/database tests across 17 files pass. Catalog migrations 008–012 were applied
+  transactionally to the linked Supabase PostgreSQL project because embedded
+  PGlite does not ship the required `pg_trgm`/`vector` extensions.
+- Nine Playwright suites cover the application across desktop and mobile Chromium profiles. The current suite has 60 runnable checks and six intentional device/hover skips; all runnable checks pass. One desktop meeting-anchor check that timed out under the controlled two-worker run passed when rerun serially.
 - Browser coverage includes direct deep links, reverse scene synchronization, early section navigation, expandable research details, opportunity search/empty states, editor opening/closing, reduced motion, and unavailable WebGL.
+- Renderer lifecycle coverage includes landscape-phone quality selection, Safari-style
+  toolbar resizing, context loss fallback, client-route teardown, and cessation
+  of frame submissions after disposal.
+- Guide coverage includes SSR text, index/detail navigation, instructional figures,
+  strict unknown-slug 404s, no-JavaScript readability, and narrow-screen overflow.
 - Narrow opportunity pagination uses a single-row compact control with 44 px mobile targets; meeting information and its direct detail link are present in the opening SSR content.
-- Production Nuxt build passes. Frontend and scheduled importer are deployed independently through Wrangler/GitHub automation.
+- The SSR opportunity catalog has bounded search/detail APIs, RLS-preserving
+  filters, 53 judged queries, and 320/360/390/430-pixel no-overflow captures.
+- Production Nuxt build passes. Frontend and scheduled importer retain independent Wrangler/GitHub deployment paths; this validation does not claim the new builds were deployed.
 - Vue components contain no CSS style blocks or inline style attributes. The stylesheet contains Tailwind import/theme configuration only.
 - Desktop and mobile-emulated screenshots were inspected for typography, framing, atmosphere, reading contrast, and the oasis silhouette. References and visual changes are documented in [art direction](../design/art-direction.md).
 - The nebula has a 30-second stationary recording and forward/reverse transition recording; cold-load recordings retain visible SSR content without a second loading canvas.
@@ -22,12 +31,14 @@ are recorded observations, not universal device guarantees.
 Hardware-accelerated Chromium using an NVIDIA GeForce RTX 4070 Ti SUPER through ANGLE/OpenGL ES measured approximately **30 fps** at all six stationary chapter positions. Measurements used 1440 × 960 desktop and an iPhone 13 viewport profile, with canvas pixel ratio capped at 1 in these runs. Rendering intentionally caps at 30 fps.
 
 The owner's phone reported roughly **10 fps** before the 2026-09-22 efficient-path
-pass. That is the authoritative failing baseline. A subsequent 120-second
-SwiftShader proxy held 28.9–30 fps in every ten-second window without >100 ms
-stalls, but it does not establish physical-phone success. The optimized live
-build must be rerun on that phone. The runtime adapts procedural detail and
-particle count under sustained load while keeping DOM and foreground resolution
-stable.
+pass. That is the authoritative failing baseline. The current-worktree
+120-second SwiftShader proxy held 29.1–30 fps in every ten-second window without
+
+> 100 ms stalls, but it does not establish physical-phone success. The optimized
+> live build must be rerun on that phone using the
+> [physical-device procedure](physical-device-performance-procedure.md). The runtime
+> adapts procedural detail and particle count under sustained load while keeping
+> DOM and foreground resolution stable.
 
 Regenerate screenshots and measured canvas diagnostics with `npm run capture` (requires a running app and Playwright Chromium). Output is stored in `test-results/visual`; browser test traces use the separate `test-results/e2e` directory.
 

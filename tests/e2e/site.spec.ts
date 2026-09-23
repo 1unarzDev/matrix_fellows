@@ -60,13 +60,12 @@ test('content, navigation, project expansion, and search work', async ({ page },
   ).toBeVisible()
   await nav.getByRole('link', { name: mobile ? 'Join us' : 'Your next step', exact: true }).click()
   await expect(page).toHaveURL(/#community$/)
-  await page.getByRole('searchbox').fill('machine learning')
-  await expect(page.getByRole('heading', { name: 'NeurIPS workshops' })).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Regeneron ISEF', exact: true })).toHaveCount(0)
-  await page.getByRole('searchbox').fill('no matching item')
-  await expect(page.getByText('No matches for these filters.', { exact: false })).toBeVisible()
-  await page.getByRole('button', { name: 'Clear filters' }).click()
-  await expect(page.getByRole('searchbox')).toHaveValue('')
+  await page
+    .getByRole('searchbox', { name: 'Search all research opportunities' })
+    .fill('machine learning')
+  await page.getByRole('button', { name: 'Search', exact: true }).click()
+  await expect(page).toHaveURL(/\/opportunities\?q=machine\+learning/)
+  await expect(page.getByRole('heading', { name: 'Opportunities', exact: true })).toBeVisible()
   // Admin dialog behavior and authorization have dedicated suites; keeping
   // them out of this long journey prevents duplicated animation waits.
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
@@ -113,4 +112,14 @@ test('meeting summary is prominent before the journey and links to full details'
   await hero.getByRole('link', { name: 'Meeting details' }).click()
   await expect(page).toHaveURL(/#meeting-details$/)
   await expect(page.locator('#meeting-details')).toBeInViewport({ timeout: 10000 })
+})
+
+test('footer links to the official Instagram profile', async ({ page }) => {
+  await page.goto('/')
+  const instagram = page.getByRole('link', {
+    name: 'Matrix Fellows on Instagram, @mhs_research_club (opens in a new tab)',
+  })
+  await expect(instagram).toHaveAttribute('href', 'https://www.instagram.com/mhs_research_club/')
+  await expect(instagram).toHaveAttribute('target', '_blank')
+  await expect(instagram).toHaveAttribute('rel', 'noopener noreferrer')
 })

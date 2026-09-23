@@ -390,7 +390,7 @@ onBeforeUnmount(() => {
                 class="transition-transform group-hover:translate-y-1"
             /></a>
             <div
-              class="relative mt-6 overflow-hidden rounded-xl border border-[#f4d39b]/50 bg-[linear-gradient(135deg,rgba(124,84,43,.68)_0%,rgba(72,56,37,.62)_54%,rgba(34,45,42,.58)_100%)] px-4 py-4 shadow-[0_16px_44px_#2a160824,inset_0_1px_0_#fff5] backdrop-blur-md"
+              class="relative mt-6 overflow-hidden rounded-xl border border-[#f4d39b]/50 bg-[linear-gradient(135deg,rgba(124,84,43,.64)_0%,rgba(130,96,59,.4)_54%,rgba(222,190,131,.1)_100%)] px-4 py-4 shadow-[0_16px_44px_rgba(72,43,24,.12),inset_0_1px_0_#fff5] backdrop-blur-md"
             >
               <span
                 aria-hidden="true"

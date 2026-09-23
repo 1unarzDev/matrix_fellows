@@ -23,7 +23,9 @@ const policy = computed(
 </script>
 
 <template>
-  <article class="group border-b border-paper/12 py-7 first:border-t sm:py-9">
+  <article
+    class="opportunity-row group relative border-b border-paper/12 py-7 first:border-t sm:py-9"
+  >
     <div class="flex items-start gap-4 sm:gap-7">
       <div class="min-w-0 flex-1">
         <div
@@ -38,10 +40,10 @@ const policy = computed(
             >{{ item.parent?.name || item.series?.name }}</span
           >
         </div>
-        <h2 class="mt-3 font-display text-xl tracking-[-.03em] text-paper sm:text-2xl">
-          <NuxtLink :to="`/opportunities/${item.slug}`" class="hover:text-acid">{{
-            item.title
-          }}</NuxtLink>
+        <h2
+          class="opportunity-row__title mt-3 font-display text-xl tracking-[-.03em] text-paper sm:text-2xl"
+        >
+          <NuxtLink :to="`/opportunities/${item.slug}`">{{ item.title }}</NuxtLink>
         </h2>
         <p class="mt-3 max-w-3xl text-sm leading-6 text-paper/58">{{ item.description }}</p>
         <div class="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-paper/52">
@@ -67,10 +69,101 @@ const policy = computed(
         <OpportunitySaveButton :id="item.id" compact />
         <NuxtLink
           :to="`/opportunities/${item.slug}`"
-          class="inline-flex min-h-11 items-center text-xs text-acid"
-          >Details →</NuxtLink
+          class="opportunity-row__details inline-flex min-h-11 items-center rounded-full px-3 text-xs text-acid"
+          >Details <span aria-hidden="true">→</span></NuxtLink
         >
       </div>
     </div>
   </article>
 </template>
+
+<style scoped>
+.opportunity-row {
+  isolation: isolate;
+  animation: row-arrive 440ms cubic-bezier(0.22, 1, 0.36, 1) var(--row-delay, 0ms) both;
+  transition:
+    transform 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 240ms ease;
+}
+.opportunity-row::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0 -1rem;
+  border-radius: 1rem;
+  opacity: 0;
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--color-paper) 3.5%, transparent),
+      transparent 76%
+    ),
+    radial-gradient(
+      55% 90% at 0% 50%,
+      color-mix(in srgb, var(--color-acid) 5%, transparent),
+      transparent
+    );
+  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--color-acid) 36%, transparent);
+  transition: opacity 280ms ease;
+}
+.opportunity-row:hover,
+.opportunity-row:focus-within {
+  border-color: color-mix(in srgb, var(--color-acid) 22%, transparent);
+  transform: translate3d(4px, 0, 0);
+}
+.opportunity-row:hover::before,
+.opportunity-row:focus-within::before {
+  opacity: 1;
+}
+.opportunity-row__title a {
+  transition:
+    color 200ms ease,
+    text-shadow 280ms ease;
+}
+.opportunity-row:hover .opportunity-row__title a,
+.opportunity-row__title a:focus-visible {
+  color: var(--color-acid);
+  text-shadow: 0 0 24px color-mix(in srgb, var(--color-acid) 12%, transparent);
+}
+.opportunity-row__details {
+  gap: 0.35rem;
+  border: 1px solid transparent;
+  transition:
+    gap 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+.opportunity-row__details:hover,
+.opportunity-row__details:focus-visible {
+  gap: 0.6rem;
+  border-color: color-mix(in srgb, var(--color-acid) 26%, transparent);
+  background: color-mix(in srgb, var(--color-acid) 6%, transparent);
+  transform: translate3d(2px, 0, 0);
+}
+.opportunity-row__details:active {
+  transform: scale(0.97);
+  transition-duration: 80ms;
+}
+@keyframes row-arrive {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 7px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .opportunity-row {
+    animation: none;
+  }
+  .opportunity-row,
+  .opportunity-row__title a,
+  .opportunity-row__details {
+    transform: none !important;
+    transition: none !important;
+  }
+}
+</style>

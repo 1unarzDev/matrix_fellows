@@ -182,8 +182,22 @@ useHead({
 <template>
   <div class="catalog-page min-h-screen bg-ink text-paper" :data-catalog-ready="hydrated">
     <CatalogHeader />
+    <div class="catalog-cosmos" aria-hidden="true">
+      <svg viewBox="0 0 720 390" fill="none">
+        <path d="M88 278 194 192l116 34 92-132 118 65 109-91" />
+        <path d="m310 226 58 88 101-42 51-113" />
+        <circle cx="88" cy="278" r="3" />
+        <circle cx="194" cy="192" r="4" />
+        <circle cx="310" cy="226" r="2.5" />
+        <circle cx="402" cy="94" r="3.5" />
+        <circle cx="520" cy="159" r="4.5" />
+        <circle cx="629" cy="68" r="2.5" />
+        <circle cx="368" cy="314" r="2.5" />
+        <circle cx="469" cy="272" r="3" />
+      </svg>
+    </div>
     <main class="relative z-[1] mx-auto max-w-[90rem] px-5 pb-24 pt-14 sm:px-8 lg:px-12 lg:pt-20">
-      <div class="max-w-4xl">
+      <div class="catalog-intro max-w-4xl">
         <p class="text-[10px] uppercase tracking-[.2em] text-acid">Research discovery</p>
         <h1 class="mt-5 font-display text-4xl tracking-[-.055em] sm:text-6xl">
           Find a route for the work you want to do.
@@ -195,14 +209,20 @@ useHead({
         </p>
       </div>
 
-      <form action="/opportunities" method="get" class="mt-10" @submit.prevent="commitSearch">
+      <form
+        action="/opportunities"
+        method="get"
+        class="catalog-search mt-10"
+        @submit.prevent="commitSearch"
+      >
         <label for="catalog-search" class="mb-2 block text-xs text-paper/65"
           >Search opportunities</label
         >
         <div
-          class="flex min-h-14 items-center rounded-xl border border-paper/20 bg-paper/[.025] px-4 focus-within:border-acid/60"
+          class="catalog-search__shell flex min-h-14 items-center rounded-2xl px-4"
+          :class="{ 'catalog-search__shell--busy': status === 'pending' }"
         >
-          <SiteIcon name="search" :size="18" class="mr-3 text-paper/40" />
+          <SiteIcon name="search" :size="18" class="catalog-search__icon mr-3 text-paper/40" />
           <!-- Prettier expands this two-statement Vue handler into an invalid expression. -->
           <!-- prettier-ignore -->
           <input
@@ -217,7 +237,9 @@ useHead({
             @compositionstart="composing = true"
             @compositionend="composing = false; scheduleSearch()"
           />
-          <button type="submit" class="min-h-11 px-3 text-xs text-acid">Search</button>
+          <button type="submit" class="catalog-search__submit min-h-11 rounded-full px-4 text-xs">
+            Search
+          </button>
         </div>
       </form>
 
@@ -249,7 +271,7 @@ useHead({
             <div class="flex items-center gap-2">
               <button
                 type="button"
-                class="min-h-11 rounded-full border border-paper/15 px-4 text-xs text-paper/70 lg:hidden"
+                class="catalog-control min-h-11 rounded-full px-4 text-xs text-paper/70 lg:hidden"
                 @click="openFilters"
               >
                 Filters<span v-if="activeCount"> ({{ activeCount }})</span>
@@ -265,7 +287,7 @@ useHead({
             </div>
           </div>
 
-          <div v-if="data?.unavailable || error" class="mt-8 rounded-xl border border-paper/15 p-7">
+          <div v-if="data?.unavailable || error" class="catalog-state mt-8 rounded-2xl p-7">
             <h3 class="font-display text-xl">The catalog could not be retrieved.</h3>
             <p class="mt-3 text-sm text-paper/55">
               Your query and filters are still here. Try again shortly; no empty response has been
@@ -274,7 +296,7 @@ useHead({
           </div>
           <div
             v-else-if="!data?.items.length && status !== 'pending'"
-            class="mt-8 rounded-xl border border-dashed border-paper/20 p-8 text-center"
+            class="catalog-state mt-8 rounded-2xl p-8 text-center"
           >
             <h3 class="font-display text-xl">No supported matches.</h3>
             <p class="mt-3 text-sm text-paper/50">
@@ -295,7 +317,12 @@ useHead({
               :key="`${route.fullPath}:${data.version}`"
               :aria-busy="status === 'pending'"
             >
-              <OpportunityResultRow v-for="item in data.items" :key="item.id" :item="item" />
+              <OpportunityResultRow
+                v-for="(item, index) in data.items"
+                :key="item.id"
+                :item="item"
+                :style="`--row-delay:${Math.min(index, 7) * 26}ms`"
+              />
             </div>
           </Transition>
           <nav
@@ -308,7 +335,7 @@ useHead({
               type="button"
               aria-label="Previous catalog page"
               :disabled="data.page === 1"
-              class="min-h-11 shrink-0 rounded-full border border-paper/15 px-4 text-xs disabled:opacity-35"
+              class="catalog-control min-h-11 shrink-0 rounded-full px-4 text-xs disabled:opacity-35"
               @click="pageTo(data.page - 1)"
             >
               <span class="sm:hidden">Prev</span><span class="hidden sm:inline">Previous</span>
@@ -320,7 +347,7 @@ useHead({
               type="button"
               aria-label="Next catalog page"
               :disabled="data.page === data.pageCount"
-              class="min-h-11 shrink-0 rounded-full border border-paper/15 px-4 text-xs disabled:opacity-35"
+              class="catalog-control min-h-11 shrink-0 rounded-full px-4 text-xs disabled:opacity-35"
               @click="pageTo(data.page + 1)"
             >
               Next
@@ -358,14 +385,11 @@ useHead({
         >
           <button
             type="button"
-            class="min-h-12 rounded-full border border-paper/15 text-xs"
+            class="catalog-control min-h-12 rounded-full text-xs"
             @click="clearFilters"
           >
             Reset</button
-          ><button
-            type="submit"
-            class="min-h-12 rounded-full border border-acid/40 bg-acid/10 text-xs text-acid"
-          >
+          ><button type="submit" class="catalog-apply min-h-12 rounded-full text-xs text-acid">
             Apply {{ data?.total ?? 0 }}
           </button>
         </div>
@@ -381,19 +405,170 @@ useHead({
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(70% 55% at 78% 5%, rgba(74, 113, 125, 0.12), transparent 70%),
-    radial-gradient(55% 45% at 8% 30%, rgba(83, 67, 119, 0.1), transparent 72%);
+    radial-gradient(65% 48% at 82% 2%, rgba(64, 117, 119, 0.2), transparent 70%),
+    radial-gradient(48% 42% at 7% 26%, rgba(102, 68, 128, 0.14), transparent 74%),
+    radial-gradient(42% 32% at 68% 72%, rgba(160, 91, 76, 0.065), transparent 76%);
+}
+.catalog-page::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.34;
+  background-image:
+    radial-gradient(circle at 14% 18%, rgb(255 255 255 / 38%) 0 0.7px, transparent 1px),
+    radial-gradient(circle at 73% 31%, rgb(234 194 121 / 42%) 0 0.8px, transparent 1.1px),
+    radial-gradient(circle at 42% 81%, rgb(255 255 255 / 24%) 0 0.6px, transparent 1px);
+  background-size:
+    19rem 17rem,
+    27rem 23rem,
+    31rem 29rem;
+  mask-image: linear-gradient(to bottom, black, transparent 82%);
+}
+.catalog-cosmos {
+  position: fixed;
+  z-index: 0;
+  top: 4.5rem;
+  right: -3rem;
+  width: min(48rem, 68vw);
+  pointer-events: none;
+  color: var(--color-acid);
+  opacity: 0.22;
+  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--color-acid) 22%, transparent));
+  animation: cosmos-drift 24s ease-in-out infinite alternate;
+}
+.catalog-cosmos svg {
+  width: 100%;
+  height: auto;
+}
+.catalog-cosmos path {
+  stroke: currentColor;
+  stroke-width: 0.65;
+  stroke-dasharray: 2 8;
+}
+.catalog-cosmos circle {
+  fill: currentColor;
+}
+.catalog-intro,
+.catalog-search {
+  animation: catalog-arrive 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.catalog-search {
+  animation-delay: 70ms;
+}
+.catalog-search__shell {
+  position: relative;
+  border: 1px solid color-mix(in srgb, var(--color-paper) 19%, transparent);
+  background: linear-gradient(
+    110deg,
+    color-mix(in srgb, var(--color-paper) 4.5%, transparent),
+    color-mix(in srgb, var(--color-paper) 1.5%, transparent)
+  );
+  box-shadow:
+    0 18px 60px rgb(0 0 0 / 12%),
+    inset 0 1px 0 color-mix(in srgb, var(--color-paper) 3%, transparent);
+  transition:
+    border-color 260ms ease,
+    background-color 260ms ease,
+    box-shadow 360ms ease,
+    transform 360ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.catalog-search__shell:hover {
+  border-color: color-mix(in srgb, var(--color-paper) 29%, transparent);
+}
+.catalog-search__shell:focus-within {
+  border-color: color-mix(in srgb, var(--color-acid) 58%, transparent);
+  box-shadow:
+    0 18px 60px rgb(0 0 0 / 18%),
+    0 0 0 3px color-mix(in srgb, var(--color-acid) 7%, transparent),
+    0 0 38px color-mix(in srgb, var(--color-acid) 7%, transparent);
+  transform: translate3d(0, -1px, 0);
+}
+.catalog-search__icon {
+  transition:
+    color 220ms ease,
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.catalog-search__shell:focus-within .catalog-search__icon {
+  color: var(--color-acid);
+  transform: rotate(-8deg) scale(1.08);
+}
+.catalog-search__shell--busy::after {
+  content: '';
+  position: absolute;
+  right: 0.85rem;
+  bottom: -1px;
+  left: 0.85rem;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-acid), transparent);
+  transform-origin: left;
+  animation: search-progress 1.1s ease-in-out infinite;
+}
+.catalog-search__submit,
+.catalog-apply {
+  border: 1px solid color-mix(in srgb, var(--color-acid) 36%, transparent);
+  color: var(--color-acid);
+  background: color-mix(in srgb, var(--color-acid) 7%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-paper) 5%, transparent);
+  transition:
+    transform 300ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 200ms ease,
+    background-color 200ms ease,
+    box-shadow 300ms ease;
+}
+.catalog-search__submit:hover,
+.catalog-apply:hover {
+  border-color: color-mix(in srgb, var(--color-acid) 68%, transparent);
+  background: color-mix(in srgb, var(--color-acid) 12%, transparent);
+  box-shadow: 0 7px 24px color-mix(in srgb, var(--color-acid) 9%, transparent);
+  transform: translate3d(0, -1px, 0);
+}
+.catalog-search__submit:active,
+.catalog-apply:active,
+.catalog-control:active {
+  transform: scale(0.97);
+  transition-duration: 80ms;
+}
+.catalog-control {
+  border: 1px solid color-mix(in srgb, var(--color-paper) 16%, transparent);
+  background: color-mix(in srgb, var(--color-paper) 2%, transparent);
+  transition:
+    transform 300ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 180ms ease,
+    border-color 200ms ease,
+    background-color 200ms ease,
+    box-shadow 300ms ease;
+}
+.catalog-control:not(:disabled):hover {
+  color: var(--color-acid);
+  border-color: color-mix(in srgb, var(--color-acid) 42%, transparent);
+  background: color-mix(in srgb, var(--color-paper) 4%, transparent);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 15%);
+  transform: translate3d(0, -1px, 0);
+}
+.catalog-state {
+  border: 1px solid color-mix(in srgb, var(--color-paper) 14%, transparent);
+  background:
+    radial-gradient(
+      70% 90% at 100% 0%,
+      color-mix(in srgb, var(--color-acid) 5%, transparent),
+      transparent
+    ),
+    color-mix(in srgb, var(--color-paper) 2.5%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-paper) 3%, transparent);
 }
 .catalog-results-enter-active,
 .catalog-results-leave-active {
   transition:
-    opacity 200ms ease,
-    transform 200ms ease;
+    opacity 240ms ease,
+    transform 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 240ms ease;
 }
 .catalog-results-enter-from,
 .catalog-results-leave-to {
   opacity: 0;
-  transform: translateY(6px);
+  filter: blur(2px);
+  transform: translateY(8px);
 }
 .filter-dialog {
   opacity: 0;
@@ -430,6 +605,39 @@ useHead({
   background: color-mix(in srgb, var(--color-paper) 3.5%, var(--color-ink));
   box-shadow: 0 -16px 36px rgb(0 0 0 / 12%);
 }
+@keyframes catalog-arrive {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+@keyframes cosmos-drift {
+  from {
+    opacity: 0.17;
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    opacity: 0.25;
+    transform: translate3d(-10px, 7px, 0);
+  }
+}
+@keyframes search-progress {
+  0% {
+    opacity: 0;
+    transform: scaleX(0.08) translateX(-40%);
+  }
+  45% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0;
+    transform: scaleX(0.38) translateX(175%);
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .catalog-results-enter-active,
   .catalog-results-leave-active {
@@ -437,7 +645,22 @@ useHead({
   }
   .catalog-results-enter-from,
   .catalog-results-leave-to {
+    filter: none;
     transform: none;
+  }
+  .catalog-intro,
+  .catalog-search,
+  .catalog-cosmos,
+  .catalog-search__shell--busy::after {
+    animation: none;
+  }
+  .catalog-search__shell,
+  .catalog-search__icon,
+  .catalog-search__submit,
+  .catalog-apply,
+  .catalog-control {
+    transform: none !important;
+    transition: none !important;
   }
   .filter-dialog,
   .filter-dialog::backdrop {
@@ -445,6 +668,14 @@ useHead({
   }
   .filter-dialog {
     transform: none;
+  }
+}
+@media (max-width: 639px) {
+  .catalog-cosmos {
+    top: 5rem;
+    right: -12rem;
+    width: 35rem;
+    opacity: 0.14;
   }
 }
 </style>

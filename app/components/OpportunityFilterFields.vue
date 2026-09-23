@@ -101,6 +101,22 @@ defineEmits<{ toggle: [key: string, value: string] }>()
 </template>
 
 <style scoped>
+label {
+  margin-inline: -0.5rem;
+  padding-inline: 0.5rem;
+  border-radius: 0.65rem;
+  cursor: pointer;
+  transition:
+    color 180ms ease,
+    background-color 180ms ease,
+    transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+label:hover,
+label:focus-within {
+  color: color-mix(in srgb, var(--color-paper) 92%, var(--color-acid));
+  background: color-mix(in srgb, var(--color-paper) 2.8%, transparent);
+  transform: translate3d(3px, 0, 0);
+}
 .filter-check {
   appearance: none;
   display: grid;
@@ -144,6 +160,7 @@ defineEmits<{ toggle: [key: string, value: string] }>()
   outline-offset: 3px;
 }
 @media (prefers-reduced-motion: reduce) {
+  label,
   .filter-check,
   .filter-check::before {
     transform: none !important;

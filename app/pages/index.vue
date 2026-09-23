@@ -26,7 +26,7 @@ useHead({
             description:
               'A student-founded research society at Martin High School connecting students through research, collaboration, and science fair opportunities.',
             email: 'contact@matrixfellows.com',
-            sameAs: ['https://www.instagram.com/mhs_research_club/'],
+            sameAs: ['https://www.instagram.com/mhs_research_society/'],
             logo: `${canonicalUrl}favicon.svg`,
           },
           {
@@ -797,14 +797,14 @@ onBeforeUnmount(() => {
                 <span class="min-w-0 [overflow-wrap:anywhere]">contact@matrixfellows.com</span>
               </a>
               <a
-                href="https://www.instagram.com/mhs_research_club/"
+                href="https://www.instagram.com/mhs_research_society/"
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Matrix Fellows on Instagram, @mhs_research_club (opens in a new tab)"
+                aria-label="Matrix Fellows on Instagram, @mhs_research_society (opens in a new tab)"
                 class="footer-action group"
               >
                 <span class="footer-action__icon"><SiteIcon name="instagram" :size="15" /></span>
-                <span>@mhs_research_club</span>
+                <span>@mhs_research_society</span>
               </a>
             </div>
           </div>

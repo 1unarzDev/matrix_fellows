@@ -23,7 +23,7 @@ assert.ok(
   schema['@graph'].some(
     (item) =>
       item['@type'] === 'Organization' &&
-      item.sameAs?.includes('https://www.instagram.com/mhs_research_club/'),
+      item.sameAs?.includes('https://www.instagram.com/mhs_research_society/'),
   ),
 )
 const image = html.querySelector('meta[property="og:image"]').getAttribute('content')

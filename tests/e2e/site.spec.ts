@@ -117,9 +117,9 @@ test('meeting summary is prominent before the journey and links to full details'
 test('footer links to the official Instagram profile', async ({ page }) => {
   await page.goto('/')
   const instagram = page.getByRole('link', {
-    name: 'Matrix Fellows on Instagram, @mhs_research_club (opens in a new tab)',
+    name: 'Matrix Fellows on Instagram, @mhs_research_society (opens in a new tab)',
   })
-  await expect(instagram).toHaveAttribute('href', 'https://www.instagram.com/mhs_research_club/')
+  await expect(instagram).toHaveAttribute('href', 'https://www.instagram.com/mhs_research_society/')
   await expect(instagram).toHaveAttribute('target', '_blank')
   await expect(instagram).toHaveAttribute('rel', 'noopener noreferrer')
 })

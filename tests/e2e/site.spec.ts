@@ -119,12 +119,14 @@ test('explains the Matrix Fellows and Martin Research Society relationship', asy
   await page.goto('/#beginning')
   await expect(
     page.getByText(
-      /Matrix Fellows is the student-research initiative behind MHS Research Society at Martin/,
+      /Matrix Fellows is the broader student-research initiative.*Martin High School Research Society is its community at Martin/,
     ),
   ).toBeVisible()
 })
 
-test('hero priorities remain clear of the journey navigation on narrow screens', async ({ page }) => {
+test('hero priorities remain clear of the journey navigation on narrow screens', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 320, height: 740 })
   await page.goto('/#beginning')
   const meeting = page.locator('[data-hero-meeting]')

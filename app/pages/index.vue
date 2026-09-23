@@ -353,7 +353,9 @@ onBeforeUnmount(() => {
           <div
             class="mb-7 flex items-center gap-3 text-[9px] uppercase tracking-[.23em] text-paper/75 sm:mb-10 sm:text-[10px] sm:tracking-[.25em]"
           >
-            <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-acid shadow-[0_0_12px_var(--color-acid)]" />
+            <span
+              class="h-1.5 w-1.5 shrink-0 rounded-full bg-acid shadow-[0_0_12px_var(--color-acid)]"
+            />
             For the endlessly curious
           </div>
           <h1
@@ -371,20 +373,12 @@ onBeforeUnmount(() => {
           >
             <div>
               <p class="text-sm leading-relaxed text-paper/75 sm:text-base">
-                The world is full of unanswered questions.<br />We’re a community of researchers<br
-                  class="hidden sm:block"
-                />
-                learning to ask the next one.
-              </p>
-              <p
-                class="mt-4 max-w-sm border-l border-acid/35 pl-3 text-[10px] leading-[1.65] text-paper/52 sm:text-[11px]"
-              >
-                Matrix Fellows is the student-research initiative behind MHS Research Society at
-                Martin.
+                The world is full of unanswered questions.<br />We’re learning to ask the next
+                one—together.
               </p>
               <a
                 href="#discovery"
-                class="group mt-5 inline-flex items-center gap-5 border-b border-paper/45 pb-2 text-xs sm:mt-6"
+                class="group mt-6 inline-flex items-center gap-5 border-b border-paper/45 pb-2 text-xs"
                 @click="scrollTo($event, 'discovery')"
                 >Follow your curiosity
                 <SiteIcon
@@ -445,7 +439,7 @@ onBeforeUnmount(() => {
           </div>
           <span
             class="hidden items-center gap-2 text-[9px] uppercase tracking-[.17em] text-paper/50 sm:flex"
-            ><span class="h-1 w-1 rounded-full bg-acid" /> Student-founded. Open-minded.</span
+            ><span class="h-1 w-1 rounded-full bg-acid" /> MHS Research Society · Martin</span
           >
         </div>
         <div data-hero-detail class="absolute right-[16%] top-[48%] hidden xl:block">

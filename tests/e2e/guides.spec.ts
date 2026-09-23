@@ -57,6 +57,36 @@ test('poster guide renders original instructional figures and keeps navigation u
   else await expect(onThisPage).toBeVisible()
 })
 
+test('guide section navigation is smooth, shareable, and synchronized with reading position', async ({
+  page,
+}, testInfo) => {
+  await page.goto('/guides')
+  const stages = page.getByRole('navigation', { name: 'Guide stages' })
+  await expect(stages.getByRole('link', { name: /Start/ })).toHaveAttribute(
+    'aria-current',
+    'location',
+  )
+  await stages.getByRole('link', { name: /Analyze/ }).click()
+  await expect(page).toHaveURL(/#analyze$/)
+  await expect(stages.getByRole('link', { name: /Analyze/ })).toHaveAttribute(
+    'aria-current',
+    'location',
+  )
+  await expect(page.getByRole('heading', { name: 'Analyze', exact: true })).toBeInViewport()
+
+  if (testInfo.project.name === 'mobile') return
+  await page.goto('/guides/find-a-research-idea')
+  const contents = page.getByRole('navigation', { name: 'On this page' })
+  await expect(contents.getByRole('link').first()).toHaveAttribute('aria-current', 'location')
+  const target = contents.getByRole('link', { name: 'Score candidates before falling in love' })
+  await target.click()
+  await expect(page).toHaveURL(/#score-candidates-before-falling-in-love$/)
+  await expect(target).toHaveAttribute('aria-current', 'location', { timeout: 3000 })
+  await expect(
+    page.getByRole('heading', { name: 'Score candidates before falling in love' }),
+  ).toBeInViewport()
+})
+
 test('unknown guide slugs return a real 404', async ({ request }) => {
   const response = await request.get('/guides/not-a-real-guide')
   expect(response.status()).toBe(404)

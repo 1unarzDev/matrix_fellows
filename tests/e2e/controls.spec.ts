@@ -7,6 +7,8 @@ test('catalog uses custom sorting and an accessible animated mobile filter sheet
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/opportunities')
   await page.locator('[data-catalog-ready="true"]').waitFor()
+  await expect(page.getByText('High-school policy', { exact: true })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'High-school routes' })).toHaveCount(0)
   const sort = page.getByRole('button', { name: 'Sort opportunities: Relevance' })
   await sort.click()
   await expect(page.getByRole('listbox', { name: 'Sort opportunities' })).toBeVisible()
@@ -18,6 +20,7 @@ test('catalog uses custom sorting and an accessible animated mobile filter sheet
   await page.getByRole('button', { name: /^Filters/ }).click()
   const dialog = page.getByRole('dialog', { name: 'Filters' })
   await expect(dialog).toBeVisible()
+  await expect(dialog).toHaveClass(/filter-dialog--visible/)
   const type = dialog.getByRole('button', { name: 'Type' })
   await expect(type).toHaveAttribute('aria-expanded', 'false')
   await type.click()
@@ -25,6 +28,13 @@ test('catalog uses custom sorting and an accessible animated mobile filter sheet
   await expect(dialog.getByText('Workshop', { exact: true })).toBeVisible()
   await page.keyboard.press('Escape')
   await expect(dialog).not.toBeVisible()
+})
+
+test('catalog discards legacy hidden high-school filters', async ({ page }) => {
+  await page.goto('/opportunities?highSchool=supported&sort=verified')
+  await page.locator('[data-catalog-ready="true"]').waitFor()
+  await expect(page).toHaveURL(/sort=verified/)
+  await expect(page).not.toHaveURL(/highSchool/)
 })
 
 test('project panels animate and closed content cannot receive focus', async ({ page }) => {

@@ -123,7 +123,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', outside))
         :id="id"
         role="listbox"
         :aria-label="label"
-        class="themed-select__menu absolute top-full mt-2 min-w-full origin-top overflow-hidden rounded-2xl border border-acid/25 bg-[#19202b]/97 p-1.5 shadow-[0_18px_55px_#0009,0_0_28px_#ae9afa12] backdrop-blur-xl"
+        class="themed-select__menu absolute top-full mt-2 min-w-full origin-top overflow-hidden rounded-2xl p-1.5"
         :class="align === 'right' ? 'right-0' : 'left-0'"
         @keydown="keyboard"
       >
@@ -195,6 +195,18 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', outside))
 .themed-select__menu {
   width: max-content;
   max-width: min(22rem, calc(100vw - 2rem));
+  border: 1px solid color-mix(in srgb, var(--color-paper) 14%, transparent);
+  background:
+    radial-gradient(
+      85% 70% at 100% 0%,
+      color-mix(in srgb, var(--color-acid) 5%, transparent),
+      transparent 72%
+    ),
+    color-mix(in srgb, var(--color-paper) 3.5%, var(--color-ink));
+  box-shadow:
+    0 18px 55px rgb(0 0 0 / 42%),
+    inset 0 1px 0 color-mix(in srgb, var(--color-paper) 5%, transparent);
+  backdrop-filter: blur(12px);
 }
 .themed-select__option {
   opacity: 0;

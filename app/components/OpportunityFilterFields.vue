@@ -13,29 +13,6 @@ defineEmits<{ toggle: [key: string, value: string] }>()
 <template>
   <div class="space-y-7 text-xs">
     <fieldset>
-      <legend class="mb-3 text-[10px] uppercase tracking-[.16em] text-paper/40">
-        High-school policy
-      </legend>
-      <label
-        v-for="option in [
-          ['supported', 'Explicitly supported'],
-          ['not-stated', 'Not stated'],
-          ['excluded', 'Excluded'],
-        ]"
-        :key="option[0]"
-        class="flex min-h-11 items-center gap-3"
-        ><input
-          type="checkbox"
-          :checked="selected('highSchool', option[0]!)"
-          class="filter-check h-4 w-4 shrink-0"
-          @change="$emit('toggle', 'highSchool', option[0]!)"
-        /><span class="flex-1">{{ option[1] }}</span
-        ><span class="text-paper/35">{{
-          facets?.highSchoolPolicy?.[option[0]!] ?? ''
-        }}</span></label
-      >
-    </fieldset>
-    <fieldset>
       <legend class="mb-3 text-[10px] uppercase tracking-[.16em] text-paper/40">Discipline</legend>
       <label v-for="value in disciplines" :key="value" class="flex min-h-11 items-center gap-3"
         ><input

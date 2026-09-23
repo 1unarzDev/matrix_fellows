@@ -6,6 +6,11 @@ const router = useRouter()
 const hydrated = ref(false)
 onMounted(() => {
   hydrated.value = true
+  if (route.query.highSchool) {
+    const query = { ...route.query }
+    delete query.highSchool
+    void router.replace({ path: '/opportunities', query })
+  }
 })
 const disciplines = [
   'Biomedical engineering',
@@ -63,7 +68,6 @@ const apiQuery = computed(() => ({
   q: route.query.q,
   discipline: route.query.discipline,
   kind: route.query.kind,
-  highSchool: route.query.highSchool,
   stage: route.query.stage,
   status: route.query.status,
   mode: route.query.mode,
@@ -80,6 +84,7 @@ const { data, status, error } = await useFetch<OpportunitySearchResult>('/api/op
 const selected = (key: string, value: string) => asArray(route.query[key]).includes(value)
 function replaceQuery(changes: Record<string, string | string[] | undefined>, resetPage = true) {
   const next = { ...route.query, ...changes }
+  delete next.highSchool
   if (resetPage) delete next.page
   for (const key of Object.keys(next))
     if (!next[key] || (Array.isArray(next[key]) && !next[key]!.length)) delete next[key]
@@ -101,29 +106,40 @@ function scheduleSearch() {
   clearTimeout(searchTimer)
   searchTimer = setTimeout(commitSearch, 300)
 }
-function shortcut(kind: 'school' | 'early' | 'workshops') {
-  if (kind === 'school') void replaceQuery({ highSchool: ['supported'] })
+function shortcut(kind: 'early' | 'workshops') {
   if (kind === 'early') void replaceQuery({ stage: ['idea', 'prototype', 'preliminary-results'] })
   if (kind === 'workshops') void replaceQuery({ kind: ['Workshop'] })
 }
 const activeCount = computed(() =>
-  ['discipline', 'kind', 'highSchool', 'stage', 'status', 'mode', 'free', 'archival'].reduce(
+  ['discipline', 'kind', 'stage', 'status', 'mode', 'free', 'archival'].reduce(
     (n, key) => n + asArray(route.query[key]).length,
     0,
   ),
 )
 const filterDialog = ref<HTMLDialogElement>()
 const filterSnapshot = ref<Record<string, unknown>>({})
+const filterVisible = ref(false)
+let filterCloseTimer: ReturnType<typeof setTimeout> | undefined
 function openFilters() {
+  clearTimeout(filterCloseTimer)
   filterSnapshot.value = { ...route.query }
   filterDialog.value?.showModal()
+  requestAnimationFrame(() => {
+    filterVisible.value = true
+  })
+}
+function closeFilters() {
+  filterVisible.value = false
+  clearTimeout(filterCloseTimer)
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches
+  filterCloseTimer = setTimeout(() => filterDialog.value?.close(), reducedMotion ? 0 : 320)
 }
 function cancelFilters() {
   void router.replace({
     path: '/opportunities',
     query: filterSnapshot.value as Record<string, string | string[]>,
   })
-  filterDialog.value?.close()
+  closeFilters()
 }
 function clearFilters() {
   const q = route.query.q
@@ -143,7 +159,10 @@ watch(
     if (String(value || '') !== queryText.value) queryText.value = String(value || '')
   },
 )
-onBeforeUnmount(() => clearTimeout(searchTimer))
+onBeforeUnmount(() => {
+  clearTimeout(searchTimer)
+  clearTimeout(filterCloseTimer)
+})
 
 const canonical = 'https://matrixfellows.com/opportunities'
 useSeoMeta({
@@ -206,13 +225,6 @@ useHead({
         </div>
       </form>
       <div class="mt-4 flex flex-wrap gap-2" aria-label="Discovery shortcuts">
-        <button
-          type="button"
-          class="tactile min-h-11 rounded-full border border-paper/15 px-4 text-xs text-paper/65 hover:border-acid/40 hover:text-acid"
-          @click="shortcut('school')"
-        >
-          High-school routes
-        </button>
         <button
           type="button"
           class="tactile min-h-11 rounded-full border border-paper/15 px-4 text-xs text-paper/65 hover:border-acid/40 hover:text-acid"
@@ -340,10 +352,12 @@ useHead({
 
     <dialog
       ref="filterDialog"
-      class="m-0 ml-auto h-dvh max-h-none w-[min(92vw,25rem)] max-w-none bg-ink p-0 text-paper backdrop:bg-black/65"
+      class="filter-dialog m-0 ml-auto h-dvh max-h-none w-[min(92vw,25rem)] max-w-none p-0 text-paper"
+      :class="{ 'filter-dialog--visible': filterVisible }"
       aria-labelledby="mobile-filters-title"
+      @cancel.prevent="cancelFilters"
     >
-      <form method="dialog" class="flex h-full flex-col" @submit.prevent="filterDialog?.close()">
+      <form method="dialog" class="flex h-full flex-col" @submit.prevent="closeFilters">
         <div class="flex items-center justify-between border-b border-paper/15 px-5 py-4">
           <h2 id="mobile-filters-title" class="font-display text-xl">Filters</h2>
           <button type="button" class="min-h-11 px-3 text-xs" @click="cancelFilters">Cancel</button>
@@ -360,7 +374,7 @@ useHead({
           />
         </div>
         <div
-          class="grid grid-cols-2 gap-3 border-t border-paper/15 bg-ink px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4"
+          class="filter-dialog__footer grid grid-cols-2 gap-3 border-t border-paper/15 px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4"
         >
           <button
             type="button"
@@ -401,6 +415,41 @@ useHead({
   opacity: 0;
   transform: translateY(6px);
 }
+.filter-dialog {
+  opacity: 0;
+  transform: translate3d(2rem, 0, 0) scale(0.985);
+  border: 0;
+  border-left: 1px solid color-mix(in srgb, var(--color-paper) 13%, transparent);
+  background:
+    radial-gradient(
+      90% 42% at 100% 0%,
+      color-mix(in srgb, var(--color-acid) 4.5%, transparent),
+      transparent 74%
+    ),
+    radial-gradient(75% 55% at 0% 48%, rgb(74 113 125 / 5%), transparent 76%),
+    color-mix(in srgb, var(--color-paper) 2.5%, var(--color-ink));
+  box-shadow:
+    -24px 0 70px rgb(0 0 0 / 30%),
+    inset 1px 0 0 color-mix(in srgb, var(--color-paper) 3%, transparent);
+  transition:
+    opacity 220ms ease,
+    transform 340ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.filter-dialog--visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+.filter-dialog::backdrop {
+  background: rgb(0 0 0 / 0%);
+  transition: background-color 260ms ease;
+}
+.filter-dialog--visible::backdrop {
+  background: rgb(0 0 0 / 54%);
+}
+.filter-dialog__footer {
+  background: color-mix(in srgb, var(--color-paper) 3.5%, var(--color-ink));
+  box-shadow: 0 -16px 36px rgb(0 0 0 / 12%);
+}
 @media (prefers-reduced-motion: reduce) {
   .catalog-results-enter-active,
   .catalog-results-leave-active {
@@ -408,6 +457,13 @@ useHead({
   }
   .catalog-results-enter-from,
   .catalog-results-leave-to {
+    transform: none;
+  }
+  .filter-dialog,
+  .filter-dialog::backdrop {
+    transition: none;
+  }
+  .filter-dialog {
     transform: none;
   }
 }

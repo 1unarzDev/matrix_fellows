@@ -12,6 +12,7 @@ export interface OfficialProfile {
   description: string
   priority: number
   variables?: string[]
+  participationUrls?: string[]
 }
 
 // An explicit allowlist, not a crawler. Editions roll forward after review of
@@ -58,6 +59,10 @@ export const officialProfiles: OfficialProfile[] = [
       'Read the official call for contribution formats, participation, accessibility, and attendance requirements.',
     description:
       'Community workshop and call for contributions. Its submission deadline is separate from the main NeurIPS paper deadline.',
+    participationUrls: [
+      'https://neurips.cc/Conferences/2026/Pricing',
+      'https://neurips.cc/Conferences/2026/Hotels',
+    ],
   },
   {
     id: 'neurips-2026',
@@ -92,6 +97,7 @@ export const officialProfiles: OfficialProfile[] = [
       'Technical research submissions; abstract registration, full paper, and supplementary material have distinct deadlines.',
     description:
       'IEEE/CVF Conference on Computer Vision and Pattern Recognition. Official countdown timestamps supply exact submission cutoffs.',
+    participationUrls: ['https://cvpr.thecvf.com/Conferences/2027'],
   },
   {
     id: 'icra-2027',
@@ -105,6 +111,7 @@ export const officialProfiles: OfficialProfile[] = [
     eligibility: 'Consult the official paper-submission and presentation requirements.',
     description:
       'IEEE International Conference on Robotics and Automation. The CFP’s timezone wording needs checking against the submission portal; only the calendar deadline is recorded.',
+    participationUrls: ['https://2027.ieee-icra.org/'],
   },
   {
     id: 'regeneron-sts-2027',

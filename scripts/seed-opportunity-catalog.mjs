@@ -25,33 +25,29 @@ for (const { item, sources } of catalogSeeds) {
     eventDate: future.find((m) => m.kind === 'event')?.date || null,
     timezone: future.find((m) => m.kind === 'deadline')?.timezone || null,
   })
-  const result = await client
-    .from('opportunities')
-    .upsert(
-      {
-        id: data.id,
-        source_id: data.sourceId,
-        external_id: data.externalId,
-        canonical_url: data.url,
-        data,
-        published: true,
-      },
-      { onConflict: 'id', ignoreDuplicates: true },
-    )
+  const result = await client.from('opportunities').upsert(
+    {
+      id: data.id,
+      source_id: data.sourceId,
+      external_id: data.externalId,
+      canonical_url: data.url,
+      data,
+      published: true,
+    },
+    { onConflict: 'id', ignoreDuplicates: true },
+  )
   if (result.error) throw new Error(`${data.title}: ${result.error.message}`)
   // Keep each opportunity's canonical page as its monitor identity. Several
   // distinct workshops can share the same secondary event-directory source.
-  const monitor = await client
-    .from('opportunity_monitors')
-    .upsert(
-      {
-        id: data.id,
-        url: data.url,
-        seed: { ...data, sourceUrls: sources },
-        last_success_at: checked,
-      },
-      { onConflict: 'id', ignoreDuplicates: true },
-    )
+  const monitor = await client.from('opportunity_monitors').upsert(
+    {
+      id: data.id,
+      url: data.url,
+      seed: { ...data, sourceUrls: sources },
+      last_success_at: checked,
+    },
+    { onConflict: 'id', ignoreDuplicates: true },
+  )
   if (monitor.error) throw new Error(monitor.error.message)
 }
 for (const profile of officialProfiles) {
@@ -66,17 +62,18 @@ for (const profile of officialProfiles) {
     title: profile.name.replace(/\s+20\d{2}/g, ''),
     edition: String(profile.year),
   })
-  const result = await client
-    .from('opportunity_monitors')
-    .upsert(
-      {
-        id: data.id,
-        url: profile.url,
-        seed: { ...data, sourceUrls: [profile.url] },
-        last_success_at: data.verifiedAt,
+  const result = await client.from('opportunity_monitors').upsert(
+    {
+      id: data.id,
+      url: profile.url,
+      seed: {
+        ...data,
+        sourceUrls: [profile.url, ...(profile.participationUrls || [])],
       },
-      { onConflict: 'id', ignoreDuplicates: true },
-    )
+      last_success_at: data.verifiedAt,
+    },
+    { onConflict: 'id', ignoreDuplicates: true },
+  )
   if (result.error) throw new Error(result.error.message)
 }
 // Stop the old edition-specific adapter from racing the new annual monitor.

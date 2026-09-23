@@ -183,6 +183,113 @@ describe('automatic publication safeguards', () => {
 })
 
 describe('monitoring extraction validation', () => {
+  it('publishes evidence-backed costs, participation modes, and location independently', () => {
+    const submission = 'Authors must submit a contribution through OpenReview.'
+    const registration = 'Accepted authors must register for the workshop.'
+    const travel = 'Authors are responsible for their own travel and lodging.'
+    const aid = 'A limited number of travel grants are available.'
+    const format = 'The full-day workshop is hybrid, with an in-person poster session.'
+    const place = 'Atlanta, Georgia, USA'
+    const metadata = {
+      costs: {
+        submission: {
+          value: 'Submission is required; the fee amount is not stated.',
+          evidence: submission,
+          url,
+        },
+        registration: {
+          value: 'Accepted authors must register; the amount is not stated.',
+          evidence: registration,
+          url,
+        },
+        accompanyingAdult: null,
+        travel: { value: 'Authors pay their own travel and lodging.', evidence: travel, url },
+        materials: null,
+        publication: null,
+        aid: { value: 'Limited travel grants are available.', evidence: aid, url },
+      },
+      participationModes: [
+        { mode: 'in-person', evidence: format, url },
+        { mode: 'hybrid', evidence: format, url },
+      ],
+      location: { value: place, evidence: `Workshop location: ${place}.`, url },
+    }
+    const result = validateExtraction(
+      extraction(metadata),
+      docs(
+        `${sourceText} ${submission} ${registration} ${travel} ${aid} ${format} Workshop location: ${place}.`,
+      ),
+      seed(),
+      now,
+    )
+    expect(result.costs).toMatchObject({
+      submission: 'Submission is required; the fee amount is not stated.',
+      registration: 'Accepted authors must register; the amount is not stated.',
+      travel: 'Authors pay their own travel and lodging.',
+      aid: 'Limited travel grants are available.',
+    })
+    expect(result.participationModes).toEqual(['in-person', 'hybrid'])
+    expect(result.location).toBe(place)
+    expect(result.fieldEvidence?.map((entry) => entry.field)).toEqual(
+      expect.arrayContaining([
+        'costs.submission',
+        'costs.registration',
+        'costs.travel',
+        'costs.aid',
+        'participationModes.in-person',
+        'participationModes.hybrid',
+        'location',
+      ]),
+    )
+  })
+
+  it('preserves last-good cost metadata when a later page does not mention it', () => {
+    const previous = {
+      ...seed(),
+      costs: { registration: 'Accepted authors must register; amount not verified.' },
+      participationModes: ['in-person'] as const,
+    }
+    const result = validateExtraction(extraction(), docs(sourceText), previous, now)
+    expect(result.costs).toEqual(previous.costs)
+    expect(result.participationModes).toEqual(['in-person'])
+  })
+
+  it('does not convert online submission evidence into remote presentation', () => {
+    const quote = 'Submit online through the OpenReview submission portal.'
+    expect(() =>
+      validateExtraction(
+        extraction({
+          participationModes: [{ mode: 'remote-presentation', evidence: quote, url }],
+        }),
+        docs(`${sourceText} ${quote}`),
+        seed(),
+        now,
+      ),
+    ).toThrow(/Remote presentation/)
+  })
+
+  it('does not infer free registration from a generated summary', () => {
+    const quote = 'Registration is required for accepted authors.'
+    expect(() =>
+      validateExtraction(
+        extraction({
+          costs: {
+            submission: null,
+            registration: { value: 'Registration is free.', evidence: quote, url },
+            accompanyingAdult: null,
+            travel: null,
+            materials: null,
+            publication: null,
+            aid: null,
+          },
+        }),
+        docs(`${sourceText} ${quote}`),
+        seed(),
+        now,
+      ),
+    ).toThrow(/unsupported free/)
+  })
+
   it('preserves a confirmed past deadline as history, not an upcoming deadline', () => {
     const result = validateExtraction(extraction(), docs(sourceText), seed(), now)
     expect(result.milestones).toEqual([{ ...milestone, timezone: null }])

@@ -37,6 +37,29 @@ const policyLabel = computed(
       'not-stated': 'The organizer does not state a high-school policy',
     })[item.value.highSchoolPolicy || 'not-stated'],
 )
+const costLabels = {
+  submission: 'Submission',
+  registration: 'Registration',
+  accompanyingAdult: 'Accompanying adult',
+  travel: 'Travel & lodging',
+  materials: 'Materials',
+  publication: 'Publication',
+  aid: 'Aid & support',
+} as const
+const costEntries = computed(() =>
+  Object.entries(costLabels).map(([key, label]) => ({
+    key,
+    label,
+    value: item.value.costs?.[key as keyof typeof costLabels] || null,
+    evidence: item.value.fieldEvidence?.find((entry) => entry.field === `costs.${key}`),
+  })),
+)
+const modeLabels = {
+  'in-person': 'In person',
+  'remote-submission': 'Remote submission',
+  'remote-presentation': 'Remote presentation',
+  hybrid: 'Hybrid',
+} as const
 </script>
 
 <template>
@@ -154,22 +177,41 @@ const policyLabel = computed(
             <h2 id="costs" class="font-display text-2xl">Costs and participation</h2>
             <dl class="mt-5 grid gap-4 sm:grid-cols-2">
               <div
-                v-for="entry in Object.entries(item.costs || {})"
-                :key="entry[0]"
+                v-for="entry in costEntries"
+                :key="entry.key"
                 class="border-t border-paper/12 pt-3"
               >
                 <dt class="text-[10px] uppercase tracking-[.14em] text-paper/38">
-                  {{ entry[0].replace(/([A-Z])/g, ' $1') }}
+                  {{ entry.label }}
                 </dt>
-                <dd class="mt-2 text-sm text-paper/62">{{ entry[1] || 'Not stated' }}</dd>
+                <dd class="mt-2 text-sm leading-6 text-paper/62">
+                  {{ entry.value || 'Unknown — not verified by the reviewed sources' }}
+                </dd>
+                <a
+                  v-if="entry.evidence"
+                  :href="entry.evidence.url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="mt-2 inline-block text-[11px] text-acid/75 underline decoration-acid/30 underline-offset-4 hover:text-acid"
+                  >Source ↗</a
+                >
               </div>
             </dl>
-            <p v-if="!item.costs" class="mt-4 text-sm text-paper/45">
-              Costs are unknown, not assumed free. Confirm submission, registration, travel, and
-              attendance costs independently.
-            </p>
-            <p v-if="item.participationModes?.length" class="mt-4 text-sm text-paper/60">
-              Modes: {{ item.participationModes.join(' · ').replaceAll('-', ' ') }}
+            <div class="mt-6 border-t border-paper/12 pt-4">
+              <p class="text-[10px] uppercase tracking-[.14em] text-paper/38">
+                Participation modes
+              </p>
+              <p v-if="item.participationModes?.length" class="mt-2 text-sm text-paper/62">
+                {{ item.participationModes.map((mode) => modeLabels[mode]).join(' · ') }}
+              </p>
+              <p v-else class="mt-2 text-sm text-paper/45">
+                Attendance format has not been verified. Online submission does not imply remote
+                presentation.
+              </p>
+            </div>
+            <p class="mt-5 text-xs leading-5 text-paper/40">
+              “Unknown” never means free. Amounts and attendance obligations can change by edition;
+              confirm them with the organizer before committing.
             </p>
           </section>
 

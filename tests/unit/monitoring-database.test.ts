@@ -58,6 +58,7 @@ beforeAll(async () => {
     '001_matrix_fellows.sql',
     '002_official_imports.sql',
     '003_opportunity_monitoring.sql',
+    '013_confirm_opportunity_field_evidence.sql',
   ]) {
     await db.exec(
       await readFile(new URL(`../../supabase/migrations/${migration}`, import.meta.url), 'utf8'),
@@ -145,6 +146,29 @@ describe('opportunity monitoring database', () => {
     expect(
       (await db.query('select accepted_fingerprint from public.opportunity_monitors')).rows,
     ).toEqual([{ accepted_fingerprint: fingerprint }])
+  })
+
+  it('confirms field evidence only when the observation is approved', async () => {
+    const observed = {
+      ...item,
+      fieldEvidence: [
+        {
+          field: 'costs.registration',
+          url: item.url,
+          quote: 'Accepted authors must register.',
+          observedAt: '2026-09-22T00:00:00Z',
+          confirmedAt: null,
+        },
+      ],
+    }
+    expect(await observe(observed)).toBe(false)
+    expect((await db.query('select * from public.opportunities')).rows).toHaveLength(0)
+    await db.exec("update public.opportunity_observations set first_seen=now()-interval '6 hours'")
+    expect(await observe(observed)).toBe(true)
+    const result = await db.query<{ data: typeof observed }>(
+      "select data from public.opportunities where id='monitor-test:main'",
+    )
+    expect(result.rows[0]!.data.fieldEvidence[0]!.confirmedAt).toBeTruthy()
   })
 
   it('requires each changed fingerprint to accumulate its own confirmation period', async () => {

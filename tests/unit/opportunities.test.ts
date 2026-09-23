@@ -10,6 +10,11 @@ import { defaultOpportunities, defaultContent } from '../../shared/data/defaults
 import { deadlineTimestamp, isUpcoming, sortOpportunities } from '../../shared/utils/opportunities'
 import { contentSchema, opportunitySchema } from '../../shared/utils/validation'
 import { catalogAdditions } from '../../shared/data/opportunity-catalog-additions'
+import { catalogExpansion } from '../../shared/data/opportunity-catalog-expansion'
+import {
+  CATALOG_ENRICHMENT_VERSION,
+  catalogEnrichment,
+} from '../../shared/data/opportunity-catalog-enrichment'
 
 const source = {
   id: 'test',
@@ -37,6 +42,46 @@ describe('opportunity ingestion', () => {
     expect(catalogAdditions.find((item) => item.id.includes('iscas'))).toMatchObject({
       highSchoolPolicy: 'not-stated',
       participationModes: ['in-person'],
+    })
+  })
+  it('ships complete, evidence-backed internship and summer-program expansion records', () => {
+    const parsed = catalogExpansion.map((item) => opportunitySchema.parse(item))
+    expect(parsed.length).toBeGreaterThanOrEqual(12)
+    expect(parsed.find((item) => item.title === 'HOSA Medical Innovation')).toMatchObject({
+      kind: 'Competition',
+      aliases: expect.arrayContaining(['HOSA Biomedical Innovation']),
+      deadline: null,
+    })
+    expect(parsed.filter((item) => item.kind === 'Internship').length).toBeGreaterThanOrEqual(5)
+    expect(parsed.filter((item) => item.kind === 'Summer program').length).toBeGreaterThanOrEqual(4)
+    for (const item of parsed) {
+      expect(item.canonicalId, item.title).toBeTruthy()
+      expect(item.organizer, item.title).toBeTruthy()
+      expect(item.disciplines?.length, item.title).toBeGreaterThan(0)
+      expect(item.topics?.length, item.title).toBeGreaterThan(0)
+      expect(item.highSchoolPolicy, item.title).toBe('supported')
+      expect(item.highSchoolEvidence, item.title).toBeTruthy()
+      expect(item.preparationStages?.length, item.title).toBeGreaterThan(0)
+      expect(item.prerequisites?.length, item.title).toBeGreaterThan(0)
+      expect(item.costs, item.title).toBeTruthy()
+      expect(item.outcomes?.length, item.title).toBeGreaterThan(0)
+      expect(item.participationModes?.length, item.title).toBeGreaterThan(0)
+      expect(item.fieldEvidence?.length, item.title).toBeGreaterThan(0)
+    }
+  })
+  it('reclassifies established research programs without duplicating their catalog IDs', () => {
+    expect(CATALOG_ENRICHMENT_VERSION).toBeGreaterThan(1)
+    expect(catalogEnrichment['stanford-simr']).toMatchObject({
+      kind: 'Internship',
+      routeType: 'internship',
+    })
+    expect(catalogEnrichment.rsi).toMatchObject({
+      kind: 'Summer program',
+      routeType: 'summer-program',
+    })
+    expect(catalogEnrichment['nasa-sees']).toMatchObject({
+      kind: 'Internship',
+      costs: expect.objectContaining({ program: expect.any(String) }),
     })
   })
   it('uses Workers-compatible manual redirects and rejects redirected sources', async () => {

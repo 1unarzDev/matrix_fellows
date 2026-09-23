@@ -27,7 +27,14 @@ export interface SiteContent {
   benefits: Benefit[]
   links: { join: string; contact: string }
 }
-export type OpportunityKind = 'Competition' | 'Conference' | 'Workshop' | 'Publication' | 'Program'
+export type OpportunityKind =
+  | 'Competition'
+  | 'Conference'
+  | 'Workshop'
+  | 'Publication'
+  | 'Program'
+  | 'Internship'
+  | 'Summer program'
 export type HighSchoolPolicy = 'supported' | 'excluded' | 'not-stated'
 export type PreparationStage =
   'idea' | 'prototype' | 'preliminary-results' | 'completed-research' | 'learning-team-practice'
@@ -42,7 +49,10 @@ export interface OpportunityEvidenceRef {
   contentHash?: string
 }
 export interface OpportunityCost {
+  application?: string | null
   submission?: string | null
+  program?: string | null
+  compensation?: string | null
   registration?: string | null
   accompanyingAdult?: string | null
   travel?: string | null
@@ -118,6 +128,8 @@ export interface Opportunity {
     | 'challenge'
     | 'competition'
     | 'program'
+    | 'internship'
+    | 'summer-program'
     | 'publication'
     | 'attendance'
   contributionFormat?: string
@@ -140,7 +152,9 @@ export interface Opportunity {
   prerequisites?: string[]
   costs?: OpportunityCost
   outcomes?: string[]
-  participationModes?: Array<'in-person' | 'remote-submission' | 'remote-presentation' | 'hybrid'>
+  participationModes?: Array<
+    'in-person' | 'remote-submission' | 'remote-presentation' | 'remote-participation' | 'hybrid'
+  >
   archival?: boolean | null
   fieldEvidence?: OpportunityEvidenceRef[]
   searchVersion?: number
@@ -151,7 +165,10 @@ export interface OpportunityFacets {
   highSchoolPolicies?: HighSchoolPolicy[]
   preparationStages?: PreparationStage[]
   statuses?: OpportunityStatus[]
-  modes?: Array<'in-person' | 'remote-submission' | 'remote-presentation' | 'hybrid'>
+  modes?: Array<
+    'in-person' | 'remote-submission' | 'remote-presentation' | 'remote-participation' | 'hybrid'
+  >
+  funding?: Array<'paid' | 'aid' | 'no-program-fee'>
   freeSubmission?: boolean
   archival?: boolean
 }

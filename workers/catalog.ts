@@ -5,10 +5,12 @@ import competitions from '../docs/research/catalogs/competition.json'
 import publications from '../docs/research/catalogs/publication.json'
 import workshops from '../docs/research/catalogs/workshop.json'
 import { catalogAdditions } from '../shared/data/opportunity-catalog-additions'
+import { catalogExpansion } from '../shared/data/opportunity-catalog-expansion'
+import { enrichCatalogOpportunity } from '../shared/data/opportunity-catalog-enrichment'
 import type { Opportunity } from '../shared/types/content'
 
 const researchedSeeds = [...programs, ...competitions, ...publications, ...workshops].map((raw) => {
-  const entry = raw as Record<string, any>
+  const entry = enrichCatalogOpportunity(raw as Record<string, any>)
   const milestones = (entry.milestones || []).map((m: Record<string, any>) => ({
     ...m,
     timezone: ['America/Los_Angeles', 'America/New_York'].includes(m.timezone) ? m.timezone : null,
@@ -34,7 +36,7 @@ const researchedSeeds = [...programs, ...competitions, ...publications, ...works
 })
 export const catalogSeeds = [
   ...researchedSeeds,
-  ...catalogAdditions.map((item) => ({
+  ...[...catalogAdditions, ...catalogExpansion].map((item) => ({
     sources: [...new Set([item.url, ...(item.fieldEvidence || []).map((entry) => entry.url)])],
     item: opportunitySchema.parse(item) as Opportunity,
   })),

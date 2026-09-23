@@ -38,7 +38,10 @@ const policyLabel = computed(
     })[item.value.highSchoolPolicy || 'not-stated'],
 )
 const costLabels = {
+  application: 'Application',
   submission: 'Submission',
+  program: 'Program / tuition',
+  compensation: 'Compensation / stipend',
   registration: 'Registration',
   accompanyingAdult: 'Accompanying adult',
   travel: 'Travel & lodging',
@@ -46,11 +49,31 @@ const costLabels = {
   publication: 'Publication',
   aid: 'Aid & support',
 } as const
+const programCostKeys = [
+  'application',
+  'program',
+  'compensation',
+  'travel',
+  'materials',
+  'aid',
+] as const
+const contributionCostKeys = [
+  'submission',
+  'registration',
+  'accompanyingAdult',
+  'travel',
+  'materials',
+  'publication',
+  'aid',
+] as const
 const costEntries = computed(() =>
-  Object.entries(costLabels).map(([key, label]) => ({
+  (['Internship', 'Summer program', 'Program'].includes(item.value.kind)
+    ? programCostKeys
+    : contributionCostKeys
+  ).map((key) => ({
     key,
-    label,
-    value: item.value.costs?.[key as keyof typeof costLabels] || null,
+    label: costLabels[key],
+    value: item.value.costs?.[key] || null,
     evidence: item.value.fieldEvidence?.find((entry) => entry.field === `costs.${key}`),
   })),
 )
@@ -58,6 +81,7 @@ const modeLabels = {
   'in-person': 'In person',
   'remote-submission': 'Remote submission',
   'remote-presentation': 'Remote presentation',
+  'remote-participation': 'Remote program / internship',
   hybrid: 'Hybrid',
 } as const
 </script>

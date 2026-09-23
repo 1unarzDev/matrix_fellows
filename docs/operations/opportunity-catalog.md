@@ -10,9 +10,11 @@
 
 ## Apply and backfill
 
-Run `npx supabase db push --linked`. Migrations 008–012 add search columns/RPCs, reviewed sources, structured API evidence, separate embedding/jobs tables, vector/trigram extensions, weak-match rejection, and an editor-only queue-health guard.
+Run `npx supabase db push --linked`. Migrations 008–015 add search columns/RPCs, reviewed sources, structured API evidence, separate embedding/jobs tables, vector/trigram extensions, weak-match rejection, actionable sorting, internship/summer-program kinds, funding filters, and an editor-only queue-health guard.
 
-`npm run backfill:catalog` is a dry run. `npm run backfill:catalog -- --apply` fills only missing metadata, uses optimistic timestamps, inserts new routes only on absent IDs, and never changes overrides, publication, suppression, or monitor history. Re-run until dry-run output is zero; concurrently monitored rows can require a second pass.
+`npm run backfill:catalog` is a dry run. `npm run backfill:catalog -- --apply` fills missing metadata, applies versioned reviewed corrections to the base record, uses optimistic timestamps, and inserts new routes only on absent IDs. Owner overrides remain a separate effective-data layer; publication, suppression, and monitor history are not changed. Re-run until dry-run output is zero; concurrently monitored rows can require a second pass.
+
+`Internship` and `Summer program` are intentional public kinds. Program-specific costs use `application`, `program`, and `compensation`; paper/poster routes use `submission` and `publication`. Never put tuition in the submission field merely to avoid an unknown value. Funding filters require positive text evidence for a stipend, aid, or no program fee; a null field never passes as free.
 
 ## Source review
 

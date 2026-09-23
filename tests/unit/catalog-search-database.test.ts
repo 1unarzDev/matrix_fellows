@@ -79,4 +79,64 @@ describe('catalog search database sorting', () => {
       'closed',
     ])
   })
+
+  it('keeps funding filters evidence-positive and supports the new program kinds', async () => {
+    await db.exec(
+      await readFile(
+        new URL('../../supabase/migrations/015_program_catalog_filters.sql', import.meta.url),
+        'utf8',
+      ),
+    )
+    const records = [
+      {
+        id: 'paid-internship',
+        kind: 'Internship',
+        costs: { compensation: '$3,600 stipend.', program: null, aid: null },
+      },
+      {
+        id: 'unknown-costs',
+        kind: 'Summer program',
+        costs: { compensation: null, program: null, aid: null },
+      },
+      {
+        id: 'aid-program',
+        kind: 'Summer program',
+        costs: {
+          compensation: null,
+          program: '$4,000',
+          aid: 'Need-based tuition waiver available.',
+        },
+      },
+      {
+        id: 'free-program',
+        kind: 'Summer program',
+        costs: { compensation: null, program: 'No participation cost.', aid: null },
+      },
+    ]
+    for (const record of records) {
+      const item = {
+        ...record,
+        title: record.id,
+        status: 'open',
+        discipline: 'Biomedical engineering',
+        disciplines: ['Biomedical engineering'],
+        priority: 0,
+      }
+      await db.query(`insert into public.opportunities(id,slug,data) values ($1,$1,$2::jsonb)`, [
+        record.id,
+        JSON.stringify(item),
+      ])
+    }
+    const ids = async (funding: string) =>
+      (
+        await db.query<{ id: string }>(
+          `select id from public.search_opportunities(p_funding => array[$1]) order by id`,
+          [funding],
+        )
+      ).rows.map((row) => row.id)
+
+    expect(await ids('paid')).toEqual(['paid-internship'])
+    expect(await ids('aid')).toEqual(['aid-program'])
+    expect(await ids('no-program-fee')).toEqual(['free-program'])
+  })
 })

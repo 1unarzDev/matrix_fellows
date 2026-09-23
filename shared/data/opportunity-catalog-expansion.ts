@@ -1,0 +1,888 @@
+import type { Opportunity } from '../types/content'
+
+const observedAt = '2026-09-23T00:00:00Z'
+const hosaGuidelines = 'https://hosa.org/guidelines/'
+const medicalInnovationPdf = 'https://hosa.org/wp-content/uploads/2026/08/MI-26-27-FINAL-1.pdf'
+const researchPosterPdf = 'https://hosa.org/wp-content/uploads/2026/08/Research-Poster-26-27.pdf'
+
+type ResearchRoute = Omit<
+  Opportunity,
+  | 'id'
+  | 'sourceId'
+  | 'externalId'
+  | 'published'
+  | 'verifiedAt'
+  | 'priority'
+  | 'searchVersion'
+  | 'deadline'
+  | 'eventDate'
+  | 'timezone'
+> & { slug: string; sources: string[] }
+
+function researchRoute(route: ResearchRoute): Opportunity {
+  const { sources, ...item } = route
+  return {
+    ...item,
+    id: `catalog:${route.slug}`,
+    sourceId: `catalog-${route.slug}`,
+    externalId: route.edition || 'current',
+    published: true,
+    verifiedAt: observedAt,
+    priority: 90,
+    searchVersion: 2,
+    deadline: null,
+    eventDate: null,
+    timezone: null,
+    fieldEvidence: [
+      ...(route.fieldEvidence || []),
+      ...sources.map((url) => ({
+        field: 'officialSource',
+        url,
+        observedAt,
+        confirmedAt: observedAt,
+      })),
+    ],
+  }
+}
+
+const researchPrograms: Opportunity[] = [
+  researchRoute({
+    slug: 'nist-ship-2027',
+    canonicalId: 'nist-ship:2027',
+    title: 'NIST Summer High School Intern Program',
+    aliases: ['NIST SHIP', 'Summer High School Intern Program'],
+    organizer: 'National Institute of Standards and Technology',
+    kind: 'Internship',
+    routeType: 'internship',
+    contributionFormat: 'Seven-week, in-person mentored research internship',
+    edition: '2027',
+    discipline: 'Multidisciplinary STEM',
+    disciplines: [
+      'Physics',
+      'Chemistry',
+      'Electrical engineering',
+      'Computer science',
+      'Materials science',
+    ],
+    topics: ['measurement science', 'engineering', 'computing', 'laboratory research'],
+    description:
+      'An unpaid seven-week research placement at NIST in Gaithersburg or Boulder. The residency rule makes this a local commuter opportunity, not a national residential program.',
+    eligibility:
+      'U.S. citizen; high-school junior or senior at application; minimum unweighted 3.0 GPA; permanent residence within 50 miles of the host campus; full seven-week availability.',
+    highSchoolPolicy: 'supported',
+    highSchoolEvidence:
+      'NIST explicitly describes SHIP for eligible high-school juniors and seniors.',
+    restrictions: {
+      grades: 'High-school junior or senior at application',
+      geography:
+        'Permanent residence within 50 miles of NIST Gaithersburg, Maryland, or Boulder, Colorado',
+      authorEligibility: 'U.S. citizen with minimum 3.0 unweighted GPA',
+    },
+    preparationStages: ['learning-team-practice'],
+    prerequisites: [
+      'Commit to the full seven-week schedule.',
+      'Apply through the announced USAJobs vacancy.',
+    ],
+    costs: {
+      application: null,
+      program: null,
+      compensation: 'Unpaid internship.',
+      travel:
+        'Housing and transportation support were not stated; the route requires local permanent residence.',
+      aid: null,
+    },
+    outcomes: ['Mentored NIST research project', 'End-of-program poster session'],
+    participationModes: ['in-person'],
+    archival: false,
+    location: 'Gaithersburg, Maryland, or Boulder, Colorado · commuter',
+    cost: 'Unpaid; application/program fees and participant logistics were not stated.',
+    effort: 'Seven-week full-time commitment and project-specific research work.',
+    url: 'https://www.nist.gov/iaao/summer-high-school-intern-program',
+    lifecycle: 'announced',
+    lifecycleEvidence:
+      'NIST says the 2027 vacancy is expected in mid-October 2026 with applications due near the end of January; exact dates remain TBD.',
+    sources: [
+      'https://www.nist.gov/iaao/summer-high-school-intern-program',
+      'https://www.nist.gov/ship/ship-application-and-selection',
+    ],
+  }),
+  researchRoute({
+    slug: 'navy-seap-2027',
+    canonicalId: 'navy-seap:2027',
+    title: 'Navy Science and Engineering Apprenticeship Program',
+    aliases: ['SEAP', 'Navy SEAP', 'Science and Engineering Apprenticeship Program'],
+    organizer: 'U.S. Department of the Navy',
+    kind: 'Internship',
+    routeType: 'internship',
+    contributionFormat: 'Eight-week mentor-supervised research apprenticeship',
+    edition: '2027',
+    discipline: 'Engineering',
+    disciplines: [
+      'Electrical engineering',
+      'Mechanical engineering',
+      'Computer science',
+      'Physics',
+      'Materials science',
+    ],
+    topics: ['naval research', 'engineering', 'computing', 'physical science'],
+    description:
+      'An eight-week in-person research apprenticeship at a participating Navy laboratory. Eligibility can vary by lab, so the selected posting remains part of the rules.',
+    eligibility:
+      'Currently enrolled high-school student who has completed at least grade 9; generally age 16 by the start and a U.S. citizen. Lab-specific exceptions and restrictions apply.',
+    highSchoolPolicy: 'supported',
+    highSchoolEvidence: 'The official SEAP page explicitly recruits current high-school students.',
+    restrictions: {
+      grades: 'Completed at least grade 9; graduating seniors may apply',
+      ages: 'Generally age 16 by internship start; selected labs may state exceptions',
+      authorEligibility: 'Generally U.S. citizen; laboratory-specific rules control',
+      geography: 'Apply to a specific participating Navy laboratory',
+    },
+    preparationStages: ['learning-team-practice'],
+    prerequisites: [
+      'Review the selected laboratory’s additional age, citizenship, skill, and location rules.',
+    ],
+    costs: {
+      application: null,
+      program: null,
+      compensation: '$4,000 stipend for new participants in the 2027 program.',
+      travel: 'Housing, travel, and meals were not stated as provided.',
+      aid: null,
+    },
+    outcomes: ['Eight weeks of supervised research at a Navy laboratory'],
+    participationModes: ['in-person'],
+    archival: false,
+    location: 'Participating U.S. Navy laboratories · site-specific',
+    cost: 'Paid stipend; application/program fees and participant logistics were not stated.',
+    effort: 'Eight-week full-time research commitment, with a possible site-specific extension.',
+    url: 'https://navalsteminterns.us/internships/seap/',
+    lifecycle: 'announced',
+    lifecycleEvidence:
+      'The official page lists a September 15–November 30 application period for 2027.',
+    milestones: [
+      {
+        label: '2027 application deadline',
+        date: '2026-11-30',
+        kind: 'deadline',
+        role: 'submission',
+        precision: 'date-only',
+        timezone: null,
+        evidence:
+          'The official SEAP page lists the 2027 application period as September 15 through November 30.',
+        url: 'https://navalsteminterns.us/internships/seap/',
+      },
+    ],
+    sources: ['https://navalsteminterns.us/internships/seap/'],
+  }),
+  researchRoute({
+    slug: 'fermilab-prism-2027',
+    canonicalId: 'fermilab-prism:2027',
+    title: 'Fermilab PRISM',
+    aliases: ['PRISM', 'Program for Research Innovation and STEM Mentorship'],
+    organizer: 'Fermi National Accelerator Laboratory',
+    kind: 'Summer program',
+    routeType: 'summer-program',
+    contributionFormat: 'Four-week research and STEM mentorship program',
+    edition: '2027',
+    discipline: 'Physics',
+    disciplines: [
+      'Physics',
+      'Electrical engineering',
+      'Mechanical engineering',
+      'AI & machine learning',
+    ],
+    topics: [
+      'particle physics',
+      'quantum science',
+      'engineering design',
+      'artificial intelligence',
+    ],
+    description:
+      'A four-week Illinois program combining research, mentorship, and project communication in particle physics, quantum science, engineering design, and AI.',
+    eligibility:
+      'Illinois high-school senior during 2027–28 or 2027 graduate; U.S. citizen; proof of medical insurance. No STEM-course prerequisites are required.',
+    highSchoolPolicy: 'supported',
+    highSchoolEvidence: 'Fermilab explicitly defines the eligible Illinois high-school cohorts.',
+    restrictions: {
+      grades: 'Illinois senior for 2027–28 or 2027 high-school graduate',
+      geography: 'Illinois',
+      authorEligibility: 'U.S. citizen with proof of medical insurance',
+    },
+    preparationStages: ['learning-team-practice', 'idea'],
+    prerequisites: ['Submit a course list and recommendation from a STEM teacher or club adviser.'],
+    costs: {
+      application: null,
+      program: null,
+      compensation: '$500 weekly salary.',
+      travel: 'Transportation assistance is available; Fermilab does not provide housing.',
+      aid: 'Transportation assistance is available.',
+    },
+    outcomes: ['Research abstract', 'Poster', 'Final presentation'],
+    participationModes: ['in-person'],
+    archival: false,
+    location: 'Fermilab, Illinois · housing not provided',
+    cost: 'Paid weekly salary; housing is not provided.',
+    effort: 'Four-week summer schedule plus application and recommendation.',
+    url: 'https://internships.fnal.gov/fermilab-program-for-research-innovation-and-stem-mentorship-prism/',
+    lifecycle: 'announced',
+    lifecycleEvidence: 'Fermilab lists exact 2027 application and program dates.',
+    milestones: [
+      {
+        label: 'Applications open',
+        date: '2027-01-12',
+        kind: 'opens',
+        precision: 'date-only',
+        timezone: null,
+        evidence: 'Applications open January 12, 2027.',
+        url: 'https://internships.fnal.gov/fermilab-program-for-research-innovation-and-stem-mentorship-prism/',
+      },
+      {
+        label: 'Application deadline',
+        date: '2027-03-01',
+        kind: 'deadline',
+        role: 'submission',
+        precision: 'date-only',
+        timezone: null,
+        evidence: 'Applications close March 1, 2027.',
+        url: 'https://internships.fnal.gov/fermilab-program-for-research-innovation-and-stem-mentorship-prism/',
+      },
+      {
+        label: 'Program begins',
+        date: '2027-07-12',
+        kind: 'event',
+        role: 'event',
+        precision: 'date-only',
+        timezone: null,
+        evidence: 'The program runs July 12 through August 6, 2027.',
+        url: 'https://internships.fnal.gov/fermilab-program-for-research-innovation-and-stem-mentorship-prism/',
+      },
+    ],
+    sources: [
+      'https://internships.fnal.gov/fermilab-program-for-research-innovation-and-stem-mentorship-prism/',
+    ],
+  }),
+  researchRoute({
+    slug: 'broad-summer-scholars-2026',
+    canonicalId: 'broad-summer-scholars:2026',
+    title: 'Broad Summer Scholars Program',
+    aliases: ['BSSP', 'Broad Summer Scholars'],
+    organizer: 'Broad Institute',
+    kind: 'Summer program',
+    routeType: 'summer-program',
+    contributionFormat: 'Six-week mentored biomedical and genomics research program',
+    edition: '2026',
+    discipline: 'Biomedical engineering',
+    disciplines: ['Biomedical engineering', 'Biology', 'Computer science'],
+    topics: ['genomics', 'biomedical research', 'computational biology', 'poster presentation'],
+    description:
+      'A six-week commuter research program for Massachusetts rising seniors. Prior research is not required; admitted students complete mentored biomedical or genomics work and prepare a poster and presentation.',
+    eligibility:
+      'Apply during junior year as a rising senior; attend a Massachusetts high school within commuting distance; B or better in science and math; citizenship, residency, or work-authorization rules apply.',
+    highSchoolPolicy: 'supported',
+    highSchoolEvidence: 'The organizer explicitly defines the rising-senior high-school route.',
+    restrictions: {
+      grades: 'Apply during junior year as a rising senior',
+      geography: 'Massachusetts high school within commuting distance',
+      authorEligibility:
+        'U.S. citizen, permanent resident, or noncitizen with employment authorization',
+    },
+    preparationStages: ['learning-team-practice'],
+    prerequisites: ['Commit to the full six weeks.', 'Prior research is not required.'],
+    costs: {
+      application: 'No application fee.',
+      program: 'No attendance cost.',
+      compensation: '$3,600 stipend.',
+      travel: 'Partial transportation reimbursement; housing was not stated or provided.',
+      aid: 'Partial transportation reimbursement.',
+    },
+    outcomes: ['Mentored biomedical/genomics research', 'Scientific poster and presentation'],
+    participationModes: ['in-person'],
+    archival: false,
+    location: 'Cambridge, Massachusetts · commuter',
+    cost: 'No application or attendance cost; $3,600 stipend and partial transportation reimbursement.',
+    effort: 'Six-week full-time commuter program.',
+    url: 'https://www.broadinstitute.org/partnerships/education/k-12-outreach/broad-summer-scholars-program',
+    lifecycle: 'unknown',
+    lifecycleEvidence: 'The 2026 cycle is closed; no 2027 dates were verified.',
+    sources: [
+      'https://www.broadinstitute.org/partnerships/education/k-12-outreach/broad-summer-scholars-program',
+    ],
+  }),
+  researchRoute({
+    slug: 'fred-hutch-ship-2026',
+    canonicalId: 'fred-hutch-ship:2026',
+    title: 'Fred Hutch Summer High School Internship Program',
+    aliases: ['Fred Hutch SHIP', 'SHIP'],
+    organizer: 'Fred Hutchinson Cancer Center',
+    kind: 'Internship',
+    routeType: 'internship',
+    edition: '2026',
+    contributionFormat: 'Eight-week paid biomedical research internship',
+    discipline: 'Biomedical engineering',
+    disciplines: ['Biomedical engineering', 'Biology'],
+    topics: ['cancer research', 'laboratory safety', 'biomedical research'],
+    description:
+      'An eight-week paid, in-person Seattle internship designed for students without extensive research experience: two weeks of training followed by six weeks in a mentored research group.',
+    eligibility:
+      'Entering senior year; age 16+ at start; Greater Seattle resident; available for all eight weeks. Out-of-state and international students are not accepted.',
+    highSchoolPolicy: 'supported',
+    highSchoolEvidence:
+      'Fred Hutch explicitly publishes this route for entering high-school seniors.',
+    restrictions: {
+      grades: 'Entering senior year',
+      ages: '16+ at program start',
+      geography:
+        'Greater Seattle and surrounding area; no out-of-state or international applicants',
+    },
+    preparationStages: ['learning-team-practice'],
+    prerequisites: [
+      'Resume, transcript, essays, and two online recommendations.',
+      'Full eight-week availability.',
+    ],
+    costs: {
+      application: null,
+      program: null,
+      compensation:
+        'Financial award after successful completion; amount is disclosed to interviewees.',
+      travel: 'Free ORCA transit card; housing is not provided.',
+      aid: 'Free ORCA transit card.',
+    },
+    outcomes: [
+      'Laboratory training',
+      'Six weeks of paired mentored research',
+      'Final presentation',
+    ],
+    participationModes: ['in-person'],
+    archival: false,
+    location: 'Seattle, Washington · commuter',
+    cost: 'Paid award amount is not public; transit card provided and housing not provided.',
+    effort: 'Eight-week full-time internship.',
+    url: 'https://www.fredhutch.org/en/education-training/high-school-students/summer-high-school-internship-program.html',
+    lifecycle: 'awaiting-announcement',
+    lifecycleEvidence:
+      'The 2026 cycle is closed; the organizer says 2027 information will be posted in November.',
+    sources: [
+      'https://www.fredhutch.org/en/education-training/high-school-students/summer-high-school-internship-program.html',
+    ],
+  }),
+  researchRoute({
+    slug: 'seattle-childrens-rtp-2026',
+    canonicalId: 'seattle-childrens-rtp:2026',
+    title: 'Seattle Children’s Research Training Program',
+    aliases: ['Seattle Children RTP', 'RTP'],
+    organizer: 'Seattle Children’s Research Institute',
+    kind: 'Summer program',
+    routeType: 'summer-program',
+    edition: '2026',
+    contributionFormat: 'Four-week scaffolded biology research program',
+    discipline: 'Biology',
+    disciplines: ['Biology', 'Biomedical engineering'],
+    topics: [
+      'biochemistry',
+      'immunotherapy',
+      'gene editing',
+      'infectious disease',
+      'public health',
+    ],
+    description:
+      'A four-week local program intentionally designed as a first research experience, with biology-lab training, an independent project, and a final oral presentation.',
+    eligibility:
+      'Current grades 10–11 within commuting distance of downtown Seattle; SSN or ITIN required for the taxable stipend. Prior formal research is not required.',
+    highSchoolPolicy: 'supported',
+    highSchoolEvidence: 'Seattle Children’s explicitly accepts current grade 10 and 11 students.',
+    restrictions: {
+      grades: 'Current grades 10–11',
+      geography: 'Within commuting distance of downtown Seattle',
+      authorEligibility: 'SSN or ITIN required for stipend payment',
+    },
+    preparationStages: ['learning-team-practice', 'idea'],
+    prerequisites: [
+      'One recommendation.',
+      'Treat this as a first research experience; prior formal research is not required.',
+    ],
+    costs: {
+      application: null,
+      program: 'No participation cost.',
+      compensation: '$2,000 taxable stipend toward transportation and meals.',
+      travel: 'Housing is not provided or arranged.',
+      aid: '$2,000 stipend supports transportation and meals.',
+    },
+    outcomes: ['Independent laboratory project', 'Final oral presentation'],
+    participationModes: ['in-person'],
+    archival: false,
+    location: 'Seattle, Washington · commuter',
+    cost: 'No participation cost; $2,000 stipend; housing not provided.',
+    effort: 'Four-week in-person program and independent project.',
+    url: 'https://www.seattlechildrens.org/research/centers-programs/science-education-department/high-school-training-programs/',
+    lifecycle: 'awaiting-announcement',
+    lifecycleEvidence:
+      'The 2026 cycle is closed; the organizer says to check back in late 2026 for summer 2027.',
+    sources: [
+      'https://www.seattlechildrens.org/research/centers-programs/science-education-department/high-school-training-programs/',
+    ],
+  }),
+  researchRoute({
+    slug: 'msk-summer-student-2026',
+    canonicalId: 'msk-summer-student:2026',
+    title: 'Memorial Sloan Kettering Summer Student Program',
+    aliases: ['MSK Summer Student Program', 'HOPP Summer Student'],
+    organizer: 'Memorial Sloan Kettering Cancer Center',
+    kind: 'Internship',
+    routeType: 'internship',
+    edition: '2026',
+    contributionFormat: 'Eight-week biomedical or computational laboratory internship',
+    discipline: 'Biomedical engineering',
+    disciplines: ['Biomedical engineering', 'Biology', 'Chemistry', 'Computer science'],
+    topics: [
+      'cancer biology',
+      'chemical biology',
+      'computational genomics',
+      'imaging',
+      'immunology',
+    ],
+    description:
+      'An eight-week mentored placement in a biomedical or computational cancer-research laboratory for eligible local high-school juniors.',
+    eligibility:
+      'Current junior; permanent address in NY, NJ, or CT within 25 miles of MSK Manhattan; legally authorized to work; science GPA 3.5; age 14+; full commitment.',
+    highSchoolPolicy: 'supported',
+    highSchoolEvidence: 'MSK explicitly defines a high-school-junior route.',
+    restrictions: {
+      grades: 'Current high-school junior',
+      ages: '14+ by program start',
+      geography: 'NY/NJ/CT permanent address within 25 miles of MSK Manhattan',
+      authorEligibility: 'Legally authorized to work in the United States; 3.5 science GPA',
+    },
+    preparationStages: ['learning-team-practice', 'preliminary-results'],
+    prerequisites: [
+      'Essays, one-page resume, transcripts, and two confidential recommendations.',
+      'Do not contact faculty during the application process.',
+    ],
+    costs: {
+      application: null,
+      program: null,
+      compensation: '$1,200 summer stipend.',
+      travel: 'Housing and transportation are not provided.',
+      aid: null,
+    },
+    outcomes: ['Eight-week mentored lab placement', 'Research communication experience'],
+    participationModes: ['in-person'],
+    archival: false,
+    location: 'New York City · local commuter route',
+    cost: '$1,200 stipend; housing and transportation not provided.',
+    effort: 'Eight-week full-time placement.',
+    url: 'https://www.mskcc.org/education-training/summer-student',
+    lifecycle: 'unknown',
+    lifecycleEvidence: 'The 2026 cycle is closed; no 2027 cycle was verified.',
+    sources: ['https://www.mskcc.org/education-training/summer-student'],
+  }),
+  researchRoute({
+    slug: 'md-anderson-king-summer-2026',
+    canonicalId: 'md-anderson-king-high-school-summer:2026',
+    title: 'MD Anderson King Foundation High School Summer Program',
+    aliases: [
+      'MD Anderson high school summer program',
+      'King Foundation High School Summer Program',
+    ],
+    organizer: 'UT MD Anderson Cancer Center School of Health Professions',
+    kind: 'Internship',
+    routeType: 'internship',
+    edition: '2026',
+    contributionFormat: 'Nine- or ten-week paid biomedical research internship',
+    discipline: 'Biomedical engineering',
+    disciplines: ['Biomedical engineering', 'Biology', 'Chemistry'],
+    topics: ['cancer research', 'allied health', 'laboratory research'],
+    description:
+      'A paid Houston laboratory-research route for graduating Texas high-school seniors. Prior laboratory or research experience is explicitly not required.',
+    eligibility:
+      'Texas high-school senior in spring before program; accepted to college for fall; age 18+ at start; citizenship, residency, or work-authorization rule; full commitment.',
+    highSchoolPolicy: 'supported',
+    highSchoolEvidence:
+      'MD Anderson explicitly publishes the route for graduating Texas high-school seniors.',
+    restrictions: {
+      grades: 'Graduating Texas high-school senior accepted to college for fall',
+      ages: '18+ by program start',
+      geography: 'Texas',
+      authorEligibility: 'U.S. citizen, permanent resident, or work-authorized visa holder',
+    },
+    preparationStages: ['learning-team-practice'],
+    prerequisites: [
+      'Full nine- or ten-week commitment.',
+      'Prior research experience is not required.',
+    ],
+    costs: {
+      application: null,
+      program: null,
+      compensation: '$7,200 taxable stipend for ten weeks or $6,480 for nine weeks in 2026.',
+      travel: 'Participant supplies housing, transportation, meals, and other expenses.',
+      aid: null,
+    },
+    outcomes: [
+      'Faculty-guided biomedical research',
+      'Possible abstract, poster, elevator pitch, and closing presentation',
+    ],
+    participationModes: ['in-person'],
+    archival: false,
+    location: 'Houston, Texas · participant arranges housing',
+    cost: 'Paid taxable stipend; participant pays housing, transportation, meals, and other expenses.',
+    effort: 'Nine- or ten-week full-time laboratory program.',
+    url: 'https://www.mdanderson.org/education-training/research-training/early-career-pathway-programs/summer-research-programs/programs/high-school-summer-program.html',
+    lifecycle: 'awaiting-announcement',
+    lifecycleEvidence:
+      'The 2026 cycle is closed; the organizer says to check back in October for 2027 details.',
+    sources: [
+      'https://www.mdanderson.org/education-training/research-training/early-career-pathway-programs/summer-research-programs/programs/high-school-summer-program.html',
+    ],
+  }),
+  researchRoute({
+    slug: 'gmu-assip-2026',
+    canonicalId: 'gmu-assip:2026',
+    title: 'George Mason Aspiring Scientists Summer Internship Program',
+    aliases: ['ASSIP', 'George Mason ASSIP'],
+    organizer: 'George Mason University',
+    kind: 'Internship',
+    routeType: 'internship',
+    edition: '2026',
+    contributionFormat: 'Eight-week full-time faculty-mentored research internship',
+    discipline: 'Multidisciplinary STEM',
+    disciplines: [
+      'Biomedical engineering',
+      'Biology',
+      'Chemistry',
+      'Computer science',
+      'Robotics',
+      'Environmental science',
+      'Materials science',
+    ],
+    topics: ['faculty-mentored research', 'scientific writing', 'poster presentation'],
+    description:
+      'An eight-week research placement with George Mason or collaborating faculty. Mentor/project postings determine whether work is in person, hybrid, or remote.',
+    eligibility:
+      'Age 15+ for remote/computer-lab positions and 16+ for wet-lab positions by program start; project-specific skills and mentor fit apply.',
+    highSchoolPolicy: 'supported',
+    highSchoolEvidence: 'George Mason explicitly defines age rules for pre-college applicants.',
+    restrictions: {
+      ages: '15+ for remote/computer-lab; 16+ for wet-lab positions',
+      authorEligibility: 'Project-specific requirements apply',
+    },
+    preparationStages: ['learning-team-practice', 'preliminary-results'],
+    prerequisites: [
+      'Select projects whose listed skills, mode, and age rules match the applicant.',
+    ],
+    costs: {
+      application: '$25 application fee; waiver available for financial need.',
+      program:
+        '$1,299 tuition for three undergraduate credits; waiver available for demonstrated need.',
+      compensation: 'No stipend was verified.',
+      travel: null,
+      aid: 'Application-fee and tuition waivers are available for demonstrated need.',
+    },
+    outcomes: [
+      'Original research',
+      'Scientific writing and communication',
+      'Three undergraduate credits',
+      'Poster presentation',
+    ],
+    participationModes: ['in-person', 'hybrid', 'remote-participation'],
+    archival: false,
+    location: 'George Mason and partner sites · mode varies by project',
+    cost: '$25 application and $1,299 tuition in 2026; need-based waivers available.',
+    effort: 'Eight-week full-time project and final poster.',
+    url: 'https://science.gmu.edu/assip',
+    lifecycle: 'unknown',
+    lifecycleEvidence: 'The 2026 cycle is closed; no 2027 dates were verified.',
+    sources: ['https://science.gmu.edu/assip'],
+  }),
+  researchRoute({
+    slug: 'ut-austin-hsra-2026',
+    canonicalId: 'ut-austin-hsra:2026',
+    title: 'UT Austin Summer High School Research Academy',
+    aliases: ['UT HSRA', 'HSRA', 'Summer High School Research Academy'],
+    organizer: 'UT Austin Freshman Research Initiative',
+    kind: 'Summer program',
+    routeType: 'summer-program',
+    edition: '2026',
+    contributionFormat: 'Five-week, nonresidential laboratory research academy',
+    discipline: 'Biomedical engineering',
+    disciplines: [
+      'Biomedical engineering',
+      'Biology',
+      'Chemistry',
+      'Environmental science',
+      'Computer science',
+    ],
+    topics: ['biochemistry', 'genetics', 'neuroscience', 'genome engineering', 'data analytics'],
+    description:
+      'A five-week Austin research academy requiring roughly 15–25 hours per week. Students work in a research stream, earn NSC 309 extension credit, and present a printed poster.',
+    eligibility:
+      'Age 15+ by June 1 of the reviewed cycle; rising sophomore, junior, or senior, with upper-grade preference. The official 2026 pages conflict on whether Texas residency is mandatory or prioritized.',
+    highSchoolPolicy: 'supported',
+    highSchoolEvidence:
+      'UT Austin explicitly accepts rising high-school sophomores, juniors, and seniors.',
+    restrictions: {
+      grades: 'Rising sophomore, junior, or senior; preference for juniors and seniors',
+      ages: '15+ by the reviewed cycle’s June 1',
+      geography:
+        'Official 2026 pages conflict: Texas residency is described as mandatory in one place and prioritized in another',
+    },
+    preparationStages: ['learning-team-practice', 'preliminary-results'],
+    prerequisites: [
+      'Commit 15–25 hours weekly for the full five weeks.',
+      'Selection uses the essay and project fit; no recommendation, transcript, GPA, or rank is required.',
+    ],
+    costs: {
+      application: null,
+      program: '$4,000 in 2026, including a $400 nonrefundable deposit credited toward the fee.',
+      compensation: 'Limited need-based awards may include a stipend.',
+      travel: 'Housing and transportation are not provided.',
+      aid: 'Limited need-based awards may cover tuition and include a stipend; no merit aid.',
+    },
+    outcomes: ['UT Extension NSC 309 credit', 'Printed research poster and closing symposium'],
+    participationModes: ['in-person'],
+    archival: false,
+    location: 'Austin, Texas · nonresidential',
+    cost: '$4,000 in 2026; limited need-based tuition awards/stipends; no housing or transport.',
+    effort: 'Five-week in-person program, 15–25 hours weekly.',
+    url: 'https://fri.cns.utexas.edu/community-outreach/summer-high-school-research-academy',
+    lifecycle: 'awaiting-announcement',
+    lifecycleEvidence:
+      'The organizer says applications reopen in January 2027, but exact 2027 dates and fees are not yet published.',
+    sources: [
+      'https://fri.cns.utexas.edu/community-outreach/summer-high-school-research-academy',
+      'https://fri.cns.utexas.edu/hsra-faq',
+    ],
+  }),
+]
+
+export const catalogExpansion: Opportunity[] = [
+  {
+    id: 'catalog:hosa-medical-innovation-2026-27',
+    sourceId: 'catalog-hosa-medical-innovation',
+    externalId: '2026-27-secondary',
+    canonicalId: 'hosa:medical-innovation:2026-27:secondary',
+    slug: 'hosa-medical-innovation-2026-27',
+    title: 'HOSA Medical Innovation',
+    aliases: [
+      'HOSA Biomedical Innovation',
+      'Biomedical Innovation HOSA',
+      'HOSA Medical Innovation competition',
+    ],
+    organizer: 'HOSA–Future Health Professionals',
+    kind: 'Competition',
+    routeType: 'competition',
+    contributionFormat:
+      'Team-built original medical innovation, digital outline, physical exhibit, and finalist presentation',
+    edition: '2026–27',
+    series: { id: 'hosa-competitive-events', name: 'HOSA Competitive Events' },
+    parent: {
+      id: 'hosa-ilc-2027',
+      name: 'HOSA International Leadership Conference',
+      kind: 'edition',
+    },
+    discipline: 'Biomedical engineering',
+    disciplines: ['Biomedical engineering', 'Biology', 'Mechanical engineering'],
+    topics: ['medical innovation', 'healthcare delivery', 'prototype design', 'health technology'],
+    description:
+      'A HOSA team competition for an original innovation that could advance medicine or healthcare delivery. Teams research the need, build a prototype, submit a digital exhibit outline, and—if advanced—present the physical innovation at ILC.',
+    eligibility:
+      'Secondary and postsecondary/collegiate HOSA divisions are eligible. The Secondary route is for teams of 2–4 eligible HOSA competitors and follows local/state qualification requirements before ILC.',
+    highSchoolPolicy: 'supported',
+    highSchoolEvidence:
+      'The official 2026–27 guideline lists the Secondary division as eligible and requires teams of 2–4 competitors.',
+    restrictions: {
+      grades: 'HOSA Secondary division; confirm chartered-association division rules',
+      team: '2–4 competitors per team',
+      adultSponsor: 'Participation proceeds through a HOSA chapter/advisor and state-level process',
+      authorEligibility: 'Original work of the competitors; local/state advancement rules apply',
+      minorAttendance:
+        'ILC attendance and registration requirements apply; confirm with the chapter advisor',
+    },
+    preparationStages: ['idea', 'prototype', 'completed-research'],
+    prerequisites: [
+      'Develop an original medical innovation and build a physical prototype.',
+      'Provide evidence for the need and explain healthcare quality, delivery, and cost implications.',
+      'Create a digital outline of no more than 13 content slides plus references and upload it as one PDF.',
+      'Qualify through the applicable local/state HOSA process before the ILC route.',
+      'Bring the exhibit and attend the required in-person display time at ILC.',
+    ],
+    costs: {
+      submission: 'A separate event-submission amount was not stated in the event guideline.',
+      registration:
+        'HOSA membership and conference registration obligations apply; amounts were not stated in the event guideline.',
+      accompanyingAdult: null,
+      travel: 'ILC travel and lodging support were not stated in the event guideline.',
+      materials: 'The team must provide the innovation, exhibit, and associated materials.',
+      aid: null,
+    },
+    outcomes: [
+      'State-level competition and possible advancement to ILC',
+      'Required ILC exhibit sharing for qualified teams',
+      'Five-minute judged presentation for teams advancing from pre-judging',
+    ],
+    participationModes: ['remote-submission', 'in-person'],
+    archival: false,
+    location: 'Local/state pathway · HOSA ILC in person for qualified teams',
+    cost: 'Membership, conference, travel, lodging, and prototype costs vary; the event guideline does not state amounts.',
+    effort:
+      'Original concept, evidence review, working prototype, digital exhibit outline, physical display, and team presentation.',
+    url: hosaGuidelines,
+    verifiedAt: observedAt,
+    priority: 98,
+    published: true,
+    lifecycle: 'announced',
+    lifecycleEvidence:
+      'HOSA published final 2026–27 Medical Innovation guidelines in September 2026. State deadlines and processes vary by chartered association.',
+    deadline: null,
+    eventDate: '2027-06-22',
+    timezone: null,
+    milestones: [
+      {
+        label: '2027 HOSA ILC begins',
+        date: '2027-06-22',
+        kind: 'event',
+        role: 'event',
+        precision: 'date-only',
+        timezone: null,
+        evidence: 'The official ILC page lists June 22–25, 2027 in Philadelphia, Pennsylvania.',
+        url: 'https://hosa.org/ilc/',
+      },
+    ],
+    fieldEvidence: [
+      {
+        field: 'highSchoolPolicy',
+        url: medicalInnovationPdf,
+        quote: 'Eligible Divisions: Secondary & Postsecondary/ Collegiate',
+        observedAt,
+        confirmedAt: observedAt,
+      },
+      {
+        field: 'restrictions.team',
+        url: medicalInnovationPdf,
+        quote: 'Team Event: 2-4 competitors per team',
+        observedAt,
+        confirmedAt: observedAt,
+      },
+      {
+        field: 'costs.materials',
+        url: medicalInnovationPdf,
+        quote: 'Innovation and all associated materials/exhibit items',
+        observedAt,
+        confirmedAt: observedAt,
+      },
+    ],
+    searchVersion: 2,
+  },
+  {
+    id: 'catalog:hosa-research-poster-2026-27',
+    sourceId: 'catalog-hosa-research-poster',
+    externalId: '2026-27-secondary',
+    canonicalId: 'hosa:research-poster:2026-27:secondary',
+    slug: 'hosa-research-poster-2026-27',
+    title: 'HOSA Research Poster',
+    aliases: ['HOSA health research poster', 'HOSA biomedical research poster'],
+    organizer: 'HOSA–Future Health Professionals',
+    kind: 'Competition',
+    routeType: 'poster',
+    contributionFormat:
+      'Team health-research study, 48 × 36-inch poster, digital pre-judging, and finalist presentation',
+    edition: '2026–27',
+    series: { id: 'hosa-competitive-events', name: 'HOSA Competitive Events' },
+    parent: {
+      id: 'hosa-ilc-2027',
+      name: 'HOSA International Leadership Conference',
+      kind: 'edition',
+    },
+    discipline: 'Biomedical engineering',
+    disciplines: ['Biomedical engineering', 'Biology'],
+    topics: ['health research', 'community health', 'research poster', 'data analysis'],
+    description:
+      'A team route for posing a health-related community research question, collecting and analyzing original evidence, and presenting the findings in a research poster. It is distinct from HOSA Medical Innovation’s prototype-design route.',
+    eligibility:
+      'Secondary and postsecondary/collegiate HOSA divisions are eligible. The Secondary route is for teams of 2–4 eligible HOSA competitors and follows local/state qualification requirements before ILC.',
+    highSchoolPolicy: 'supported',
+    highSchoolEvidence:
+      'The official 2026–27 guideline lists the Secondary division as eligible and requires teams of 2–4 competitors.',
+    restrictions: {
+      grades: 'HOSA Secondary division; confirm chartered-association division rules',
+      team: '2–4 competitors per team',
+      adultSponsor: 'Participation proceeds through a HOSA chapter/advisor and state-level process',
+      authorEligibility: 'Research must be conducted during the current HOSA membership year',
+      minorAttendance:
+        'ILC attendance and registration requirements apply; confirm with the chapter advisor',
+    },
+    preparationStages: ['idea', 'preliminary-results', 'completed-research'],
+    prerequisites: [
+      'Pose a health-related research question relevant to the team’s community.',
+      'Conduct original research rather than only summarizing existing work.',
+      'Obtain informed consent from participants and follow the HOSA guideline’s ethical-research requirements before collecting data.',
+      'Prepare a 48 × 36-inch landscape poster and upload it as one PDF.',
+      'Qualify through the applicable local/state HOSA process before the ILC route.',
+    ],
+    costs: {
+      submission: 'A separate event-submission amount was not stated in the event guideline.',
+      registration:
+        'HOSA membership and conference registration obligations apply; amounts were not stated in the event guideline.',
+      accompanyingAdult: null,
+      travel: 'ILC travel and lodging support were not stated in the event guideline.',
+      materials: 'The team is responsible for printing the required 48 × 36-inch poster.',
+      aid: null,
+    },
+    outcomes: [
+      'State-level research-poster competition and possible advancement to ILC',
+      'Required ILC poster display for qualified teams',
+      'Five-minute judged presentation for teams advancing from pre-judging',
+    ],
+    participationModes: ['remote-submission', 'in-person'],
+    archival: false,
+    location: 'Local/state pathway · HOSA ILC in person for qualified teams',
+    cost: 'Membership, conference, travel, lodging, and poster-printing costs vary; the event guideline does not state amounts.',
+    effort:
+      'Original community health research, ethical participant procedures when applicable, analysis, poster production, and team presentation.',
+    url: hosaGuidelines,
+    verifiedAt: observedAt,
+    priority: 97,
+    published: true,
+    lifecycle: 'announced',
+    lifecycleEvidence:
+      'HOSA published final 2026–27 Research Poster guidelines in September 2026. State deadlines and processes vary by chartered association.',
+    deadline: null,
+    eventDate: '2027-06-22',
+    timezone: null,
+    milestones: [
+      {
+        label: '2027 HOSA ILC begins',
+        date: '2027-06-22',
+        kind: 'event',
+        role: 'event',
+        precision: 'date-only',
+        timezone: null,
+        evidence: 'The official ILC page lists June 22–25, 2027 in Philadelphia, Pennsylvania.',
+        url: 'https://hosa.org/ilc/',
+      },
+    ],
+    fieldEvidence: [
+      {
+        field: 'highSchoolPolicy',
+        url: researchPosterPdf,
+        quote: 'Eligible Divisions: Secondary & Postsecondary/ Collegiate',
+        observedAt,
+        confirmedAt: observedAt,
+      },
+      {
+        field: 'restrictions.team',
+        url: researchPosterPdf,
+        quote: 'Team Event: 2-4 competitors per team',
+        observedAt,
+        confirmedAt: observedAt,
+      },
+      {
+        field: 'prerequisites.ethics',
+        url: researchPosterPdf,
+        quote:
+          'While formal IRB approval is not required for HOSA projects, competitors are expected to follow ethical research practices and document content appropriately.',
+        observedAt,
+        confirmedAt: observedAt,
+      },
+    ],
+    searchVersion: 2,
+  },
+  ...researchPrograms,
+]

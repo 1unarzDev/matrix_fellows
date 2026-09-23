@@ -3,6 +3,11 @@
 import { execFileSync } from 'node:child_process'
 import { createClient } from '@supabase/supabase-js'
 import { catalogAdditions } from '../shared/data/opportunity-catalog-additions.ts'
+import { catalogExpansion } from '../shared/data/opportunity-catalog-expansion.ts'
+import {
+  CATALOG_ENRICHMENT_VERSION,
+  catalogEnrichment,
+} from '../shared/data/opportunity-catalog-enrichment.ts'
 import { opportunitySchema } from '../shared/utils/validation.ts'
 import { reviewedSources } from '../workers/source-registry.ts'
 
@@ -89,6 +94,8 @@ const routeType = {
   Publication: 'publication',
   Workshop: 'workshop-contribution',
   Conference: 'paper',
+  Internship: 'internship',
+  'Summer program': 'summer-program',
 }
 const stage = (item, hs) => {
   if (item.kind === 'Publication') return ['completed-research']
@@ -135,16 +142,26 @@ for (const row of rows || []) {
     routeType: routeType[item.kind],
     searchVersion: 1,
   }
-  const reviewed = curatedPatches[row.id] || {}
+  const catalogId = row.id.startsWith('catalog:') ? row.id.slice('catalog:'.length) : row.id
+  const legacyReviewed = curatedPatches[row.id] || {}
+  const versionedReviewed = catalogEnrichment[catalogId]
+  const shouldUpgrade =
+    Boolean(versionedReviewed) && Number(item.searchVersion || 0) < CATALOG_ENRICHMENT_VERSION
   const patch = {
     ...Object.fromEntries(Object.entries(inferred).filter(([name]) => item[name] === undefined)),
     ...Object.fromEntries(
-      Object.entries(reviewed).filter(
+      Object.entries(legacyReviewed).filter(
         ([name]) =>
           item[name] === undefined ||
           (item.searchVersion === 1 && Array.isArray(item[name]) && item[name].length === 0),
       ),
     ),
+    ...(shouldUpgrade
+      ? Object.fromEntries(
+          Object.entries(versionedReviewed).filter(([name]) => name !== 'searchVersion'),
+        )
+      : {}),
+    ...(shouldUpgrade ? { searchVersion: CATALOG_ENRICHMENT_VERSION } : {}),
   }
   if (!Object.keys(patch).length) continue
   changed++
@@ -157,22 +174,21 @@ for (const row of rows || []) {
     if (result.error) throw new Error(`${row.id}: ${result.error.message}`)
   }
 }
-for (const item of catalogAdditions) {
+const curatedRoutes = [...catalogAdditions, ...catalogExpansion]
+for (const item of curatedRoutes) {
   opportunitySchema.parse(item)
   if (apply) {
-    const result = await client
-      .from('opportunities')
-      .upsert(
-        {
-          id: item.id,
-          source_id: item.sourceId,
-          external_id: item.externalId,
-          canonical_url: item.url,
-          data: item,
-          published: true,
-        },
-        { onConflict: 'id', ignoreDuplicates: true },
-      )
+    const result = await client.from('opportunities').upsert(
+      {
+        id: item.id,
+        source_id: item.sourceId,
+        external_id: item.externalId,
+        canonical_url: item.url,
+        data: item,
+        published: true,
+      },
+      { onConflict: 'id', ignoreDuplicates: true },
+    )
     if (result.error) throw new Error(`${item.id}: ${result.error.message}`)
   }
 }
@@ -199,5 +215,5 @@ if (apply) {
   }
 }
 console.log(
-  `${apply ? 'Applied' : 'Dry run:'} ${changed} existing records need additive metadata; ${catalogAdditions.length} curated routes and ${reviewedSources.length} reviewed sources are ready. Existing keys and overrides are preserved.`,
+  `${apply ? 'Applied' : 'Dry run:'} ${changed} existing records need additive metadata; ${curatedRoutes.length} curated routes and ${reviewedSources.length} reviewed sources are ready. Existing keys and overrides are preserved.`,
 )

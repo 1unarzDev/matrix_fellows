@@ -72,15 +72,50 @@ defineEmits<{ toggle: [key: string, value: string] }>()
       >
     </AnimatedDisclosure>
     <AnimatedDisclosure
-      title="Participation"
+      title="Funding & fees"
       :count="
-        ['remote-presentation', 'remote-submission', 'in-person', 'hybrid'].filter((value) =>
-          selected('mode', value),
-        ).length + (selected('free', 'true') ? 1 : 0)
+        ['paid', 'aid', 'no-program-fee'].filter((value) => selected('funding', value)).length +
+        (selected('free', 'true') ? 1 : 0)
       "
     >
       <label
         v-for="option in [
+          ['paid', 'Paid / stipend'],
+          ['aid', 'Need-based aid stated'],
+          ['no-program-fee', 'Verified no program fee'],
+        ]"
+        :key="option[0]"
+        class="flex min-h-11 items-center gap-3"
+        ><input
+          type="checkbox"
+          :checked="selected('funding', option[0]!)"
+          class="filter-check h-4 w-4 shrink-0"
+          @change="$emit('toggle', 'funding', option[0]!)"
+        /><span>{{ option[1] }}</span></label
+      ><label class="flex min-h-11 items-center gap-3"
+        ><input
+          type="checkbox"
+          :checked="selected('free', 'true')"
+          class="filter-check h-4 w-4 shrink-0"
+          @change="$emit('toggle', 'free', 'true')"
+        /><span>Verified no application / submission fee</span></label
+      >
+    </AnimatedDisclosure>
+    <AnimatedDisclosure
+      title="Participation"
+      :count="
+        [
+          'remote-participation',
+          'remote-presentation',
+          'remote-submission',
+          'in-person',
+          'hybrid',
+        ].filter((value) => selected('mode', value)).length
+      "
+    >
+      <label
+        v-for="option in [
+          ['remote-participation', 'Remote program / internship'],
           ['remote-presentation', 'Remote presentation'],
           ['remote-submission', 'Remote submission'],
           ['in-person', 'In person'],
@@ -94,13 +129,6 @@ defineEmits<{ toggle: [key: string, value: string] }>()
           class="filter-check h-4 w-4 shrink-0"
           @change="$emit('toggle', 'mode', option[0]!)"
         /><span>{{ option[1] }}</span></label
-      ><label class="flex min-h-11 items-center gap-3"
-        ><input
-          type="checkbox"
-          :checked="selected('free', 'true')"
-          class="filter-check h-4 w-4 shrink-0"
-          @change="$emit('toggle', 'free', 'true')"
-        /><span>Verified free submission</span></label
       >
     </AnimatedDisclosure>
   </div>

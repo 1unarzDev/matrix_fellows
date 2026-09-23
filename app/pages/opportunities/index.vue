@@ -27,7 +27,15 @@ const disciplines = [
   'Materials science',
   'Environmental science',
 ]
-const kinds = ['Competition', 'Conference', 'Workshop', 'Publication', 'Program']
+const kinds = [
+  'Internship',
+  'Summer program',
+  'Competition',
+  'Workshop',
+  'Conference',
+  'Publication',
+  'Program',
+]
 const stages = [
   ['idea', 'Idea or proposal'],
   ['prototype', 'Prototype'],
@@ -72,6 +80,7 @@ const apiQuery = computed(() => ({
   stage: route.query.stage,
   status: route.query.status,
   mode: route.query.mode,
+  funding: route.query.funding,
   free: route.query.free,
   archival: route.query.archival,
   sort: route.query.sort,
@@ -109,7 +118,7 @@ function scheduleSearch() {
   searchTimer = setTimeout(commitSearch, 300)
 }
 const activeCount = computed(() =>
-  ['discipline', 'kind', 'stage', 'status', 'mode', 'free', 'archival'].reduce(
+  ['discipline', 'kind', 'stage', 'status', 'mode', 'funding', 'free', 'archival'].reduce(
     (n, key) => n + asArray(route.query[key]).length,
     0,
   ),
@@ -166,7 +175,7 @@ const canonical = 'https://matrixfellows.com/opportunities'
 useSeoMeta({
   title: 'Research opportunities for students | Matrix Fellows',
   description:
-    'Search vetted workshops, conferences, competitions, programs, and publication routes by field, preparation, eligibility, and next action.',
+    'Search vetted internships, summer research programs, workshops, competitions, and publication routes by field, preparation, cost, and next action.',
   ogTitle: 'Research opportunity catalog — Matrix Fellows',
   ogDescription: 'Find a specific route for sharing, developing, or publishing student research.',
 })
@@ -206,8 +215,8 @@ useHead({
         </h1>
         <p class="mt-5 max-w-2xl text-sm leading-7 text-paper/58">
           Search specific poster, paper, workshop, challenge, and research-program routes.
-          Eligibility, costs, and presentation requirements remain explicit when organizers have not
-          stated them.
+          Eligibility, program costs, compensation, and participation requirements remain explicit
+          when organizers have not stated them.
         </p>
       </div>
 

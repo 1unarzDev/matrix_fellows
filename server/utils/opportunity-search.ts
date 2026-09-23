@@ -25,8 +25,18 @@ const schema = z.object({
   q: z.string().trim().max(240).default(''),
   disciplines: z.array(z.enum(allowedDisciplines)).max(12).default([]),
   kinds: z
-    .array(z.enum(['Competition', 'Conference', 'Workshop', 'Publication', 'Program']))
-    .max(5)
+    .array(
+      z.enum([
+        'Competition',
+        'Conference',
+        'Workshop',
+        'Publication',
+        'Program',
+        'Internship',
+        'Summer program',
+      ]),
+    )
+    .max(7)
     .default([]),
   highSchoolPolicies: z
     .array(z.enum(['supported', 'excluded', 'not-stated']))
@@ -59,8 +69,20 @@ const schema = z.object({
     .max(7)
     .default([]),
   modes: z
-    .array(z.enum(['in-person', 'remote-submission', 'remote-presentation', 'hybrid']))
-    .max(4)
+    .array(
+      z.enum([
+        'in-person',
+        'remote-submission',
+        'remote-presentation',
+        'remote-participation',
+        'hybrid',
+      ]),
+    )
+    .max(5)
+    .default([]),
+  funding: z
+    .array(z.enum(['paid', 'aid', 'no-program-fee']))
+    .max(3)
     .default([]),
   freeSubmission: z.boolean().default(false),
   archival: z.boolean().nullable().default(null),
@@ -80,6 +102,7 @@ export function parseOpportunitySearch(event: H3Event): SearchInput {
     preparationStages: split(query.stage),
     statuses: split(query.status),
     modes: split(query.mode),
+    funding: split(query.funding),
     freeSubmission: query.free === 'true',
     archival: query.archival === undefined ? null : query.archival === 'true',
     sort: query.sort,
@@ -97,6 +120,7 @@ export function rpcSearchArgs(input: SearchInput) {
     p_stages: input.preparationStages,
     p_statuses: input.statuses,
     p_modes: input.modes,
+    p_funding: input.funding,
     p_free_submission: input.freeSubmission,
     p_archival: input.archival,
     p_sort: input.sort,
@@ -119,6 +143,7 @@ export function catalogQuery(input: SearchInput) {
     ['stage', input.preparationStages],
     ['status', input.statuses],
     ['mode', input.modes],
+    ['funding', input.funding],
   ] as const)
     for (const value of values) query.append(key, value)
   if (input.freeSubmission) query.set('free', 'true')

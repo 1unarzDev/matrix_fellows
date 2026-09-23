@@ -61,7 +61,15 @@ export const opportunitySchema = z.object({
   sourceId: shortText.min(1),
   externalId: shortText.min(1),
   title: shortText.min(1),
-  kind: z.enum(['Competition', 'Conference', 'Workshop', 'Publication', 'Program']),
+  kind: z.enum([
+    'Competition',
+    'Conference',
+    'Workshop',
+    'Publication',
+    'Program',
+    'Internship',
+    'Summer program',
+  ]),
   discipline: shortText,
   description: z.string().max(4000),
   eventDate: date.nullable(),
@@ -151,6 +159,8 @@ export const opportunitySchema = z.object({
       'challenge',
       'competition',
       'program',
+      'internship',
+      'summer-program',
       'publication',
       'attendance',
     ])
@@ -188,7 +198,10 @@ export const opportunitySchema = z.object({
   prerequisites: z.array(z.string().min(1).max(700)).max(30).optional(),
   costs: z
     .object({
+      application: z.string().max(400).nullable().optional(),
       submission: z.string().max(400).nullable().optional(),
+      program: z.string().max(400).nullable().optional(),
+      compensation: z.string().max(400).nullable().optional(),
       registration: z.string().max(400).nullable().optional(),
       accompanyingAdult: z.string().max(400).nullable().optional(),
       travel: z.string().max(400).nullable().optional(),
@@ -199,8 +212,16 @@ export const opportunitySchema = z.object({
     .optional(),
   outcomes: z.array(z.string().min(1).max(500)).max(30).optional(),
   participationModes: z
-    .array(z.enum(['in-person', 'remote-submission', 'remote-presentation', 'hybrid']))
-    .max(4)
+    .array(
+      z.enum([
+        'in-person',
+        'remote-submission',
+        'remote-presentation',
+        'remote-participation',
+        'hybrid',
+      ]),
+    )
+    .max(5)
     .optional(),
   archival: z.boolean().nullable().optional(),
   fieldEvidence: z

@@ -1,3 +1,7 @@
+<script setup lang="ts">
+useHead({ htmlAttrs: { class: 'guide-scroll' } })
+</script>
+
 <template>
   <div class="guide-atmosphere" aria-hidden="true">
     <svg viewBox="0 0 760 520" fill="none">
@@ -34,6 +38,10 @@
 </template>
 
 <style scoped>
+:global(html.guide-scroll) {
+  scroll-behavior: smooth;
+  scroll-padding-top: 2rem;
+}
 .guide-atmosphere {
   position: fixed;
   z-index: 0;
@@ -103,6 +111,9 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  :global(html.guide-scroll) {
+    scroll-behavior: auto;
+  }
   .guide-atmosphere {
     animation: none;
   }

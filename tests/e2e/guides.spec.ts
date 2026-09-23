@@ -61,6 +61,9 @@ test('guide section navigation is smooth, shareable, and synchronized with readi
   page,
 }, testInfo) => {
   await page.goto('/guides')
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior)).toBe(
+    'smooth',
+  )
   const stages = page.getByRole('navigation', { name: 'Guide stages' })
   await expect(stages.getByRole('link', { name: /Start/ })).toHaveAttribute(
     'aria-current',
@@ -85,6 +88,11 @@ test('guide section navigation is smooth, shareable, and synchronized with readi
   await expect(
     page.getByRole('heading', { name: 'Score candidates before falling in love' }),
   ).toBeInViewport()
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.reload()
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior)).toBe(
+    'auto',
+  )
 })
 
 test('unknown guide slugs return a real 404', async ({ request }) => {

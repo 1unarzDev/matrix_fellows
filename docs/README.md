@@ -78,6 +78,7 @@ scheduled Worker.
 - [Deadline-source research](research/opportunities/deadline-sources.md)
 - [Catalog implementation sources](research/opportunities/catalog-implementation-sources.md)
 - [Internship, summer-program, and HOSA expansion](research/opportunities/catalog-expansion-2026-09-23.md)
+- [Texas summer-program eligibility audit](research/opportunities/texas-summer-program-eligibility-2026-09-23.md)
 - [Guide implementation and content sources](research/guides/implementation-sources.md)
 - [Machine-readable catalogs](research/catalogs/) — runtime inputs; preserve their
   schemas and verify `workers/catalog.ts` when moving or editing them.

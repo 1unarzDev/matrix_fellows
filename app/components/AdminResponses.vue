@@ -17,11 +17,16 @@ type Response = {
   created_at: string
   name: string
   email: string
+  student_id: string
   grade: string
   interests: string[]
+  interest_other: string
   goals: string[]
   stage: string
   note: string
+  parent_name: string
+  parent_email: string
+  parent_permission_confirmed: boolean
 }
 const stats = ref<Analytics>()
 const responses = ref<Response[]>([])
@@ -39,7 +44,9 @@ async function load() {
       props.client.rpc('join_response_analytics'),
       props.client
         .from('join_responses')
-        .select('id,created_at,name,email,grade,interests,goals,stage,note')
+        .select(
+          'id,created_at,name,email,student_id,grade,interests,interest_other,goals,stage,note,parent_name,parent_email,parent_permission_confirmed',
+        )
         .order('id', { ascending: false })
         .range(page.value * 20, page.value * 20 + 19),
     ])
@@ -183,8 +190,8 @@ onBeforeUnmount(() => {
         <p class="mt-3 text-xs leading-relaxed text-paper/45">
           Responses are saved here first. The Google Sheets sync requires a one-time Apps Script
           setup by the sheet owner; it is not active simply because this link is present. Follow
-          docs/operations/join-form.md in the repository. Keep the sheet restricted to organizers. Never
-          share the raw response sheet with sponsors.
+          docs/operations/join-form.md in the repository. Keep the sheet restricted to organizers.
+          Never share the raw response sheet with sponsors.
         </p>
         <a
           href="https://docs.google.com/spreadsheets/d/1zOpBa4Z3RACdbAthXltReQa8bdWU2yRPHZiqqQlWkk4/edit"
@@ -226,6 +233,27 @@ onBeforeUnmount(() => {
             }}</time>
           </div>
           <p class="mt-3 text-xs text-paper/50">{{ response.grade }} · {{ response.stage }}</p>
+          <div class="mt-3 rounded-lg border border-paper/[.08] bg-paper/[.025] p-3">
+            <h6 class="mb-2 text-[10px] uppercase tracking-wider text-paper/40">
+              Private participation details
+            </h6>
+            <p class="break-words text-xs leading-relaxed text-paper/65">
+              Student ID: {{ response.student_id }}
+            </p>
+            <p class="mt-1 break-words text-xs leading-relaxed text-paper/65">
+              Parent or guardian: {{ response.parent_name }} ·
+              <a :href="`mailto:${response.parent_email}`" class="break-all text-acid/75">{{
+                response.parent_email
+              }}</a>
+            </p>
+            <p class="mt-1 text-[10px] text-paper/40">
+              {{
+                response.parent_permission_confirmed
+                  ? 'Student confirmed participation permission.'
+                  : 'Legacy response · permission was not collected.'
+              }}
+            </p>
+          </div>
           <div v-if="response.note" class="mt-3 rounded-lg bg-paper/[.025] p-3">
             <h6 class="mb-2 text-[10px] uppercase tracking-wider text-paper/40">
               Feedback & ideas
@@ -235,7 +263,8 @@ onBeforeUnmount(() => {
             </p>
           </div>
           <p class="mt-2 text-xs leading-relaxed text-paper/45">
-            {{ response.interests.join(' · ') }}
+            {{ response.interests.join(' · ')
+            }}<template v-if="response.interest_other"> · {{ response.interest_other }}</template>
           </p>
           <p class="mt-2 text-xs leading-relaxed text-paper/45">{{ response.goals.join(' · ') }}</p>
           <div class="mt-2 flex items-center gap-3">

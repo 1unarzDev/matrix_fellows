@@ -14,7 +14,9 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Invalid cursor' })
   const { data, error } = await joinStorage(event)
     .from('join_responses')
-    .select('id,created_at,name,email,grade,interests,goals,stage,consent_version,note')
+    .select(
+      'id,created_at,name,email,grade,interests,interest_other,goals,stage,consent_version,note,student_id,parent_name,parent_email,parent_permission_confirmed',
+    )
     .gt('id', after)
     .order('id')
     .limit(200)

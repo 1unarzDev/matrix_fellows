@@ -4,6 +4,20 @@ const observedAt = '2026-09-23T00:00:00Z'
 const medicalInnovationPdf = 'https://hosa.org/wp-content/uploads/2026/08/MI-26-27-FINAL-1.pdf'
 const researchPosterPdf = 'https://hosa.org/wp-content/uploads/2026/08/Research-Poster-26-27.pdf'
 
+// These records remain documented in the research audit, but their official
+// residency rules exclude Texas students. Keep the IDs stable so the backfill
+// can suppress existing rows without deleting monitor or editorial history.
+export const texasIneligibleCatalogIds = [
+  'catalog:nist-ship-2027',
+  'catalog:fermilab-prism-2027',
+  'catalog:broad-summer-scholars-2026',
+  'catalog:fred-hutch-ship-2026',
+  'catalog:seattle-childrens-rtp-2026',
+  'catalog:msk-summer-student-2026',
+] as const
+
+const texasIneligibleCatalogIdSet = new Set<string>(texasIneligibleCatalogIds)
+
 type ResearchRoute = Omit<
   Opportunity,
   | 'id'
@@ -649,6 +663,431 @@ const researchPrograms: Opportunity[] = [
       'https://fri.cns.utexas.edu/hsra-faq',
     ],
   }),
+  researchRoute({
+    slug: 'mit-bwsi-2027',
+    canonicalId: 'mit:bwsi:2027',
+    title: 'MIT Beaver Works Summer Institute',
+    aliases: ['BWSI', 'MIT BWSI', 'Beaver Works Summer Institute'],
+    organizer: 'MIT Beaver Works',
+    kind: 'Summer program',
+    routeType: 'summer-program',
+    contributionFormat: 'Four-week project-based engineering and computing institute',
+    edition: '2027',
+    discipline: 'AI & machine learning',
+    disciplines: [
+      'AI & machine learning',
+      'Computer science',
+      'Robotics',
+      'Electrical engineering',
+      'Biomedical engineering',
+    ],
+    topics: [
+      'machine learning',
+      'medical analytics',
+      'autonomous systems',
+      'cybersecurity',
+      'hardware design',
+    ],
+    description:
+      'A rigorous MIT project program with virtual and in-person course options. Texas students can apply to virtual offerings such as CogWorks and Medlytics without relocating; in-person courses require participants to arrange housing.',
+    eligibility:
+      'Students must live in and physically attend high school in the United States, be in grade 10 or 11 when applying, complete the relevant free online prerequisite, and submit the separate summer application and recommendation.',
+    highSchoolPolicy: 'supported',
+    highSchoolEvidence:
+      'The official BWSI FAQ accepts U.S.-based grade 10–11 students and says participants are accepted from across the United States.',
+    restrictions: {
+      grades:
+        'Grade 10 or 11 at application; current seniors and students below grade 10 are ineligible',
+      geography:
+        'Lives in and physically attends high school in the United States; Texas is eligible',
+      adultSponsor: 'Teacher or adult mentor recommendation required for the summer application',
+    },
+    preparationStages: ['learning-team-practice', 'prototype'],
+    prerequisites: [
+      'Register for and make sufficient progress in the relevant free BWSI online prerequisite course.',
+      'Attend the full July course and required final event if selected.',
+      'Arrange housing for an in-person course; BWSI is not residential.',
+    ],
+    costs: {
+      application: null,
+      program:
+        'For 2027, the official page states the summer program is free below $200,000 family income with typical assets and $3,000 above that threshold.',
+      travel: 'Housing is not included or arranged for in-person courses.',
+      aid: 'The official FAQ describes a fee-waiver process; housing remains excluded.',
+      compensation: 'No wage or stipend was stated.',
+    },
+    outcomes: ['Team engineering or computing project', 'Required final showcase'],
+    participationModes: ['in-person', 'remote-participation'],
+    archival: false,
+    location: 'Virtual nationwide or MIT, Cambridge, Massachusetts · course-dependent',
+    cost: 'Income-based 2027 program fee; in-person housing is not included.',
+    effort: 'Online prerequisite followed by a four-week, full-day July course if admitted.',
+    url: 'https://bwsi.mit.edu/apply-now/',
+    lifecycle: 'announced',
+    lifecycleEvidence:
+      'The official application and FAQ pages publish 2027 eligibility, fees, prerequisites, and a July 5–August 1 schedule.',
+    milestones: [
+      {
+        label: '2027 summer program begins',
+        date: '2027-07-05',
+        kind: 'event',
+        role: 'event',
+        precision: 'date-only',
+        timezone: 'America/New_York',
+        originalTimezone: 'EDT',
+        evidence: 'The official BWSI FAQ states that 2027 classes run July 5–August 1.',
+        url: 'https://bwsi.mit.edu/faq/',
+      },
+    ],
+    sources: [
+      'https://bwsi.mit.edu/apply-now/',
+      'https://bwsi.mit.edu/faq/',
+      'https://bwsi.mit.edu/bwsi-programs/',
+    ],
+  }),
+  researchRoute({
+    slug: 'mites-summer',
+    canonicalId: 'mit:mites-summer',
+    title: 'MITES Summer',
+    aliases: ['MITES', 'MITES Summer', 'MIT Minority Introduction to Engineering and Science'],
+    organizer: 'MIT Introduction to Technology, Engineering, and Science',
+    kind: 'Summer program',
+    routeType: 'summer-program',
+    contributionFormat: 'Six-week residential STEM coursework and project program',
+    discipline: 'Multidisciplinary STEM',
+    disciplines: [
+      'AI & machine learning',
+      'Computer science',
+      'Electrical engineering',
+      'Mechanical engineering',
+      'Biology',
+    ],
+    topics: ['machine learning', 'genomics', 'engineering', 'college preparation'],
+    description:
+      'A national, fully funded MIT residential program for high-school juniors, combining advanced STEM coursework, applied electives, advising, and a final symposium.',
+    eligibility:
+      'U.S. citizen or permanent resident and a high-school junior when applying. MITES encourages students from underserved and underrepresented backgrounds, but evaluates every applicant who meets the published requirements.',
+    highSchoolPolicy: 'supported',
+    highSchoolEvidence:
+      'MITES explicitly identifies the program as national and limits applications to U.S. citizen or permanent-resident high-school juniors.',
+    restrictions: {
+      grades: 'High-school junior at application',
+      geography: 'National U.S. program; Texas is eligible',
+      authorEligibility: 'U.S. citizen or permanent resident',
+    },
+    preparationStages: ['learning-team-practice', 'prototype'],
+    prerequisites: [
+      'Submit the shared MITES Summer/MITES Semester application during junior year.',
+      'Commit to the full residential program if selected.',
+    ],
+    costs: {
+      application: null,
+      program: 'Free of charge; MITES states that program-related costs are covered.',
+      travel: null,
+      aid: 'Program-related costs are covered; confirm current travel coverage with MITES.',
+      compensation: 'No wage or stipend was stated.',
+    },
+    outcomes: [
+      'Advanced STEM coursework',
+      'Applied STEM project',
+      'College and career preparation',
+    ],
+    participationModes: ['in-person'],
+    archival: false,
+    location: 'MIT, Cambridge, Massachusetts · residential',
+    cost: 'Program-related costs are covered; current travel terms were not stated on the reviewed page.',
+    effort: 'Six-week residential program with intensive coursework and a final symposium.',
+    url: 'https://mites.mit.edu/discover-mites/mites-summer/',
+    lifecycle: 'awaiting-announcement',
+    lifecycleEvidence:
+      'The official program page confirms the annual route and eligibility but did not state the next cycle’s exact dates when reviewed.',
+    sources: ['https://mites.mit.edu/discover-mites/mites-summer/'],
+  }),
+  researchRoute({
+    slug: 'clark-scholars-2026',
+    canonicalId: 'texas-tech:clark-scholars:2026',
+    title: 'Anson L. Clark Scholars Program',
+    aliases: ['Clark Scholars', 'Texas Tech Clark Scholars', 'Anson L. Clark Scholars'],
+    organizer: 'Texas Tech University',
+    kind: 'Summer program',
+    routeType: 'summer-program',
+    contributionFormat: 'Seven-week faculty-mentored residential research program',
+    edition: '2026',
+    discipline: 'Multidisciplinary STEM',
+    disciplines: [
+      'Biomedical engineering',
+      'Biology',
+      'Chemistry',
+      'Computer science',
+      'Electrical engineering',
+      'Mechanical engineering',
+      'Materials science',
+      'Physics',
+    ],
+    topics: ['faculty-mentored research', 'research report', 'interdisciplinary research'],
+    description:
+      'A highly selective seven-week Texas Tech research program for twelve rising seniors or recent graduates. Room, board, meals, and programming are provided, and successful scholars receive a stipend.',
+    eligibility:
+      'At least age 17 by the program start; graduating in the stated eligible years; U.S. citizen or permanent resident. No Texas-residency restriction is stated, and Texas students are eligible.',
+    highSchoolPolicy: 'supported',
+    highSchoolEvidence:
+      'Texas Tech explicitly accepts rising high-school seniors and recent high-school graduates who meet the age and residency rules.',
+    restrictions: {
+      grades: 'Summer before senior year or summer immediately after high-school graduation',
+      ages: 'At least 17 by program start; no exceptions',
+      geography: 'National U.S. program hosted in Lubbock, Texas; Texas is eligible',
+      authorEligibility: 'U.S. citizen or permanent resident',
+    },
+    preparationStages: ['learning-team-practice', 'preliminary-results'],
+    prerequisites: [
+      'Submit transcripts, test scores, essays, three recommendations, and the required activity list.',
+      'Commit to the full seven-week residential program.',
+    ],
+    costs: {
+      application: '$25 application fee in the reviewed 2026 cycle.',
+      program: 'No participation fee; on-campus room, board, meals, and programming are provided.',
+      compensation: '$750 stipend after successful completion of the research report.',
+      travel: 'Travel to and from Lubbock and personal/medical expenses are not covered.',
+      aid: null,
+    },
+    outcomes: ['Faculty-mentored research project', 'Research report', '$750 completion stipend'],
+    participationModes: ['in-person'],
+    archival: false,
+    location: 'Texas Tech University, Lubbock, Texas · residential',
+    cost: '$25 reviewed application fee; room, board, and meals provided; travel excluded.',
+    effort: 'Seven-week full-time residential research program.',
+    url: 'https://www.depts.ttu.edu/clarkscholars/',
+    lifecycle: 'awaiting-announcement',
+    lifecycleEvidence:
+      'The 2026 program ran June 21–August 6 and is closed; Texas Tech had not published a 2027 cycle when reviewed.',
+    sources: [
+      'https://www.depts.ttu.edu/clarkscholars/',
+      'https://www.depts.ttu.edu/clarkscholars/ProgramDetails.php',
+      'https://www.depts.ttu.edu/clarkscholars/ApplicationDetails.php',
+    ],
+  }),
+  researchRoute({
+    slug: 'cmu-ai-scholars-2027',
+    canonicalId: 'cmu:ai-scholars:2027',
+    title: 'Carnegie Mellon AI Scholars',
+    aliases: ['CMU AI Scholars', 'AI Scholars'],
+    organizer: 'Carnegie Mellon University Pre-College Programs',
+    kind: 'Summer program',
+    routeType: 'summer-program',
+    contributionFormat:
+      'Four-week residential AI coursework and collaborative research-project program',
+    edition: '2027',
+    discipline: 'AI & machine learning',
+    disciplines: ['AI & machine learning', 'Computer science'],
+    topics: ['artificial intelligence', 'Python', 'faculty research', 'collaborative projects'],
+    description:
+      'A fully funded national program where rising seniors study AI, examine current faculty research, and complete a collaborative applied project after a virtual Python preparation course.',
+    eligibility:
+      'At least age 16 by June 26, 2027; in grade 11 at application; U.S. citizen or permanent resident. Financial-need documentation is required, but all applicants meeting the rules are considered.',
+    highSchoolPolicy: 'supported',
+    highSchoolEvidence:
+      'Carnegie Mellon explicitly publishes AI Scholars for rising high-school seniors from across the country.',
+    restrictions: {
+      grades: 'Grade 11 at application; between grades 11 and 12 during summer 2027',
+      ages: 'At least 16 by June 26, 2027',
+      geography: 'National U.S. program; Texas is eligible',
+      authorEligibility: 'U.S. citizen or permanent resident with current U.S. green card',
+    },
+    preparationStages: ['learning-team-practice', 'prototype'],
+    prerequisites: [
+      'Provide required financial-need documentation with the application.',
+      'Complete the virtual Python preparation course before arrival.',
+      'Do not participate in a concurrent summer program without prior approval.',
+    ],
+    costs: {
+      application: null,
+      program:
+        'Fully funded; tuition, housing, meals, and selected program activities are covered.',
+      travel: 'Limited travel assistance is available for families facing transportation barriers.',
+      aid: 'Full program funding plus limited need-based travel assistance.',
+      compensation: 'No wage or stipend was stated.',
+    },
+    outcomes: [
+      'Collaborative AI project',
+      'Exposure to CMU faculty research',
+      'Technical presentation',
+    ],
+    participationModes: ['in-person'],
+    archival: false,
+    location: 'Carnegie Mellon University, Pittsburgh, Pennsylvania · residential',
+    cost: 'Fully funded, including tuition, housing, and meals; limited travel assistance.',
+    effort: 'Virtual Python preparation followed by four residential weeks.',
+    url: 'https://www.cmu.edu/pre-college/academic-programs/ai_scholars.html',
+    lifecycle: 'announced',
+    lifecycleEvidence:
+      'The official page states 2027 eligibility and a June 26 opening day; its program-length line still contains a conflicting 2026 date, so no uncorroborated closing date is stored.',
+    milestones: [
+      {
+        label: '2027 residential program begins',
+        date: '2027-06-26',
+        kind: 'event',
+        role: 'event',
+        precision: 'date-only',
+        timezone: 'America/New_York',
+        evidence: 'The official page lists June 26, 2027 as opening day and residential move-in.',
+        url: 'https://www.cmu.edu/pre-college/academic-programs/ai_scholars.html',
+      },
+    ],
+    sources: ['https://www.cmu.edu/pre-college/academic-programs/ai_scholars.html'],
+  }),
+  researchRoute({
+    slug: 'uc-davis-young-scholars-2026',
+    canonicalId: 'uc-davis:young-scholars:2026',
+    title: 'UC Davis Young Scholars Program',
+    aliases: ['UC Davis YSP', 'Young Scholars Program'],
+    organizer: 'University of California, Davis',
+    kind: 'Summer program',
+    routeType: 'summer-program',
+    contributionFormat: 'Six-week residential original-research program',
+    edition: '2026',
+    discipline: 'Biology',
+    disciplines: ['Biology', 'Chemistry', 'Environmental science'],
+    topics: [
+      'biological science',
+      'agricultural science',
+      'environmental science',
+      'laboratory research',
+    ],
+    description:
+      'A six-week residential program in which rising juniors and seniors conduct original biological, agricultural, environmental, or natural-science research in UC Davis laboratories.',
+    eligibility:
+      'Rising junior or senior; age 16 by the first day and not 18 before the last day; permanent U.S. resident currently residing and attending school in the United States. Texas students meeting those rules are eligible.',
+    highSchoolPolicy: 'supported',
+    highSchoolEvidence:
+      'UC Davis explicitly defines the route for rising high-school juniors and seniors living and attending school in the United States.',
+    restrictions: {
+      grades: 'Rising junior or rising senior',
+      ages: '16 by the first day and not 18 before the final day',
+      geography: 'Currently resides and attends school in the United States; Texas is eligible',
+      authorEligibility: 'Permanent U.S. resident',
+    },
+    preparationStages: ['learning-team-practice', 'preliminary-results'],
+    prerequisites: ['Submit the application, school information, essays, and online references.'],
+    costs: {
+      application: '$45 in the reviewed 2026 cycle; waiver granted on timely request.',
+      program: '$7,750 in 2026, including housing, meals, activities, and five units of credit.',
+      travel: null,
+      aid: 'Need-based program-fee reductions are available after acceptance.',
+      compensation: 'No wage or stipend was stated.',
+    },
+    outcomes: [
+      'Original laboratory research',
+      'Five units of university credit',
+      'Research presentation',
+    ],
+    participationModes: ['in-person'],
+    archival: false,
+    location: 'UC Davis, California · residential',
+    cost: '$45 reviewed application fee and $7,750 reviewed program fee; waivers/reductions available.',
+    effort: 'Six-week residential research program.',
+    url: 'https://education.ucdavis.edu/young-scholars-program',
+    lifecycle: 'awaiting-announcement',
+    lifecycleEvidence:
+      'Applications for the June 21–August 1, 2026 program are closed; no 2027 cycle was verified.',
+    sources: [
+      'https://education.ucdavis.edu/young-scholars-program',
+      'https://education.ucdavis.edu/ysp-application',
+      'https://education.ucdavis.edu/ysp-program-cost',
+    ],
+  }),
+  researchRoute({
+    slug: 'iowa-sstp-2027',
+    canonicalId: 'university-of-iowa:sstp:2027',
+    title: 'University of Iowa Secondary Student Training Program',
+    aliases: ['Iowa SSTP', 'SSTP', 'Secondary Student Training Program'],
+    organizer: 'University of Iowa Belin-Blank Center',
+    kind: 'Summer program',
+    routeType: 'summer-program',
+    contributionFormat: 'Five-and-a-half-week residential faculty-mentored research program',
+    edition: '2027',
+    discipline: 'Multidisciplinary STEM',
+    disciplines: [
+      'Biomedical engineering',
+      'Biology',
+      'Chemistry',
+      'Computer science',
+      'Electrical engineering',
+      'Mechanical engineering',
+      'Materials science',
+      'Physics',
+    ],
+    topics: ['faculty-mentored research', 'university laboratory', 'research poster'],
+    description:
+      'A selective residential program where grade 10–11 students join University of Iowa research groups, work with faculty mentors, and present a final research poster.',
+    eligibility:
+      'Students in grades 10–11. The official application accepts international students and states no Iowa-residency restriction, so Texas students are eligible.',
+    highSchoolPolicy: 'supported',
+    highSchoolEvidence:
+      'The official SSTP page explicitly accepts high-school students in grades 10–11.',
+    restrictions: {
+      grades: 'Grade 10 or 11',
+      geography:
+        'No state-residency restriction stated; Texas and international students are eligible',
+      authorEligibility: 'International admits must provide proof of English proficiency',
+    },
+    preparationStages: ['learning-team-practice', 'preliminary-results'],
+    prerequisites: [
+      'Submit essays, transcript or scores, and two online references.',
+      'Commit to the full five-and-a-half-week residential program.',
+    ],
+    costs: {
+      application: '$95; applicants may request an application-fee waiver.',
+      program: '$7,500 on the currently displayed program-cost panel.',
+      travel: null,
+      aid: 'After acceptance, financial aid may cover up to 95% of the program cost.',
+      compensation: 'No wage or stipend was stated.',
+    },
+    outcomes: ['Faculty-mentored research project', 'Final research poster'],
+    participationModes: ['in-person'],
+    archival: false,
+    location: 'University of Iowa, Iowa City · residential',
+    cost: '$95 application and displayed $7,500 program fee; fee waiver and need-based aid available.',
+    effort: 'Five-and-a-half-week full residential research commitment.',
+    url: 'https://belinblank.education.uiowa.edu/students/sstp/',
+    lifecycle: 'announced',
+    lifecycleEvidence:
+      'The official page publishes the December 15, 2026–February 16, 2027 application window and June 16–July 23, 2027 program dates.',
+    milestones: [
+      {
+        label: 'Applications open',
+        date: '2026-12-15T17:00:00-06:00',
+        kind: 'opens',
+        precision: 'exact',
+        timezone: 'America/Chicago',
+        originalTimezone: '5:00 p.m. CST',
+        evidence:
+          'The official page lists applications opening December 15, 2026 at 5:00 p.m. CST.',
+        url: 'https://belinblank.education.uiowa.edu/students/sstp/',
+      },
+      {
+        label: '2027 application deadline',
+        date: '2027-02-16T23:59:00-06:00',
+        kind: 'deadline',
+        role: 'submission',
+        precision: 'exact',
+        timezone: 'America/Chicago',
+        originalTimezone: '11:59 p.m. CST',
+        evidence: 'The official page lists February 16, 2027 at 11:59 p.m. CST.',
+        url: 'https://belinblank.education.uiowa.edu/students/sstp/',
+      },
+      {
+        label: '2027 program begins',
+        date: '2027-06-16',
+        kind: 'event',
+        role: 'event',
+        precision: 'date-only',
+        timezone: 'America/Chicago',
+        evidence: 'The official page lists June 16–July 23, 2027.',
+        url: 'https://belinblank.education.uiowa.edu/students/sstp/',
+      },
+    ],
+    sources: ['https://belinblank.education.uiowa.edu/students/sstp/'],
+  }),
 ]
 
 export const catalogExpansion: Opportunity[] = [
@@ -677,7 +1116,8 @@ export const catalogExpansion: Opportunity[] = [
       kind: 'edition',
     },
     discipline: 'Biomedical engineering',
-    disciplines: ['Biomedical engineering', 'Biology', 'Mechanical engineering'],
+    disciplines: ['Biomedical engineering', 'Biology'],
+    disciplineAffinity: { 'Biomedical engineering': 100, Biology: 68 },
     topics: ['medical innovation', 'healthcare delivery', 'prototype design', 'health technology'],
     description:
       'A HOSA team competition for an original innovation that could advance medicine or healthcare delivery. Teams research the need, build a prototype, submit a digital exhibit outline, and—if advanced—present the physical innovation at ILC.',
@@ -883,5 +1323,5 @@ export const catalogExpansion: Opportunity[] = [
     ],
     searchVersion: 2,
   },
-  ...researchPrograms,
+  ...researchPrograms.filter((item) => !texasIneligibleCatalogIdSet.has(item.id)),
 ]

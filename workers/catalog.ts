@@ -6,6 +6,7 @@ import publications from '../docs/research/catalogs/publication.json'
 import workshops from '../docs/research/catalogs/workshop.json'
 import { catalogAdditions } from '../shared/data/opportunity-catalog-additions'
 import { catalogExpansion } from '../shared/data/opportunity-catalog-expansion'
+import { disciplineCatalogExpansion } from '../shared/data/opportunity-discipline-expansion'
 import { enrichCatalogOpportunity } from '../shared/data/opportunity-catalog-enrichment'
 import type { Opportunity } from '../shared/types/content'
 
@@ -36,7 +37,7 @@ const researchedSeeds = [...programs, ...competitions, ...publications, ...works
 })
 export const catalogSeeds = [
   ...researchedSeeds,
-  ...[...catalogAdditions, ...catalogExpansion].map((item) => ({
+  ...[...catalogAdditions, ...catalogExpansion, ...disciplineCatalogExpansion].map((item) => ({
     sources: [...new Set([item.url, ...(item.fieldEvidence || []).map((entry) => entry.url)])],
     item: opportunitySchema.parse(item) as Opportunity,
   })),

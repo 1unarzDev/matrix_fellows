@@ -123,7 +123,86 @@
     "expected": ["catalog:promys", "catalog:ross-mathematics", "catalog:mit-primes-usa"],
     "group": "concept"
   },
-  { "query": "IROS", "expected": [], "group": "negative" },
+  {
+    "query": "BWSI",
+    "expected": ["catalog:mit-bwsi-2027"],
+    "group": "exact"
+  },
+  {
+    "query": "MITES Summer",
+    "expected": ["catalog:mites-summer"],
+    "group": "exact"
+  },
+  {
+    "query": "Clark Scholars",
+    "expected": ["catalog:clark-scholars-2026"],
+    "group": "exact"
+  },
+  {
+    "query": "CMU AI Scholars",
+    "expected": ["catalog:cmu-ai-scholars-2027"],
+    "group": "exact"
+  },
+  {
+    "query": "UC Davis Young Scholars",
+    "expected": ["catalog:uc-davis-young-scholars-2026"],
+    "group": "exact"
+  },
+  {
+    "query": "Iowa SSTP",
+    "expected": ["catalog:iowa-sstp-2027"],
+    "group": "exact"
+  },
+  {
+    "query": "IROS",
+    "expected": ["catalog:iros-2026-regular-paper", "catalog:iros-2026-modular-robot-workshop"],
+    "group": "exact"
+  },
+  {
+    "query": "IROS modular robotics",
+    "expected": ["catalog:iros-2026-modular-robot-workshop"],
+    "group": "concept"
+  },
+  {
+    "query": "CoRL agentic robotics",
+    "expected": ["catalog:corl-2026-agentic-robotics"],
+    "group": "concept"
+  },
+  {
+    "query": "physical AI safety",
+    "expected": ["catalog:corl-2026-physical-ai-safety"],
+    "group": "concept"
+  },
+  {
+    "query": "GENIUS robotics",
+    "expected": ["catalog:genius-olympiad-robotics-2027"],
+    "group": "exact"
+  },
+  {
+    "query": "GENIUS science",
+    "expected": ["catalog:genius-olympiad-science-2027"],
+    "group": "exact"
+  },
+  {
+    "query": "ISCAS regular paper",
+    "expected": ["catalog:iscas-2027-regular-paper"],
+    "group": "exact"
+  },
+  {
+    "query": "TRUSTMORE",
+    "expected": ["catalog:ieee-big-data-trustmore-2026"],
+    "group": "exact"
+  },
+  {
+    "query": "ICASSP",
+    "expected": ["catalog:icassp-2027-regular-paper"],
+    "group": "exact"
+  },
+  {
+    "query": "AI summer program for a Texas high school student",
+    "expected": ["catalog:mit-bwsi-2027", "catalog:cmu-ai-scholars-2027"],
+    "group": "concept"
+  },
   { "query": "ZXQ nonexistent venue", "expected": [], "group": "negative" },
   {
     "query": "",

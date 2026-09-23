@@ -136,7 +136,7 @@ export function parseOfficial(
     )
   } else if (profile.parser === 'icra') {
     const match = text.match(
-      new RegExp(`Paper submission deadline:\\s*${namedDate}\\s*\\(11:59 PST\\)`, 'i'),
+      new RegExp(`Paper submission deadline:\\s*${namedDate}\\s*\\((?:11|23):59 PST\\)`, 'i'),
     )
     if (!match) throw new Error('ICRA labeled paper deadline missing or changed')
     if (Number(match[3]) !== profile.year - 1) throw new Error('ICRA submission edition mismatch')

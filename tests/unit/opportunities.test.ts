@@ -10,7 +10,11 @@ import { defaultOpportunities, defaultContent } from '../../shared/data/defaults
 import { deadlineTimestamp, isUpcoming, sortOpportunities } from '../../shared/utils/opportunities'
 import { contentSchema, opportunitySchema } from '../../shared/utils/validation'
 import { catalogAdditions } from '../../shared/data/opportunity-catalog-additions'
-import { catalogExpansion } from '../../shared/data/opportunity-catalog-expansion'
+import {
+  catalogExpansion,
+  texasIneligibleCatalogIds,
+} from '../../shared/data/opportunity-catalog-expansion'
+import { disciplineCatalogExpansion } from '../../shared/data/opportunity-discipline-expansion'
 import {
   CATALOG_ENRICHMENT_VERSION,
   catalogEnrichment,
@@ -52,8 +56,8 @@ describe('opportunity ingestion', () => {
       aliases: expect.arrayContaining(['HOSA Biomedical Innovation']),
       deadline: null,
     })
-    expect(parsed.filter((item) => item.kind === 'Internship').length).toBeGreaterThanOrEqual(5)
-    expect(parsed.filter((item) => item.kind === 'Summer program').length).toBeGreaterThanOrEqual(4)
+    expect(parsed.filter((item) => item.kind === 'Internship').length).toBeGreaterThanOrEqual(3)
+    expect(parsed.filter((item) => item.kind === 'Summer program').length).toBeGreaterThanOrEqual(7)
     for (const item of parsed) {
       expect(item.canonicalId, item.title).toBeTruthy()
       expect(item.organizer, item.title).toBeTruthy()
@@ -69,10 +73,54 @@ describe('opportunity ingestion', () => {
       expect(item.fieldEvidence?.length, item.title).toBeGreaterThan(0)
     }
     const canonicalOwners = new Map<string, string>()
-    for (const item of [...catalogAdditions, ...parsed]) {
+    for (const item of [...catalogAdditions, ...parsed, ...disciplineCatalogExpansion]) {
       const url = canonicalUrl(item.url)
       expect(canonicalOwners.get(url), `${item.title} shares its canonical URL`).toBeUndefined()
       canonicalOwners.set(url, item.title)
+    }
+  })
+  it('ships reviewed robotics and electrical-engineering routes with explicit affinity', () => {
+    const parsed = disciplineCatalogExpansion.map((item) => opportunitySchema.parse(item))
+    expect(parsed).toHaveLength(9)
+    expect(
+      parsed.find((item) => item.canonicalId === 'ieee-iscas:2027:regular-paper'),
+    ).toMatchObject({
+      discipline: 'Electrical engineering',
+      disciplineAffinity: { 'Electrical engineering': 100 },
+    })
+    expect(
+      parsed.find((item) => item.canonicalId === 'corl:2026:workshop:agentic-robotics'),
+    ).toMatchObject({ disciplines: expect.arrayContaining(['Robotics', 'AI & machine learning']) })
+    expect(parsed.filter((item) => item.highSchoolPolicy === 'supported')).toHaveLength(2)
+    for (const item of parsed) {
+      expect(item.disciplines?.length, item.title).toBeGreaterThan(0)
+      expect(Object.keys(item.disciplineAffinity || {}).length, item.title).toBeGreaterThan(0)
+      expect(item.fieldEvidence?.length, item.title).toBeGreaterThan(0)
+      expect(item.costs, item.title).toBeTruthy()
+    }
+  })
+  it('publishes Texas-accessible summer routes and excludes non-Texas local programs', () => {
+    const ids = new Set(catalogExpansion.map((item) => item.id))
+    for (const id of texasIneligibleCatalogIds) expect(ids.has(id), id).toBe(false)
+
+    for (const title of [
+      'MIT Beaver Works Summer Institute',
+      'MITES Summer',
+      'Anson L. Clark Scholars Program',
+      'Carnegie Mellon AI Scholars',
+      'UC Davis Young Scholars Program',
+      'University of Iowa Secondary Student Training Program',
+    ]) {
+      const item = catalogExpansion.find((entry) => entry.title === title)
+      expect(item, title).toBeTruthy()
+      expect(item?.restrictions?.geography, title).toMatch(/Texas|state-residency/)
+    }
+
+    for (const id of ['rsi', 'bu-rise', 'promys']) {
+      expect(catalogEnrichment[id]?.restrictions?.geography, id).toMatch(/Texas/)
+    }
+    for (const id of ['navy-seap-2027', 'gmu-assip-2026']) {
+      expect(catalogEnrichment[id]?.restrictions?.geography, id).toMatch(/Texas/)
     }
   })
   it('reclassifies established research programs without duplicating their catalog IDs', () => {

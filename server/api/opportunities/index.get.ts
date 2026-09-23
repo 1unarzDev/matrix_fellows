@@ -61,6 +61,28 @@ export default defineEventHandler(async (event): Promise<OpportunitySearchResult
         fundingMatch(item)
       )
     })
+    const disciplineAffinity = (item: (typeof items)[number]) =>
+      input.disciplines.length
+        ? Math.max(
+            ...input.disciplines.map(
+              (value) => item.disciplineAffinity?.[value] ?? (item.discipline === value ? 100 : 60),
+            ),
+          )
+        : 0
+    const exactIntent = (item: (typeof items)[number]) =>
+      term.length > 0 &&
+      [item.title, ...(item.aliases || [])].some((value) => value.toLowerCase() === term)
+        ? 1
+        : 0
+    matches.sort((a, b) => {
+      if (input.sort === 'relevance') {
+        const exact = exactIntent(b) - exactIntent(a)
+        if (exact) return exact
+        const affinity = disciplineAffinity(b) - disciplineAffinity(a)
+        if (affinity) return affinity
+      }
+      return b.priority - a.priority || a.title.localeCompare(b.title) || a.id.localeCompare(b.id)
+    })
     const count = (values: string[]) =>
       Object.fromEntries(
         [...new Set(values)].map((value) => [

@@ -23,10 +23,20 @@ if (!anon || anon.includes('***')) throw new Error('Public Supabase credential u
 const client = createClient(`https://${project}.supabase.co`, anon, {
   auth: { persistSession: false },
 })
-const all = await client.rpc('search_opportunities', { p_query: '', p_limit: 50, p_offset: 0 })
-if (all.error) throw new Error(all.error.message)
+const allRows = []
+for (let offset = 0; ; offset += 50) {
+  const page = await client.rpc('search_opportunities', {
+    p_query: '',
+    p_funding: [],
+    p_limit: 50,
+    p_offset: offset,
+  })
+  if (page.error) throw new Error(page.error.message)
+  allRows.push(...page.data)
+  if (page.data.length < 50) break
+}
 const baseline = (query) =>
-  all.data
+  allRows
     .filter((row) => row.item.title.toLowerCase().includes(query.toLowerCase()))
     .slice(0, 5)
     .map((row) => row.id)
@@ -47,6 +57,7 @@ for (const judgment of judgments) {
     p_high_school: filters.highSchool || [],
     p_disciplines: filters.disciplines || [],
     p_modes: filters.modes || [],
+    p_funding: filters.funding || [],
     p_free_submission: Boolean(filters.free),
   })
   stats.latencies.push(performance.now() - start)

@@ -134,6 +134,8 @@ export interface Opportunity {
     | 'attendance'
   contributionFormat?: string
   disciplines?: string[]
+  /** Reviewed 0–100 topical fit used only when that discipline is explicitly filtered. */
+  disciplineAffinity?: Record<string, number>
   topics?: string[]
   highSchoolPolicy?: HighSchoolPolicy
   highSchoolEvidence?: string

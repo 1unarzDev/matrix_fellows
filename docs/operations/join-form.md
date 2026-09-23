@@ -20,9 +20,11 @@ Totals are response counts, not independently verified membership or attendance.
 
 ## Server setup
 
-1. Apply migrations `004_join_responses.sql`, `005_lean_join_form.sql`, and
-   `006_shared_network_join_limit.sql`, and `007_join_feedback.sql` to the Matrix Fellows project
-   (`xlnjzzbsxzadrvbrggau`). Do not apply it to other projects.
+1. Apply migrations `004_join_responses.sql`, `005_lean_join_form.sql`,
+   `006_shared_network_join_limit.sql`, `007_join_feedback.sql`, and
+   `016_join_parent_permission.sql` to the Matrix Fellows project
+   (`xlnjzzbsxzadrvbrggau`). Do not apply them to other projects. Migration 016
+   appends fields and preserves existing responses with explicit legacy defaults.
 2. Set these **server secrets**, not public runtime settings:
    - `NUXT_SUPABASE_SERVICE_ROLE_KEY`: existing project service-role key.
    - `NUXT_SHEETS_SYNC_TOKEN`: at least 32 cryptographically random bytes, hex encoded.
@@ -34,9 +36,10 @@ Totals are response counts, not independently verified membership or attendance.
 Destination: https://docs.google.com/spreadsheets/d/1zOpBa4Z3RACdbAthXltReQa8bdWU2yRPHZiqqQlWkk4/edit
 
 If already installed, replace the Apps Script code with the latest `Code.gs`.
-It adds the feedback column to the original nine-column layout and fills missing
-feedback cells without overwriting existing organizer edits. The existing token
-and scheduled trigger can stay unchanged.
+It appends feedback, student ID, other-interest, parent/guardian contact, and
+permission columns to the original layout. It fills missing feedback cells without
+overwriting existing organizer edits. The existing token and scheduled trigger can
+stay unchanged.
 
 1. Set Google Drive sharing to **Restricted**. Grant access only to organizers who
    need raw responses. An editing link is not service authentication.
@@ -71,15 +74,22 @@ rows or propagate deletions. Do not remove or rename the ID/header columns.
 ## Privacy and sponsor sharing
 
 The form discloses database/organizer-sheet storage and requires contact consent.
-Only name and email require typing; grade, experience, interests, and meeting goals
-use selectors. The final step includes an optional, 1,000-character feedback field.
-Feedback is private to organizers and excluded from sponsor exports. Share the admin's **sponsor
-summary CSV**, never the raw organizer sheet. No response is automatically sent
-to a sponsor. Review even aggregate summaries before external sharing.
+It collects the student's full name, student email, grade, interests, experience,
+research goals, student ID, parent/guardian full name and email, and a permission
+confirmation. The permission field records that the **student confirmed** their
+parent or guardian gave permission; it is not an electronic parent signature or
+independent identity verification. The optional feedback field is limited to 1,000
+characters.
+
+Student ID, parent/guardian contact, feedback, and all individual answers are private
+organizer data. They are excluded from sponsor exports. Share the admin's **sponsor
+summary CSV**, never the raw organizer sheet. No response is automatically sent to
+a sponsor. Review even aggregate summaries before external sharing.
 
 For removal requests, delete the response in admin **and** its row in Google
 Sheets, and remove any downloaded copies. Deleting a sheet row alone causes it
 to return during the next sync while the database record still exists. Review
-retention at least each school year and remove data no longer needed. Google
+retention at least each school year, with particular attention to student IDs and
+parent/guardian contact details, and remove data no longer needed. Google
 version history and backups have separate retention controls; disclose this when
 responding to removal requests.

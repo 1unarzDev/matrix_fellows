@@ -10,8 +10,16 @@ test('join flow validates, preserves answers, retries safely and confirms receip
     const body = route.request().postDataJSON()
     expect(body.consent).toBe(true)
     expect(body.note).toBe('More hands-on workshops!')
-    expect(body.interests).toEqual(['Robotics & engineering'])
-    expect(body.goals).toEqual(['Find research partners'])
+    expect(body.interests).toEqual(['Robotics & engineering', 'Other science or research area'])
+    expect(body.interestOther).toBe('Neuroscience')
+    expect(body.goals).toEqual([
+      'Compete at ISEF or a science fair',
+      'Apply to a summer research program',
+    ])
+    expect(body.studentId).toBe('123456')
+    expect(body.parentName).toBe('Parent Fellow')
+    expect(body.parentEmail).toBe('parent@example.org')
+    expect(body.parentPermission).toBe(true)
     if (!firstId) firstId = body.requestId
     else expect(body.requestId).toBe(firstId)
     calls++
@@ -27,26 +35,44 @@ test('join flow validates, preserves answers, retries safely and confirms receip
   await expect(form).toBeVisible()
   await page.getByRole('button', { name: 'Continue', exact: true }).click()
   await expect(page.getByRole('alert')).toContainText('name')
-  await page.getByLabel('Your name', { exact: true }).fill('Test Fellow')
-  await page.getByLabel('Email', { exact: true }).fill('fellow@example.org')
+  await page.getByLabel('Student full name', { exact: true }).fill('Test Fellow')
+  await page.getByLabel('Student email', { exact: true }).fill('fellow@example.org')
   await page.getByRole('button', { name: 'Grade level: Choose your grade' }).click()
   await page.getByRole('option', { name: '11th grade', exact: true }).click()
   await page.getByRole('button', { name: 'Continue', exact: true }).click()
   await page.getByRole('button', { name: 'Robotics & engineering', exact: true }).click()
+  await page.getByRole('button', { name: 'Other science or research area', exact: true }).click()
+  await expect(page.getByLabel('Which other area?', { exact: true })).toBeVisible()
+  await page.getByLabel('Which other area?', { exact: true }).fill('Temporary value')
+  await page.getByRole('button', { name: 'Other science or research area', exact: true }).click()
+  await expect(page.getByLabel('Which other area?', { exact: true })).toBeHidden()
+  await page.getByRole('button', { name: 'Other science or research area', exact: true }).click()
+  await expect(page.getByLabel('Which other area?', { exact: true })).toHaveValue('')
+  await page.getByLabel('Which other area?', { exact: true }).fill('Neuroscience')
   await page.getByRole('button', { name: 'No experience yet', exact: true }).click()
   await expect(
     page.getByRole('button', { name: 'Robotics & engineering', exact: true }),
   ).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('button', { name: 'Back', exact: true }).click()
-  await expect(page.getByLabel('Your name', { exact: true })).toHaveValue('Test Fellow')
+  await expect(page.getByLabel('Student full name', { exact: true })).toHaveValue('Test Fellow')
   await page.getByRole('button', { name: 'Continue', exact: true }).click()
   await page.getByRole('button', { name: 'Continue', exact: true }).click()
-  await page.getByRole('button', { name: 'Find research partners', exact: true }).click()
+  await page.getByRole('button', { name: 'Compete at ISEF or a science fair', exact: true }).click()
+  await page
+    .getByRole('button', { name: 'Apply to a summer research program', exact: true })
+    .click()
   await page.getByLabel('Anything else? · optional').fill('More hands-on workshops!')
   await expect(page.getByLabel('Anything else? · optional')).toHaveAttribute('maxlength', '1000')
+  await page.getByRole('button', { name: 'Continue', exact: true }).click()
   await form.getByRole('button', { name: 'Join Matrix Fellows', exact: true }).click()
-  await expect(page.getByRole('alert')).toContainText('agree')
-  await page.getByRole('checkbox').check()
+  await expect(page.getByRole('alert')).toContainText('student ID')
+  await page.getByLabel('Student ID', { exact: true }).fill('123456')
+  await page.getByLabel('Parent or guardian full name', { exact: true }).fill('Parent Fellow')
+  await page.getByLabel('Parent or guardian email', { exact: true }).fill('parent@example.org')
+  await form.getByRole('button', { name: 'Join Matrix Fellows', exact: true }).click()
+  await expect(page.getByRole('alert')).toContainText('permission')
+  await page.getByRole('checkbox', { name: /given me permission/ }).check()
+  await page.getByRole('checkbox', { name: /I agree to this use/ }).check()
   await form.getByRole('button', { name: 'Join Matrix Fellows', exact: true }).click()
   await expect(page.getByRole('alert')).toContainText('try again')
   await form.getByRole('button', { name: 'Join Matrix Fellows', exact: true }).click()
@@ -67,13 +93,55 @@ test('join form animates in, traps keyboard focus and retains an unfinished draf
   const dialog = page.getByRole('dialog')
   await expect(dialog).toBeVisible()
   await expect(dialog.locator(':scope > div')).toHaveCSS('opacity', '1')
-  await page.getByLabel('Your name', { exact: true }).fill('Returning Fellow')
+  await page.getByLabel('Student full name', { exact: true }).fill('Returning Fellow')
   await page.keyboard.press('Escape')
   await expect(dialog).toHaveCount(0)
   await page.getByRole('button', { name: 'Open join form' }).click()
-  await expect(page.getByLabel('Your name', { exact: true })).toHaveValue('Returning Fellow')
+  await expect(page.getByLabel('Student full name', { exact: true })).toHaveValue(
+    'Returning Fellow',
+  )
   for (let i = 0; i < 9; i++) {
     await page.keyboard.press('Tab')
-    expect(await dialog.evaluate((el) => el.contains(document.activeElement))).toBe(true)
+    expect(
+      await page.evaluate(() => document.querySelector('dialog')?.contains(document.activeElement)),
+    ).toBe(true)
   }
+})
+
+test('join form and opportunity cards share a coherent neutral surface', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/#frontiers')
+  await expect(page.locator('[data-ready="true"]')).toBeVisible()
+  const card = page.locator('.opportunity-card').first()
+  await expect(card).toBeVisible()
+  await page
+    .locator('[data-closing-cta]')
+    .getByRole('button', { name: 'Join Matrix Fellows' })
+    .click()
+  const panel = page.locator('.join-panel')
+  await expect(panel).toBeVisible()
+
+  const colors = await page.evaluate(() => {
+    const rgba = (element: Element) => {
+      const context = document
+        .createElement('canvas')
+        .getContext('2d', { willReadFrequently: true })!
+      context.fillStyle = getComputedStyle(element).backgroundColor
+      context.fillRect(0, 0, 1, 1)
+      return [...context.getImageData(0, 0, 1, 1).data]
+    }
+    return {
+      card: rgba(document.querySelector('.opportunity-card')!),
+      panel: rgba(document.querySelector('.join-panel')!),
+      backdrop: rgba(document.querySelector('.join-backdrop')!),
+    }
+  })
+  const distance = Math.hypot(
+    colors.card[0]! - colors.panel[0]!,
+    colors.card[1]! - colors.panel[1]!,
+    colors.card[2]! - colors.panel[2]!,
+  )
+  expect(colors.card[3]).toBe(255)
+  expect(distance).toBeLessThan(6)
+  expect(colors.backdrop[3]).toBeLessThanOrEqual(66)
 })

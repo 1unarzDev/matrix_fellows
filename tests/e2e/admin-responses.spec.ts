@@ -53,11 +53,16 @@ test('authorized response dashboard shows analytics and exports only aggregate c
           id: 1,
           name: 'Private Test Name',
           email: 'private@example.org',
+          student_id: '123456',
           grade: '11th grade',
           stage: 'No experience yet',
           note: 'Private club feedback for organizers only.',
           interests: ['AI & computing'],
+          interest_other: 'Neuroscience',
           goals: ['Learn research skills'],
+          parent_name: 'Private Parent',
+          parent_email: 'parent-private@example.org',
+          parent_permission_confirmed: true,
           created_at: '2026-09-07T12:00:00Z',
         },
       ]
@@ -79,7 +84,12 @@ test('authorized response dashboard shows analytics and exports only aggregate c
     page.getByRole('heading', { name: 'The people behind the questions.' }),
   ).toBeVisible()
   await expect(page.getByText('Private Test Name', { exact: true })).toBeVisible()
-  await expect(page.getByText('Private club feedback for organizers only.', { exact: true })).toBeVisible()
+  await expect(
+    page.getByText('Private club feedback for organizers only.', { exact: true }),
+  ).toBeVisible()
+  await expect(page.getByText('Student ID: 123456', { exact: true })).toBeVisible()
+  await expect(page.getByText(/Private Parent/)).toBeVisible()
+  await expect(page.getByText('Neuroscience', { exact: false })).toBeVisible()
   const downloadEvent = page.waitForEvent('download')
   await page.getByRole('button', { name: 'Download sponsor summary', exact: false }).click()
   const download = await downloadEvent
@@ -92,5 +102,8 @@ test('authorized response dashboard shows analytics and exports only aggregate c
   expect(csv).not.toContain('Private Test Name')
   expect(csv).not.toContain('private@example.org')
   expect(csv).not.toContain('Private club feedback')
+  expect(csv).not.toContain('123456')
+  expect(csv).not.toContain('Private Parent')
+  expect(csv).not.toContain('parent-private@example.org')
   await page.screenshot({ path: `test-results/admin-responses-${test.info().project.name}.png` })
 })

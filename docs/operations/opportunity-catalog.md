@@ -10,11 +10,13 @@
 
 ## Apply and backfill
 
-Run `npx supabase db push --linked`. Migrations 008–015 add search columns/RPCs, reviewed sources, structured API evidence, separate embedding/jobs tables, vector/trigram extensions, weak-match rejection, actionable sorting, internship/summer-program kinds, funding filters, and an editor-only queue-health guard.
+Run `npx supabase db push --linked`. Migrations 008–018 add search columns/RPCs, reviewed sources, structured API evidence, separate embedding/jobs tables, vector/trigram extensions, weak-match rejection, actionable and discipline-aware sorting, internship/summer-program kinds, funding filters, and an editor-only queue-health guard. Migration 018 removes the superseded pre-funding RPC overload so defaulted calls remain unambiguous.
 
 `npm run backfill:catalog` is a dry run. `npm run backfill:catalog -- --apply` fills missing metadata, applies versioned reviewed corrections to the base record, uses optimistic timestamps, and inserts new routes only on absent IDs. Owner overrides remain a separate effective-data layer; publication, suppression, and monitor history are not changed. Re-run until dry-run output is zero; concurrently monitored rows can require a second pass.
 
 `Internship` and `Summer program` are intentional public kinds. Program-specific costs use `application`, `program`, and `compensation`; paper/poster routes use `submission` and `publication`. Never put tuition in the submission field merely to avoid an unknown value. Funding filters require positive text evidence for a stipend, aid, or no program fee; a null field never passes as free.
+
+`disciplineAffinity` is reviewed editorial metadata from 0–100. It affects relevance only when the visitor explicitly filters by a discipline, after exact/text search relevance and before global priority. Primary-discipline fallback is 100 and secondary-membership fallback is 60 when no reviewed value exists. Do not use affinity to add an unsupported discipline or to make a globally prominent route dominate every field.
 
 ## Source review
 

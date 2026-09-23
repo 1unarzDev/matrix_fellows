@@ -9,9 +9,15 @@ const response = {
   email: 'test@example.org',
   grade: '11th grade',
   interests: ['Still exploring'],
-  goals: ['Find research partners'],
+  interestOther: '',
+  goals: ['Find mentors or research partners'],
   stage: 'No experience yet',
   note: 'More hands-on robotics workshops, please.',
+  studentId: '123456',
+  parentName: 'Parent Fellow',
+  parentEmail: 'parent@example.org',
+  parentPermission: true,
+  consent: true,
 }
 beforeAll(async () => {
   db = new PGlite()
@@ -26,6 +32,7 @@ beforeAll(async () => {
     '005_lean_join_form.sql',
     '006_shared_network_join_limit.sql',
     '007_join_feedback.sql',
+    '016_join_parent_permission.sql',
   ])
     await db.exec(
       await readFile(new URL(`../../supabase/migrations/${file}`, import.meta.url), 'utf8'),
@@ -40,12 +47,54 @@ it('only the server can capture responses and retries are idempotent', async () 
   await db.query('select public.submit_join_response($1,$2)', [JSON.stringify(response), 'hash'])
   await db.query('select public.submit_join_response($1,$2)', [JSON.stringify(response), 'hash'])
   expect((await db.query('select * from public.join_responses')).rows).toHaveLength(1)
-  expect((await db.query<{ note: string }>('select note from public.join_responses')).rows[0]!.note).toBe(response.note)
+  expect(
+    (
+      await db.query<{
+        note: string
+        student_id: string
+        parent_email: string
+        parent_permission_confirmed: boolean
+        consent_version: string
+      }>(
+        'select note, student_id, parent_email, parent_permission_confirmed, consent_version from public.join_responses',
+      )
+    ).rows[0],
+  ).toMatchObject({
+    note: response.note,
+    student_id: response.studentId,
+    parent_email: response.parentEmail,
+    parent_permission_confirmed: true,
+    consent_version: 'join-v2',
+  })
   await db.exec('set role anon')
   await expect(db.query('select * from public.join_responses')).rejects.toThrow(/permission denied/)
   await expect(
     db.query('select public.submit_join_response($1,$2)', [JSON.stringify(response), 'other']),
   ).rejects.toThrow(/permission denied/)
+  await db.exec('reset role')
+})
+it('rejects submissions without student-confirmed permission or privacy consent', async () => {
+  await db.exec('set role service_role')
+  await expect(
+    db.query('select public.submit_join_response($1,$2)', [
+      JSON.stringify({
+        ...response,
+        requestId: '22222222-2222-4222-8222-222222222222',
+        parentPermission: false,
+      }),
+      'permission-missing',
+    ]),
+  ).rejects.toThrow(/permission is required/)
+  await expect(
+    db.query('select public.submit_join_response($1,$2)', [
+      JSON.stringify({
+        ...response,
+        requestId: '33333333-3333-4333-8333-333333333333',
+        consent: false,
+      }),
+      'consent-missing',
+    ]),
+  ).rejects.toThrow(/consent is required/)
   await db.exec('reset role')
 })
 it('outsiders cannot read responses or analytics; editors can', async () => {

@@ -3,7 +3,11 @@
 import { execFileSync } from 'node:child_process'
 import { createClient } from '@supabase/supabase-js'
 import { catalogAdditions } from '../shared/data/opportunity-catalog-additions.ts'
-import { catalogExpansion } from '../shared/data/opportunity-catalog-expansion.ts'
+import {
+  catalogExpansion,
+  texasIneligibleCatalogIds,
+} from '../shared/data/opportunity-catalog-expansion.ts'
+import { disciplineCatalogExpansion } from '../shared/data/opportunity-discipline-expansion.ts'
 import {
   CATALOG_ENRICHMENT_VERSION,
   catalogEnrichment,
@@ -25,7 +29,9 @@ if (!key || key.includes('***')) throw new Error('Supabase service credential un
 const client = createClient(`https://${project}.supabase.co`, key, {
   auth: { persistSession: false },
 })
-const { data: rows, error } = await client.from('opportunities').select('id,data,updated_at')
+const { data: rows, error } = await client
+  .from('opportunities')
+  .select('id,data,updated_at,suppressed')
 if (error) throw new Error(error.message)
 
 const discipline = (text) => {
@@ -116,6 +122,7 @@ const curatedPatches = {
   },
 }
 let changed = 0
+let suppressed = 0
 for (const row of rows || []) {
   const item = row.data
   const hs = item.highSchoolPolicy || policy(item.eligibility || '')
@@ -174,7 +181,20 @@ for (const row of rows || []) {
     if (result.error) throw new Error(`${row.id}: ${result.error.message}`)
   }
 }
-const curatedRoutes = [...catalogAdditions, ...catalogExpansion]
+for (const id of texasIneligibleCatalogIds) {
+  const row = rows?.find((entry) => entry.id === id)
+  if (!row || row.suppressed) continue
+  suppressed++
+  if (apply) {
+    const result = await client
+      .from('opportunities')
+      .update({ suppressed: true })
+      .eq('id', id)
+      .eq('updated_at', row.updated_at)
+    if (result.error) throw new Error(`${id}: ${result.error.message}`)
+  }
+}
+const curatedRoutes = [...catalogAdditions, ...catalogExpansion, ...disciplineCatalogExpansion]
 for (const item of curatedRoutes) {
   opportunitySchema.parse(item)
   if (apply) {
@@ -215,5 +235,5 @@ if (apply) {
   }
 }
 console.log(
-  `${apply ? 'Applied' : 'Dry run:'} ${changed} existing records need additive metadata; ${curatedRoutes.length} curated routes and ${reviewedSources.length} reviewed sources are ready. Existing keys and overrides are preserved.`,
+  `${apply ? 'Applied' : 'Dry run:'} ${changed} existing records need additive metadata; ${suppressed} Texas-ineligible local routes need suppression; ${curatedRoutes.length} curated routes and ${reviewedSources.length} reviewed sources are ready. Existing keys and overrides are preserved.`,
 )

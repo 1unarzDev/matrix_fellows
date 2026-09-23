@@ -30,6 +30,7 @@ const loadPublicContent = defineCachedFunction(
         p_stages: [],
         p_statuses: [],
         p_modes: [],
+        p_funding: [],
         p_free_submission: false,
         p_archival: null,
         p_sort: 'relevance',
@@ -59,7 +60,7 @@ const loadPublicContent = defineCachedFunction(
             ? {
                 monitoring: {
                   lastCheckedAt: null,
-                  lastSuccessAt: row.data.verifiedAt || null,
+                  lastSuccessAt: row.item.verifiedAt || null,
                   issue: true,
                 },
               }

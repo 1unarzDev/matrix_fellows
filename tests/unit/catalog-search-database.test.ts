@@ -139,4 +139,71 @@ describe('catalog search database sorting', () => {
     expect(await ids('aid')).toEqual(['aid-program'])
     expect(await ids('no-program-fee')).toEqual(['free-program'])
   })
+
+  it('uses reviewed discipline fit before global prominence without displacing exact intent', async () => {
+    await db.exec(
+      await readFile(
+        new URL('../../supabase/migrations/017_discipline_relevance.sql', import.meta.url),
+        'utf8',
+      ),
+    )
+    await db.exec(
+      await readFile(
+        new URL('../../supabase/migrations/018_drop_legacy_search_overload.sql', import.meta.url),
+        'utf8',
+      ),
+    )
+    const records = [
+      {
+        id: 'biomedical-prototype',
+        title: 'Biomedical Prototype Challenge',
+        aliases: ['BPC'],
+        discipline: 'Biomedical engineering',
+        disciplines: ['Biomedical engineering', 'Mechanical engineering'],
+        disciplineAffinity: { 'Biomedical engineering': 100, 'Mechanical engineering': 25 },
+        priority: 99,
+      },
+      {
+        id: 'mechanical-design',
+        title: 'Mechanical Design Research',
+        aliases: ['MDR'],
+        discipline: 'Mechanical engineering',
+        disciplines: ['Mechanical engineering'],
+        disciplineAffinity: { 'Mechanical engineering': 100 },
+        priority: 70,
+      },
+      {
+        id: 'broad-fair',
+        title: 'Regional Science Fair',
+        aliases: ['RSF'],
+        discipline: 'Multidisciplinary STEM',
+        disciplines: ['Mechanical engineering'],
+        disciplineAffinity: { 'Mechanical engineering': 90 },
+        priority: 75,
+      },
+    ]
+    for (const record of records) {
+      const item = { ...record, kind: 'Competition', status: 'open' }
+      await db.query(
+        `insert into public.opportunities(id,slug,data,search_document)
+         values ($1,$1,$2::jsonb,$3) on conflict (id) do update set data=excluded.data,search_document=excluded.search_document`,
+        [record.id, JSON.stringify(item), `${record.title} ${(record.aliases || []).join(' ')}`],
+      )
+    }
+
+    const filtered = await db.query<{ id: string }>(
+      `select id from public.search_opportunities(
+        p_disciplines => array['Mechanical engineering'], p_sort => 'relevance')`,
+    )
+    const ordered = filtered.rows.map((row) => row.id)
+    expect(ordered.indexOf('mechanical-design')).toBeLessThan(ordered.indexOf('broad-fair'))
+    expect(ordered.indexOf('broad-fair')).toBeLessThan(ordered.indexOf('biomedical-prototype'))
+
+    const exact = await db.query<{ id: string }>(
+      `select id from public.search_opportunities(
+        p_query => 'Biomedical Prototype Challenge',
+        p_disciplines => array['Mechanical engineering'], p_sort => 'relevance')`,
+    )
+    expect(exact.rows[0]?.id).toBe('biomedical-prototype')
+  })
 })

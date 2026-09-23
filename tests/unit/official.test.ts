@@ -32,8 +32,8 @@ describe('official source evidence', () => {
     ).toThrow(/Conflicting/)
   })
   it('keeps ambiguous ICRA timezone date-only', () => {
-    const item = read('icra-2027', 'Paper submission deadline: September 15, 2026 (11:59 PST)')
-    expect(item.deadline).toBe('2026-09-15')
+    const item = read('icra-2027', 'Paper submission deadline: September 16, 2026 (23:59 PST)')
+    expect(item.deadline).toBe('2026-09-16')
     expect(item.timezone).toBeNull()
   })
   it('converts the explicit STS Eastern cutoff', () => {

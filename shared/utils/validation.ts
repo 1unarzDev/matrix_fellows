@@ -167,6 +167,9 @@ export const opportunitySchema = z.object({
     .optional(),
   contributionFormat: z.string().max(300).optional(),
   disciplines: z.array(z.string().min(1).max(100)).max(20).optional(),
+  disciplineAffinity: z
+    .record(z.string().min(1).max(100), z.number().int().min(0).max(100))
+    .optional(),
   topics: z.array(z.string().min(1).max(120)).max(60).optional(),
   highSchoolPolicy: z.enum(['supported', 'excluded', 'not-stated']).optional(),
   highSchoolEvidence: z.string().max(1200).optional(),

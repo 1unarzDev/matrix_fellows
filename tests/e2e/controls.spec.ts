@@ -9,6 +9,7 @@ test('catalog uses custom sorting and an accessible animated mobile filter sheet
   await page.locator('[data-catalog-ready="true"]').waitFor()
   await expect(page.getByText('High-school policy', { exact: true })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'High-school routes' })).toHaveCount(0)
+  await expect(page.getByLabel('Discovery shortcuts')).toHaveCount(0)
   const sort = page.getByRole('button', { name: 'Sort opportunities: Relevance' })
   await sort.click()
   await expect(page.getByRole('listbox', { name: 'Sort opportunities' })).toBeVisible()

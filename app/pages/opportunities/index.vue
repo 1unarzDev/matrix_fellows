@@ -106,10 +106,6 @@ function scheduleSearch() {
   clearTimeout(searchTimer)
   searchTimer = setTimeout(commitSearch, 300)
 }
-function shortcut(kind: 'early' | 'workshops') {
-  if (kind === 'early') void replaceQuery({ stage: ['idea', 'prototype', 'preliminary-results'] })
-  if (kind === 'workshops') void replaceQuery({ kind: ['Workshop'] })
-}
 const activeCount = computed(() =>
   ['discipline', 'kind', 'stage', 'status', 'mode', 'free', 'archival'].reduce(
     (n, key) => n + asArray(route.query[key]).length,
@@ -224,22 +220,6 @@ useHead({
           <button type="submit" class="min-h-11 px-3 text-xs text-acid">Search</button>
         </div>
       </form>
-      <div class="mt-4 flex flex-wrap gap-2" aria-label="Discovery shortcuts">
-        <button
-          type="button"
-          class="tactile min-h-11 rounded-full border border-paper/15 px-4 text-xs text-paper/65 hover:border-acid/40 hover:text-acid"
-          @click="shortcut('early')"
-        >
-          Share early research
-        </button>
-        <button
-          type="button"
-          class="tactile min-h-11 rounded-full border border-paper/15 px-4 text-xs text-paper/65 hover:border-acid/40 hover:text-acid"
-          @click="shortcut('workshops')"
-        >
-          Workshops &amp; calls
-        </button>
-      </div>
 
       <div class="mt-12 grid gap-10 lg:grid-cols-[15rem_minmax(0,1fr)] xl:gap-16">
         <aside class="hidden lg:block" aria-label="Opportunity filters">

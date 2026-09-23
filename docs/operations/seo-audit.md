@@ -78,7 +78,7 @@ URL-prefix verification if DNS access is unavailable.
 ## Sustainable ranking priorities
 
 The first realistic targets are branded searches (Matrix Fellows) and relevant
-local searches (Martin High School research club). Broad searches such as
+local searches (Martin High School Research Society). Broad searches such as
 “high school research opportunities” are much more competitive. Seek a genuine
 link from the school's club directory and appropriate project/society profiles;
 publish substantive original findings, meeting recaps and useful application

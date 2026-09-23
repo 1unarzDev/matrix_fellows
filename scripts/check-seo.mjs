@@ -23,6 +23,8 @@ assert.ok(
   schema['@graph'].some(
     (item) =>
       item['@type'] === 'Organization' &&
+      item.name === 'Martin High School Research Society' &&
+      item.parentOrganization?.['@id'] === `${canonical}#organization` &&
       item.sameAs?.includes('https://www.instagram.com/mhs_research_society/'),
   ),
 )

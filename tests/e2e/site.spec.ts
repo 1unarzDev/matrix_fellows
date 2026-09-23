@@ -114,6 +114,16 @@ test('meeting summary is prominent before the journey and links to full details'
   await expect(page.locator('#meeting-details')).toBeInViewport({ timeout: 10000 })
 })
 
+test('explains the Matrix Fellows and Martin Research Society relationship', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/#beginning')
+  await expect(
+    page.getByText(
+      /Matrix Fellows is the student-research initiative behind the Martin High School Research Society/,
+    ),
+  ).toBeVisible()
+})
+
 test('footer links to the official Instagram profile', async ({ page }) => {
   await page.goto('/')
   const instagram = page.getByRole('link', {

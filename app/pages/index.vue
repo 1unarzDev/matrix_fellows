@@ -24,8 +24,18 @@ useHead({
             name: 'Matrix Fellows',
             url: canonicalUrl,
             description:
-              'A student-founded research society at Martin High School connecting students through research, collaboration, and science fair opportunities.',
+              'A student-founded research initiative connecting students through research, collaboration, and science fair opportunities.',
             email: 'contact@matrixfellows.com',
+            subOrganization: { '@id': `${canonicalUrl}#martin-research-society` },
+            logo: `${canonicalUrl}favicon.svg`,
+          },
+          {
+            '@type': 'Organization',
+            '@id': `${canonicalUrl}#martin-research-society`,
+            name: 'Martin High School Research Society',
+            alternateName: 'MHS Research Society',
+            description: 'The Matrix Fellows student research community at Martin High School.',
+            parentOrganization: { '@id': `${canonicalUrl}#organization` },
             sameAs: ['https://www.instagram.com/mhs_research_society/'],
             logo: `${canonicalUrl}favicon.svg`,
           },
@@ -362,6 +372,12 @@ onBeforeUnmount(() => {
                 class="hidden sm:block"
               />
               learning to ask the next one.
+            </p>
+            <p
+              class="mt-4 max-w-xs border-l border-acid/35 pl-3 text-[10px] leading-5 text-paper/52 sm:text-[11px]"
+            >
+              Matrix Fellows is the student-research initiative behind the Martin High School
+              Research Society—its community at Martin.
             </p>
             <a
               href="#discovery"
@@ -755,8 +771,8 @@ onBeforeUnmount(() => {
               ><MatrixMark :size="34" /> Matrix Fellows</a
             >
             <p class="mt-5 max-w-sm text-sm leading-6 text-paper/48">
-              A student-founded research community for following curiosity, developing careful work,
-              and sharing what you discover.
+              Matrix Fellows is the broader student-research initiative. The Martin High School
+              Research Society is its community at Martin.
             </p>
             <p class="mt-6 text-[10px] uppercase tracking-[.18em] text-acid/75">
               Independent minds · shared horizons

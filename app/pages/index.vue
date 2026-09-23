@@ -368,9 +368,7 @@ onBeforeUnmount(() => {
               >know.</span
             >
           </h1>
-          <div
-            class="mt-8 grid max-w-[850px] gap-6 sm:mt-10 md:grid-cols-[minmax(0,22rem)_minmax(19rem,24rem)] md:items-end md:gap-10 lg:mt-11 lg:gap-14"
-          >
+          <div class="mt-8 max-w-[24rem] sm:mt-10 lg:mt-11">
             <div>
               <p class="text-sm leading-relaxed text-paper/75 sm:text-base">
                 The world is full of unanswered questions.<br />We’re learning to ask the next
@@ -389,7 +387,7 @@ onBeforeUnmount(() => {
             </div>
             <div
               data-hero-meeting
-              class="relative overflow-hidden rounded-xl border border-[#f4d39b]/45 bg-[linear-gradient(135deg,rgba(124,84,43,.56)_0%,rgba(130,96,59,.34)_58%,rgba(222,190,131,.08)_100%)] px-4 py-3.5 shadow-[0_16px_44px_rgba(72,43,24,.1),inset_0_1px_0_#fff4] backdrop-blur-md sm:px-5 sm:py-4"
+              class="relative mt-6 overflow-hidden rounded-xl border border-[#f4d39b]/45 bg-[linear-gradient(135deg,rgba(124,84,43,.56)_0%,rgba(130,96,59,.34)_58%,rgba(222,190,131,.08)_100%)] px-4 py-3.5 shadow-[0_16px_44px_rgba(72,43,24,.1),inset_0_1px_0_#fff4] backdrop-blur-md sm:px-5 sm:py-4"
             >
               <span
                 aria-hidden="true"

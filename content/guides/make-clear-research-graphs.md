@@ -52,7 +52,7 @@ Do not use 3D perspective, broken axes, cropped ranges, or area/volume effects t
 
 Bad: “Figure 2. Results.”
 
-Better: “Method X reduced median localization error by 24% versus the reactive baseline across 30 held-out simulations; points show runs and bars show 95% bootstrap confidence intervals.”
+Better: “The motion-aware controller reduced median localization error by 24% versus the reactive baseline across 30 held-out simulations; points show runs and bars show 95% bootstrap confidence intervals.”
 
 The caption should let a reader understand the claim, comparison, sample, and uncertainty without searching the paragraph above it.
 

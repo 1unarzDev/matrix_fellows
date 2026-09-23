@@ -14,11 +14,11 @@ related:
   - present-research-clearly
 resources:
   - title: Stanford — Contacting faculty about research
-    url: https://undergradresearch.stanford.edu/get-started/contacting-faculty
-    note: Short, professional, specific outreach.
-  - title: Harvard — Finding and contacting a research mentor
-    url: https://uraf.harvard.edu/finding-mentor
-    note: Research fit and tailored requests.
+    url: https://advising.stanford.edu/current-students/advising-student-handbook/email-faculty
+    note: Concise, courteous email, a specific request, and one appropriate follow-up.
+  - title: Harvard SEAS — Undergraduate research opportunities
+    url: https://seas.harvard.edu/computer-science/undergraduate-program/research-opportunities
+    note: Research a lab, tailor the message, and represent your experience honestly.
 tags:
   - mentors
   - email
@@ -35,7 +35,7 @@ Do not begin with a list of famous professors. Begin with a question or area you
 1. Open the lab or faculty page and identify its current themes—not only an old biography.
 2. Choose one or two recent papers, project pages, talks, or datasets.
 3. Read the abstract, introduction, figures, and conclusion. You do not need to understand every method.
-4. Write one sentence explaining the overlap: “I am exploring **X**, and your group’s work on **Y** changed how I am thinking about **Z**.”
+4. Write one sentence explaining the overlap: “I am exploring **low-cost tactile sensing**, and your group’s **slip-detection study** changed how I am thinking about a **simulation-first test**.”
 5. Check whether the lab lists preferred contact procedures. Follow them.
 
 If you cannot write the overlap sentence truthfully, keep looking. A mass email with the lab name swapped in is visible immediately.
@@ -60,6 +60,8 @@ Use a descriptive subject such as “Question about tactile sensing for robot gr
 ::
 
 Mention a résumé, GitHub repository, poster, or prior work only when it helps answer “What has this student actually tried?” One clean link is better than five attachments. Never exaggerate fluency, publication, or lab experience.
+
+Because you are a minor, use official school or lab contact channels. Keep a teacher, counselor, or guardian aware of meetings and lab visits, and follow school/family rules for transportation, supervision, and online calls.
 
 ## Make the request fit the relationship
 
@@ -93,7 +95,3 @@ Bring a one-page note with:
 Begin by asking how much time they have. Listen more than you pitch. If they suggest reading, experiments, or another contact, repeat the action back in your own words.
 
 Within 24 hours, send a short thank-you: one useful thing you learned, the action you will take, and any agreed deadline. Then do the action before asking for more.
-
-## Go deeper
-
-[Stanford’s undergraduate research guidance](https://undergradresearch.stanford.edu/get-started/contacting-faculty) emphasizes concise, professional, specific contact. [Harvard’s undergraduate research guidance](https://uraf.harvard.edu/finding-mentor) similarly recommends researching faculty interests and tailoring the request rather than sending a generic message. Their audience includes college students, so adapt logistics to your age and school rules.

@@ -21,9 +21,27 @@ test('guide library and guide content are crawlable, readable, and route correct
     page.getByRole('heading', { name: 'Generate ideas through five doors' }),
   ).toBeVisible()
   await expect(page.getByText('A practical cutoff')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Go deeper' })).toBeVisible()
+  const externalResources = page.locator('.guide-resources a[target="_blank"]')
+  await expect(externalResources).toHaveCount(2)
+  await expect(externalResources.first()).toHaveAttribute('rel', 'noopener noreferrer')
+  expect(
+    await page
+      .locator('article ul')
+      .first()
+      .evaluate((list) => getComputedStyle(list).listStyleType),
+  ).toBe('disc')
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   )
+
+  await page.goto('/guides/read-a-research-paper')
+  expect(
+    await page
+      .locator('article ol')
+      .first()
+      .evaluate((list) => getComputedStyle(list).listStyleType),
+  ).toBe('decimal')
   expect(errors).toEqual([])
 })
 

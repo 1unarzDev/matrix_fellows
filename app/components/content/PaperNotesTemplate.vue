@@ -6,21 +6,20 @@
     <div class="mt-6 grid gap-px overflow-hidden rounded-xl bg-paper/10 sm:grid-cols-2">
       <div
         v-for="item in [
-          'Problem',
-          'Why it matters',
-          'Method',
-          'Baseline / comparison',
-          'Data / sample',
-          'Strongest result',
-          'Limitation',
-          'Question it creates',
+          ['Problem', 'What are the authors trying to learn or build?'],
+          ['Why it matters', 'Who or what changes if the work succeeds?'],
+          ['Method', 'What did they do to produce evidence?'],
+          ['Baseline / comparison', 'What is the result compared with?'],
+          ['Data / sample', 'What cases were included—and left out?'],
+          ['Strongest result', 'Write the main number or finding.'],
+          ['Limitation', 'Where should the claim stop?'],
+          ['Question it creates', 'What would you test or read next?'],
         ]"
-        :key="item"
-        class="min-h-24 bg-[#111615] p-4"
+        :key="item[0]"
+        class="min-h-28 bg-[#111615] p-4"
       >
-        <p class="text-xs font-medium text-paper/72">{{ item }}</p>
-        <div class="mt-4 h-px bg-paper/10" />
-        <div class="mt-4 h-px w-4/5 bg-paper/8" />
+        <p class="text-xs font-medium text-paper/78">{{ item[0] }}</p>
+        <p class="mt-3 text-[11px] leading-5 text-paper/35">{{ item[1] }}</p>
       </div>
     </div>
   </figure>

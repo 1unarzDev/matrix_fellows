@@ -33,7 +33,11 @@ describe('research guide library', () => {
         order: summary?.order,
       })
       expect(metadata.related.every((related) => knownSlugs.has(related))).toBe(true)
+      expect(metadata.resources.length).toBeGreaterThanOrEqual(1)
+      expect(metadata.resources.length).toBeLessThanOrEqual(3)
       expect(metadata.resources.every((resource) => resource.url.startsWith('https://'))).toBe(true)
+      expect(source).not.toMatch(/_{3,}/)
+      expect(source).not.toMatch(/\b(?:method X|baseline B|dataset D|condition C)\b/i)
       expect(parsed.body.children.length).toBeGreaterThan(4)
     }
   })

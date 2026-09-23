@@ -33,15 +33,17 @@ Do not recite the poster from top left to bottom right. Begin with the problem o
 
 ## Build three versions from one spine
 
+Treat these as **rehearsal formats**, not official presentation limits. Always follow the timing and format required by your fair, conference, classroom, or mentor.
+
 **20 seconds**
 
 > Low-cost robot grippers often miss object slip when vision is blocked. I tested whether adding a simple tactile signal reduced drops in simulation. It lowered the drop rate relative to a vision-only baseline, suggesting a feasible direction for a physical prototype.
 
-**60 seconds** adds the method, central number, and one limitation.
+**60 seconds** adds the method, central number, and one limitation:
 
 > I created 120 seeded grasping trials across three object shapes and compared the same controller with and without a simulated tactile signal. The tactile version reduced drop rate from 18% to 11%; the effect was largest under partial visual occlusion. The simulation uses simplified contact physics, so the next step is testing whether the benefit survives sensor noise on a physical gripper.
 
-**Three minutes** adds why you chose the problem, how the evidence was produced, why the baseline is fair, what failed, what you contributed, and what should happen next.
+**Three minutes** adds why you chose the problem, how the evidence was produced, why the baseline is fair, what failed, what you contributed, and what should happen next. Build this version from your real project rather than memorizing the example above.
 
 Use your own real numbers and conditions. If results are preliminary, say so.
 

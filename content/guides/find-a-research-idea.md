@@ -14,11 +14,11 @@ related:
   - plan-your-first-study
 resources:
   - title: Harvard Library — The literature review
-    url: https://guides.library.harvard.edu/literaturereview
+    url: https://guides.library.harvard.edu/dougbond/orienting
     note: Use prior work to locate patterns, disputes, and unanswered questions.
-  - title: Google Scholar
-    url: https://scholar.google.com/
-    note: Follow citations backward and cited-by links forward.
+  - title: Google Scholar — Search help
+    url: https://scholar.google.com/intl/en/scholar/help.html#citedby
+    note: Follow references backward and Cited by links forward; citation count is not a quality score.
 tags:
   - ideas
   - literature review
@@ -96,7 +96,7 @@ Keep three candidates. Spend one hour on literature and one hour on a tiny feasi
 - Broad: indoor air quality
 - Narrower: classroom carbon dioxide
 - Mechanism: occupancy and ventilation
-- Question: “How does opening one versus two exterior doors affect the time required for classroom CO₂ to return below 1,000 ppm after lunch, while outdoor conditions are recorded?”
+- Question: “How does opening one versus two exterior doors affect the time required for classroom CO₂ to return below a **project-selected comparison level**, while outdoor conditions are recorded?”
 
 **Engineering path**
 
@@ -112,7 +112,3 @@ Neither is automatically safe, novel, or competition-ready. Each is specific eno
 Write the smallest experiment, dataset check, simulation, or prototype that could reveal a fatal problem. The pilot should test access, measurement quality, runtime, and interpretability—not prove the final claim.
 
 Afterward, decide: continue, narrow, change method, or stop. Ending a weak idea early is good research judgment.
-
-## Go deeper
-
-[Harvard Library’s literature-review guide](https://guides.library.harvard.edu/literaturereview) describes reviews as synthesis that can expose unanswered questions, contested areas, and directions for further work. Use that principle instead of treating a search result list as evidence that an idea is new.

@@ -51,7 +51,7 @@
         </g>
         <path d="M65 112h50M90 94v36M194 77h50M219 58v38" stroke="#eac279" stroke-width="3" />
         <text x="70" y="177" fill="#f4f1e988" font-size="10">Baseline</text>
-        <text x="203" y="177" fill="#f4f1e988" font-size="10">Method X</text>
+        <text x="198" y="177" fill="#f4f1e988" font-size="10">New method</text>
         <text x="2" y="88" fill="#f4f1e988" font-size="9" transform="rotate(-90 10 88)">
           Error rate (%)
         </text>

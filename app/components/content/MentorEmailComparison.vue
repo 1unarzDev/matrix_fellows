@@ -23,13 +23,11 @@
         </p>
         <p class="mt-4 text-sm leading-6 text-paper/62">
           Dear Professor Chen, I’m a junior at Martin High School exploring how tactile signals can
-          help a gripper detect a slipping object. I read the abstract and introduction of your
-          group’s recent paper on event-based touch sensing; the comparison between vision-only and
-          touch-assisted control helped me narrow my question. I have built small Python/Arduino
-          projects, but I am new to robotics research. Could I ask you two or three questions in a
-          15-minute conversation about whether a simulation-first version of this idea is feasible?
-          If someone else in your group is a better person to ask, I would appreciate a referral.
-          Thank you for your time.
+          help a gripper detect slip. Your group’s recent comparison of vision-only and
+          touch-assisted control helped me narrow my question. I have built small Python and Arduino
+          projects, but I am new to robotics research. Could I ask two or three questions in a
+          15-minute call about whether a simulation-first study is feasible? If someone else is a
+          better fit, I would appreciate a referral. Thank you for your time.
         </p>
         <p class="mt-5 text-xs leading-5 text-paper/42">
           Shows preparation, stays honest about experience, and makes one small request.

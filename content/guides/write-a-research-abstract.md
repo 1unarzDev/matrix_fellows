@@ -55,7 +55,7 @@ The improved version gives the reader something to evaluate. The numbers are ill
 
 Describe only the work you performed. If a mentor’s laboratory supplied data, equipment, code, or procedures, follow the destination’s acknowledgment and authorship rules. Do not blur the mentor’s work into the student procedure.
 
-Every fair, journal, conference, or workshop has its own length, format, content, and authorship rules. The [Society for Science abstract guidance](https://www.societyforscience.org/isef/how-to-write-an-isef-abstract/) is specific to ISEF, including its current word limit; it is not a universal submission rule. Use the actual destination instructions linked from the opportunity.
+Every fair, journal, conference, or workshop has its own length, format, content, and authorship rules. The [Society for Science abstract guidance](https://www.societyforscience.org/isef/how-to-write-an-isef-abstract/) is specific to ISEF, including its **250-word limit**; it is not a universal submission rule. Use the actual destination instructions linked from the opportunity.
 
 ## Cut without hollowing it out
 

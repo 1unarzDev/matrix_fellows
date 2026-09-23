@@ -9,11 +9,38 @@ const contentComponents = import.meta.glob('../components/content/*.vue', {
   import: 'default',
 })
 
+const proseTags: Record<string, string> = {
+  ProseA: 'a',
+  ProseBlockquote: 'blockquote',
+  ProseCode: 'code',
+  ProseEm: 'em',
+  ProseH2: 'h2',
+  ProseH3: 'h3',
+  ProseHr: 'hr',
+  ProseLi: 'li',
+  ProseOl: 'ol',
+  ProseP: 'p',
+  ProseStrong: 'strong',
+  ProseTable: 'table',
+  ProseTbody: 'tbody',
+  ProseTd: 'td',
+  ProseTh: 'th',
+  ProseThead: 'thead',
+  ProseTr: 'tr',
+  ProseUl: 'ul',
+}
+
 export const guideComponents = Object.fromEntries(
-  Object.entries(contentComponents).map(([path, component]) => [
-    path.slice(path.lastIndexOf('/') + 1, -4),
-    component,
-  ]),
+  Object.entries(contentComponents).flatMap(([path, component]) => {
+    const name = path.slice(path.lastIndexOf('/') + 1, -4)
+    const proseTag = proseTags[name]
+    return proseTag
+      ? [
+          [name, component],
+          [proseTag, component],
+        ]
+      : [[name, component]]
+  }),
 ) as Record<string, DefineComponent>
 
 export interface RenderedGuide extends GuideMetadata {

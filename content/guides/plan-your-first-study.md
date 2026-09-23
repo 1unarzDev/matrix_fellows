@@ -33,7 +33,11 @@ A study plan is not a calendar. It is an argument: if you gather this evidence u
 
 ## Start from the evidence
 
-Write the final result sentence with blanks: “Compared with **baseline**, condition or design **X** changed **primary metric** by **amount**, across **sample/cases**, under **conditions**.”
+Draft the kind of sentence your study should eventually support:
+
+> Compared with the **vision-only baseline**, the **touch-assisted controller** changed the **object-drop rate** across **120 simulated grasps** under **three visibility conditions**.
+
+You do not know the direction or size yet. The sentence simply exposes the comparison, outcome, cases, and conditions that the plan must define.
 
 Now work backward:
 

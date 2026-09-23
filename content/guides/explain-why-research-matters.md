@@ -40,7 +40,7 @@ Avoid “proves,” “solves,” “revolutionizes,” and “will save” unle
 
 Avoid: “This will revolutionize medicine.”
 
-Prefer: “In this retrospective dataset, method X reduced false negatives from 12% to 9% relative to baseline B. The result needs external and prospective validation before clinical use.”
+Prefer: “In this retrospective dataset, the image classifier reduced false negatives from 12% to 9% relative to logistic regression. The result needs external and prospective validation before clinical use.”
 
 Avoid: “Our biodegradable material will eliminate plastic pollution.”
 

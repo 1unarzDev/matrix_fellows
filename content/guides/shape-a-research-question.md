@@ -13,9 +13,9 @@ related:
   - plan-your-first-study
   - statistics-for-student-research
 resources:
-  - title: Engineering Design Process — Science Buddies
-    url: https://www.sciencebuddies.org/science-fair-projects/engineering-design-process/engineering-design-process-steps
-    note: A practical distinction between design criteria, constraints, prototypes, and testing.
+  - title: Society for Science — ISEF judging criteria
+    url: https://www.societyforscience.org/isef/grand-award/criteria/
+    note: Distinguishes focused scientific questions from engineering needs, criteria, constraints, prototypes, and tests.
 tags:
   - research question
   - engineering design
@@ -36,11 +36,11 @@ These are starting structures, not rules for every field. Historical analysis, o
 
 Too broad: “AI,” “help,” and “healthcare” have no defined meaning.
 
-**Better:** Can model X predict condition Y?
+**Better:** Can a classifier identify pneumonia in chest X-rays?
 
 The task is visible, but the population, data, comparison, and success measure are missing.
 
-**Stronger:** On dataset D, does method X improve sensitivity at a fixed specificity over baseline B, while preserving calibration for subgroup C?
+**Stronger:** On a held-out public chest-X-ray dataset, does a compact image classifier improve sensitivity at 90% specificity over logistic regression, while reporting calibration by age group?
 
 The evidence path, comparison, metric, and important condition are explicit.
 

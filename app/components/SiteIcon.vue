@@ -17,6 +17,7 @@ defineProps<{
     | 'mail'
     | 'lock'
     | 'up'
+    | 'warning'
   size?: number
 }>()
 </script>
@@ -82,6 +83,10 @@ defineProps<{
       <path d="M8 10V7a4 4 0 0 1 8 0v3" />
     </g>
     <g v-else-if="name === 'up'"><path d="M12 20V4m-6 6 6-6 6 6" /></g>
+    <g v-else-if="name === 'warning'">
+      <path d="M10.3 4.1 2.7 18a2 2 0 0 0 1.8 3h15a2 2 0 0 0 1.8-3L13.7 4.1a2 2 0 0 0-3.4 0Z" />
+      <path d="M12 9v5m0 3.2v.1" />
+    </g>
     <g v-else><path d="M5 19 19 5M5 5h14v14" /></g>
   </svg>
 </template>

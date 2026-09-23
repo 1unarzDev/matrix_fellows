@@ -83,8 +83,9 @@ useHead({
       </header>
 
       <div class="grid gap-14 pt-12 lg:grid-cols-[minmax(0,46rem)_16rem] lg:justify-between">
-        <article class="min-w-0">
+        <article class="guide-article min-w-0">
           <MDCRenderer :body="guide.body" :data="guide" :components="guideComponents" />
+          <GuideResources v-if="guide.resources.length" :resources="guide.resources" />
         </article>
         <aside class="hidden lg:block">
           <nav aria-label="On this page" class="sticky top-8 border-l border-paper/12 pl-5">
@@ -123,5 +124,8 @@ useHead({
   background:
     radial-gradient(60% 45% at 82% 3%, rgba(94, 91, 127, 0.1), transparent 72%),
     radial-gradient(50% 45% at 4% 42%, rgba(68, 105, 106, 0.07), transparent 72%);
+}
+.guide-article {
+  text-wrap: pretty;
 }
 </style>

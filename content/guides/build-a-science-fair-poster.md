@@ -46,7 +46,7 @@ Use a question-led title, a short statement of significance, and one dominant re
 ::poster-anatomy-diagram
 ::
 
-Include what your fair requires. A practical anatomy is:
+First follow your fair’s current display rules. The layout below is a **practical starting point**, not a required competition template:
 
 - title, student name, school, and collaborators when appropriate;
 - research question or engineering problem;
@@ -101,7 +101,3 @@ Avoid walls of text, tiny references, decorative 3D charts, low-contrast gradien
 ## Practice with the poster
 
 Do not recite from top left to bottom right. Face the listener, open with the problem and central result, then point to evidence when it answers a question. Be ready to explain what you did personally, what failed, what your mentor contributed, and what remains uncertain.
-
-## See real work responsibly
-
-The [Society for Science finalist abstract database](https://abstracts.societyforscience.org/) shows how real projects phrase purposes and findings. Abstracts are not complete posters, and inclusion is not permission to copy wording or artwork. Use official university poster guidance and examples as references; create your own figures and visual system.

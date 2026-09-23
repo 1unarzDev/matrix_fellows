@@ -89,7 +89,3 @@ Required sample size depends on the effect worth detecting, expected variability
 ::guide-callout{title="Minimum reporting set" tone="action"}
 Show the observations when practical; define the sample and exclusions; report center, variability, effect size, uncertainty, and analysis assumptions; distinguish planned from exploratory work; keep unfavorable trials visible.
 ::
-
-## Go deeper
-
-Use the [NIST/SEMATECH e-Handbook](https://www.itl.nist.gov/div898/handbook/) when you need a technical reference for distributions, experimental design, graphical analysis, intervals, or tests. The [American Statistical Association statement](https://www.amstat.org/asa/files/pdfs/p-valuestatement.pdf) explains why scientific conclusions should not depend on one threshold and why a p-value does not measure effect size or importance.

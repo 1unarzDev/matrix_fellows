@@ -12,11 +12,14 @@ related:
   - find-a-research-idea
   - shape-a-research-question
 resources:
+  - title: PLOS — Ten simple rules for reading a scientific paper
+    url: https://doi.org/10.1371/journal.pcbi.1008032
+    note: An approachable, goal-directed method for connecting questions, evidence, figures, and conclusions.
   - title: S. Keshav — How to Read a Paper
     url: https://web.stanford.edu/class/ee384m/Handouts/HowtoReadPaper.pdf
-    note: A classic three-pass strategy; adapt the depth to your purpose.
+    note: A classic three-pass strategy; useful for technical papers after you know your reading goal.
   - title: Harvard Library — The literature review
-    url: https://guides.library.harvard.edu/literaturereview
+    url: https://guides.library.harvard.edu/dougbond/orienting
     note: Connect individual papers into a map of the field.
 tags:
   - papers
@@ -27,7 +30,7 @@ tags:
 
 You do not have to read a paper from the first word to the last. Your first job is to discover what kind of paper it is and whether it deserves deeper attention.
 
-## Use seven passes
+## Use a seven-pass workflow
 
 1. **Title and abstract:** What problem, method, and headline result does the paper claim?
 2. **Figures and captions:** What was actually measured or built? Can you identify the main comparison?
@@ -39,6 +42,8 @@ You do not have to read a paper from the first word to the last. Your first job 
 
 At the end of the first five passes, decide whether to stop, save it as background, or study it closely.
 
+This is a **Matrix reading workflow**, not a rule from a journal. Skip or repeat a pass when your purpose requires it.
+
 ::paper-notes-template
 ::
 
@@ -49,7 +54,7 @@ Unknown vocabulary is local. Highlight the term, infer its role from context, th
 Contribution trouble is different: you cannot state what changed compared with prior work, what evidence supports it, or why the result matters. Return to the introduction, main figure, baseline, and conclusion. If those still do not connect, the paper may be unclear—or you may need a review paper first.
 
 ::guide-callout{title="A sentence test" tone="action"}
-Try: “The authors ask ___, compare ___ with ___ using ___, find ___, and warn that ___.” Blank spaces show exactly where to reread.
+Try: “The authors ask _this question_, compare _these approaches_ using _this evidence_, find _this result_, and warn about _this limitation_.” Any phrase you cannot replace in your own words shows exactly where to reread.
 ::
 
 ## Read results skeptically
@@ -74,7 +79,3 @@ Keep a small literature table: citation, question, method, dataset/sample, resul
 ## Know when you are done
 
 Your purpose determines depth. To decide whether a topic is promising, the main question and limitations may be enough. To reproduce the work, you need methods, parameter choices, data processing, and supplementary material. To cite a claim, read the original context—never rely on another paper’s one-sentence summary.
-
-## Go deeper
-
-[S. Keshav’s “How to Read a Paper”](https://web.stanford.edu/class/ee384m/Handouts/HowtoReadPaper.pdf) formalizes a three-pass approach. The Matrix sequence above expands the first passes for students who are still learning how claims connect to evidence.

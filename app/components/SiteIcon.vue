@@ -12,6 +12,11 @@ defineProps<{
     | 'spark'
     | 'compass'
     | 'instagram'
+    | 'book'
+    | 'calendar'
+    | 'mail'
+    | 'lock'
+    | 'up'
   size?: number
 }>()
 </script>
@@ -60,6 +65,23 @@ defineProps<{
       <circle cx="12" cy="12" r="4" />
       <circle cx="17.4" cy="6.7" r="1" fill="currentColor" stroke="none" />
     </g>
+    <g v-else-if="name === 'book'">
+      <path d="M4 5.5A3.5 3.5 0 0 1 7.5 2H12v18H7.5A3.5 3.5 0 0 0 4 23V5.5Z" />
+      <path d="M20 5.5A3.5 3.5 0 0 0 16.5 2H12v18h4.5a3.5 3.5 0 0 1 3.5 3V5.5Z" />
+    </g>
+    <g v-else-if="name === 'calendar'">
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M8 3v4M16 3v4M3 10h18" />
+    </g>
+    <g v-else-if="name === 'mail'">
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="m4 7 8 6 8-6" />
+    </g>
+    <g v-else-if="name === 'lock'">
+      <rect x="5" y="10" width="14" height="11" rx="2" />
+      <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+    </g>
+    <g v-else-if="name === 'up'"><path d="M12 20V4m-6 6 6-6 6 6" /></g>
     <g v-else><path d="M5 19 19 5M5 5h14v14" /></g>
   </svg>
 </template>

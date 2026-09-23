@@ -742,75 +742,87 @@ onBeforeUnmount(() => {
       </section>
     </main>
 
-    <footer
-      class="relative z-10 bg-linear-to-b from-ink/80 to-ink/85 px-6 pb-28 pt-6 sm:px-10 lg:px-16 lg:pb-10 lg:pr-36"
-    >
-      <div
-        class="grid grid-cols-2 items-start gap-x-6 gap-y-6 pb-6 pt-2 sm:gap-x-10 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)]"
-      >
-        <div class="col-span-2 lg:col-span-1">
-          <a
-            href="#beginning"
-            class="tactile inline-flex items-center gap-3 text-sm font-medium"
-            @click="scrollTo($event, 'beginning')"
-            ><MatrixMark :size="32" /> Matrix Fellows</a
-          >
-          <p class="mt-3 text-[11px] leading-relaxed text-paper/40">
-            Student-founded. Built on curiosity.
-          </p>
-        </div>
-        <div class="grid min-w-0 grid-rows-[auto_minmax(44px,auto)_auto]">
-          <h3 class="text-xs font-medium text-paper/85">Become a fellow</h3>
-          <button
-            @click="joinOpen = true"
-            class="tactile inline-flex min-h-11 w-fit items-center gap-2 py-2 text-[11px] text-paper/75 hover:text-acid"
-          >
-            Open join form <SiteIcon :size="14" />
-          </button>
-          <a
-            href="#community"
-            class="tactile flex min-h-11 w-fit items-center gap-2 py-2 text-[11px] text-paper/65 hover:text-paper"
-            @click="scrollTo($event, 'community')"
-            >Next meeting <SiteIcon :size="13"
-          /></a>
-        </div>
-        <div class="grid min-w-0 grid-rows-[auto_minmax(44px,auto)_auto_auto]">
-          <h3 class="text-xs font-medium text-paper/85">Get in touch</h3>
-          <a
-            href="mailto:contact@matrixfellows.com"
-            class="tactile inline-flex min-h-11 max-w-full items-center py-2 text-[11px] text-paper/75 hover:text-acid"
-            ><span class="[overflow-wrap:anywhere]">contact@matrixfellows.com</span></a
-          >
-          <a
-            href="https://www.instagram.com/mhs_research_club/"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Matrix Fellows on Instagram, @mhs_research_club (opens in a new tab)"
-            class="tactile inline-flex min-h-11 w-fit items-center gap-2 py-2 text-[11px] text-paper/65 hover:text-acid"
-            ><SiteIcon name="instagram" :size="14" />@mhs_research_club</a
-          >
-          <a
-            href="#community"
-            class="tactile flex min-h-11 w-fit items-center gap-2 py-2 text-[11px] text-paper/65 hover:text-paper"
-            @click="scrollTo($event, 'community')"
-            >Opportunities <SiteIcon :size="13"
-          /></a>
-        </div>
-      </div>
-      <div
-        class="grid grid-cols-2 items-center gap-x-6 border-t border-paper/[.07] pt-3 sm:gap-x-10 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)]"
-      >
-        <button
-          class="tactile min-h-11 w-fit py-2 text-left text-[11px] text-paper/35 hover:text-paper lg:col-start-2"
-          @click="adminOpen = true"
+    <footer class="site-footer relative z-10 px-6 pb-28 pt-12 sm:px-10 sm:pt-14 lg:px-16 lg:pb-12">
+      <div class="mx-auto max-w-[90rem]">
+        <div
+          class="grid gap-12 border-b border-paper/[.09] pb-12 sm:grid-cols-2 sm:gap-x-12 lg:grid-cols-[minmax(18rem,1.45fr)_minmax(12rem,.75fr)_minmax(15rem,1fr)] lg:gap-x-20"
         >
-          Member admin</button
-        ><a
-          href="#beginning"
-          class="tactile inline-flex min-h-11 w-fit items-center py-2 text-[11px] text-paper/60 hover:text-paper"
-          @click="scrollTo($event, 'beginning')"
-          >Back to top ↑</a
+          <div class="sm:col-span-2 lg:col-span-1">
+            <a
+              href="#beginning"
+              class="tactile inline-flex items-center gap-3 font-display text-base font-medium tracking-[-.025em]"
+              @click="scrollTo($event, 'beginning')"
+              ><MatrixMark :size="34" /> Matrix Fellows</a
+            >
+            <p class="mt-5 max-w-sm text-sm leading-6 text-paper/48">
+              A student-founded research community for following curiosity, developing careful work,
+              and sharing what you discover.
+            </p>
+            <p class="mt-6 text-[10px] uppercase tracking-[.18em] text-acid/75">
+              Independent minds · shared horizons
+            </p>
+          </div>
+
+          <nav aria-label="Footer resources">
+            <h3 class="footer-heading">Explore</h3>
+            <div class="mt-4 grid gap-1">
+              <NuxtLink to="/guides" class="footer-action group">
+                <span class="footer-action__icon"><SiteIcon name="book" :size="15" /></span>
+                <span>Research guides</span>
+              </NuxtLink>
+              <NuxtLink to="/opportunities" class="footer-action group">
+                <span class="footer-action__icon"><SiteIcon name="compass" :size="15" /></span>
+                <span>Opportunities</span>
+              </NuxtLink>
+              <a
+                href="#community"
+                class="footer-action group"
+                @click="scrollTo($event, 'community')"
+              >
+                <span class="footer-action__icon"><SiteIcon name="calendar" :size="15" /></span>
+                <span>Next meeting</span>
+              </a>
+            </div>
+          </nav>
+
+          <div>
+            <h3 class="footer-heading">Connect</h3>
+            <div class="mt-4 grid gap-1">
+              <button class="footer-action group text-left" @click="joinOpen = true">
+                <span class="footer-action__icon"><SiteIcon name="plus" :size="15" /></span>
+                <span>Open join form</span>
+              </button>
+              <a href="mailto:contact@matrixfellows.com" class="footer-action group">
+                <span class="footer-action__icon"><SiteIcon name="mail" :size="15" /></span>
+                <span class="min-w-0 [overflow-wrap:anywhere]">contact@matrixfellows.com</span>
+              </a>
+              <a
+                href="https://www.instagram.com/mhs_research_club/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Matrix Fellows on Instagram, @mhs_research_club (opens in a new tab)"
+                class="footer-action group"
+              >
+                <span class="footer-action__icon"><SiteIcon name="instagram" :size="15" /></span>
+                <span>@mhs_research_club</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="flex flex-col gap-3 pt-5 text-[11px] sm:flex-row sm:items-center sm:justify-between"
         >
+          <p class="text-paper/30">Student-founded. Built on curiosity.</p>
+          <div class="flex flex-wrap items-center gap-x-6 gap-y-1">
+            <button class="footer-utility" @click="adminOpen = true">
+              <SiteIcon name="lock" :size="13" /> Member admin
+            </button>
+            <a href="#beginning" class="footer-utility" @click="scrollTo($event, 'beginning')"
+              >Back to top <SiteIcon name="up" :size="13"
+            /></a>
+          </div>
+        </div>
       </div>
     </footer>
     <LazyJoinForm v-if="joinOpen" @close="joinOpen = false" />
@@ -823,3 +835,104 @@ onBeforeUnmount(() => {
     />
   </div>
 </template>
+
+<style scoped>
+.site-footer {
+  overflow: hidden;
+  border-top: 1px solid color-mix(in srgb, var(--color-paper) 8%, transparent);
+  background:
+    radial-gradient(
+      42rem 24rem at 8% 0%,
+      color-mix(in srgb, var(--color-acid) 4%, transparent),
+      transparent 72%
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--color-ink) 91%, transparent),
+      var(--color-ink)
+    );
+}
+.footer-heading {
+  font-size: 0.625rem;
+  line-height: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-paper) 45%, transparent);
+}
+.footer-action {
+  display: flex;
+  min-height: 3rem;
+  width: 100%;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 0.75rem;
+  padding: 0.35rem 0.5rem;
+  margin-inline: -0.5rem;
+  font-size: 0.75rem;
+  line-height: 1.2rem;
+  color: color-mix(in srgb, var(--color-paper) 66%, transparent);
+  transition:
+    color 180ms ease,
+    background-color 180ms ease,
+    transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.footer-action:hover,
+.footer-action:focus-visible {
+  color: var(--color-paper);
+  background: color-mix(in srgb, var(--color-paper) 2.8%, transparent);
+  transform: translate3d(3px, 0, 0);
+}
+.footer-action:active {
+  transform: scale(0.985);
+  transition-duration: 80ms;
+}
+.footer-action__icon {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--color-paper) 12%, transparent);
+  border-radius: 999px;
+  color: color-mix(in srgb, var(--color-paper) 48%, transparent);
+  background: color-mix(in srgb, var(--color-paper) 2%, transparent);
+  transition:
+    color 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease,
+    transform 380ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 260ms ease;
+}
+.footer-action:hover .footer-action__icon,
+.footer-action:focus-visible .footer-action__icon {
+  color: var(--color-acid);
+  border-color: color-mix(in srgb, var(--color-acid) 34%, transparent);
+  background: color-mix(in srgb, var(--color-acid) 6%, transparent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--color-acid) 7%, transparent);
+  transform: rotate(-4deg) scale(1.04);
+}
+.footer-utility {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.45rem;
+  color: color-mix(in srgb, var(--color-paper) 38%, transparent);
+  transition:
+    color 180ms ease,
+    transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.footer-utility:hover,
+.footer-utility:focus-visible {
+  color: var(--color-acid);
+  transform: translate3d(0, -1px, 0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .footer-action,
+  .footer-action__icon,
+  .footer-utility {
+    transform: none !important;
+    transition: none;
+  }
+}
+</style>

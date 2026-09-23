@@ -68,6 +68,12 @@ describe('opportunity ingestion', () => {
       expect(item.participationModes?.length, item.title).toBeGreaterThan(0)
       expect(item.fieldEvidence?.length, item.title).toBeGreaterThan(0)
     }
+    const canonicalOwners = new Map<string, string>()
+    for (const item of [...catalogAdditions, ...parsed]) {
+      const url = canonicalUrl(item.url)
+      expect(canonicalOwners.get(url), `${item.title} shares its canonical URL`).toBeUndefined()
+      canonicalOwners.set(url, item.title)
+    }
   })
   it('reclassifies established research programs without duplicating their catalog IDs', () => {
     expect(CATALOG_ENRICHMENT_VERSION).toBeGreaterThan(1)

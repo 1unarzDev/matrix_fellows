@@ -1,7 +1,6 @@
 import type { Opportunity } from '../types/content'
 
 const observedAt = '2026-09-23T00:00:00Z'
-const hosaGuidelines = 'https://hosa.org/guidelines/'
 const medicalInnovationPdf = 'https://hosa.org/wp-content/uploads/2026/08/MI-26-27-FINAL-1.pdf'
 const researchPosterPdf = 'https://hosa.org/wp-content/uploads/2026/08/Research-Poster-26-27.pdf'
 
@@ -723,7 +722,7 @@ export const catalogExpansion: Opportunity[] = [
     cost: 'Membership, conference, travel, lodging, and prototype costs vary; the event guideline does not state amounts.',
     effort:
       'Original concept, evidence review, working prototype, digital exhibit outline, physical display, and team presentation.',
-    url: hosaGuidelines,
+    url: medicalInnovationPdf,
     verifiedAt: observedAt,
     priority: 98,
     published: true,
@@ -836,7 +835,7 @@ export const catalogExpansion: Opportunity[] = [
     cost: 'Membership, conference, travel, lodging, and poster-printing costs vary; the event guideline does not state amounts.',
     effort:
       'Original community health research, ethical participant procedures when applicable, analysis, poster production, and team presentation.',
-    url: hosaGuidelines,
+    url: researchPosterPdf,
     verifiedAt: observedAt,
     priority: 97,
     published: true,

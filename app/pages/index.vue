@@ -751,8 +751,10 @@ onBeforeUnmount(() => {
       </section>
     </main>
 
-    <footer class="site-footer relative z-10 px-6 pb-28 pt-12 sm:px-10 sm:pt-14 lg:px-16 lg:pb-12">
-      <div class="mx-auto max-w-[90rem]">
+    <footer
+      class="site-footer relative isolate z-10 px-6 pb-28 pt-20 sm:px-10 sm:pt-24 lg:px-16 lg:pb-12"
+    >
+      <div class="footer-inner relative z-[1] mx-auto max-w-[90rem]">
         <div
           class="grid gap-12 border-b border-paper/[.09] pb-12 sm:grid-cols-2 sm:gap-x-12 lg:grid-cols-[minmax(18rem,1.45fr)_minmax(12rem,.75fr)_minmax(15rem,1fr)] lg:gap-x-20"
         >
@@ -849,31 +851,49 @@ onBeforeUnmount(() => {
 <style scoped>
 .site-footer {
   overflow: hidden;
-  background:
-    radial-gradient(
-      42rem 24rem at 8% 0%,
-      color-mix(in srgb, var(--color-acid) 4%, transparent),
-      transparent 72%
-    ),
-    linear-gradient(
-      to bottom,
-      color-mix(in srgb, var(--color-ink) 91%, transparent),
-      var(--color-ink)
-    );
+  background: transparent;
 }
 .site-footer::before {
   content: '';
   position: absolute;
-  inset: 0 7% auto;
+  z-index: 1;
+  inset: 1.75rem max(1.5rem, 7vw) auto;
   height: 1px;
   pointer-events: none;
   background: linear-gradient(
     to right,
     transparent,
-    color-mix(in srgb, var(--color-paper) 4%, transparent) 35%,
-    color-mix(in srgb, var(--color-paper) 4%, transparent) 65%,
+    color-mix(in srgb, var(--color-acid) 12%, transparent) 18%,
+    color-mix(in srgb, var(--color-paper) 9%, transparent) 45%,
+    color-mix(in srgb, var(--color-paper) 6%, transparent) 72%,
     transparent
   );
+  box-shadow: 0 1px 18px color-mix(in srgb, var(--color-acid) 4%, transparent);
+}
+.site-footer::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      40rem 17rem at 18% 4%,
+      color-mix(in srgb, var(--color-acid) 4.5%, transparent),
+      transparent 72%
+    ),
+    radial-gradient(
+      32rem 14rem at 78% 8%,
+      color-mix(in srgb, #9fcfe0 2.5%, transparent),
+      transparent 76%
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--color-ink) 86%, transparent) 0%,
+      color-mix(in srgb, var(--color-ink) 70%, transparent) 22%,
+      color-mix(in srgb, var(--color-ink) 52%, transparent) 48%,
+      color-mix(in srgb, var(--color-ink) 62%, transparent) 100%
+    );
 }
 .footer-heading {
   font-size: 0.625rem;

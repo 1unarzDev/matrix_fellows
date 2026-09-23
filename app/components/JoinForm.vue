@@ -170,11 +170,11 @@ onBeforeUnmount(() => {
         >
           <section
             data-lenis-prevent
-            class="relative isolate flex max-h-[calc(100dvh-1.5rem)] w-full max-w-2xl flex-col overflow-hidden rounded-[1.75rem] border border-paper/20 bg-[#141b24]/75 shadow-[0_30px_120px_#00000080,inset_0_1px_0_#ffffff12] backdrop-blur-xl backdrop-saturate-125 sm:max-h-[calc(100dvh-4rem)] sm:rounded-[2rem]"
+            class="join-panel relative isolate flex max-h-[calc(100dvh-1.5rem)] w-full max-w-2xl flex-col overflow-hidden rounded-[1.75rem] border border-paper/20 shadow-[0_30px_120px_#00000080,inset_0_1px_0_#ffffff12] sm:max-h-[calc(100dvh-4rem)] sm:rounded-[2rem]"
           >
             <div
               aria-hidden="true"
-              class="pointer-events-none absolute inset-0 bg-linear-to-br from-white/[.045] via-transparent to-[#abc7df]/[.025]"
+              class="pointer-events-none absolute inset-0 bg-linear-to-br from-paper/[.04] via-transparent to-paper/[.012]"
             />
             <div
               aria-hidden="true"
@@ -182,7 +182,7 @@ onBeforeUnmount(() => {
             />
             <div
               aria-hidden="true"
-              class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,#a8a1ed22,transparent_60%)] transition-opacity duration-1000 motion-reduce:transition-none"
+              class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,#f4f1e90d,transparent_60%)] transition-opacity duration-1000 motion-reduce:transition-none"
               :class="typing ? 'opacity-100' : 'opacity-45'"
             />
             <header
@@ -449,3 +449,9 @@ onBeforeUnmount(() => {
     </dialog>
   </Teleport>
 </template>
+
+<style scoped>
+.join-panel {
+  background: color-mix(in srgb, var(--color-paper) 3.5%, var(--color-ink));
+}
+</style>

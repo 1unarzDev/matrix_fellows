@@ -44,6 +44,20 @@ test('unexplored marker draws an orbit on hover and returns cleanly', async ({ p
   await expect(orbit).toHaveCSS('stroke-dashoffset', '1px')
 })
 
+test('unexplored marker keeps its label clear of the instrument', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop')
+  await page.goto('/')
+  const marker = page.getByRole('link', {
+    name: 'The unexplored — find a research idea worth pursuing',
+  })
+  await expect(marker).toBeVisible()
+  const label = marker.getByText('The unexplored', { exact: true })
+  const [markerBox, labelBox] = await Promise.all([marker.boundingBox(), label.boundingBox()])
+  expect(markerBox).not.toBeNull()
+  expect(labelBox).not.toBeNull()
+  expect(labelBox!.x).toBeGreaterThanOrEqual(markerBox!.x + markerBox!.width + 12)
+})
+
 test('unexplored marker turns curiosity into a guide action', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop')
   await page.emulateMedia({ reducedMotion: 'reduce' })

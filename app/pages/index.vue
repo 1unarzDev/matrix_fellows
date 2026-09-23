@@ -706,7 +706,7 @@ onBeforeUnmount(() => {
         <OpportunityBoard :opportunities="data?.opportunities || defaultOpportunities" />
         <div
           data-closing-cta
-          class="relative isolate mt-16 overflow-hidden rounded-2xl border border-paper/15 bg-paper/[.025] px-7 py-10 text-[#edf1ff] shadow-[inset_0_1px_0_#d3daed0d] sm:p-12 lg:p-16"
+          class="pointer-events-none relative isolate mt-16 overflow-hidden rounded-2xl border border-paper/15 bg-paper/[.025] px-7 py-10 text-[#edf1ff] shadow-[inset_0_1px_0_#d3daed0d] sm:p-12 lg:p-16"
         >
           <div
             aria-hidden="true"
@@ -738,7 +738,7 @@ onBeforeUnmount(() => {
             </h3>
             <button
               @click="joinOpen = true"
-              class="tactile group inline-flex min-h-12 shrink-0 items-center gap-7 rounded-full border border-[#c4ccef]/45 bg-transparent px-6 py-4 text-sm font-medium text-[#dce5ff] hover:border-[#dce5ff]/80 hover:bg-[#c4ccef]/[.035] hover:shadow-[0_0_28px_#b7c8ff14] focus-visible:outline-[#b7c8ff]"
+              class="tactile pointer-events-auto group inline-flex min-h-12 shrink-0 items-center gap-7 rounded-full border border-[#c4ccef]/45 bg-transparent px-6 py-4 text-sm font-medium text-[#dce5ff] hover:border-[#dce5ff]/80 hover:bg-[#c4ccef]/[.035] hover:shadow-[0_0_28px_#b7c8ff14] focus-visible:outline-[#b7c8ff]"
             >
               Join Matrix Fellows
               <span
@@ -779,7 +779,7 @@ onBeforeUnmount(() => {
             <h3 class="footer-heading">Explore</h3>
             <div class="mt-4 grid gap-1">
               <NuxtLink to="/guides" class="footer-action group">
-                <span class="footer-action__icon"><SiteIcon name="book" :size="15" /></span>
+                <span class="footer-action__icon"><SiteIcon name="spark" :size="14" /></span>
                 <span>Research guides</span>
               </NuxtLink>
               <NuxtLink to="/opportunities" class="footer-action group">
@@ -826,10 +826,11 @@ onBeforeUnmount(() => {
           class="flex flex-col gap-3 pt-5 text-[11px] sm:flex-row sm:items-center sm:justify-between"
         >
           <p class="text-paper/30">Student-founded. Built on curiosity.</p>
-          <div class="flex flex-wrap items-center gap-x-6 gap-y-1">
+          <div class="flex items-center gap-4">
             <button class="footer-utility" @click="adminOpen = true">
               <SiteIcon name="lock" :size="13" /> Member admin
             </button>
+            <span class="footer-utility-separator" aria-hidden="true">·</span>
             <a href="#beginning" class="footer-utility" @click="scrollTo($event, 'beginning')"
               >Back to top <SiteIcon name="up" :size="13"
             /></a>
@@ -851,7 +852,6 @@ onBeforeUnmount(() => {
 <style scoped>
 .site-footer {
   overflow: hidden;
-  border-top: 1px solid color-mix(in srgb, var(--color-paper) 8%, transparent);
   background:
     radial-gradient(
       42rem 24rem at 8% 0%,
@@ -863,6 +863,20 @@ onBeforeUnmount(() => {
       color-mix(in srgb, var(--color-ink) 91%, transparent),
       var(--color-ink)
     );
+}
+.site-footer::before {
+  content: '';
+  position: absolute;
+  inset: 0 7% auto;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    to right,
+    transparent,
+    color-mix(in srgb, var(--color-paper) 4%, transparent) 35%,
+    color-mix(in srgb, var(--color-paper) 4%, transparent) 65%,
+    transparent
+  );
 }
 .footer-heading {
   font-size: 0.625rem;
@@ -938,6 +952,11 @@ onBeforeUnmount(() => {
 .footer-utility:focus-visible {
   color: var(--color-acid);
   transform: translate3d(0, -1px, 0);
+}
+.footer-utility-separator {
+  color: color-mix(in srgb, var(--color-paper) 23%, transparent);
+  font-size: 0.875rem;
+  line-height: 1;
 }
 @media (prefers-reduced-motion: reduce) {
   .footer-action,

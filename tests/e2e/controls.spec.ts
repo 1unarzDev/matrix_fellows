@@ -72,3 +72,42 @@ test('project panels animate and closed content cannot receive focus', async ({ 
   await expect(panel).toHaveAttribute('inert', '')
   await expect(panel).toHaveCSS('opacity', '0')
 })
+
+test('catalog CTA remains the pointer target while the closing panel enters', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/#community')
+  await page.locator('[data-ready="true"]').waitFor()
+  const catalog = page.getByRole('link', { name: 'Browse the full catalog' })
+  const closing = page.locator('[data-closing-cta]')
+  await expect(catalog).toBeVisible()
+  const positions = await page.evaluate(() => {
+    const catalog = document.querySelector<HTMLAnchorElement>(
+      '#community a[href="/opportunities"]',
+    )!
+    const closing = document.querySelector<HTMLElement>('[data-closing-cta]')!
+    const top = (element: HTMLElement) => element.getBoundingClientRect().top + window.scrollY
+    const start = Math.max(0, top(catalog) - window.innerHeight * 0.9)
+    const end = top(closing) - window.innerHeight * 0.15
+    return Array.from({ length: 18 }, (_, index) => start + ((end - start) * index) / 17)
+  })
+  const obstruction = await catalog.evaluate(async (element, samples) => {
+    for (const top of samples) {
+      window.scrollTo({ top, behavior: 'instant' })
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      )
+      const rect = element.getBoundingClientRect()
+      const x = rect.left + rect.width / 2
+      const y = rect.top + rect.height / 2
+      if (y < 0 || y > window.innerHeight) continue
+      const target = document.elementFromPoint(x, y)
+      if (!element.contains(target))
+        return target instanceof HTMLElement ? `${target.tagName}.${target.className}` : 'none'
+    }
+    return null
+  }, positions)
+  expect(obstruction).toBeNull()
+  const join = closing.getByRole('button', { name: 'Join Matrix Fellows' })
+  await join.click()
+  await expect(page.getByRole('dialog')).toBeVisible()
+})

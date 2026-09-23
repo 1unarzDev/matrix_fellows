@@ -44,12 +44,28 @@ test('unexplored marker draws an orbit on hover and returns cleanly', async ({ p
   await expect(orbit).toHaveCSS('stroke-dashoffset', '1px')
 })
 
+test('unexplored marker turns curiosity into a guide action', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop')
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/')
+  const link = page.getByRole('link', {
+    name: 'The unexplored — find a research idea worth pursuing',
+  })
+  await expect(link).toHaveAttribute('href', '/guides/find-a-research-idea')
+  await link.focus()
+  await expect(link.locator('ellipse')).toHaveCSS('stroke-dashoffset', '0px')
+  await expect(link.getByText('Find your question')).toBeVisible()
+  await link.press('Enter')
+  await expect(page).toHaveURL(/\/guides\/find-a-research-idea$/)
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Find an idea worth pursuing')
+})
+
 test('timeline dots have room for their hover halo within the scrollport', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('/#community')
   const rail = page.getByRole('tablist').first()
   await expect(rail).toBeVisible()
-  const clearance = await rail.evaluate(element => {
+  const clearance = await rail.evaluate((element) => {
     const box = element.getBoundingClientRect()
     const dot = element.querySelector('[data-timeline-dot]')!.getBoundingClientRect()
     return dot.top - box.top

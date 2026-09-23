@@ -443,11 +443,7 @@ onBeforeUnmount(() => {
             ><span class="h-1 w-1 rounded-full bg-acid" /> Student-founded. Open-minded.</span
           >
         </div>
-        <div
-          aria-hidden="true"
-          data-hero-detail
-          class="absolute right-[16%] top-[48%] hidden xl:block"
-        >
+        <div data-hero-detail class="absolute right-[16%] top-[48%] hidden xl:block">
           <UnexploredMarker v-if="sceneStatus !== 'pending'" />
         </div>
       </section>

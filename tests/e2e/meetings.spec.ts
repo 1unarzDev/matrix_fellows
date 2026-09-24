@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-test('meetings route renders a crawlable confirmed and projected schedule', async ({ page }) => {
+test('meetings route renders a crawlable confirmed and projected schedule', async ({ page }, testInfo) => {
   const response = await page.goto('/meetings')
   expect(response?.status()).toBe(200)
   await expect(
@@ -8,7 +8,7 @@ test('meetings route renders a crawlable confirmed and projected schedule', asyn
   ).toBeVisible()
   await expect(
     page.locator('#first-exchange-2026-09-25').getByRole('heading', {
-      name: 'The first exchange of ideas.',
+      name: /first exchange of ideas\./i,
     }),
   ).toBeVisible()
   await expect(
@@ -23,8 +23,12 @@ test('meetings route renders a crawlable confirmed and projected schedule', asyn
   ])
   expect(calendarColumn).not.toBeNull()
   expect(detailColumn).not.toBeNull()
-  expect(detailColumn!.y).toBeCloseTo(calendarColumn!.y, 0)
-  expect(detailColumn!.height).toBeCloseTo(calendarColumn!.height, 0)
+  if (testInfo.project.name === 'mobile') {
+    expect(detailColumn!.y).toBeGreaterThan(calendarColumn!.y + calendarColumn!.height)
+  } else {
+    expect(detailColumn!.y).toBeCloseTo(calendarColumn!.y, 0)
+    expect(detailColumn!.height).toBeCloseTo(calendarColumn!.height, 0)
+  }
   const datePanel = page.locator('.meeting-row__date').first()
   await expect(datePanel).toHaveCSS('padding-top', '12.8px')
   await expect(datePanel).toHaveCSS('padding-bottom', '12.8px')

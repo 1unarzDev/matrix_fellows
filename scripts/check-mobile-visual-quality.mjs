@@ -21,6 +21,12 @@ try {
     await page.locator('[data-ready="true"]').waitFor({ timeout: 60_000 })
 
     await page
+      .locator('#beginning')
+      .evaluate((element) => element.scrollIntoView({ behavior: 'instant' }))
+    await page.waitForTimeout(1_500)
+    await page.screenshot({ path: `${output}/${name}-beginning.png` })
+
+    await page
       .locator('#discovery')
       .evaluate((element) => element.scrollIntoView({ behavior: 'instant' }))
     await page.waitForTimeout(1_500)
@@ -34,6 +40,12 @@ try {
       palmTrunkParts: Number(canvas.dataset.palmTrunkParts),
       palmFoliageParts: Number(canvas.dataset.palmFoliageParts),
     }))
+
+    await page
+      .locator('#research')
+      .evaluate((element) => element.scrollIntoView({ behavior: 'instant' }))
+    await page.waitForTimeout(1_500)
+    await page.screenshot({ path: `${output}/${name}-research.png` })
 
     await page
       .locator('#connection')

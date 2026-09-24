@@ -658,9 +658,16 @@ varying float vRain;
 void main(){
   vec2 coord=(gl_PointCoord-.5)*2.0;
   coord.y*=1.0+vStorm*1.8;
-  coord.x*=1.0+vRain*4.0;
+  // A one-framebuffer-pixel rain core aliases badly once it is composited to
+  // CSS pixels. Keep the streak restrained but wide enough to resolve.
+  coord.x*=1.0+vRain*2.7;
   float d=length(coord);
-  if(d>1.0)discard;
+  float coverage=1.0;
+  if(vRain>.001) {
+    float edgeWidth=max(fwidth(d)*1.25,.018);
+    if(d>1.0+edgeWidth)discard;
+    coverage=1.0-smoothstep(1.0-edgeWidth,1.0+edgeWidth,d);
+  } else if(d>1.0)discard;
   float glow=exp(-d*d*6.0);
   // Preserve a small, resolved center inside atmospheric motes and stars.
   // Their broad halo remains soft, but the sprite no longer reads as one
@@ -669,6 +676,6 @@ void main(){
   float body=exp(-(coord.x*coord.x*.8+coord.y*coord.y*9.0)*3.0);
   float tail=step(coord.x,-.2)*step(abs(coord.y),(-coord.x-.18)*.45)*.35;
   glow=mix(glow,body+tail+exp(-d*d*3.0)*.10,vFish);
-  gl_FragColor=vec4(vColor,glow*vAlpha);
+  gl_FragColor=vec4(vColor,glow*vAlpha*coverage);
 }
 `

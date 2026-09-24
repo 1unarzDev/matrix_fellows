@@ -221,3 +221,24 @@ Three controlled SwiftShader transitions each reported 30.0 rendered fps with th
 adaptation. Browser RAF p95 ranged from 16.7 to 33.3 ms, within the 50 ms gate.
 This verifies the quality policy and local regression only; physical iPhone/iPad
 Safari image quality, thermal behavior, and sustained cadence remain outstanding.
+
+## Dune and rain edge follow-up — 2026-09-23
+
+Phone and tablet captures reproduced two distinct forms of aliasing. The desert
+ridge and procedural weather shared the efficient atmosphere target, where the
+0.32× source made each sample span more than three CSS pixels. Foreground rain
+sprites used the 1.5× target but ended in a hard fragment discard around a core
+that could be close to one framebuffer pixel wide.
+
+The efficient atmosphere keeps its measured 0.32× target, four-tap reconstruction,
+no MSAA, and no additional pass. The opening ridge no longer mixes a sharp sample
+from that coarse source back over the reconstruction; local contrast returns as
+the camera clears the silhouette. Rain sprites remain in the 1.5× foreground and
+now use derivative-based edge coverage with a slightly wider resolved core. Both
+global and opening-only 0.5× prototypes were rejected after their first 30-second
+soak windows fell to 21.8 and 25.4 fps respectively. These are emulated-device
+checks. The focused mobile transition passed at 30 rendered fps with 33.2 ms RAF
+p95. The 30-second SwiftShader journey still missed its stricter first-window
+gate at 26.3 fps (later windows were 30 fps), so that extended proxy remains a
+failed check. Physical Safari quality, thermal behavior, and sustained cadence
+remain unverified.

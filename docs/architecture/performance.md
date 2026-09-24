@@ -98,9 +98,11 @@ Splitting the mobile background is important: the expensive procedural ray work
 can remain bounded without making palm cutouts, constellation lines, text-adjacent
 particles, or wave edges equally blurry. Desktop retains the higher-quality bloom
 chain and a single adaptive composer ratio. The efficient copy shader reconstructs
-the 0.32× atmosphere with four hardware-filtered bicubic taps, then restores bounded
+the downsampled atmosphere with four hardware-filtered bicubic taps, then restores bounded
 local contrast from one bilinear sample, weighted most strongly through the ocean.
 The final grade does not blur the already supersampled foreground a second time.
+The opening ridge uses the reconstruction alone; direct low-resolution contrast
+returns gradually as the camera clears the silhouette.
 
 ## Particle and asset strategy
 
@@ -128,7 +130,7 @@ Nebula ambience uses the same clock and programs: slow shader-time offsets,
 vertex-time coherent group drift, and one bounded analytic streak add no render
 target, pass, particle simulation, or animation loop. Cosmic elapsed time pauses
 outside the chapter. The streak is composed inside the existing full-resolution
-grade pass rather than the 0.32× atmosphere, preserving its small head and tapered
+grade pass rather than the downsampled atmosphere, preserving its small head and tapered
 tail on mobile. On constrained devices, no optional planet/model is loaded.
 
 ## Frame pacing and adaptive quality

@@ -140,7 +140,12 @@ export function createWorld(
         // or another procedural world evaluation.
         vec4 direct=texture2D(colorBuffer,vUv);
         float ocean=smoothstep(.9,1.35,progress)*(1.0-smoothstep(3.15,3.65,progress));
-        gl_FragColor=mix(reconstructed,direct,mix(.18,.52,ocean));
+        // The opening ridge is a hard silhouette. Mixing the coarse direct
+        // sample back over its bicubic reconstruction exposed the source grid
+        // as visible steps. Restore local contrast only as the camera clears
+        // the dune, reaching the stronger ocean treatment at its old timing.
+        float detailRestore=smoothstep(.18,.82,progress)*mix(.18,.52,ocean);
+        gl_FragColor=mix(reconstructed,direct,detailRestore);
         gl_FragDepth=texture2D(depthBuffer,vUv).r;
       }`,
         depthTest: true,

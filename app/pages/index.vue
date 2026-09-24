@@ -441,7 +441,7 @@ onBeforeUnmount(() => {
             </div>
             <div
               data-hero-meeting
-              class="group/meeting relative mt-6 overflow-hidden rounded-xl border border-[#f4d39b]/45 bg-[linear-gradient(135deg,rgba(124,84,43,.56)_0%,rgba(130,96,59,.34)_58%,rgba(222,190,131,.08)_100%)] px-4 py-3.5 shadow-[0_16px_44px_rgba(72,43,24,.1),inset_0_1px_0_#fff4] backdrop-blur-md transition-[transform,border-color,box-shadow] duration-[620ms] ease-[cubic-bezier(.16,1.28,.3,1)] hover:-translate-y-[3px] hover:scale-[1.01] hover:border-[#f4d39b]/60 hover:shadow-[0_22px_54px_rgba(72,43,24,.19),0_0_30px_rgba(234,194,121,.09),inset_0_1px_0_#fff5] focus-within:-translate-y-[3px] focus-within:scale-[1.01] focus-within:border-[#f4d39b]/60 focus-within:shadow-[0_22px_54px_rgba(72,43,24,.19),0_0_30px_rgba(234,194,121,.09),inset_0_1px_0_#fff5] motion-reduce:transform-none motion-reduce:transition-none sm:px-5 sm:py-4"
+              class="hero-meeting-panel group/meeting relative mt-6 overflow-hidden rounded-xl border border-[#f4d39b]/45 bg-[linear-gradient(135deg,rgba(124,84,43,.56)_0%,rgba(130,96,59,.34)_58%,rgba(222,190,131,.08)_100%)] px-4 py-3.5 shadow-[0_16px_44px_rgba(72,43,24,.1),inset_0_1px_0_#fff4] backdrop-blur-md transition-[translate,scale,border-color,box-shadow] duration-[520ms] ease-[cubic-bezier(.22,1,.36,1)] hover:-translate-y-[3px] hover:scale-[1.01] hover:border-[#f4d39b]/60 hover:shadow-[0_22px_54px_rgba(72,43,24,.19),0_0_30px_rgba(234,194,121,.09),inset_0_1px_0_#fff5] focus-within:-translate-y-[3px] focus-within:scale-[1.01] focus-within:border-[#f4d39b]/60 focus-within:shadow-[0_22px_54px_rgba(72,43,24,.19),0_0_30px_rgba(234,194,121,.09),inset_0_1px_0_#fff5] motion-reduce:transition-none sm:px-5 sm:py-4"
             >
               <span
                 aria-hidden="true"
@@ -1089,6 +1089,11 @@ onBeforeUnmount(() => {
   line-height: 1;
 }
 @media (prefers-reduced-motion: reduce) {
+  .hero-meeting-panel:hover,
+  .hero-meeting-panel:focus-within {
+    translate: none;
+    scale: 1;
+  }
   .depths-panel,
   .depths-title-line,
   .depths-copy {

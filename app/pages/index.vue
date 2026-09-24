@@ -464,26 +464,8 @@ onBeforeUnmount(() => {
           <p class="mb-8 text-[10px] uppercase tracking-[.25em] text-acid">
             02 — A first discovery
           </p>
-          <h2
-            id="discovery-title"
-            class="font-display text-5xl font-medium leading-[1.08] tracking-[-.055em] sm:text-7xl"
-          >
-            Curiosity finds<br />a way.
-          </h2>
-          <p class="mt-8 max-w-md text-base leading-relaxed text-paper/75">
-            A question can feel like a vast, empty landscape. Then something shifts. A conversation.
-            An observation. A possibility you hadn’t seen before.
-          </p>
-          <p class="mt-5 max-w-md text-base leading-relaxed text-paper/75">
-            Matrix Fellows is a student-founded research society at Martin High School, built around
-            that moment. We bring curious people together to turn a first idea into meaningful
-            inquiry.
-          </p>
-          <div class="mt-10 flex items-center gap-4 text-xs text-paper/65">
-            <SiteIcon name="compass" :size="32" class="shrink-0 text-acid/80" /><span
-              >Different disciplines. A shared instinct to explore.</span
-            >
-          </div>
+          <DiscoveryReveal />
+          <DiscoveryCompass class="mt-8 sm:mt-10" />
         </div>
       </section>
 

@@ -15,6 +15,16 @@ test('meetings route renders a crawlable confirmed and projected schedule', asyn
     page.getByText('From an ISEF interest to a regional-fair entry.', { exact: true }),
   ).toBeVisible()
   await expect(page.getByText('Projected · not confirmed', { exact: true })).toBeVisible()
+  const feature = page.locator('.meetings-feature')
+  await expect(feature).toHaveCSS('border-radius', '32px')
+  const [calendarColumn, detailColumn] = await Promise.all([
+    feature.locator('.meetings-feature__calendar').boundingBox(),
+    feature.locator('.meetings-feature__detail').boundingBox(),
+  ])
+  expect(calendarColumn).not.toBeNull()
+  expect(detailColumn).not.toBeNull()
+  expect(detailColumn!.y).toBeCloseTo(calendarColumn!.y, 0)
+  expect(detailColumn!.height).toBeCloseTo(calendarColumn!.height, 0)
   const datePanel = page.locator('.meeting-row__date').first()
   await expect(datePanel).toHaveCSS('padding-top', '12.8px')
   await expect(datePanel).toHaveCSS('padding-bottom', '12.8px')

@@ -162,6 +162,9 @@ test('meeting calendar stacks on mobile while featured opportunities traverse ho
   await page.locator('[data-ready="true"]').waitFor()
 
   const meetingLayout = page.locator('[data-meeting-layout]')
+  await expect(
+    meetingLayout.getByRole('heading', { name: 'A place to turn curiosity into momentum.' }),
+  ).toBeVisible()
   const [meetingIntro, meetingPanel] = await Promise.all([
     meetingLayout.locator('.meeting-layout__left').boundingBox(),
     meetingLayout.locator('.meeting-layout__detail').boundingBox(),
@@ -199,6 +202,24 @@ test('meeting calendar stacks on mobile while featured opportunities traverse ho
   expect(tabletIntro).not.toBeNull()
   expect(tabletPanel).not.toBeNull()
   expect(tabletPanel!.x).toBeGreaterThanOrEqual(tabletIntro!.x + tabletIntro!.width)
+  await expect(meetingLayout).toHaveCSS('border-radius', '24px')
+  await expect(meetingLayout.locator('.meeting-calendar')).toHaveCSS(
+    'background-color',
+    'rgba(0, 0, 0, 0)',
+  )
+  await expect(meetingLayout.locator('.meeting-layout__detail')).toHaveCSS(
+    'background-color',
+    'rgba(0, 0, 0, 0)',
+  )
+
+  const [tabletLeft, tabletDetailWrap] = await Promise.all([
+    meetingLayout.locator('.meeting-layout__left').boundingBox(),
+    meetingLayout.locator('.meeting-layout__detail-wrap').boundingBox(),
+  ])
+  expect(tabletLeft).not.toBeNull()
+  expect(tabletDetailWrap).not.toBeNull()
+  expect(tabletDetailWrap!.y).toBeCloseTo(tabletLeft!.y, 0)
+  expect(tabletDetailWrap!.height).toBeCloseTo(tabletLeft!.height, 0)
 })
 
 test('footer links to the official Instagram profile', async ({ page }) => {

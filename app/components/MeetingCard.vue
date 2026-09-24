@@ -35,16 +35,16 @@ watch(
       <div data-meeting-layout class="meeting-layout">
         <div class="meeting-layout__left">
           <div>
-            <p class="text-[9px] uppercase tracking-[.18em] text-paper/38">Next gathering</p>
+            <p class="text-[9px] uppercase tracking-[.18em] text-paper/38">Why we gather</p>
             <h3
               id="next-gathering-title"
               class="mt-4 font-display text-3xl leading-tight tracking-[-.04em] sm:text-4xl"
             >
-              {{ (selectNextMeeting(meetings) || meetings[0])?.title }}
+              A place to turn curiosity into momentum.
             </h3>
             <p class="mt-5 max-w-sm text-sm leading-relaxed text-paper/55">
-              A space to share what you’re working on, explore something new, and ask better
-              questions.
+              Gatherings connect students with practical next steps—finding ideas, choosing a route,
+              forming teams, and moving thoughtful work forward together.
             </p>
           </div>
           <MeetingCalendar
@@ -54,13 +54,15 @@ watch(
           />
         </div>
 
-        <MeetingDetailPanel
-          :key="selected.id"
-          class="meeting-layout__detail"
-          :meeting="selected"
-          :status="meetingDisplayStatus(selected)"
-          compact
-        />
+        <div class="meeting-layout__detail-wrap">
+          <MeetingDetailPanel
+            :key="selected.id"
+            class="meeting-layout__detail"
+            :meeting="selected"
+            :status="meetingDisplayStatus(selected)"
+            compact
+          />
+        </div>
       </div>
     </div>
   </section>
@@ -89,6 +91,9 @@ watch(
   min-height: 100%;
   animation: meeting-detail-arrive 480ms cubic-bezier(0.16, 1, 0.3, 1);
 }
+.meeting-layout__detail-wrap {
+  min-width: 0;
+}
 @keyframes meeting-detail-arrive {
   from {
     opacity: 0;
@@ -101,11 +106,58 @@ watch(
   }
   .meeting-layout {
     grid-template-columns: minmax(18rem, 0.86fr) minmax(22rem, 1.14fr);
-    gap: clamp(1rem, 3vw, 2.25rem);
+    gap: 0;
+    align-items: stretch;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--color-paper) 12%, transparent);
+    border-radius: 1.5rem;
+    background:
+      radial-gradient(30rem 22rem at 0% 0%, rgb(224 183 104 / 5%), transparent 72%),
+      color-mix(in srgb, var(--color-paper) 3.5%, transparent);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 5%),
+      0 22px 65px rgb(0 0 0 / 13%);
+    backdrop-filter: blur(18px) saturate(116%);
+  }
+  .meeting-layout__left {
+    padding: clamp(1.4rem, 3vw, 2rem);
+  }
+  .meeting-layout__left :deep(.meeting-calendar),
+  :deep(.meeting-layout__detail) {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+  .meeting-layout__left :deep(.meeting-calendar) {
+    padding: 0;
+  }
+  .meeting-layout__detail-wrap {
+    position: relative;
+    display: flex;
+  }
+  .meeting-layout__detail-wrap::before {
+    position: absolute;
+    z-index: 2;
+    top: 1.5rem;
+    bottom: 1.5rem;
+    left: 0;
+    width: 1px;
+    content: '';
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      color-mix(in srgb, var(--color-paper) 13%, transparent) 14%,
+      color-mix(in srgb, #e4bb72 16%, transparent) 52%,
+      color-mix(in srgb, var(--color-paper) 9%, transparent) 86%,
+      transparent
+    );
   }
   .meeting-layout__detail {
     --meeting-detail-x: 8px;
     --meeting-detail-y: 0;
+    width: 100%;
   }
 }
 @media (prefers-reduced-motion: reduce) {

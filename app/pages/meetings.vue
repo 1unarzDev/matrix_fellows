@@ -91,7 +91,7 @@ useHead({
       </header>
 
       <section class="meetings-feature" aria-labelledby="calendar-heading">
-        <div>
+        <div class="meetings-feature__calendar">
           <p class="text-[9px] uppercase tracking-[.18em] text-paper/35">Schedule</p>
           <h2 id="calendar-heading" class="mt-3 font-display text-3xl tracking-[-.04em]">
             Explore the calendar
@@ -189,6 +189,9 @@ useHead({
   background: rgb(244 241 233 / 1.5%);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 4%);
 }
+.meetings-feature__calendar {
+  min-width: 0;
+}
 .meetings-feature__detail {
   animation: meeting-page-detail 480ms cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -282,6 +285,46 @@ useHead({
 @media (min-width: 768px) {
   .meetings-feature {
     grid-template-columns: minmax(19rem, 0.78fr) minmax(24rem, 1.22fr);
+    gap: 0;
+    align-items: stretch;
+    overflow: hidden;
+    padding: 0;
+    border: 1px solid rgb(244 241 233 / 10%);
+    background:
+      radial-gradient(32rem 24rem at 0% 0%, rgb(224 183 104 / 4.5%), transparent 72%),
+      rgb(244 241 233 / 1.8%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 4%),
+      0 22px 65px rgb(0 0 0 / 12%);
+    backdrop-filter: blur(18px) saturate(116%);
+  }
+  .meetings-feature__calendar {
+    padding: clamp(1.5rem, 3vw, 2rem);
+  }
+  .meetings-feature__calendar :deep(.meeting-calendar),
+  :deep(.meetings-feature__detail) {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+  .meetings-feature__calendar :deep(.meeting-calendar) {
+    padding: 0;
+  }
+  :deep(.meetings-feature__detail) {
+    width: 100%;
+    background-image: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(244 241 233 / 11%) 14%,
+      rgb(228 187 114 / 13%) 52%,
+      rgb(244 241 233 / 8%) 86%,
+      transparent
+    );
+    background-position: left 1.5rem;
+    background-repeat: no-repeat;
+    background-size: 1px calc(100% - 3rem);
   }
   .meeting-row {
     grid-template-columns: 5rem minmax(0, 1fr) auto;

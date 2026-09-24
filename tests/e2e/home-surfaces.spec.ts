@@ -57,10 +57,19 @@ test('join popup follows the calendar popup surface and motion contract', async 
     return {
       backdrop: read('.join-backdrop'),
       panel: read('.join-panel'),
+      accent: getComputedStyle(document.querySelector('.join-panel')!)
+        .getPropertyValue('--color-acid')
+        .trim(),
+      progressBackground: getComputedStyle(document.querySelector('.join-progress-fill')!)
+        .backgroundImage,
     }
   })
   expect(theme.backdrop.backgroundColor).toBe('rgba(5, 8, 8, 0.76)')
   expect(theme.backdrop.backdropFilter).toBe('blur(12px)')
   expect(theme.panel.backdropFilter).toBe('blur(18px) saturate(1.18)')
   expect(theme.panel.borderRadius).toBe('24px')
+  expect(theme.accent).toBe('#e4bb72')
+  expect(theme.progressBackground).toContain('rgb(228, 187, 114)')
+  expect(theme.progressBackground).not.toContain('rgb(152, 204, 221)')
+  expect(theme.progressBackground).not.toContain('rgb(197, 192, 235)')
 })

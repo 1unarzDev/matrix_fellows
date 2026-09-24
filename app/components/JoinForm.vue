@@ -291,7 +291,7 @@ onBeforeUnmount(() => {
                 class="h-1 flex-1 overflow-hidden rounded-full bg-paper/10"
               >
                 <div
-                  class="h-full origin-left rounded-full bg-linear-to-r from-[#98ccdd] to-[#c5c0eb] transition-transform duration-1000 ease-[cubic-bezier(.45,0,.25,1)] motion-reduce:transition-none"
+                  class="join-progress-fill h-full origin-left rounded-full transition-transform duration-1000 ease-[cubic-bezier(.45,0,.25,1)] motion-reduce:transition-none"
                   :class="index <= step ? 'scale-x-100' : 'scale-x-0'"
                 />
               </div>
@@ -396,7 +396,7 @@ onBeforeUnmount(() => {
                               class="rounded-2xl border px-4 py-3 text-left text-xs transition-[transform,background-color,border-color,box-shadow] duration-700 ease-[cubic-bezier(.22,1,.36,1)] hover:scale-[1.025] hover:border-acid/45 focus-visible:outline-acid motion-reduce:transform-none motion-reduce:transition-none"
                               :class="
                                 draft.interests.includes(interest)
-                                  ? 'border-acid/45 bg-acid/10 text-acid shadow-[0_0_22px_#c5c0eb0c]'
+                                  ? 'join-choice--selected border-acid/45 bg-acid/10 text-acid'
                                   : 'border-paper/15 text-paper/65'
                               "
                               @click="toggle('interests', interest)"
@@ -541,7 +541,7 @@ onBeforeUnmount(() => {
                         ><span v-else class="text-[10px] text-paper/35">About 1 min.</span>
                         <button
                           :disabled="busy || transitioning"
-                          class="group flex min-h-12 items-center gap-5 rounded-full bg-acid px-6 py-3 text-sm font-medium text-ink transition-[transform,box-shadow,background-color] duration-[900ms] ease-[cubic-bezier(.45,0,.25,1)] hover:scale-[1.035] hover:shadow-[0_5px_32px_#c5c0eb25] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acid disabled:opacity-50 motion-reduce:transform-none motion-reduce:transition-none"
+                          class="join-primary group flex min-h-12 items-center gap-5 rounded-full bg-acid px-6 py-3 text-sm font-medium text-ink transition-[transform,box-shadow,background-color] duration-[900ms] ease-[cubic-bezier(.45,0,.25,1)] hover:scale-[1.035] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acid disabled:opacity-50 motion-reduce:transform-none motion-reduce:transition-none"
                         >
                           {{
                             busy
@@ -589,6 +589,19 @@ onBeforeUnmount(() => {
     inset 0 1px 0 rgb(255 255 255 / 7%);
   -webkit-backdrop-filter: blur(36px) saturate(118%);
   backdrop-filter: blur(36px) saturate(118%);
+}
+.join-progress-fill {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-acid) 72%, var(--color-paper)),
+    var(--color-acid)
+  );
+}
+.join-choice--selected {
+  box-shadow: 0 0 22px color-mix(in srgb, var(--color-acid) 5%, transparent);
+}
+.join-primary:hover {
+  box-shadow: 0 5px 32px color-mix(in srgb, var(--color-acid) 15%, transparent);
 }
 .join-backdrop {
   background: color-mix(in srgb, var(--color-ink) 25%, transparent);

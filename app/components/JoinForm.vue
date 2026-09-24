@@ -583,7 +583,7 @@ onBeforeUnmount(() => {
       color-mix(in srgb, var(--color-paper) 2.8%, transparent) 48%,
       transparent 78%
     ),
-    color-mix(in srgb, var(--color-ink) 58%, transparent);
+    color-mix(in srgb, var(--color-ink) 52%, transparent);
   box-shadow:
     0 30px 120px rgb(0 0 0 / 50%),
     inset 0 1px 0 rgb(255 255 255 / 7%);
@@ -642,7 +642,7 @@ onBeforeUnmount(() => {
         color-mix(in srgb, var(--color-paper) 1.8%, transparent) 52%,
         transparent 82%
       ),
-      color-mix(in srgb, var(--color-ink) 52%, transparent);
+      color-mix(in srgb, var(--color-ink) 46%, transparent);
     box-shadow:
       0 24px 80px rgb(0 0 0 / 28%),
       0 0 54px color-mix(in srgb, var(--color-acid) 4%, transparent),

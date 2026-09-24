@@ -529,9 +529,24 @@ void main() {
   }
   float causticReach=mix(.18,1.0,pow(lightHeight,1.35))*exp(-abs(uv.x-.36)*.72);
   deep+=vec3(.035,.19,.21)*causticWeb*causticReach;
-  float beam1=exp(-pow((uv.x-.16-uv.y*.19+sin(uTime*.071)*.012)*14.0,2.0));
-  float beam2=exp(-pow((uv.x-.45+uv.y*.04+sin(uTime*.053+1.7)*.009)*25.0,2.0));
-  deep+=vec3(.035,.15,.18)*(beam1+beam2*.55)*pow(lightHeight,1.4);
+  float beamAxis1=uv.x-.16-uv.y*.19+sin(uTime*.071)*.012;
+  float beamAxis2=uv.x-.45+uv.y*.04+sin(uTime*.053+1.7)*.009;
+  float beam1=exp(-pow(beamAxis1*14.0,2.0));
+  float beam2=exp(-pow(beamAxis2*25.0,2.0));
+  // The shafts keep a focused core, surrounded by a low-frequency analytic
+  // bloom that survives the efficient mobile path. Light is strongest near
+  // the water surface and attenuates rapidly with depth instead of lifting the
+  // entire underwater scene.
+  float beamAura1=exp(-pow(beamAxis1*4.2,2.0));
+  float beamAura2=exp(-pow(beamAxis2*7.0,2.0));
+  float radiantFalloff=pow(lightHeight,2.55);
+  float surfaceCrown=exp(-pow((1.0-lightHeight)*2.9,2.0))
+    *exp(-pow((uv.x-.34)*1.65,2.0));
+  float radiantDrift=.9+.1*atmosphericFbm(vec2(uv.x*2.1-uTime*.009,uv.y*1.4+uTime*.004));
+  float shaftBloom=(beamAura1*.34+beamAura2*.24)*radiantFalloff*radiantDrift
+    +surfaceCrown*.12;
+  deep+=vec3(.07,.31,.35)*(beam1+beam2*.58)*pow(lightHeight,1.75);
+  deep+=vec3(.055,.25,.285)*shaftBloom;
   deep+=vec3(.015,.035,.058)*atmosphericFbm(warp*7.0+uTime*.015);
   // A restrained violet-blue distant glow bridges the sea and later nebula.
   deep+=vec3(.055,.028,.11)*exp(-length((uv-vec2(.84,.38))*vec2(2.0,3.0))*3.5);

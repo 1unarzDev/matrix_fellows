@@ -496,7 +496,7 @@ onBeforeUnmount(() => {
   <canvas
     ref="canvas"
     aria-hidden="true"
-    class="pointer-events-none fixed inset-x-0 top-0 z-0 h-lvh w-full transition-opacity duration-300 ease-out motion-reduce:transition-none sm:h-dvh"
+    class="pointer-events-none fixed inset-x-0 top-0 z-0 h-lvh w-full transition-opacity duration-[900ms] ease-[cubic-bezier(.22,.72,.2,1)] motion-reduce:transition-none sm:h-dvh"
     :class="ready && !failed ? 'opacity-100' : 'opacity-0'"
   />
 </template>

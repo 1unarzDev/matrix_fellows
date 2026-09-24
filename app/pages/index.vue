@@ -92,10 +92,33 @@ const meetingDate = computed(() =>
 const progress = ref(0)
 const hydrated = ref(false)
 const sceneStatus = ref<'pending' | 'ready' | 'fallback'>('pending')
+const sceneHandoff = ref<'waiting' | 'fading' | 'complete'>('waiting')
 let loadingTimeout: ReturnType<typeof setTimeout> | undefined
+let handoffTimeout: ReturnType<typeof setTimeout> | undefined
+let handoffFrame: number | undefined
+let handoffPaintFrame: number | undefined
 const onSceneStatus = (status: 'ready' | 'fallback') => {
   sceneStatus.value = status
   clearTimeout(loadingTimeout)
+  clearTimeout(handoffTimeout)
+  if (handoffFrame) cancelAnimationFrame(handoffFrame)
+  if (handoffPaintFrame) cancelAnimationFrame(handoffPaintFrame)
+  if (status === 'ready' && progress.value <= 0.2) {
+    // The renderer's opening camera emergence lasts 1.8 seconds. Keep the
+    // arrival treatment over its first portion so the orbit, horizon, and
+    // rising dune read as one crossfade instead of a frame-for-frame swap.
+    sceneHandoff.value = 'waiting'
+    handoffFrame = requestAnimationFrame(() => {
+      handoffPaintFrame = requestAnimationFrame(() => {
+        sceneHandoff.value = 'fading'
+        // transitionend normally performs cleanup. This is a safety net for a
+        // backgrounded tab that suppresses transition events.
+        handoffTimeout = setTimeout(() => {
+          sceneHandoff.value = 'complete'
+        }, 1900)
+      })
+    })
+  } else sceneHandoff.value = 'complete'
   if (status === 'fallback' && pendingAnchor) {
     const target = document.getElementById(pendingAnchor)
     pendingAnchor = null
@@ -108,6 +131,16 @@ const onSceneStatus = (status: 'ready' | 'fallback') => {
       target?.scrollIntoView({ behavior: 'instant' })
       target?.focus({ preventScroll: true })
     }
+  }
+}
+const onHandoffTransitionEnd = (event: TransitionEvent) => {
+  if (
+    event.target === event.currentTarget &&
+    event.propertyName === 'opacity' &&
+    sceneHandoff.value === 'fading'
+  ) {
+    clearTimeout(handoffTimeout)
+    sceneHandoff.value = 'complete'
   }
 }
 let cinematicReady = false
@@ -194,9 +227,12 @@ onMounted(() => {
       const el = document.getElementById(section.id)
       if (el && window.scrollY >= el.offsetTop && index > 0) progress.value = index
     })
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) sceneStatus.value = 'fallback'
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    sceneStatus.value = 'fallback'
+    sceneHandoff.value = 'complete'
+  }
   loadingTimeout = setTimeout(() => {
-    if (sceneStatus.value === 'pending') sceneStatus.value = 'fallback'
+    if (sceneStatus.value === 'pending') onSceneStatus('fallback')
   }, 12000)
   window.addEventListener('keydown', keydown)
   const url = new URL(window.location.href)
@@ -222,6 +258,9 @@ onMounted(() => {
 })
 onBeforeUnmount(() => {
   clearTimeout(loadingTimeout)
+  clearTimeout(handoffTimeout)
+  if (handoffFrame) cancelAnimationFrame(handoffFrame)
+  if (handoffPaintFrame) cancelAnimationFrame(handoffPaintFrame)
   window.removeEventListener('keydown', keydown)
 })
 </script>
@@ -243,9 +282,17 @@ onBeforeUnmount(() => {
     <div
       data-horizon-preview
       :data-scene-state="sceneStatus"
+      :data-handoff="sceneHandoff"
       aria-hidden="true"
-      class="pointer-events-none fixed inset-0 transition-opacity duration-300 ease-out motion-reduce:transition-none"
-      :class="sceneStatus === 'ready' || progress > 0.2 ? 'opacity-0' : 'opacity-100'"
+      class="pointer-events-none fixed inset-0 transition-opacity duration-[1400ms] ease-[cubic-bezier(.22,.72,.2,1)] motion-reduce:transition-none"
+      :class="
+        sceneHandoff === 'fading' ||
+        (sceneStatus === 'ready' && sceneHandoff === 'complete') ||
+        progress > 0.2
+          ? 'opacity-0'
+          : 'opacity-100'
+      "
+      @transitionend="onHandoffTransitionEnd"
     >
       <div
         class="absolute inset-0 bg-[radial-gradient(ellipse_at_76%_27%,#d8a36866,transparent_42%),radial-gradient(ellipse_at_50%_76%,#b2734a38,transparent_52%),linear-gradient(180deg,#45352d_0%,#84573f_57%,#272522_100%)]"
@@ -257,7 +304,7 @@ onBeforeUnmount(() => {
         class="absolute left-[12%] right-[8%] top-[58%] h-px bg-linear-to-r from-transparent via-[#f0c982]/20 to-transparent shadow-[0_0_34px_8px_#eac27912]"
       />
       <OrbitalLoader
-        v-if="sceneStatus === 'pending' && progress <= 0.2"
+        v-show="sceneHandoff !== 'complete' && progress <= 0.2"
         class="absolute right-6 top-32 xl:right-[19%] xl:top-1/2"
       />
     </div>

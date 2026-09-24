@@ -64,7 +64,7 @@ useHead({
     <ScienceAccent theme="mechanics" />
 
     <main
-      class="relative z-[1] mx-auto grid max-w-[90rem] gap-12 px-5 pb-24 pt-12 sm:px-8 lg:grid-cols-[minmax(17rem,.78fr)_minmax(34rem,1.22fr)] lg:items-start lg:gap-16 lg:px-12 lg:pt-20 xl:gap-24"
+      class="join-main relative z-[1] mx-auto grid max-w-[90rem] gap-12 px-5 pb-24 pt-12 sm:px-8 lg:grid-cols-[minmax(17rem,.78fr)_minmax(34rem,1.22fr)] lg:items-start lg:gap-16 lg:px-12 lg:pt-20 xl:gap-24"
     >
       <section class="join-intro lg:sticky lg:top-28 lg:pt-4">
         <div class="join-kicker">
@@ -74,7 +74,7 @@ useHead({
         <h1
           class="mt-7 max-w-2xl font-display text-5xl leading-[.98] tracking-[-.065em] sm:text-6xl lg:text-[4.65rem]"
         >
-          Bring your question.
+          <span class="join-title-lead">Bring your question.</span>
           <span class="join-title-accent">We’ll help you move it forward.</span>
         </h1>
         <p class="mt-7 max-w-xl text-sm leading-7 text-paper/58 sm:text-[15px]">
@@ -309,12 +309,72 @@ useHead({
   }
 }
 @media (max-width: 639px) {
+  .join-main {
+    gap: 2rem;
+    padding-top: 2.25rem;
+  }
+  .join-kicker {
+    gap: 0.5rem;
+    max-width: none;
+    white-space: nowrap;
+    font-size: 0.54rem;
+    letter-spacing: 0.145em;
+  }
+  .join-kicker__pulse {
+    width: 0.3rem;
+    height: 0.3rem;
+  }
+  .join-intro h1 {
+    margin-top: 1.4rem;
+    font-size: clamp(2.16rem, 10.8vw, 3rem);
+    line-height: 0.99;
+    letter-spacing: -0.058em;
+  }
+  .join-title-lead {
+    display: block;
+    white-space: nowrap;
+  }
+  .join-intro {
+    min-width: 0;
+  }
+  .join-intro > p {
+    margin-top: 1.35rem;
+    max-width: 22rem;
+    font-size: 0.8125rem;
+    line-height: 1.7;
+  }
   .join-promises {
+    margin-top: 1.5rem;
     grid-template-columns: 1fr;
+    gap: 0;
+    overflow: hidden;
+    border: 1px solid rgb(244 241 233 / 0.1);
+    border-radius: 1.25rem;
+    background:
+      radial-gradient(circle at 8% 18%, rgb(197 192 235 / 0.045), transparent 34%),
+      rgb(244 241 233 / 0.015);
+    box-shadow: inset 0 1px rgb(255 255 255 / 0.025);
   }
   .join-promise {
     min-height: 0;
+    padding: 0.9rem 1rem;
+    border: 0;
+    border-radius: 0;
     text-align: left;
+    background: transparent;
+    box-shadow: none;
+  }
+  .join-promise:not(:last-child) {
+    border-bottom: 1px solid rgb(244 241 233 / 0.08);
+  }
+  .join-promise:hover {
+    transform: none;
+    background: rgb(197 192 235 / 0.025);
+    box-shadow: none;
+  }
+  .join-privacy {
+    margin-top: 1.25rem;
+    padding-inline: 0.15rem;
   }
 }
 @media (prefers-reduced-motion: reduce) {

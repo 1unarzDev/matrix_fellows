@@ -57,6 +57,28 @@ test('dedicated join page stays fluid and contained on narrow and reduced-motion
   ).toBe(true)
 })
 
+test('mobile join intro keeps a compact centered hierarchy above the form', async ({ page }) => {
+  for (const width of [320, 390, 430]) {
+    await page.setViewportSize({ width, height: 844 })
+    await page.goto('/join')
+
+    const [kickerBox, headingBox, formBox] = await Promise.all([
+      page.locator('.join-kicker').boundingBox(),
+      page.getByRole('heading', { level: 1 }).boundingBox(),
+      page.locator('#join-form').boundingBox(),
+    ])
+
+    expect(kickerBox).not.toBeNull()
+    expect(headingBox).not.toBeNull()
+    expect(formBox).not.toBeNull()
+    expect(Math.abs(kickerBox!.x + kickerBox!.width / 2 - width / 2)).toBeLessThanOrEqual(1)
+    expect(Math.abs(headingBox!.x + headingBox!.width / 2 - width / 2)).toBeLessThanOrEqual(1)
+    expect(kickerBox!.height).toBeLessThanOrEqual(16)
+    expect(headingBox!.height).toBeLessThanOrEqual(145)
+    expect(formBox!.y).toBeLessThanOrEqual(820)
+  }
+})
+
 test('dedicated join grade options remain clickable beyond the form body', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/join')

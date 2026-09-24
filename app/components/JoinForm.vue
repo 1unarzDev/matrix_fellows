@@ -538,7 +538,7 @@ onBeforeUnmount(() => {
                           @click="back"
                         >
                           Back</button
-                        ><span v-else class="text-[10px] text-paper/35">About a minute.</span>
+                        ><span v-else class="text-[10px] text-paper/35">About 1 min.</span>
                         <button
                           :disabled="busy || transitioning"
                           class="group flex min-h-12 items-center gap-5 rounded-full bg-acid px-6 py-3 text-sm font-medium text-ink transition-[transform,box-shadow,background-color] duration-[900ms] ease-[cubic-bezier(.45,0,.25,1)] hover:scale-[1.035] hover:shadow-[0_5px_32px_#c5c0eb25] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acid disabled:opacity-50 motion-reduce:transform-none motion-reduce:transition-none"
@@ -624,6 +624,32 @@ onBeforeUnmount(() => {
     0 32px 110px rgb(0 0 0 / 32%),
     0 0 72px color-mix(in srgb, var(--color-acid) 5%, transparent),
     inset 0 1px 0 rgb(255 255 255 / 8%);
+}
+@media (max-width: 639px) {
+  .join-panel--embedded {
+    border-color: color-mix(in srgb, var(--color-paper) 16%, transparent);
+    border-radius: 1.5rem;
+    background:
+      radial-gradient(
+        24rem 15rem at 105% -4%,
+        color-mix(in srgb, var(--color-acid) 8%, transparent),
+        transparent 68%
+      ),
+      radial-gradient(20rem 15rem at -12% 105%, rgb(104 176 167 / 0.045), transparent 70%),
+      linear-gradient(
+        150deg,
+        color-mix(in srgb, var(--color-paper) 5.5%, transparent),
+        color-mix(in srgb, var(--color-paper) 1.8%, transparent) 52%,
+        transparent 82%
+      ),
+      color-mix(in srgb, var(--color-ink) 52%, transparent);
+    box-shadow:
+      0 24px 80px rgb(0 0 0 / 28%),
+      0 0 54px color-mix(in srgb, var(--color-acid) 4%, transparent),
+      inset 0 1px 0 rgb(255 255 255 / 6%);
+    -webkit-backdrop-filter: blur(28px) saturate(122%);
+    backdrop-filter: blur(28px) saturate(122%);
+  }
 }
 .join-close {
   border: 1px solid rgb(244 241 233 / 15%);

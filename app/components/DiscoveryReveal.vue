@@ -1,24 +1,83 @@
 <script setup lang="ts">
 const surface = ref<HTMLElement>()
+const coarsePointer = ref(false)
+const touchRevealed = ref(false)
+let pointerQuery: MediaQueryList | undefined
+let syncPointer: (() => void) | undefined
+
+const particles = [
+  { x: '-5.4rem', y: '-2.1rem', size: '3px', delay: '-1.8s', duration: '4.8s' },
+  { x: '-4.1rem', y: '4.2rem', size: '2px', delay: '-3.1s', duration: '5.4s' },
+  { x: '-1.2rem', y: '-5.8rem', size: '2px', delay: '-0.7s', duration: '4.2s' },
+  { x: '3rem', y: '-4.7rem', size: '3px', delay: '-2.4s', duration: '5.1s' },
+  { x: '5.5rem', y: '-0.9rem', size: '2px', delay: '-1.1s', duration: '4.6s' },
+  { x: '4rem', y: '3.7rem', size: '2px', delay: '-3.6s', duration: '5.8s' },
+  { x: '0.3rem', y: '5.5rem', size: '3px', delay: '-2.2s', duration: '4.9s' },
+  { x: '1.5rem', y: '-2.5rem', size: '2px', delay: '-0.2s', duration: '4.4s' },
+]
+
+function setRevealPosition(clientX: number, clientY: number) {
+  if (!surface.value) return
+  const bounds = surface.value.getBoundingClientRect()
+  const x = Math.max(0, Math.min(bounds.width, clientX - bounds.left))
+  const y = Math.max(0, Math.min(bounds.height, clientY - bounds.top))
+  surface.value.style.setProperty('--reveal-x', `${x}px`)
+  surface.value.style.setProperty('--reveal-y', `${y}px`)
+}
 
 function positionReveal(event: PointerEvent) {
-  if (!surface.value || event.pointerType === 'touch') return
-  const bounds = surface.value.getBoundingClientRect()
-  surface.value.style.setProperty('--reveal-x', `${event.clientX - bounds.left}px`)
-  surface.value.style.setProperty('--reveal-y', `${event.clientY - bounds.top}px`)
+  if (event.pointerType === 'touch') return
+  setRevealPosition(event.clientX, event.clientY)
 }
+
+function positionTouchReveal(event: PointerEvent) {
+  if (!coarsePointer.value || touchRevealed.value || !surface.value) return
+  const bounds = surface.value.getBoundingClientRect()
+  const x = Math.max(
+    bounds.width * 0.35,
+    Math.min(bounds.width * 0.65, event.clientX - bounds.left),
+  )
+  const y = Math.max(
+    bounds.height * 0.32,
+    Math.min(bounds.height * 0.52, event.clientY - bounds.top),
+  )
+  surface.value.style.setProperty('--reveal-x', `${x}px`)
+  surface.value.style.setProperty('--reveal-y', `${y}px`)
+}
+
+function toggleTouchReveal() {
+  if (!coarsePointer.value) return
+  touchRevealed.value = !touchRevealed.value
+}
+
+onMounted(() => {
+  pointerQuery = window.matchMedia('(hover: none), (pointer: coarse)')
+  syncPointer = () => {
+    coarsePointer.value = Boolean(pointerQuery?.matches)
+    if (!coarsePointer.value) touchRevealed.value = false
+  }
+  syncPointer()
+  pointerQuery.addEventListener('change', syncPointer)
+})
+
+onBeforeUnmount(() => {
+  if (syncPointer) pointerQuery?.removeEventListener('change', syncPointer)
+})
 </script>
 
 <template>
   <div
     ref="surface"
     data-discovery-reveal
-    tabindex="0"
-    class="discovery-reveal relative max-w-xl rounded-[2rem] outline-none focus-visible:outline-1 focus-visible:outline-offset-8 focus-visible:outline-acid/55"
+    :data-touch-revealed="touchRevealed || undefined"
+    :class="{ 'is-touch-revealed': touchRevealed }"
+    :tabindex="coarsePointer ? -1 : 0"
+    class="discovery-reveal relative w-full max-w-2xl outline-none focus-visible:outline-1 focus-visible:outline-offset-8 focus-visible:outline-acid/55"
     @pointerenter="positionReveal"
     @pointermove="positionReveal"
+    @pointerdown="positionTouchReveal"
   >
-    <div class="discovery-reveal__original">
+    <div class="discovery-reveal__original max-w-xl">
       <h2
         id="discovery-title"
         class="font-display text-5xl font-medium leading-[1.08] tracking-[-.055em] sm:text-7xl"
@@ -35,25 +94,57 @@ function positionReveal(event: PointerEvent) {
       </p>
     </div>
 
-    <div aria-hidden="true" class="discovery-reveal__bloom absolute inset-[-1rem] sm:inset-[-1.5rem]" />
+    <div aria-hidden="true" class="discovery-reveal__xray absolute inset-0">
+      <div class="discovery-reveal__alternate max-w-xl">
+        <p class="mb-4 text-[10px] uppercase tracking-[.24em] text-[#b6f0d7]/75">
+          Under the surface
+        </p>
+        <h3
+          class="font-display text-5xl font-medium leading-[1.08] tracking-[-.055em] text-[#f1d59d] sm:text-7xl"
+        >
+          Try what you<br />don’t know.
+        </h3>
+        <p class="mt-8 max-w-md text-base leading-relaxed text-paper/90">
+          Unfamiliar methods, awkward questions, and imperfect first attempts are not detours from
+          research.
+        </p>
+        <p class="mt-5 max-w-md text-base leading-relaxed text-paper/90">
+          They reveal what matters, what breaks, and what is worth investigating next.
+        </p>
+      </div>
 
-    <div aria-hidden="true" class="discovery-reveal__alternate absolute inset-0">
-      <p class="mb-4 text-[10px] uppercase tracking-[.24em] text-acid/75">A field note</p>
-      <h3
-        class="font-display text-5xl font-medium leading-[1.08] tracking-[-.055em] text-[#f1d59d] sm:text-7xl"
-      >
-        Try what you<br />don’t know.
-      </h3>
-      <p class="mt-8 max-w-md text-base leading-relaxed text-paper/90">
-        Unfamiliar methods, awkward questions, and imperfect first attempts are not detours from
-        research.
-      </p>
-      <p class="mt-5 max-w-md text-base leading-relaxed text-paper/90">
-        They reveal what matters, what breaks, and what is worth investigating next.
-      </p>
+      <span
+        v-for="(particle, index) in particles"
+        :key="index"
+        class="discovery-reveal__particle"
+        :style="`--particle-x:${particle.x};--particle-y:${particle.y};--particle-size:${particle.size};--particle-delay:${particle.delay};--particle-duration:${particle.duration}`"
+      />
     </div>
 
-    <span aria-hidden="true" class="discovery-reveal__point" />
+    <span aria-hidden="true" class="discovery-reveal__lens">
+      <span class="discovery-reveal__lens-core" />
+    </span>
+
+    <button
+      v-show="coarsePointer"
+      type="button"
+      class="discovery-reveal__touch-target"
+      :aria-pressed="touchRevealed"
+      :aria-label="
+        touchRevealed
+          ? 'Return to the original discovery note'
+          : 'Reveal a field note beneath the discovery'
+      "
+      @click="toggleTouchReveal"
+    >
+      <span class="discovery-reveal__touch-prompt" aria-hidden="true">
+        <span class="discovery-reveal__touch-icon">
+          <span />
+        </span>
+        {{ touchRevealed ? 'Return to the surface' : 'Tap to look beneath' }}
+      </span>
+    </button>
+
     <p class="sr-only">
       Trying something new is part of research: unfamiliar methods and imperfect first attempts
       reveal what matters, what fails, and what to investigate next.
@@ -63,96 +154,254 @@ function positionReveal(event: PointerEvent) {
 
 <style scoped>
 .discovery-reveal {
-  --reveal-x: 38%;
+  --reveal-x: min(15rem, 42%);
   --reveal-y: 42%;
+  --lens-size: clamp(13rem, 25vw, 22rem);
+  --reveal-radius: 0px;
+  --xray-overreach: calc(var(--lens-size) / 2 + 1rem);
   isolation: isolate;
 }
 
 .discovery-reveal__original {
-  transition:
-    opacity 180ms ease,
-    transform 620ms cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative;
+  z-index: 0;
 }
 
-.discovery-reveal__bloom {
-  z-index: -1;
+.discovery-reveal__xray {
+  z-index: 1;
+  inset: calc(var(--xray-overreach) * -1);
+  overflow: visible;
   pointer-events: none;
-  clip-path: circle(0 at var(--reveal-x) var(--reveal-y));
-  border: 1px solid rgb(230 193 115 / 0.13);
-  border-radius: 2.25rem;
+  padding: var(--xray-overreach);
+  clip-path: circle(
+    var(--reveal-radius) at calc(var(--reveal-x) + var(--xray-overreach))
+      calc(var(--reveal-y) + var(--xray-overreach))
+  );
   background:
     radial-gradient(
-      circle at var(--reveal-x) var(--reveal-y),
-      rgb(232 194 112 / 0.12),
-      transparent 34%
+      circle var(--lens-size) at calc(var(--reveal-x) + var(--xray-overreach))
+        calc(var(--reveal-y) + var(--xray-overreach)),
+      rgb(40 83 68 / 0.2),
+      transparent 58%
     ),
-    linear-gradient(125deg, rgb(18 41 35 / 0.86), rgb(23 31 30 / 0.7) 62%, rgb(46 36 27 / 0.52));
-  box-shadow:
-    0 20px 60px rgb(3 13 12 / 0.16),
-    inset 0 1px rgb(255 255 255 / 0.035);
-  transition: clip-path 720ms cubic-bezier(0.22, 1, 0.36, 1);
+    rgb(8 24 22 / 0.965);
+  transition: clip-path 620ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: clip-path;
 }
 
 .discovery-reveal__alternate {
-  pointer-events: none;
-  opacity: 0;
-  transform: translateY(6px);
-  transition:
-    opacity 260ms ease,
-    transform 680ms cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative;
+  z-index: 1;
 }
 
-.discovery-reveal__point {
+.discovery-reveal__lens {
   position: absolute;
   z-index: 2;
-  left: var(--reveal-x);
   top: var(--reveal-y);
-  width: 5px;
-  height: 5px;
-  border-radius: 999px;
+  left: var(--reveal-x);
+  width: var(--lens-size);
+  height: var(--lens-size);
+  border: 1px solid rgb(236 198 120 / 0.3);
+  border-radius: 50%;
   pointer-events: none;
   opacity: 0;
-  scale: 0;
+  scale: 0.12;
   translate: -50% -50%;
-  background: #f0c875;
-  box-shadow: 0 0 0 1px rgb(240 200 117 / 0.28), 0 0 18px rgb(240 200 117 / 0.72);
+  background:
+    radial-gradient(circle at 38% 32%, rgb(182 240 215 / 0.11), transparent 23%),
+    radial-gradient(circle, transparent 58%, rgb(236 198 120 / 0.045) 76%, transparent);
+  box-shadow:
+    0 0 0 1px rgb(182 240 215 / 0.055),
+    0 0 38px rgb(236 198 120 / 0.09),
+    inset 0 0 42px rgb(10 45 37 / 0.12);
   transition:
     opacity 180ms ease,
-    scale 520ms cubic-bezier(0.22, 1, 0.36, 1);
+    scale 620ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.discovery-reveal__lens::before,
+.discovery-reveal__lens::after {
+  content: '';
+  position: absolute;
+  background: rgb(236 198 120 / 0.38);
+}
+
+.discovery-reveal__lens::before {
+  top: 50%;
+  right: -0.22rem;
+  left: -0.22rem;
+  height: 1px;
+  mask-image: linear-gradient(
+    90deg,
+    #000 0 0.45rem,
+    transparent 0.45rem calc(100% - 0.45rem),
+    #000 0
+  );
+}
+
+.discovery-reveal__lens::after {
+  top: -0.22rem;
+  bottom: -0.22rem;
+  left: 50%;
+  width: 1px;
+  mask-image: linear-gradient(#000 0 0.45rem, transparent 0.45rem calc(100% - 0.45rem), #000 0);
+}
+
+.discovery-reveal__lens-core {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.3rem;
+  height: 0.3rem;
+  border: 1px solid rgb(182 240 215 / 0.55);
+  border-radius: 50%;
+  translate: -50% -50%;
+  box-shadow: 0 0 12px rgb(182 240 215 / 0.28);
+}
+
+.discovery-reveal__particle {
+  position: absolute;
+  z-index: 2;
+  top: calc(var(--reveal-y) + var(--xray-overreach) + var(--particle-y));
+  left: calc(var(--reveal-x) + var(--xray-overreach) + var(--particle-x));
+  width: var(--particle-size);
+  height: var(--particle-size);
+  border-radius: 50%;
+  opacity: 0;
+  background: #eac678;
+  box-shadow: 0 0 7px rgb(234 198 120 / 0.38);
+}
+
+.discovery-reveal__touch-target {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  touch-action: pan-y;
+}
+
+.discovery-reveal__touch-target:focus-visible {
+  outline: 1px solid rgb(234 198 120 / 0.55);
+  outline-offset: 0.5rem;
+}
+
+.discovery-reveal__touch-prompt {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.58);
+}
+
+.discovery-reveal__touch-icon {
+  position: relative;
+  display: grid;
+  width: 1.65rem;
+  height: 1.65rem;
+  place-items: center;
+  border: 1px solid rgb(234 198 120 / 0.26);
+  border-radius: 50%;
+  transition:
+    rotate 620ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 300ms ease;
+}
+
+.discovery-reveal__touch-icon::before,
+.discovery-reveal__touch-icon::after,
+.discovery-reveal__touch-icon span {
+  content: '';
+  position: absolute;
+  width: 0.42rem;
+  height: 1px;
+  background: rgb(182 240 215 / 0.72);
+}
+
+.discovery-reveal__touch-icon::after {
+  rotate: 90deg;
+}
+
+.is-touch-revealed .discovery-reveal__touch-icon {
+  rotate: 45deg;
+  border-color: rgb(182 240 215 / 0.42);
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .discovery-reveal:hover .discovery-reveal__original,
-  .discovery-reveal:focus-visible .discovery-reveal__original {
-    opacity: 0;
-    transform: translateY(-4px);
+  .discovery-reveal:hover,
+  .discovery-reveal:focus-visible {
+    --reveal-radius: calc(var(--lens-size) / 2);
   }
 
-  .discovery-reveal:hover .discovery-reveal__bloom,
-  .discovery-reveal:focus-visible .discovery-reveal__bloom {
-    clip-path: circle(150% at var(--reveal-x) var(--reveal-y));
-  }
-
-  .discovery-reveal:hover .discovery-reveal__alternate,
-  .discovery-reveal:focus-visible .discovery-reveal__alternate {
-    opacity: 1;
-    transform: translateY(0);
-    transition-delay: 150ms;
-  }
-
-  .discovery-reveal:hover .discovery-reveal__point,
-  .discovery-reveal:focus-visible .discovery-reveal__point {
-    opacity: 1;
+  .discovery-reveal:hover .discovery-reveal__lens,
+  .discovery-reveal:focus-visible .discovery-reveal__lens {
+    opacity: 0.82;
     scale: 1;
+  }
+
+  .discovery-reveal:hover .discovery-reveal__particle,
+  .discovery-reveal:focus-visible .discovery-reveal__particle {
+    animation: discovery-particle-drift var(--particle-duration) ease-in-out var(--particle-delay)
+      infinite alternate;
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .discovery-reveal {
+    --lens-size: min(112vw, 28rem);
+    min-height: 28.5rem;
+    padding-bottom: 2.5rem;
+  }
+
+  .discovery-reveal.is-touch-revealed {
+    --reveal-radius: calc(var(--lens-size) / 2);
+  }
+
+  .discovery-reveal.is-touch-revealed .discovery-reveal__lens {
+    opacity: 0.72;
+    scale: 1;
+  }
+
+  .discovery-reveal.is-touch-revealed .discovery-reveal__particle {
+    animation: discovery-particle-drift var(--particle-duration) ease-in-out var(--particle-delay)
+      infinite alternate;
+  }
+
+  .discovery-reveal__touch-prompt {
+    bottom: 4.75rem;
+  }
+}
+
+@keyframes discovery-particle-drift {
+  0% {
+    opacity: 0.08;
+    transform: translate3d(0, 3px, 0) scale(0.72);
+  }
+  55% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 0.16;
+    transform: translate3d(3px, -5px, 0) scale(1.08);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .discovery-reveal__original,
-  .discovery-reveal__bloom,
-  .discovery-reveal__alternate,
-  .discovery-reveal__point {
+  .discovery-reveal__xray,
+  .discovery-reveal__lens,
+  .discovery-reveal__touch-icon {
     transition: none;
+  }
+
+  .discovery-reveal__particle {
+    display: none;
   }
 }
 </style>

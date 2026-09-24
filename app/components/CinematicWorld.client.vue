@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { World } from '~/lib/scene/world'
+import { getTimelineAssist } from '~/lib/timeline-assist'
 
 const emit = defineEmits<{
   progress: [value: number]
@@ -17,7 +18,6 @@ let media: MediaQueryList
 let mediaChanged: () => void
 const mountedAt = typeof performance === 'undefined' ? 0 : performance.now()
 const SCROLL_INTENT_IDLE_MS = 240
-const SCROLL_INTENT_VELOCITY = 700
 
 function updateScrollIntentVelocity(previous: number, distance: number, elapsed: number) {
   const magnitude = Math.abs(distance)
@@ -82,10 +82,7 @@ onMounted(() => {
     let navigationRelease: ReturnType<typeof setTimeout> | undefined
     const chapterOffset = (target: HTMLElement) =>
       target.id === 'research' && !media.matches
-        ? Math.max(
-            0,
-            (document.getElementById('frontiers')!.offsetTop - target.offsetTop) * 0.13,
-          )
+        ? Math.max(0, (document.getElementById('frontiers')!.offsetTop - target.offsetTop) * 0.13)
         : 0
     const navigate = (event: Event) => {
       const target = (event as CustomEvent<HTMLElement>).detail
@@ -223,10 +220,11 @@ onMounted(() => {
       if (!media.matches)
         gsap.set('[data-hero-detail]', { opacity: 1 - ease((stage - 0.08) / 0.3) })
     }
-    const settleTimeline = (value: number, direction: number, strongIntent: boolean) => {
+    const settleTimeline = (value: number, direction: number, velocity: number) => {
       const scroll = value * maxScroll
       const communityStart = stops.at(-1)
-      if (!communityStart || scroll >= communityStart - 2) return value
+      if (!communityStart || scroll >= communityStart - 2)
+        return { destination: value, mode: 'none' as const, duration: 0 }
 
       // A focused control or open overlay is a stronger statement of intent
       // than the cinematic timeline. Never move it out from under the user.
@@ -237,7 +235,7 @@ onMounted(() => {
           focused !== document.body &&
           focused.matches('input, textarea, select, [contenteditable="true"]'))
       )
-        return value
+        return { destination: value, mode: 'none' as const, duration: 0 }
 
       let interval = 0
       for (let index = 0; index < stops.length - 1; index++) {
@@ -247,23 +245,20 @@ onMounted(() => {
       const end = stops[interval + 1]!
       const position = (scroll - start) / Math.max(1, end - start)
 
-      // Only assist in compact, direction-aware transition windows. Near a
-      // settled frame native scrolling wins, so small gestures never feel
-      // magnetized. Research has a later downward window for its long project
-      // list, while reverse travel catches the visible return from the depths.
-      const inTransition =
-        direction > 0
-          ? interval === 2
-            ? position >= 0.68 && position <= 0.86
-            : position >= 0.46 && position <= 0.68
-          : interval === 2
-            ? position >= 0.32 && position <= 0.58
-            : position >= 0.32 && position <= 0.58
-      if (navigatingChapter || !strongIntent || direction === 0 || !inTransition) return value
+      if (navigatingChapter) return { destination: value, mode: 'none' as const, duration: 0 }
 
-      // Continue the gesture the user already made instead of choosing the
-      // mathematically nearest frame and potentially reversing their intent.
-      return (direction > 0 ? restStops[interval + 1]! : restStops[interval]!) / maxScroll
+      const assist = getTimelineAssist({
+        interval,
+        position,
+        direction,
+        velocity,
+        scroll,
+        start,
+        end,
+        restStart: restStops[interval]!,
+        restEnd: restStops[interval + 1]!,
+      })
+      return { ...assist, destination: assist.destination / maxScroll }
     }
     const trackNativeIntent = () => {
       const now = performance.now()
@@ -284,24 +279,18 @@ onMounted(() => {
       smoothSettleTimer = setTimeout(() => {
         // Decide from Lenis' requested destination, not its still-easing visual
         // position. This lets a wheel gesture finish before choosing a frame.
-        const destination =
-          settleTimeline(
-            smoothScroll.targetScroll / maxScroll,
-            smoothSettleDirection,
-            smoothIntentVelocity >= SCROLL_INTENT_VELOCITY,
-          ) * maxScroll
+        const assist = settleTimeline(
+          smoothScroll.targetScroll / maxScroll,
+          smoothSettleDirection,
+          smoothIntentVelocity,
+        )
+        const destination = assist.destination * maxScroll
         if (Math.abs(destination - smoothScroll.targetScroll) < 2) {
           smoothIntentVelocity = 0
           return
         }
-        const intentStrength = Math.max(
-          0,
-          Math.min(1, (smoothIntentVelocity - SCROLL_INTENT_VELOCITY) / 1_700),
-        )
         smoothScroll.scrollTo(destination, {
-          // Borderline gestures get a calmer completion; decisive flicks stay
-          // quick. The destination remains direction-aware and deterministic.
-          duration: 0.76 - intentStrength * 0.28,
+          duration: assist.duration,
           easing: (value: number) => 1 - Math.pow(1 - value, 3),
           userData: { timelineSnap: true },
           onComplete: () => {
@@ -326,27 +315,24 @@ onMounted(() => {
         // Lenis already smooths document movement; extra scrub lag separates
         // camera/text from the visible page and makes navigation feel delayed.
         scrub: true,
-        snap: media.matches || smoothScroll
-          ? undefined
-          : {
-              snapTo: (value, trigger) =>
-                settleTimeline(
-                  value,
-                  trigger?.direction || 0,
-                  nativeIntentVelocity >= SCROLL_INTENT_VELOCITY,
-                ),
-              delay: 0.18,
-              duration: { min: 0.36, max: 0.78 },
-              ease: 'power3.out',
-              inertia: false,
-              directional: false,
-              onComplete: () => {
-                nativeIntentVelocity = 0
+        snap:
+          media.matches || smoothScroll
+            ? undefined
+            : {
+                snapTo: (value, trigger) =>
+                  settleTimeline(value, trigger?.direction || 0, nativeIntentVelocity).destination,
+                delay: 0.18,
+                duration: { min: 0.36, max: 0.78 },
+                ease: 'power3.out',
+                inertia: false,
+                directional: false,
+                onComplete: () => {
+                  nativeIntentVelocity = 0
+                },
+                onInterrupt: () => {
+                  nativeIntentVelocity = 0
+                },
               },
-              onInterrupt: () => {
-                nativeIntentVelocity = 0
-              },
-            },
         invalidateOnRefresh: true,
         onRefreshInit: measure,
         onRefresh: apply,

@@ -456,7 +456,7 @@ onBeforeUnmount(() => {
           class="pointer-events-none absolute -inset-x-0 inset-y-0 bg-[radial-gradient(ellipse_at_35%_50%,#101a17d9,transparent_72%)] sm:hidden"
         />
         <div
-          class="relative max-w-xl max-sm:[text-shadow:0_2px_18px_#06100de6] max-sm:[&_p]:text-paper/90"
+          class="relative w-full max-w-5xl max-sm:[text-shadow:0_2px_18px_#06100de6] max-sm:[&_p]:text-paper/90"
         >
           <p class="mb-8 text-[10px] uppercase tracking-[.25em] text-acid">
             02 — A first discovery

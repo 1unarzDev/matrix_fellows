@@ -84,13 +84,20 @@ onMounted(() => {
       target.id === 'research' && !media.matches
         ? Math.max(0, (document.getElementById('frontiers')!.offsetTop - target.offsetTop) * 0.13)
         : 0
+    const mobileNavigationOffset = (target: HTMLElement) =>
+      touchLayout && ['discovery', 'frontiers', 'connection'].includes(target.id)
+        ? Math.min(84, Math.max(52, window.innerHeight * 0.085))
+        : 0
     const navigate = (event: Event) => {
       const target = (event as CustomEvent<HTMLElement>).detail
       if (!target?.isConnected) return
       event.preventDefault()
       navigatingChapter = true
       clearTimeout(navigationRelease)
-      const offset = chapterOffset(target)
+      // These centered chapters read low when their raw top edge is aligned to
+      // a compact viewport. Advance selector navigation slightly into them;
+      // normal touch scrolling and timeline rest stops remain unchanged.
+      const offset = chapterOffset(target) + mobileNavigationOffset(target)
       if (smoothScroll)
         smoothScroll.scrollTo(target, {
           duration: 1.4,

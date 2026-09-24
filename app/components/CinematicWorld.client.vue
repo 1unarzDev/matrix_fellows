@@ -67,14 +67,18 @@ onMounted(() => {
       smoothScroll.on('scroll', ScrollTrigger.update)
       gsap.ticker.add(tickScroll)
     }
+    const chapterOffset = (target: HTMLElement) =>
+      target.id === 'research' && !media.matches
+        ? Math.max(
+            0,
+            (document.getElementById('frontiers')!.offsetTop - target.offsetTop) * 0.13,
+          )
+        : 0
     const navigate = (event: Event) => {
       const target = (event as CustomEvent<HTMLElement>).detail
       if (!target?.isConnected) return
       event.preventDefault()
-      const offset =
-        target.id === 'research' && !media.matches
-          ? Math.max(0, (document.getElementById('frontiers')!.offsetTop - target.offsetTop) * 0.13)
-          : 0
+      const offset = chapterOffset(target)
       if (smoothScroll)
         smoothScroll.scrollTo(target, {
           duration: 1.4,
@@ -121,12 +125,15 @@ onMounted(() => {
     let measuredHeight = 0
     let maxScroll = 1
     let stops: number[] = []
+    let restStops: number[] = []
     let viewportHeight = window.innerHeight
     const state = { position: 0 }
     const measure = () => {
       viewportHeight = window.innerHeight
       stops = chapters.map((el) => el.offsetTop)
       stops[0] = 0
+      restStops = chapters.map((el) => el.offsetTop + chapterOffset(el))
+      restStops[0] = 0
       measuredHeight = main?.offsetHeight || 0
       maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight)
       layers.forEach((layer) => {
@@ -186,6 +193,58 @@ onMounted(() => {
       if (!media.matches)
         gsap.set('[data-hero-detail]', { opacity: 1 - ease((stage - 0.08) / 0.3) })
     }
+    const settleTimeline = (value: number) => {
+      const scroll = value * maxScroll
+      const communityStart = stops.at(-1)
+      if (!communityStart || scroll >= communityStart - 2) return value
+
+      // A focused control or open overlay is a stronger statement of intent
+      // than the cinematic timeline. Never move it out from under the user.
+      const focused = document.activeElement
+      if (
+        document.querySelector('[role="dialog"]') ||
+        (focused instanceof HTMLElement &&
+          focused !== document.body &&
+          focused.matches('input, textarea, select, [contenteditable="true"]'))
+      )
+        return value
+
+      let interval = 0
+      for (let index = 0; index < stops.length - 1; index++) {
+        if (scroll >= stops[index]!) interval = index
+      }
+      const start = stops[interval]!
+      const end = stops[interval + 1]!
+      const position = (scroll - start) / Math.max(1, end - start)
+
+      // The research chapter contains expandable project rows across its
+      // extra scroll depth. Keep its central reading area free, while still
+      // settling the exposed ocean transitions at either edge.
+      if (interval === 2 && position > 0.2 && position < 0.8) return value
+
+      return (position < 0.5 ? restStops[interval]! : restStops[interval + 1]!) / maxScroll
+    }
+    let smoothSettleTimer: ReturnType<typeof setTimeout> | undefined
+    const scheduleSmoothSettle = () => {
+      if (!smoothScroll || media.matches) return
+      clearTimeout(smoothSettleTimer)
+      smoothSettleTimer = setTimeout(() => {
+        // Decide from Lenis' requested destination, not its still-easing visual
+        // position. This lets a wheel gesture finish before choosing a frame.
+        const destination = settleTimeline(smoothScroll.targetScroll / maxScroll) * maxScroll
+        if (Math.abs(destination - smoothScroll.targetScroll) < 2) return
+        smoothScroll.scrollTo(destination, {
+          duration: 0.48,
+          easing: (value: number) => 1 - Math.pow(1 - value, 3),
+          userData: { timelineSnap: true },
+        })
+      }, 180)
+    }
+    const removeSmoothSettle = smoothScroll?.on('virtual-scroll', scheduleSmoothSettle)
+    const settleNativeScroll = () => {
+      if (!smoothScroll?.userData.timelineSnap) scheduleSmoothSettle()
+    }
+    if (smoothScroll) window.addEventListener('scrollend', settleNativeScroll)
     const timeline = gsap.timeline({
       scrollTrigger: {
         trigger: document.documentElement,
@@ -194,6 +253,16 @@ onMounted(() => {
         // Lenis already smooths document movement; extra scrub lag separates
         // camera/text from the visible page and makes navigation feel delayed.
         scrub: true,
+        snap: media.matches || smoothScroll
+          ? undefined
+          : {
+              snapTo: settleTimeline,
+              delay: 0.18,
+              duration: { min: 0.28, max: 0.65 },
+              ease: 'power3.out',
+              inertia: false,
+              directional: false,
+            },
         invalidateOnRefresh: true,
         onRefreshInit: measure,
         onRefresh: apply,
@@ -298,6 +367,9 @@ onMounted(() => {
       window.removeEventListener('matrix:navigate', navigate)
       if (tickScroll) gsap.ticker.remove(tickScroll)
       smoothScroll?.destroy()
+      removeSmoothSettle?.()
+      window.removeEventListener('scrollend', settleNativeScroll)
+      clearTimeout(smoothSettleTimer)
       clearTimeout(layoutRefresh)
       gsap.set('[data-hero-detail]', { clearProps: 'opacity' })
       timeline.scrollTrigger?.kill()

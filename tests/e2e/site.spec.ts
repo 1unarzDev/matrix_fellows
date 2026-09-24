@@ -149,7 +149,7 @@ test('hero priorities remain clear of the journey navigation on narrow screens',
   expect(tabletBounds[0]!.y + tabletBounds[0]!.height).toBeLessThan(tabletBounds[1]!.y)
 })
 
-test('meeting calendar and details stay side by side while featured opportunities traverse horizontally', async ({
+test('meeting calendar stacks on mobile while featured opportunities traverse horizontally', async ({
   page,
 }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
@@ -164,7 +164,8 @@ test('meeting calendar and details stay side by side while featured opportunitie
   ])
   expect(meetingIntro).not.toBeNull()
   expect(meetingPanel).not.toBeNull()
-  expect(meetingPanel!.x).toBeGreaterThanOrEqual(meetingIntro!.x + meetingIntro!.width)
+  expect(meetingPanel!.y).toBeGreaterThanOrEqual(meetingIntro!.y + meetingIntro!.height)
+  expect(meetingPanel!.x).toBeCloseTo(meetingIntro!.x, 0)
 
   await page
     .locator('#community')

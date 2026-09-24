@@ -59,56 +59,49 @@ watch(
         />
       </div>
     </div>
-    <p class="mt-3 text-[10px] text-paper/30 md:hidden">
-      Swipe sideways to compare the calendar and gathering details.
-    </p>
   </section>
 </template>
 
 <style scoped>
 .meeting-layout-scroll {
-  overflow-x: auto;
-  margin-inline: -1rem;
-  padding: 0.5rem 1rem 1.25rem;
-  scroll-padding-inline: 1rem;
-  scroll-snap-type: inline proximity;
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--color-acid) 28%, transparent) transparent;
-  overscroll-behavior-inline: contain;
+  overflow: visible;
+  padding-top: 0.5rem;
 }
 .meeting-layout {
   display: grid;
   width: 100%;
-  min-width: 39rem;
-  grid-template-columns: minmax(17rem, 0.82fr) minmax(20rem, 1.18fr);
-  gap: clamp(1rem, 3vw, 2.25rem);
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
   align-items: start;
 }
 .meeting-layout__left {
   display: grid;
   gap: 2rem;
-  scroll-snap-align: start;
 }
 .meeting-layout__detail {
+  --meeting-detail-x: 0;
+  --meeting-detail-y: 8px;
   min-height: 100%;
-  scroll-snap-align: start;
   animation: meeting-detail-arrive 480ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 @keyframes meeting-detail-arrive {
   from {
     opacity: 0;
-    translate: 8px 0;
+    translate: var(--meeting-detail-x) var(--meeting-detail-y);
   }
 }
 @media (min-width: 768px) {
   .meeting-layout-scroll {
-    overflow: visible;
-    margin: 0;
     padding: 0;
   }
   .meeting-layout {
-    min-width: 0;
     grid-template-columns: minmax(18rem, 0.86fr) minmax(22rem, 1.14fr);
+    gap: clamp(1rem, 3vw, 2.25rem);
+  }
+  .meeting-layout__detail {
+    --meeting-detail-x: 8px;
+    --meeting-detail-y: 0;
   }
 }
 @media (prefers-reduced-motion: reduce) {

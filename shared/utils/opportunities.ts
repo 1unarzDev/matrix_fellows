@@ -18,6 +18,32 @@ export function sortOpportunities(items: Opportunity[]): Opportunity[] {
   )
 }
 
+const HOMEPAGE_FEATURED_IDS = [
+  'davidson-fellows-2027:main',
+  'isef-2027:main',
+  'catalog:iros-2026-regular-paper',
+  'neurips-2026:main',
+  'regeneron-sts-2027:main',
+  'catalog:icassp-2027-regular-paper',
+] as const
+
+export function selectHomepageOpportunities(items: Opportunity[], limit = 6): Opportunity[] {
+  const published = items.filter((item) => item.published)
+  const byId = new Map(published.map((item) => [item.id, item]))
+  const selected = HOMEPAGE_FEATURED_IDS.flatMap((id) => {
+    const item = byId.get(id)
+    return item ? [item] : []
+  })
+  const selectedIds = new Set(selected.map((item) => item.id))
+  const fallback = sortOpportunities(
+    published.filter(
+      (item) =>
+        !selectedIds.has(item.id) && !/\bHOSA\b/i.test(`${item.title} ${item.organizer || ''}`),
+    ),
+  )
+  return [...selected, ...fallback].slice(0, limit)
+}
+
 export function displayDate(value: string | null, timezone = 'UTC'): string {
   if (!value) return 'Check official dates'
   const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00Z` : value)

@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import type { Opportunity } from '#shared/types/content'
-import { sortOpportunities } from '#shared/utils/opportunities'
+import { selectHomepageOpportunities } from '#shared/utils/opportunities'
 const props = defineProps<{ opportunities: Opportunity[] }>()
-const preview = computed(() =>
-  sortOpportunities(props.opportunities.filter((item) => item.published)).slice(0, 6),
-)
+const preview = computed(() => selectHomepageOpportunities(props.opportunities))
 const now = useState('opportunity-clock', () => Date.now())
 </script>
 

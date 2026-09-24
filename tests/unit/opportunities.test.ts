@@ -7,7 +7,12 @@ import {
   fetchSource,
 } from '../../workers/adapters'
 import { defaultOpportunities, defaultContent } from '../../shared/data/defaults'
-import { deadlineTimestamp, isUpcoming, sortOpportunities } from '../../shared/utils/opportunities'
+import {
+  deadlineTimestamp,
+  isUpcoming,
+  selectHomepageOpportunities,
+  sortOpportunities,
+} from '../../shared/utils/opportunities'
 import { contentSchema, opportunitySchema } from '../../shared/utils/validation'
 import { catalogAdditions } from '../../shared/data/opportunity-catalog-additions'
 import {
@@ -165,6 +170,26 @@ describe('opportunity ingestion', () => {
     }
     const us = { ...global, id: 'us', title: 'Z US workshop', location: 'United States' }
     expect(sortOpportunities([global, us]).map((item) => item.id)).toEqual(['us', 'global'])
+  })
+  it('curates research flagships for the homepage without promoting HOSA routes', () => {
+    const base = defaultOpportunities[0]!
+    const candidates = [
+      ['catalog:hosa-medical-innovation-2026-27', 'HOSA Medical Innovation'],
+      ['catalog:icassp-2027-regular-paper', 'ICASSP 2027 Regular Paper'],
+      ['regeneron-sts-2027:main', 'Regeneron Science Talent Search'],
+      ['neurips-2026:main', 'NeurIPS'],
+      ['catalog:iros-2026-regular-paper', 'IROS 2026 Regular Paper'],
+      ['isef-2027:main', 'Regeneron ISEF 2027'],
+      ['davidson-fellows-2027:main', 'Davidson Fellows Scholarship'],
+    ].map(([id, title], priority) => ({ ...base, id, title, priority: 1000 - priority }))
+    expect(selectHomepageOpportunities(candidates).map((item) => item.id)).toEqual([
+      'davidson-fellows-2027:main',
+      'isef-2027:main',
+      'catalog:iros-2026-regular-paper',
+      'neurips-2026:main',
+      'regeneron-sts-2027:main',
+      'catalog:icassp-2027-regular-paper',
+    ])
   })
   it('normalizes a trusted JSON feed without inventing event dates or eligibility', () => {
     const [item] = jsonAdapter.parse(JSON.stringify({ opportunities: [row] }), source, now)

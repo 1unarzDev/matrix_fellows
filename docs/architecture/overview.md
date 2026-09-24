@@ -44,9 +44,12 @@ monitor-health reads concurrently, validates every result, and falls back to
 failure recovery.
 
 The homepage response deliberately contains only six opportunity previews. The
-full SSR catalog and detail routes live under `/opportunities` and query bounded
-pages through security-invoker database functions. The complete catalog and its
-vectors never enter homepage hydration; searches never trigger source discovery.
+server selects a stable set of research flagships from a bounded public query,
+then uses relevance-ranked, non-HOSA records only when a featured route is not
+published. The full SSR catalog and detail routes live under `/opportunities`
+and query bounded pages through security-invoker database functions. The
+complete catalog and its vectors never enter homepage hydration; searches never
+trigger source discovery.
 
 The homepage also renders only six lightweight guide summaries. The `/guides`
 index and `/guides/[slug]` pages are separate SSR route chunks. Guide source lives

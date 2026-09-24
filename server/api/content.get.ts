@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { defaultContent, defaultOpportunities } from '../../shared/data/defaults'
 import { contentSchema, opportunitySchema } from '../../shared/utils/validation'
+import { selectHomepageOpportunities } from '../../shared/utils/opportunities'
 import type { PublicContent } from '../../shared/types/content'
 import type { H3Event } from 'h3'
 
@@ -34,7 +35,9 @@ const loadPublicContent = defineCachedFunction(
         p_free_submission: false,
         p_archival: null,
         p_sort: 'relevance',
-        p_limit: 6,
+        // Fetch enough reviewed rows to select the intentionally curated six;
+        // only the selected preview is returned in the homepage payload.
+        p_limit: 50,
         p_offset: 0,
       }),
       client.rpc('opportunity_monitor_health'),
@@ -70,7 +73,7 @@ const loadPublicContent = defineCachedFunction(
     })
     return {
       content: parsed.success ? parsed.data : defaultContent,
-      opportunities,
+      opportunities: selectHomepageOpportunities(opportunities),
       configured: true,
     }
   },

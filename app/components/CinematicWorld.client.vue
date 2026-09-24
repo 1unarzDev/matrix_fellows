@@ -67,6 +67,8 @@ onMounted(() => {
       smoothScroll.on('scroll', ScrollTrigger.update)
       gsap.ticker.add(tickScroll)
     }
+    let navigatingChapter = false
+    let navigationRelease: ReturnType<typeof setTimeout> | undefined
     const chapterOffset = (target: HTMLElement) =>
       target.id === 'research' && !media.matches
         ? Math.max(
@@ -78,19 +80,33 @@ onMounted(() => {
       const target = (event as CustomEvent<HTMLElement>).detail
       if (!target?.isConnected) return
       event.preventDefault()
+      navigatingChapter = true
+      clearTimeout(navigationRelease)
       const offset = chapterOffset(target)
       if (smoothScroll)
         smoothScroll.scrollTo(target, {
           duration: 1.4,
           offset,
-          onComplete: () => target.focus({ preventScroll: true }),
+          onComplete: () => {
+            navigatingChapter = false
+            target.focus({ preventScroll: true })
+          },
         })
       else {
         window.scrollTo({ top: target.offsetTop + offset, behavior: 'smooth' })
-        window.setTimeout(() => target.focus({ preventScroll: true }), 750)
+        navigationRelease = setTimeout(() => {
+          navigatingChapter = false
+          target.focus({ preventScroll: true })
+        }, 750)
       }
     }
+    const cancelChapterNavigation = () => {
+      navigatingChapter = false
+      clearTimeout(navigationRelease)
+    }
     window.addEventListener('matrix:navigate', navigate)
+    window.addEventListener('wheel', cancelChapterNavigation, { passive: true })
+    window.addEventListener('touchstart', cancelChapterNavigation, { passive: true })
     const chapters = Array.from(document.querySelectorAll<HTMLElement>('[data-chapter]'))
     const main = document.querySelector('main')
     const accentColors = ['#eac279', '#89edc5', '#79c9f3', '#7ddfea', '#c3a4f4', '#c3a4f4']
@@ -127,6 +143,9 @@ onMounted(() => {
     let stops: number[] = []
     let restStops: number[] = []
     let viewportHeight = window.innerHeight
+    let lastNativeY = window.scrollY
+    let lastNativeAt = performance.now()
+    let nativeStrongIntent = false
     const state = { position: 0 }
     const measure = () => {
       viewportHeight = window.innerHeight
@@ -193,7 +212,7 @@ onMounted(() => {
       if (!media.matches)
         gsap.set('[data-hero-detail]', { opacity: 1 - ease((stage - 0.08) / 0.3) })
     }
-    const settleTimeline = (value: number) => {
+    const settleTimeline = (value: number, direction: number, strongIntent: boolean) => {
       const scroll = value * maxScroll
       const communityStart = stops.at(-1)
       if (!communityStart || scroll >= communityStart - 2) return value
@@ -217,34 +236,72 @@ onMounted(() => {
       const end = stops[interval + 1]!
       const position = (scroll - start) / Math.max(1, end - start)
 
-      // The research chapter contains expandable project rows across its
-      // extra scroll depth. Keep its central reading area free, while still
-      // settling the exposed ocean transitions at either edge.
-      if (interval === 2 && position > 0.2 && position < 0.8) return value
+      // Only assist in compact, direction-aware transition windows. Near a
+      // settled frame native scrolling wins, so small gestures never feel
+      // magnetized. Research has a later downward window for its long project
+      // list, while reverse travel catches the visible return from the depths.
+      const inTransition =
+        direction > 0
+          ? interval === 2
+            ? position >= 0.68 && position <= 0.86
+            : position >= 0.46 && position <= 0.68
+          : interval === 2
+            ? position >= 0.32 && position <= 0.58
+            : position >= 0.32 && position <= 0.58
+      if (navigatingChapter || !strongIntent || direction === 0 || !inTransition) return value
 
-      return (position < 0.5 ? restStops[interval]! : restStops[interval + 1]!) / maxScroll
+      // Continue the gesture the user already made instead of choosing the
+      // mathematically nearest frame and potentially reversing their intent.
+      return (direction > 0 ? restStops[interval + 1]! : restStops[interval]!) / maxScroll
     }
+    const trackNativeIntent = () => {
+      const now = performance.now()
+      const elapsed = now - lastNativeAt
+      const distance = Math.abs(window.scrollY - lastNativeY)
+      if (elapsed > 240) nativeStrongIntent = false
+      if (distance >= 120 || (elapsed > 0 && (distance / elapsed) * 1000 >= 650))
+        nativeStrongIntent = true
+      lastNativeY = window.scrollY
+      lastNativeAt = now
+    }
+    if (!smoothScroll) window.addEventListener('scroll', trackNativeIntent, { passive: true })
     let smoothSettleTimer: ReturnType<typeof setTimeout> | undefined
+    let smoothSettleDirection = 0
+    let smoothStrongIntent = false
+    let lastSmoothInputAt = 0
     const scheduleSmoothSettle = () => {
       if (!smoothScroll || media.matches) return
       clearTimeout(smoothSettleTimer)
       smoothSettleTimer = setTimeout(() => {
         // Decide from Lenis' requested destination, not its still-easing visual
         // position. This lets a wheel gesture finish before choosing a frame.
-        const destination = settleTimeline(smoothScroll.targetScroll / maxScroll) * maxScroll
+        const destination =
+          settleTimeline(
+            smoothScroll.targetScroll / maxScroll,
+            smoothSettleDirection,
+            smoothStrongIntent,
+          ) * maxScroll
         if (Math.abs(destination - smoothScroll.targetScroll) < 2) return
         smoothScroll.scrollTo(destination, {
           duration: 0.48,
           easing: (value: number) => 1 - Math.pow(1 - value, 3),
           userData: { timelineSnap: true },
+          onComplete: () => {
+            smoothStrongIntent = false
+          },
         })
       }, 180)
     }
-    const removeSmoothSettle = smoothScroll?.on('virtual-scroll', scheduleSmoothSettle)
-    const settleNativeScroll = () => {
-      if (!smoothScroll?.userData.timelineSnap) scheduleSmoothSettle()
-    }
-    if (smoothScroll) window.addEventListener('scrollend', settleNativeScroll)
+    const removeSmoothSettle = smoothScroll?.on('virtual-scroll', ({ deltaY }) => {
+      const now = performance.now()
+      const elapsed = now - lastSmoothInputAt
+      if (elapsed > 240) smoothStrongIntent = false
+      if (Math.abs(deltaY) >= 45 || (elapsed > 0 && (Math.abs(deltaY) / elapsed) * 1000 >= 750))
+        smoothStrongIntent = true
+      lastSmoothInputAt = now
+      smoothSettleDirection = Math.sign(deltaY)
+      scheduleSmoothSettle()
+    })
     const timeline = gsap.timeline({
       scrollTrigger: {
         trigger: document.documentElement,
@@ -256,12 +313,19 @@ onMounted(() => {
         snap: media.matches || smoothScroll
           ? undefined
           : {
-              snapTo: settleTimeline,
+              snapTo: (value, trigger) =>
+                settleTimeline(value, trigger?.direction || 0, nativeStrongIntent),
               delay: 0.18,
               duration: { min: 0.28, max: 0.65 },
               ease: 'power3.out',
               inertia: false,
               directional: false,
+              onComplete: () => {
+                nativeStrongIntent = false
+              },
+              onInterrupt: () => {
+                nativeStrongIntent = false
+              },
             },
         invalidateOnRefresh: true,
         onRefreshInit: measure,
@@ -365,10 +429,13 @@ onMounted(() => {
     void initWorld()
     cleanup = () => {
       window.removeEventListener('matrix:navigate', navigate)
+      window.removeEventListener('wheel', cancelChapterNavigation)
+      window.removeEventListener('touchstart', cancelChapterNavigation)
       if (tickScroll) gsap.ticker.remove(tickScroll)
       smoothScroll?.destroy()
       removeSmoothSettle?.()
-      window.removeEventListener('scrollend', settleNativeScroll)
+      window.removeEventListener('scroll', trackNativeIntent)
+      clearTimeout(navigationRelease)
       clearTimeout(smoothSettleTimer)
       clearTimeout(layoutRefresh)
       gsap.set('[data-hero-detail]', { clearProps: 'opacity' })

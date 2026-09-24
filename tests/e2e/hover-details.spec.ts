@@ -103,6 +103,36 @@ test('unexplored marker turns curiosity into a guide action', async ({ page }, i
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Find an idea worth pursuing')
 })
 
+test('hero meeting panel gives a restrained lift on hover and keyboard focus', async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== 'desktop')
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await page.goto('/')
+  const panel = page.locator('[data-hero-meeting]')
+  await expect(panel).toBeVisible()
+  const resting = await panel.boundingBox()
+  expect(resting).not.toBeNull()
+
+  await panel.hover()
+  await expect.poll(async () => (await panel.boundingBox())!.y).toBeLessThan(resting!.y - 1)
+  await expect
+    .poll(() =>
+      panel.evaluate((element) => {
+        const color = getComputedStyle(element).borderTopColor
+        return Number(color.match(/\/\s*([\d.]+)\)/)?.[1] || 1)
+      }),
+    )
+    .toBeGreaterThan(0.59)
+
+  await page.mouse.move(5, 5)
+  await expect(panel).toHaveCSS('translate', 'none')
+  await expect(panel).toHaveCSS('scale', 'none')
+  await panel.getByRole('link', { name: 'Meeting details' }).focus()
+  await expect(panel).toHaveCSS('translate', '0px -2px')
+  await expect(panel).toHaveCSS('scale', '1.006')
+})
+
 test('timeline dots have room for their hover halo within the scrollport', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('/#community')

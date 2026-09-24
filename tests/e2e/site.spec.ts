@@ -49,7 +49,9 @@ test('content, navigation, project expansion, and search work', async ({ page },
   await nav.getByRole('link', { name: mobile ? 'Research' : 'Our research', exact: true }).click()
   await expect(page).toHaveURL(/#research$/)
   await expect(nav.locator('[aria-current="location"]')).toHaveAttribute('href', '#research', {
-    timeout: 8000,
+    // SwiftShader can make Lenis' ticker advance much more slowly than a real
+    // GPU-backed browser; this still verifies the selector reaches its target.
+    timeout: mobile ? 8000 : 20_000,
   })
   // The cinematic layout intentionally frames chapter copy below/through the
   // viewport rather than pinning every section shell to y=0.

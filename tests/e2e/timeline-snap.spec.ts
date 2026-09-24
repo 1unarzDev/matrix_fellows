@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 
 test.describe('cinematic timeline settling', () => {
-  test('settles partial chapter transitions in both directions', async ({ page }) => {
+  test('assists partial chapter transitions only in the original direction', async ({ page }) => {
     test.setTimeout(60_000)
     await page.goto('/')
     await page.locator('canvas[data-progress]').waitFor({ timeout: 20_000 })
@@ -29,11 +29,81 @@ test.describe('cinematic timeline settling', () => {
         .toBeLessThan(test.info().project.name === 'desktop' ? 40 : 5)
     }
 
-    // A forward scroll released past the midpoint completes the transition.
-    await settleAt(positions.beginning! + (positions.discovery! - positions.beginning!) * 0.62, positions.discovery!)
+    // A forward scroll released distinctly between frames completes forward.
+    await settleAt(
+      positions.beginning! + (positions.discovery! - positions.beginning!) * 0.55,
+      positions.discovery!,
+    )
 
-    // Releasing before the midpoint on the way back restores the earlier frame.
-    await settleAt(positions.discovery! + (positions.research! - positions.discovery!) * 0.38, positions.discovery!)
+    // From the later frame, the same midpoint continues backward when the
+    // user's original gesture was upward; it never reverses their intent.
+    await settleAt(positions.research!, positions.research!)
+    await settleAt(
+      positions.discovery! + (positions.research! - positions.discovery!) * 0.55,
+      positions.discovery!,
+    )
+  })
+
+  test('does not tug near an existing chapter frame', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('canvas[data-progress]').waitFor({ timeout: 20_000 })
+    const discoveryTop = await page.locator('#discovery').evaluate((chapter) => chapter.offsetTop)
+    const restingPosition = discoveryTop * 0.16
+
+    await page.evaluate((top) => window.scrollTo({ top, behavior: 'instant' }), restingPosition)
+    await page.waitForTimeout(1_000)
+
+    expect(Math.abs((await page.evaluate(() => window.scrollY)) - restingPosition)).toBeLessThan(5)
+  })
+
+  test('leaves a slow deliberate scroll untouched even in a transition window', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('canvas[data-progress]').waitFor({ timeout: 20_000 })
+    const discoveryTop = await page.locator('#discovery').evaluate((chapter) => chapter.offsetTop)
+    const restingPosition = discoveryTop * 0.55
+
+    await page.evaluate(async (top) => {
+      for (let step = 1; step <= 12; step++) {
+        window.scrollTo({ top: (top * step) / 12, behavior: 'instant' })
+        await new Promise((resolve) => setTimeout(resolve, 110))
+      }
+    }, restingPosition)
+    await page.waitForTimeout(700)
+
+    expect(Math.abs((await page.evaluate(() => window.scrollY)) - restingPosition)).toBeLessThan(5)
+  })
+
+  test('smooths the late research-to-depths transition without trapping project rows', async ({
+    page,
+  }) => {
+    await page.goto('/#research')
+    await page.locator('canvas[data-progress]').waitFor({ timeout: 20_000 })
+    const [researchTop, frontiersTop] = await Promise.all([
+      page.locator('#research').evaluate((chapter) => chapter.offsetTop),
+      page.locator('#frontiers').evaluate((chapter) => chapter.offsetTop),
+    ])
+    const researchRest = researchTop + (frontiersTop - researchTop) * 0.13
+    const quickScrollTo = async (top: number) => {
+      const current = await page.evaluate(() => window.scrollY)
+      await page.mouse.wheel(
+        0,
+        (top - current) / (test.info().project.name === 'desktop' ? 0.7 : 1),
+      )
+    }
+
+    await quickScrollTo(researchTop + (frontiersTop - researchTop) * 0.76)
+    await expect
+      .poll(async () => Math.abs((await page.evaluate(() => window.scrollY)) - frontiersTop), {
+        timeout: 12_000,
+      })
+      .toBeLessThan(5)
+
+    await quickScrollTo(researchTop + (frontiersTop - researchTop) * 0.5)
+    await expect
+      .poll(async () => Math.abs((await page.evaluate(() => window.scrollY)) - researchRest), {
+        timeout: 12_000,
+      })
+      .toBeLessThan(5)
   })
 
   test('does not pull long-form community content back to the chapter start', async ({ page }) => {

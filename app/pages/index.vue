@@ -387,21 +387,23 @@ onBeforeUnmount(() => {
             </div>
             <div
               data-hero-meeting
-              class="relative mt-6 overflow-hidden rounded-xl border border-[#f4d39b]/45 bg-[linear-gradient(135deg,rgba(124,84,43,.56)_0%,rgba(130,96,59,.34)_58%,rgba(222,190,131,.08)_100%)] px-4 py-3.5 shadow-[0_16px_44px_rgba(72,43,24,.1),inset_0_1px_0_#fff4] backdrop-blur-md sm:px-5 sm:py-4"
+              class="group/meeting relative mt-6 overflow-hidden rounded-xl border border-[#f4d39b]/45 bg-[linear-gradient(135deg,rgba(124,84,43,.56)_0%,rgba(130,96,59,.34)_58%,rgba(222,190,131,.08)_100%)] px-4 py-3.5 shadow-[0_16px_44px_rgba(72,43,24,.1),inset_0_1px_0_#fff4] backdrop-blur-md transition-[transform,border-color,box-shadow] duration-700 ease-[cubic-bezier(.22,1,.36,1)] hover:-translate-y-0.5 hover:scale-[1.006] hover:border-[#f4d39b]/60 hover:shadow-[0_20px_52px_rgba(72,43,24,.18),0_0_28px_rgba(234,194,121,.08),inset_0_1px_0_#fff5] focus-within:-translate-y-0.5 focus-within:scale-[1.006] focus-within:border-[#f4d39b]/60 focus-within:shadow-[0_20px_52px_rgba(72,43,24,.18),0_0_28px_rgba(234,194,121,.08),inset_0_1px_0_#fff5] motion-reduce:transform-none motion-reduce:transition-none sm:px-5 sm:py-4"
             >
               <span
                 aria-hidden="true"
-                class="absolute inset-y-0 left-0 w-px bg-linear-to-b from-transparent via-[#f4ca7b]/85 to-transparent"
+                class="absolute inset-y-0 left-0 w-px origin-center bg-linear-to-b from-transparent via-[#f4ca7b]/85 to-transparent transition-[transform,filter] duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover/meeting:scale-y-110 group-hover/meeting:brightness-125 group-focus-within/meeting:scale-y-110 group-focus-within/meeting:brightness-125 motion-reduce:transform-none motion-reduce:transition-none"
               />
               <span
                 aria-hidden="true"
-                class="absolute -right-10 -top-14 h-28 w-28 rounded-full bg-[#f3c779]/12 blur-2xl"
+                class="absolute -right-10 -top-14 h-28 w-28 rounded-full bg-[#f3c779]/12 blur-2xl transition-[transform,opacity] duration-1000 ease-[cubic-bezier(.22,1,.36,1)] group-hover/meeting:-translate-x-2 group-hover/meeting:translate-y-2 group-hover/meeting:scale-110 group-hover/meeting:opacity-90 group-focus-within/meeting:-translate-x-2 group-focus-within/meeting:translate-y-2 group-focus-within/meeting:scale-110 group-focus-within/meeting:opacity-90 motion-reduce:transform-none motion-reduce:transition-none"
               />
               <div class="relative">
                 <p
                   class="flex items-center gap-2 text-[9px] font-medium uppercase tracking-[.2em] text-[#f4ce89]"
                 >
-                  <span class="h-1 w-1 rounded-full bg-[#f4ce89] shadow-[0_0_8px_#f4ce89]" />
+                  <span
+                    class="h-1 w-1 rounded-full bg-[#f4ce89] shadow-[0_0_8px_#f4ce89] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(.22,1,.36,1)] group-hover/meeting:scale-150 group-hover/meeting:shadow-[0_0_12px_#f4ce89] group-focus-within/meeting:scale-150 group-focus-within/meeting:shadow-[0_0_12px_#f4ce89] motion-reduce:transform-none motion-reduce:transition-none"
+                  />
                   Meetings
                 </p>
                 <p class="mt-2 text-sm font-medium leading-snug text-paper">
@@ -418,7 +420,7 @@ onBeforeUnmount(() => {
                     >Meeting details
                     <SiteIcon
                       :size="12"
-                      class="transition-transform duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:translate-x-0.5 motion-reduce:transform-none motion-reduce:transition-none"
+                      class="transition-transform duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:translate-x-0.5 group-hover/meeting:translate-x-0.5 group-focus-within/meeting:translate-x-0.5 motion-reduce:transform-none motion-reduce:transition-none"
                   /></a>
                 </div>
               </div>

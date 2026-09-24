@@ -67,27 +67,27 @@ Experiment replays and parameter visualizations will help explain where navigati
   ],
   benefits: [
     {
-      title: 'Take your ideas to the fair.',
+      title: 'Compete on a bigger stage.',
       description:
-        'Find science fair competitions, understand the requirements, and prepare to share your research.',
+        'Prepare strong work for science fairs and competitions, then pursue recognition from local showcases to national awards.',
       url: '',
     },
     {
-      title: 'Find your place in the conversation.',
+      title: 'Open the next door.',
       description:
-        'Get help developing workshop and conference submissions, from choosing a venue to presenting your work.',
+        'Build the experience and portfolio to pursue research internships and selective summer programs—and navigate the applications.',
       url: '',
     },
     {
-      title: 'Move toward publication.',
+      title: 'Put your interests to work.',
       description:
-        'A supported path through writing, revision, and submission. Build a stronger paper with thoughtful feedback.',
+        'Turn a genuine interest into applied, real-world experience through experiments, prototypes, personal projects, papers, and workshop submissions.',
       url: '',
     },
     {
-      title: 'Find your people.',
+      title: 'Find people who help you grow.',
       description:
-        'Formulate questions, find research partners, and test your thinking with a community that stays curious.',
+        'Meet collaborators and mentors, sharpen your questions, and keep moving when ambitious work becomes difficult.',
       url: '',
     },
   ],

@@ -20,6 +20,7 @@
     "deploy:imports": "wrangler deploy --config workers/wrangler.jsonc",
     "seed": "node --env-file-if-exists=.env scripts/seed.mjs",
     "capture": "node scripts/capture.mjs",
+    "check:oasis-reveal": "node scripts/check-oasis-reveal.mjs",
     "check:mobile-visual": "node scripts/check-mobile-visual-quality.mjs",
     "perf:mobile": "node scripts/mobile-performance.mjs",
     "perf:profile": "node scripts/profile-performance.mjs",

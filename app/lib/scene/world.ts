@@ -431,9 +431,17 @@ export function createWorld(
     const curtain =
       THREE.MathUtils.smoothstep(progress, 1.4, 1.59) *
       (1 - THREE.MathUtils.smoothstep(progress, 1.94, 2.12))
+    // Hold the separately rendered oasis dressing inside the warm ridge haze
+    // while its opacity settles. Without this veil, palms and rocks resolve as
+    // visibly fading meshes the instant the camera begins to clear the dune.
+    // The haze lifts before the discovery framing settles, preserving the
+    // oasis contrast instead of globally flattening the chapter.
+    const crestVeil =
+      THREE.MathUtils.smoothstep(progress, 0.16, 0.34) *
+      (1 - THREE.MathUtils.smoothstep(progress, 0.52, 0.82))
     const fog = scene.fog as THREE.Fog
-    fog.near = THREE.MathUtils.lerp(35, 12, curtain)
-    fog.far = THREE.MathUtils.lerp(150, 62, curtain)
+    fog.near = THREE.MathUtils.lerp(THREE.MathUtils.lerp(35, 18, crestVeil), 12, curtain)
+    fog.far = THREE.MathUtils.lerp(THREE.MathUtils.lerp(150, 70, crestVeil), 62, curtain)
     scene.fog!.color.setRGB(0.6, 0.42, 0.25).lerp(new THREE.Color(0.095, 0.12, 0.125), weather)
     camera.lookAt(target)
     lineMaterial.uniforms.uOpacity!.value = THREE.MathUtils.smoothstep(progress, 3.75, 4.15) * 0.25

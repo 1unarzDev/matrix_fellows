@@ -215,22 +215,24 @@ vec3 sky(vec3 rd, vec3 sun) {
     overcast=mix(vec3(.105,.155,.18),overcast,smoothstep(-.05,.45,rd.y));
     // A fresh seeded, branching path for each time-driven event. The CPU clock
     // spaces events at least 5 seconds apart, independent of scroll movement.
-    float flash=uLightning.x, seed=uLightning.y;
-    float segment=rd.y*48.0;
-    float jagged=mix(hash(vec2(floor(segment),seed+4.0)),hash(vec2(floor(segment)+1.0,seed+4.0)),fract(segment));
-    // Alternate sides with a fresh horizontal placement on each strike. Scale
-    // the angular offset on narrow screens so both sides remain in view.
-    float side=mod(seed,2.0)<1.0 ? -1.0 : 1.0;
-    float anchor=side*(.12+hash(vec2(seed,2.0))*.34)*min(1.0,uAspect/1.25);
-    float boltX=anchor+(noise(vec2(rd.y*9.0,seed+8.0))-.5)*.14+(jagged-.5)*.055;
-    float bolt=exp(-abs(rd.x-boltX)*650.0), branch=0.0;
-    for(int fork=0;fork<3;fork++) {
-      float fi=float(fork), start=.18+hash(vec2(seed+fi,5.0))*.28;
-      float direction=mix(-1.0,1.0,step(.5,hash(vec2(fi,seed+9.0))));
-      float path=boltX+(rd.y-start)*direction*.65+(jagged-.5)*.02;
-      branch+=exp(-abs(rd.x-path)*850.0)*smoothstep(start,start+.025,rd.y)*(1.0-smoothstep(start+.12,start+.17,rd.y));
+    float flash=uLightning.x, seed=uLightning.y, strike=0.0;
+    if(flash>.001) {
+      float segment=rd.y*48.0;
+      float jagged=mix(hash(vec2(floor(segment),seed+4.0)),hash(vec2(floor(segment)+1.0,seed+4.0)),fract(segment));
+      // Alternate sides with a fresh horizontal placement on each strike. Scale
+      // the angular offset on narrow screens so both sides remain in view.
+      float side=mod(seed,2.0)<1.0 ? -1.0 : 1.0;
+      float anchor=side*(.12+hash(vec2(seed,2.0))*.34)*min(1.0,uAspect/1.25);
+      float boltX=anchor+(noise(vec2(rd.y*9.0,seed+8.0))-.5)*.14+(jagged-.5)*.055;
+      float bolt=exp(-abs(rd.x-boltX)*650.0), branch=0.0;
+      for(int fork=0;fork<3;fork++) {
+        float fi=float(fork), start=.18+hash(vec2(seed+fi,5.0))*.28;
+        float direction=mix(-1.0,1.0,step(.5,hash(vec2(fi,seed+9.0))));
+        float path=boltX+(rd.y-start)*direction*.65+(jagged-.5)*.02;
+        branch+=exp(-abs(rd.x-path)*850.0)*smoothstep(start,start+.025,rd.y)*(1.0-smoothstep(start+.12,start+.17,rd.y));
+      }
+      strike=(bolt+branch*.45)*smoothstep(.01,.07,rd.y)*(1.0-smoothstep(.55,.7,rd.y));
     }
-    float strike=(bolt+branch*.45)*smoothstep(.01,.07,rd.y)*(1.0-smoothstep(.55,.7,rd.y));
     overcast+=vec3(.15,.21,.27)*flash*pow(cloud,2.0);
     overcast+=vec3(1.3,1.8,2.2)*strike*flash;
     float cloudCover=sunCloudCover(rd,sun);

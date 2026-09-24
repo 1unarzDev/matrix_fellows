@@ -37,6 +37,7 @@ try {
       cssWidth: canvas.getBoundingClientRect().width,
       bufferWidth: canvas.width,
       devicePixelRatio: window.devicePixelRatio,
+      atmosphereRatio: Number(canvas.dataset.atmosphereRatio),
       palmTrunkParts: Number(canvas.dataset.palmTrunkParts),
       palmFoliageParts: Number(canvas.dataset.palmFoliageParts),
     }))
@@ -57,8 +58,12 @@ try {
 
     console.log(name, canvasState)
     assert.ok(
-      canvasState.pixelRatio >= 1.5,
-      `${name} foreground buffer is only ${canvasState.pixelRatio}x; thin lines and silhouettes will alias`,
+      canvasState.pixelRatio >= Math.min(canvasState.devicePixelRatio, 1.7),
+      `${name} foreground buffer is only ${canvasState.pixelRatio}x on a ${canvasState.devicePixelRatio}x display; thin lines and silhouettes will be upscaled`,
+    )
+    assert.ok(
+      canvasState.atmosphereRatio >= 0.4,
+      `${name} atmosphere is only ${canvasState.atmosphereRatio}x; each source sample spans more than two CSS pixels`,
     )
     assert.ok(canvasState.palmTrunkParts >= 1, `${name} oasis omitted the palm trunk geometry`)
     assert.ok(canvasState.palmFoliageParts >= 1, `${name} oasis omitted the palm foliage geometry`)

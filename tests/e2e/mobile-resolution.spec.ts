@@ -23,15 +23,16 @@ test('high-density mobile screens retain a legible world render scale', async ({
     ).toBeGreaterThan(1)
     expect(
       resolution.renderScale,
-      `${deviceName} should not render foreground particles and silhouettes at the visibly coarse 1.25× scale`,
-    ).toBeGreaterThanOrEqual(1.5)
-    expect(resolution.atmosphereScale).toBe(0.32)
+      `${deviceName} should retain the bounded Retina foreground scale`,
+    ).toBeGreaterThanOrEqual(1.69)
+    expect(resolution.atmosphereScale).toBe(0.4)
 
     await page
       .locator('#research')
       .evaluate((element) => element.scrollIntoView({ behavior: 'instant' }))
     await expect(page.locator('canvas[data-engine]')).toHaveAttribute('data-progress', /^2\./)
-    await expect(page.locator('canvas[data-engine]')).toHaveAttribute('data-atmosphere-ratio', '0.32')
+    await expect(page.locator('canvas[data-engine]')).toHaveAttribute('data-atmosphere-ratio', '0.40')
+    await expect(page.locator('canvas[data-engine]')).toHaveAttribute('data-draw-calls', '4')
 
     await context.close()
   }

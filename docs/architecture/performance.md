@@ -83,12 +83,12 @@ terrain can correctly occlude models.
 | Setting                | Cinematic profile             | Efficient profile                                                |
 | ---------------------- | ----------------------------- | ---------------------------------------------------------------- |
 | Particle buffer / draw | 12,000 / 12,000               | 2,600 / 1,560 initially; one-way floor 1,196                     |
-| Initial pixel ratio    | `min(devicePixelRatio, 1.5)`  | background `min(devicePixelRatio, 0.32)`; foreground at most 1.5 |
+| Initial pixel ratio    | `min(devicePixelRatio, 1.5)`  | background `min(devicePixelRatio, 0.4)`; foreground at most 1.7 |
 | HDR target samples     | up to 4× MSAA                 | none; avoids a redundant full-screen multisample resolve         |
-| Background             | rendered directly in composer | separate half-float color/depth target                           |
+| Background             | rendered directly in composer | separate half-float color/depth target, then direct canvas composite |
 | Bloom                  | UnrealBloom multi-mip pass    | no separate bloom pass                                           |
-| Final edge treatment   | MSAA                          | 1.5× foreground plus sharpened background reconstruction         |
-| Adaptive ratio floor   | 0.65                          | 0.32 for procedural background                                   |
+| Final edge treatment   | MSAA                          | 1.7× foreground plus reconstructed background                    |
+| Adaptive ratio floor   | 0.65                          | 0.4 for procedural background                                    |
 
 Profile selection is independent of layout width. Coarse-pointer devices and
 machines reporting at most four logical processors or 4 GB device memory begin
@@ -101,7 +101,11 @@ particles, or wave edges equally blurry. Desktop retains the higher-quality bloo
 chain and a single adaptive composer ratio. The efficient copy shader reconstructs
 the downsampled atmosphere with four hardware-filtered bicubic taps, then restores bounded
 local contrast from one bilinear sample, weighted most strongly through the ocean.
-The final grade does not blur the already supersampled foreground a second time.
+It writes the graded atmosphere and its sampled terrain depth directly to the
+canvas; foreground geometry is then drawn into that same depth buffer. This
+removes the former full-resolution half-float mobile composer and final readback
+pass. Foreground materials apply the same bounded tonal curve locally, so mobile
+does not pay another full-screen pass or blur the supersampled layer a second time.
 The opening ridge uses the reconstruction alone; direct low-resolution contrast
 returns gradually as the camera clears the silhouette.
 
@@ -229,8 +233,8 @@ Current risks:
 - main-thread startup from animation libraries and hydration on real devices;
 - procedural fragment cost during the ocean/descent transition;
 - adaptive quality only decreases—it does not recover after a temporary spike;
-- the efficient atmosphere remains intentionally soft at a 0.32 ratio, with
-  sharpened reconstruction; the foreground is capped at 1.5× and the DOM stays
+- the efficient atmosphere remains intentionally soft at a 0.4 ratio, with
+  reconstructed local contrast; the foreground is capped at 1.7× and the DOM stays
   at native browser resolution.
 
 ## Verification and profiling

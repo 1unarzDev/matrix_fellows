@@ -105,10 +105,13 @@ export function createWorld(
           depthBuffer: { value: atmosphereTarget.depthTexture },
           sourceSize: { value: new THREE.Vector2(1, 1) },
           progress: uniforms.uProgress,
+          meteor: uniforms.uMeteor,
+          aspect: uniforms.uAspect,
         },
         vertexShader: screenVertex,
         fragmentShader: `uniform sampler2D colorBuffer; uniform sampler2D depthBuffer;
-      uniform vec2 sourceSize; uniform float progress; varying vec2 vUv;
+      uniform vec2 sourceSize; uniform float progress; uniform vec4 meteor;
+      uniform float aspect; varying vec2 vUv;
       vec4 cubic(float v) {
         vec4 n=vec4(1.0,2.0,3.0,4.0)-v;
         vec4 s=n*n*n;
@@ -145,7 +148,35 @@ export function createWorld(
         // as visible steps. Restore local contrast only as the camera clears
         // the dune, reaching the stronger ocean treatment at its old timing.
         float detailRestore=smoothstep(.18,.82,progress)*mix(.18,.52,ocean);
-        gl_FragColor=mix(reconstructed,direct,detailRestore);
+        vec3 c=mix(reconstructed,direct,detailRestore).rgb;
+        // On the efficient path this composite is written directly to the
+        // canvas. Keep the restrained meteor at display resolution without a
+        // second full-screen render target/pass.
+        if(meteor.x>=0.0) {
+          float seed=fract(meteor.y*3.7);
+          float side=step(.5,fract(meteor.y*17.13));
+          vec2 point=vec2(vUv.x*aspect,vUv.y);
+          vec2 start=mix(vec2(.045*aspect,.86+seed*.055),vec2(.955*aspect,.84+seed*.045),side);
+          float fall=mix(-.12,-.22,seed);
+          vec2 direction=normalize(mix(vec2(.99,fall),vec2(-.99,fall),side));
+          vec2 head=start+direction*(mix(-.025,.58,meteor.x)*aspect);
+          vec2 delta=point-head;
+          float along=dot(delta,direction);
+          float across=abs(delta.x*direction.y-delta.y*direction.x);
+          float tailLength=.25*aspect;
+          float tailPosition=clamp(-along/max(tailLength,.001),0.0,1.0);
+          float behind=step(-tailLength,along)*(1.0-step(0.0,along));
+          float taper=pow(1.0-tailPosition,1.45)*behind;
+          float width=mix(.0011,.0038,pow(1.0-tailPosition,1.7));
+          float tailCore=exp(-pow(across/max(width,.0005),2.0)*1.8)*taper;
+          float tailVeil=exp(-pow(across/.010,2.0)*1.4)*taper*(1.0-tailPosition)*.12;
+          float headCore=exp(-dot(delta,delta)*85000.0);
+          float headGlow=exp(-dot(delta,delta)*4200.0);
+          float eventFade=smoothstep(0.0,.13,meteor.x)*(1.0-smoothstep(.76,1.0,meteor.x));
+          vec3 meteorColor=mix(vec3(.42,.57,.72),vec3(.68,.46,.39),seed);
+          c+=meteorColor*(tailCore*.46+tailVeil+headCore*.92+headGlow*.14)*eventFade;
+        }
+        gl_FragColor=vec4(pow(vec3(1.0)-exp(-max(c,vec3(0.0))*1.35),vec3(.92)),1.0);
         gl_FragDepth=texture2D(depthBuffer,vUv).r;
       }`,
         depthTest: true,
@@ -270,6 +301,14 @@ export function createWorld(
     depthWrite: false,
     blending: THREE.AdditiveBlending,
   })
+  if (efficient) {
+    material.fragmentShader = material.fragmentShader.replace(
+      'gl_FragColor=vec4(vColor,glow*vAlpha*coverage);',
+      `vec4 particleColor=vec4(vColor,glow*vAlpha*coverage);
+      particleColor.rgb=pow(vec3(1.0)-exp(-max(particleColor.rgb,vec3(0.0))*1.35),vec3(.92));
+      gl_FragColor=particleColor;`,
+    )
+  }
   const particles = new THREE.Points(geometry, material)
   particles.frustumCulled = false
   scene.add(particles)
@@ -291,6 +330,13 @@ export function createWorld(
     depthWrite: false,
     blending: THREE.AdditiveBlending,
   })
+  if (efficient)
+    lineMaterial.fragmentShader = lineMaterial.fragmentShader.replace(
+      'gl_FragColor=vec4(vColor,uOpacity);',
+      `vec4 lineColor=vec4(vColor,uOpacity);
+      lineColor.rgb=pow(vec3(1.0)-exp(-max(lineColor.rgb,vec3(0.0))*1.35),vec3(.92));
+      gl_FragColor=lineColor;`,
+    )
   scene.add(new THREE.LineSegments(lineGeometry, lineMaterial))
   lineGeometry.setAttribute(
     'color',
@@ -301,7 +347,7 @@ export function createWorld(
     new THREE.Float32BufferAttribute(constellationLayout(1).lineGroups, 1),
   )
 
-  const oasisDressing = createOasisDressing(scene, camera)
+  const oasisDressing = createOasisDressing(scene, camera, efficient)
 
   let ratio = quality.atmosphereRatio
   let disposed = false,
@@ -364,8 +410,10 @@ export function createWorld(
     const foregroundRatio = quality.foregroundRatio
     renderer.setPixelRatio(foregroundRatio)
     renderer.setSize(width, height, false)
-    composer.setPixelRatio(foregroundRatio)
-    composer.setSize(width, height)
+    if (!efficient) {
+      composer.setPixelRatio(foregroundRatio)
+      composer.setSize(width, height)
+    }
     const atmosphereWidth = Math.max(1, Math.round(width * ratio))
     const atmosphereHeight = Math.max(1, Math.round(height * ratio))
     atmosphereTarget?.setSize(atmosphereWidth, atmosphereHeight)
@@ -516,7 +564,12 @@ export function createWorld(
       renderer.render(background, screenCamera)
       renderer.setRenderTarget(null)
     }
-    composer.render()
+    if (efficient) {
+      renderer.setRenderTarget(null)
+      renderer.clear()
+      renderer.render(compositeBackground, screenCamera)
+      renderer.render(scene, camera)
+    } else composer.render()
     const cost = performance.now() - start
     frameProfiler?.end(now, cost, renderer.info, quality, progress)
     camera.position.y = cameraY
@@ -608,11 +661,12 @@ export function createWorld(
         await renderer.compileAsync(scene, camera)
         // compileAsync links programs but some mobile drivers defer geometry,
         // texture and framebuffer work until an actual draw. Warm the same
-        // full-size half-float target used by the composer; a 1px target does
-        // not exercise the expensive mobile framebuffer path.
+        // Exercise mobile geometry and texture upload before the preview
+        // releases. The efficient path presents directly to the canvas, so it
+        // does not allocate the old full-size half-float composer target.
         if (efficient) {
           const previousTarget = renderer.getRenderTarget()
-          renderer.setRenderTarget(renderTarget)
+          renderer.setRenderTarget(null)
           renderer.clear()
           renderer.render(scene, camera)
           renderer.setRenderTarget(previousTarget)

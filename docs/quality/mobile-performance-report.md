@@ -242,3 +242,37 @@ p95. The 30-second SwiftShader journey still missed its stricter first-window
 gate at 26.3 fps (later windows were 30 fps), so that extended proxy remains a
 failed check. Physical Safari quality, thermal behavior, and sustained cadence
 remain unverified.
+
+## Direct mobile composite and Retina revision — 2026-09-23
+
+The previous follow-up improved a 1.25× regression to 1.5×, but new iPhone and
+iPad screenshots still showed that the Three.js layer was materially softer than
+the DOM above it. Instrumented captures confirmed two remaining causes: a 3×
+iPhone was receiving only a 1.5× foreground buffer, and the procedural world was
+still sampled at 0.32× CSS resolution. Raising the existing composer to 2× fell
+to 24.6 rendered fps in the focused SwiftShader transition, so MSAA or a larger
+version of the same pipeline was not viable.
+
+The efficient path now reconstructs and grades its half-float atmosphere target
+directly into the canvas, writes the sampled terrain depth, and draws foreground
+geometry into that depth buffer. Removing the full-resolution half-float
+composer plus final grade readback reduced the mobile path from five to four draw
+calls. That bandwidth saving funds a 1.7× foreground and a 0.4× atmosphere
+floor. The cinematic desktop composer, bloom, and MSAA path are unchanged.
+
+The deterministic iPhone/iPad capture gate now checks both independent scales.
+It observed a 663-pixel drawing buffer across a 390-CSS-pixel iPhone viewport,
+a 1,377-pixel buffer across an 810-CSS-pixel iPad viewport, a 0.4 atmosphere
+ratio on both, and complete palm trunk/foliage batches. The focused emulated
+mobile transition reported 30.0 rendered fps, 33.3 ms RAF p95, four draw calls,
+and the bounded 1,196-particle adaptive floor without lowering either render
+ratio. These are
+local Chromium/SwiftShader results; physical iPhone/iPad Safari image quality,
+thermal behavior, and sustained cadence remain outstanding.
+
+The final 120-second software-GPU forward/reverse soak averaged 28.31 rendered
+fps with a 50 ms rendered-frame p95 and no stalls over 100 ms. Six ten-second
+windows held 30 fps; the six oasis-facing windows ranged from 26.3 to 26.8 fps.
+The strict requirement that every window reach 28 fps therefore remains failed,
+matching the pre-existing 26.3 fps first-window miss recorded above rather than
+introducing a new regression. The focused ocean transition remains at 30 fps.

@@ -41,7 +41,11 @@ function bank(angle: number, inland = 0) {
   return point
 }
 
-export function createOasisDressing(scene: THREE.Scene, camera: THREE.Camera) {
+export function createOasisDressing(
+  scene: THREE.Scene,
+  camera: THREE.Camera,
+  efficient = false,
+) {
   const group = new THREE.Group()
   const wind = { value: 0 }
   const windStrength = { value: 0 }
@@ -51,6 +55,13 @@ export function createOasisDressing(scene: THREE.Scene, camera: THREE.Camera) {
   // Ground clipping shares the exact terrain function with the fullscreen world.
   // Buried geometry must not draw through it just because it uses another pass.
   function groundMaterial(material: THREE.Material) {
+    if (efficient) {
+      // Alpha hashing preserves the scroll reveal without sorting/blending
+      // every overlapping leaf at the Retina foreground resolution.
+      material.transparent = false
+      material.alphaHash = true
+      material.depthWrite = true
+    }
     const previousCompile = material.onBeforeCompile.bind(material)
     const previousCacheKey = material.customProgramCacheKey.bind(material)
     material.onBeforeCompile = (shader, renderer) => {
@@ -87,7 +98,8 @@ export function createOasisDressing(scene: THREE.Scene, camera: THREE.Camera) {
         diffuseColor.a *= opacity;`,
         )
     }
-    material.customProgramCacheKey = () => `${previousCacheKey()}-oasis-ground-v2`
+    material.customProgramCacheKey = () =>
+      `${previousCacheKey()}-oasis-ground-v2-${efficient ? 'direct-alpha' : 'post-tone'}`
   }
   scene.add(group)
   const fill = new THREE.HemisphereLight('#f4dfb1', '#46644c', 2.1)

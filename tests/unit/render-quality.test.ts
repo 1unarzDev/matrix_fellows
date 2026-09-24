@@ -23,14 +23,14 @@ describe('render quality policy', () => {
   it('continues reducing bounded effects after atmosphere reaches its floor', () => {
     let state = initialQuality('efficient', 3)
     expect(state).toMatchObject({
-      atmosphereRatio: 0.32,
-      foregroundRatio: 1.5,
+      atmosphereRatio: 0.4,
+      foregroundRatio: 1.7,
       particleFraction: 0.6,
       halo: false,
       detail: false,
     })
     for (let i = 0; i < 12; i++) state = degradeQuality(state)
-    expect(state.atmosphereRatio).toBe(0.32)
+    expect(state.atmosphereRatio).toBe(0.4)
     expect(state.halo).toBe(false)
     expect(state.detail).toBe(false)
     expect(state.particleFraction).toBeCloseTo(0.46)

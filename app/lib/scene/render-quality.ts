@@ -37,8 +37,8 @@ export function initialQuality(profile: RenderProfile, devicePixelRatio: number)
         // the measured steady-state tier instead. The foreground retains a
         // bounded retina-aware ratio; only the naturally soft atmosphere is
         // heavily downsampled.
-        atmosphereRatio: Math.min(devicePixelRatio, 0.32),
-        foregroundRatio: Math.min(devicePixelRatio, 1.5),
+        atmosphereRatio: Math.min(devicePixelRatio, 0.4),
+        foregroundRatio: Math.min(devicePixelRatio, 1.7),
         particleFraction: 0.6,
         halo: false,
         detail: false,
@@ -55,7 +55,7 @@ export function initialQuality(profile: RenderProfile, devicePixelRatio: number)
 }
 
 export function degradeQuality(state: QualityState): QualityState {
-  const minimumRatio = state.profile === 'efficient' ? 0.32 : 0.65
+  const minimumRatio = state.profile === 'efficient' ? 0.4 : 0.65
   if (state.atmosphereRatio > minimumRatio + 0.001)
     return {
       ...state,

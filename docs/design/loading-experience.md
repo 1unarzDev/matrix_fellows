@@ -10,7 +10,7 @@ pointer-transparent and never gate navigation.
 
 There is no animated arrival canvas, procedural loading particle system, or percentage. While the opening scene is genuinely pending, one small orbital accent can rotate around a stable Matrix mark. It uses only a compositor transform, remains pointer-transparent, stops as soon as the scene is ready, and becomes static under reduced motion. The desktop accent temporarily occupies the later unexplored-marker area so two orbital motifs never overlap. This retains the calm static horizon while avoiding the former arrangement in which multiple independently animated loaders ran during WebGL compilation.
 
-Scene readiness remains tied to `createWorld` completing its first valid composer frame at the restored scroll/hash position. The WebGL canvas and top-of-page preview then use one 300 ms opacity handoff. There is no minimum duration, scroll reset, or restart during chapter navigation. Deep links keep their chapter copy visible throughout initialization.
+Scene readiness remains tied to `createWorld` completing its first valid scene frame at the restored scroll/hash position. The WebGL canvas and top-of-page preview then use one 300 ms opacity handoff. There is no minimum duration, scroll reset, or restart during chapter navigation. Deep links keep their chapter copy visible throughout initialization.
 
 Navigation to the static resource routes, including `/join`, uses a separately
 bounded route handoff. After a 110 ms anti-flash delay, a pointer-transparent ink

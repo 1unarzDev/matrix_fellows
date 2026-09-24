@@ -110,6 +110,58 @@ describe('monitoring date evidence', () => {
 })
 
 describe('automatic publication safeguards', () => {
+  it('publishes a bounded event span only when one quote supports the complete period', () => {
+    const quote = 'The research program runs from June 20 through July 30, 2027.'
+    const result = validateExtraction(
+      extraction({
+        milestones: [{
+          label: 'Research program', date: '2027-06-20', endDate: '2027-07-30',
+          rangeDisplay: 'span', kind: 'event', evidence: quote, url,
+        }],
+      }),
+      docs(`${sourceText} ${quote}`),
+      seed([{
+        label: 'Research program', date: '2027-06-20', kind: 'event', timezone: null,
+        evidence: quote, url,
+      }]),
+      now,
+    )
+    expect(result.milestones?.[0]).toMatchObject({ endDate: '2027-07-30', rangeDisplay: 'span' })
+  })
+
+  it('rejects an inferred span when the source only gives separate checkpoints', () => {
+    const quote = 'The research program is held with orientation on June 20, 2027. The final showcase is July 30, 2027.'
+    expect(() =>
+      validateExtraction(
+        extraction({
+          milestones: [{
+            label: 'Research program', date: '2027-06-20', endDate: '2027-07-30',
+            rangeDisplay: 'span', kind: 'event', evidence: quote, url,
+          }],
+        }),
+        docs(`${sourceText} ${quote}`),
+        seed(),
+        now,
+      ),
+    ).toThrow(/continuous-date evidence/)
+  })
+
+  it('retains source-backed non-continuous dates as endpoints', () => {
+    const quote = 'The research program is held with orientation on June 20, 2027. The final showcase is July 30, 2027.'
+    const result = validateExtraction(
+      extraction({
+        milestones: [{
+          label: 'Required campus checkpoints', date: '2027-06-20', endDate: '2027-07-30',
+          rangeDisplay: 'endpoints', kind: 'event', evidence: quote, url,
+        }],
+      }),
+      docs(`${sourceText} ${quote}`),
+      seed(),
+      now,
+    )
+    expect(result.milestones?.[0]).toMatchObject({ endDate: '2027-07-30', rangeDisplay: 'endpoints' })
+  })
+
   it('does not regress the confirmed cycle to an older edition mentioned on the page', () => {
     expect(() =>
       validateExtraction(extraction({ edition: '2025' }), docs(sourceText), seed(), now),

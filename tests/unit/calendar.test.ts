@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { projectOpportunityCalendar } from '../../shared/utils/calendar'
+import { projectOpportunityCalendar, qualifyOpportunityPeriods } from '../../shared/utils/calendar'
 import type { CalendarOpportunitySelection, Opportunity } from '../../shared/types/content'
 
 const opportunity: Opportunity = {
@@ -31,5 +31,72 @@ describe('opportunity calendar projection', () => {
     expect(projectOpportunityCalendar([opportunity], [{ ...selection, includeEvents: false }])).toHaveLength(1)
     expect(projectOpportunityCalendar([{ ...opportunity, published: false }], [selection])).toEqual([])
     expect(projectOpportunityCalendar([{ ...opportunity, milestones: [] }], [selection])).toEqual([])
+  })
+
+  it('qualifies explicit and unambiguous continuous periods without spanning application windows', () => {
+    const ranged: Opportunity = {
+      ...opportunity,
+      milestones: [
+        {
+          label: 'TXSEF begins', date: '2027-03-26', kind: 'event', timezone: null,
+          evidence: 'TXSEF takes place March 26–28, 2027.', url: 'https://example.edu/txsef',
+        },
+        {
+          label: 'TXSEF concludes', date: '2027-03-28', kind: 'event', timezone: null,
+          evidence: 'TXSEF takes place March 26–28, 2027.', url: 'https://example.edu/txsef',
+        },
+        {
+          label: 'Summer institute', date: '2027-06-20', endDate: '2027-07-30',
+          rangeDisplay: 'span', kind: 'event', timezone: null,
+          evidence: 'The institute runs from June 20 through July 30, 2027.',
+          url: 'https://example.edu/summer',
+        },
+        {
+          label: 'Applications open', date: '2026-10-01', kind: 'opens', timezone: null,
+          evidence: 'Applications open October 1, 2026.', url: 'https://example.edu/apply',
+        },
+        {
+          label: 'Applications due', date: '2027-01-10', kind: 'deadline', timezone: null,
+          evidence: 'Applications are due January 10, 2027.', url: 'https://example.edu/apply',
+        },
+      ],
+    }
+    const periods = qualifyOpportunityPeriods(ranged.id, ranged.milestones)
+    expect(periods).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ startDate: '2027-03-26', endDate: '2027-03-28', display: 'span' }),
+        expect.objectContaining({ startDate: '2027-06-20', endDate: '2027-07-30', display: 'span' }),
+      ]),
+    )
+    expect(periods).toHaveLength(2)
+    const entries = projectOpportunityCalendar([ranged], [selection], { savedIds: [ranged.id] })
+    expect(entries.filter((entry) => entry.kind === 'event')).toHaveLength(2)
+    expect(entries.filter((entry) => entry.saved)).toHaveLength(entries.length)
+  })
+
+  it('keeps ambiguous event checkpoints as independent points', () => {
+    expect(
+      qualifyOpportunityPeriods(opportunity.id, [
+        { label: 'Orientation starts', date: '2027-05-01', kind: 'event', timezone: null, evidence: 'Orientation is May 1, 2027.', url: 'https://example.edu/a' },
+        { label: 'Final showcase ends', date: '2027-06-01', kind: 'event', timezone: null, evidence: 'The showcase is June 1, 2027.', url: 'https://example.edu/b' },
+      ]),
+    ).toEqual([])
+  })
+
+  it('projects non-continuous verified boundaries as separate endpoints', () => {
+    const endpointOpportunity: Opportunity = {
+      ...opportunity,
+      milestones: [{
+        label: 'Required campus checkpoints', date: '2027-05-01', endDate: '2027-06-01',
+        rangeDisplay: 'endpoints', kind: 'event', timezone: null,
+        evidence: 'Orientation is May 1, 2027; the final showcase is June 1, 2027.',
+        url: 'https://example.edu/checkpoints',
+      }],
+    }
+    const entries = projectOpportunityCalendar([endpointOpportunity], [selection])
+    expect(entries.map(({ date, period }) => ({ date, period }))).toEqual([
+      { date: '2027-05-01', period: expect.objectContaining({ display: 'endpoints' }) },
+      { date: '2027-06-01', period: undefined },
+    ])
   })
 })

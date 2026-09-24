@@ -36,6 +36,10 @@ Workers AI binding: `AI`, model `@cf/meta/llama-3.3-70b-instruct-fp8-fast`. Infe
 - A confirmed new cycle, using links actually present on the official site. Existing timeline history is retained; new yearly URLs are never synthesized.
 - Changes to directly quoted eligibility. Research overviews remain the curated introduction; status evidence and edition dates capture changing availability.
 - Separately quoted submission, registration, accompanying-adult, travel, materials, publication and aid facts, plus location and participation modes. Numeric amounts and “free” claims require direct support. Remote submission never implies remote presentation. Missing evidence preserves the last confirmed field rather than replacing it with a null placeholder.
+- Continuous participant-facing periods may include a verified `endDate` and `rangeDisplay` only
+  when one exact official quote establishes both boundaries. The validator rejects ranges longer
+  than 120 days, application-open-to-deadline spans, and separate checkpoints presented as a
+  continuous event. Calendar projection can also pair unambiguous reviewed start/end event labels.
 
 New/changed facts must be independently observed twice, at least six hours apart. This protects against transient extraction errors but is not two independent sources and cannot prove an organizer is correct. Contradictory or redesigned pages can still require human attention. The `opportunity_observations` table preserves dated evidence snapshots, including previously published observations. The owner can correct a listing or pause its monitor in **Editor → Sources**; imports never undo owner overrides or suppression.
 

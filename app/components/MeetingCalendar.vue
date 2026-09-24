@@ -12,6 +12,38 @@ const props = withDefaults(
   { showArchiveLink: true, calendarEntries: () => [] },
 )
 const emit = defineEmits<{ select: [meeting: MeetingEvent] }>()
+const { ids: savedIds, ready: savedReady } = useSavedOpportunities()
+const savedCalendarEntries = ref<CalendarOpportunityEntry[]>([])
+let savedRequest = 0
+
+watch(
+  [savedReady, () => savedIds.value.join('\u0000')],
+  async ([ready]) => {
+    const request = ++savedRequest
+    if (!ready || !savedIds.value.length) {
+      savedCalendarEntries.value = []
+      return
+    }
+    try {
+      const response = await $fetch<{ entries: CalendarOpportunityEntry[] }>(
+        '/api/opportunities/saved-calendar',
+        { method: 'POST', body: { ids: savedIds.value.slice(0, 100) } },
+      )
+      if (request === savedRequest) savedCalendarEntries.value = response.entries
+    } catch {
+      if (request === savedRequest) savedCalendarEntries.value = []
+    }
+  },
+  { immediate: true },
+)
+
+const allCalendarEntries = computed(() => {
+  const saved = new Set(savedIds.value)
+  const merged = new Map<string, CalendarOpportunityEntry>()
+  for (const entry of [...props.calendarEntries, ...savedCalendarEntries.value])
+    merged.set(entry.id, { ...entry, saved: entry.saved || saved.has(entry.opportunityId) })
+  return [...merged.values()]
+})
 
 const sorted = computed(() => [...props.meetings].sort((a, b) => a.date.localeCompare(b.date)))
 const initial = computed(
@@ -43,9 +75,51 @@ const meetingsByDate = computed(
 )
 const entriesByDate = computed(() => {
   const result = new Map<string, CalendarOpportunityEntry[]>()
-  for (const entry of props.calendarEntries) result.set(entry.date, [...(result.get(entry.date) || []), entry])
+  for (const entry of allCalendarEntries.value) {
+    const dates = [entry.date]
+    if (entry.period?.display === 'span') {
+      const start = Date.parse(`${entry.period.startDate}T12:00:00Z`)
+      const end = Date.parse(`${entry.period.endDate}T12:00:00Z`)
+      dates.length = 0
+      for (let value = start, count = 0; value <= end && count <= 120; value += 86_400_000, count += 1)
+        dates.push(new Date(value).toISOString().slice(0, 10))
+    }
+    for (const date of dates) result.set(date, [...(result.get(date) || []), entry])
+  }
   return result
 })
+const periodLanes = computed(() => {
+  const lanes: string[] = []
+  const result = new Map<string, number>()
+  const periods = [...new Map(
+    allCalendarEntries.value
+      .filter((entry) => entry.period?.display === 'span')
+      .map((entry) => [entry.period!.id, entry]),
+  ).values()].sort((a, b) => a.period!.startDate.localeCompare(b.period!.startDate))
+  for (const entry of periods) {
+    const lane = Math.max(0, lanes.findIndex((end) => end < entry.period!.startDate))
+    const resolved = lane === 0 && lanes[0] && lanes[0] >= entry.period!.startDate ? lanes.length : lane
+    lanes[resolved] = entry.period!.endDate
+    result.set(entry.period!.id, resolved)
+  }
+  return result
+})
+const rangeSegments = (date: string) =>
+  (entriesByDate.value.get(date) || [])
+    .filter((entry) => entry.period?.display === 'span')
+    .map((entry) => {
+      const day = new Date(`${date}T12:00:00Z`).getUTCDay()
+      const monthDay = Number(date.slice(8, 10))
+      const next = new Date(`${date}T12:00:00Z`)
+      next.setUTCDate(next.getUTCDate() + 1)
+      const monthEnd = next.getUTCMonth() !== Number(date.slice(5, 7)) - 1
+      return {
+        entry,
+        lane: periodLanes.value.get(entry.period!.id) || 0,
+        starts: date === entry.period!.startDate || day === 0 || monthDay === 1,
+        ends: date === entry.period!.endDate || day === 6 || monthEnd,
+      }
+    })
 const nextMeetingId = computed(
   () => sorted.value.find((meeting) => meetingDisplayStatus(meeting) !== 'past')?.id,
 )
@@ -203,22 +277,46 @@ onMounted(() => {
                 class="meeting-day meeting-day--event"
                 :class="[
                   cell.meeting ? `meeting-day--${meetingDisplayStatus(cell.meeting)}` : 'meeting-day--opportunity',
-                  { 'meeting-day--next': cell.meeting?.id === nextMeetingId },
+                  {
+                    'meeting-day--next': cell.meeting?.id === nextMeetingId,
+                    'meeting-day--saved': cell.entries.some((entry) => entry.saved),
+                    'meeting-day--period': rangeSegments(cell.date).length,
+                  },
                 ]"
                 :aria-label="cell.meeting
                   ? `${cell.meeting.title}, ${cell.date}, ${meetingDisplayStatus(cell.meeting)}${cell.entries.length ? `, plus ${cell.entries.length} opportunity date${cell.entries.length === 1 ? '' : 's'}` : ''}`
-                  : `${cell.entries.map((entry) => `${entry.opportunityTitle}: ${entry.milestoneTitle}`).join(', ')}, ${cell.date}`"
+                  : `${cell.entries.map((entry) => `${entry.opportunityTitle}: ${entry.milestoneTitle}${entry.period?.display === 'span' ? `, ${entry.period.startDate} through ${entry.period.endDate}` : ''}${entry.saved ? ', saved on this device' : ''}`).join(', ')}, ${cell.date}`"
                 @click="cell.meeting ? selectMeeting(cell.meeting, $event) : selectEntries(cell.entries, $event)"
               >
-                <span>{{ cell.day }}</span>
+                <span
+                  v-for="segment in rangeSegments(cell.date)"
+                  :key="segment.entry.period!.id"
+                  class="meeting-day__period"
+                  :data-period-id="segment.entry.period!.id"
+                  :data-saved="segment.entry.saved || undefined"
+                  :class="{
+                    'meeting-day__period--start': segment.starts,
+                    'meeting-day__period--end': segment.ends,
+                    'meeting-day__period--saved': segment.entry.saved,
+                    'meeting-day__period--tentative': segment.entry.state === 'tentative',
+                  }"
+                  :style="`--period-offset:${Math.min(segment.lane, 2) * 4}px`"
+                  aria-hidden="true"
+                />
+                <span class="meeting-day__number">{{ cell.day }}</span>
                 <span v-if="cell.meeting" class="meeting-day__signal" aria-hidden="true" />
                 <span v-if="cell.entries.length" class="meeting-day__opportunity-signals" aria-hidden="true">
                   <span v-if="cell.entries.some((entry) => entry.kind === 'deadline')" class="meeting-day__opportunity meeting-day__opportunity--deadline" />
                   <span v-if="cell.entries.some((entry) => entry.kind === 'event')" class="meeting-day__opportunity meeting-day__opportunity--event" />
                 </span>
+                <span
+                  v-if="cell.entries.some((entry) => entry.saved)"
+                  class="meeting-day__saved-signal"
+                  aria-hidden="true"
+                />
               </button>
               <span v-else-if="cell" class="meeting-day"
-                ><span>{{ cell.day }}</span></span
+                ><span class="meeting-day__number">{{ cell.day }}</span></span
               >
             </div>
           </div>
@@ -237,6 +335,8 @@ onMounted(() => {
         >
         <span class="inline-flex items-center gap-1.5"><span class="legend legend--deadline" />Deadline</span>
         <span class="inline-flex items-center gap-1.5"><span class="legend legend--opportunity-event" />Competition / program</span>
+        <span class="inline-flex items-center gap-1.5"><span class="legend legend--period" />Multi-day</span>
+        <span class="inline-flex items-center gap-1.5"><span class="legend legend--saved" />Saved by you</span>
       </div>
       <NuxtLink v-if="showArchiveLink" to="/meetings" class="meeting-calendar__archive"
         >Browse every gathering <SiteIcon name="right" :size="13"
@@ -369,6 +469,61 @@ onMounted(() => {
     0 0 22px rgb(228 187 114 / 10%);
   transform: translate3d(0, -2px, 0) scale(1.06);
 }
+.meeting-day__number {
+  position: relative;
+  z-index: 3;
+}
+.meeting-day__period {
+  position: absolute;
+  z-index: 1;
+  top: calc(10% + var(--period-offset));
+  right: -0.24rem;
+  left: -0.24rem;
+  height: 0.12rem;
+  background: linear-gradient(90deg, rgb(145 185 217 / 46%), rgb(145 185 217 / 72%));
+  box-shadow: 0 0 7px rgb(145 185 217 / 18%);
+  pointer-events: none;
+}
+.meeting-day__period--start {
+  left: 13%;
+  border-radius: 999px 0 0 999px;
+}
+.meeting-day__period--end {
+  right: 13%;
+  border-radius: 0 999px 999px 0;
+}
+.meeting-day__period--start.meeting-day__period--end {
+  border-radius: 999px;
+}
+.meeting-day__period--saved {
+  height: 0.14rem;
+  background: linear-gradient(90deg, rgb(228 187 114 / 82%), rgb(196 178 238 / 78%));
+  box-shadow:
+    0 0 6px rgb(228 187 114 / 32%),
+    0 0 10px rgb(196 178 238 / 22%);
+}
+.meeting-day__period--tentative {
+  background: repeating-linear-gradient(
+    90deg,
+    rgb(145 185 217 / 62%) 0 0.2rem,
+    transparent 0.2rem 0.34rem
+  );
+  box-shadow: none;
+}
+.meeting-day--saved {
+  background: rgb(228 187 114 / 4.5%);
+}
+.meeting-day__saved-signal {
+  position: absolute;
+  z-index: 0;
+  inset: 13%;
+  border: 1px solid rgb(228 187 114 / 25%);
+  border-radius: 999px;
+  box-shadow:
+    0 0 9px rgb(228 187 114 / 16%),
+    inset 0 0 8px rgb(196 178 238 / 8%);
+  pointer-events: none;
+}
 .meeting-day__signal {
   position: absolute;
   right: 14%;
@@ -481,6 +636,20 @@ onMounted(() => {
 .legend--opportunity-event {
   background: #91b9d9;
   box-shadow: 0 0 7px rgb(145 185 217 / 45%);
+}
+.legend--period {
+  width: 0.75rem;
+  height: 0.12rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #91b9d9, #c4b2ee);
+  box-shadow: 0 0 6px rgb(145 185 217 / 30%);
+}
+.legend--saved {
+  border: 1px solid rgb(228 187 114 / 72%);
+  background: rgb(228 187 114 / 18%);
+  box-shadow:
+    0 0 5px rgb(228 187 114 / 55%),
+    0 0 9px rgb(196 178 238 / 22%);
 }
 .meeting-calendar__archive {
   display: inline-flex;

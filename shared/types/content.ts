@@ -53,6 +53,13 @@ export interface CalendarOpportunityEntry {
   conflict?: string | null
   verifiedAt: string
   priority: number
+  saved?: boolean
+  period?: {
+    id: string
+    startDate: string
+    endDate: string
+    display: 'span' | 'endpoints'
+  }
 }
 export interface Project {
   id: string
@@ -130,6 +137,11 @@ export interface OpportunityMilestone {
   tentative?: boolean
   conflict?: string | null
   sourceRef?: string
+  /** Verified end of one continuous participant-facing event or program period. */
+  endDate?: string
+  /** Spans are reserved for continuous attendance; otherwise retain separate endpoints. */
+  rangeDisplay?: 'span' | 'endpoints'
+  periodId?: string
 }
 export interface Opportunity {
   id: string

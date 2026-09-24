@@ -76,3 +76,57 @@ test('meetings page and its shared navigation do not overflow narrow screens', a
     await expect(page.getByRole('navigation', { name: 'Resource library' })).toBeVisible()
   }
 })
+
+test('saved opportunity periods glow, overlap in separate lanes, and keep middle days actionable', async ({ page }) => {
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      'matrix-fellows:saved-opportunities:v1',
+      JSON.stringify(['saved:institute', 'saved:competition']),
+    ),
+  )
+  const entry = (overrides: Record<string, unknown>) => ({
+    id: 'saved-institute-period', opportunityId: 'saved:institute',
+    opportunityTitle: 'Saved Summer Institute', milestoneTitle: 'Research institute',
+    summary: 'A saved multi-day research experience.', date: '2026-10-12', timezone: null,
+    precision: 'date-only', location: 'Texas', kind: 'event', state: 'confirmed',
+    requirements: [], officialUrl: 'https://example.edu/institute', evidence: 'Verified schedule.',
+    verifiedAt: '2026-09-24', priority: 90, saved: true,
+    period: { id: 'institute-period', startDate: '2026-10-12', endDate: '2026-10-16', display: 'span' },
+    ...overrides,
+  })
+  await page.route('**/api/opportunities/saved-calendar', async (route) => {
+    await route.fulfill({
+      json: {
+        entries: [
+          entry({}),
+          entry({
+            id: 'saved-competition-period', opportunityId: 'saved:competition',
+            opportunityTitle: 'Saved Research Competition', date: '2026-10-13',
+            period: { id: 'competition-period', startDate: '2026-10-13', endDate: '2026-10-15', display: 'span' },
+          }),
+        ],
+      },
+    })
+  })
+  const savedResponse = page.waitForResponse((response) =>
+    response.url().includes('/api/opportunities/saved-calendar'),
+  )
+  await page.goto('/meetings')
+  await savedResponse
+  await page.locator('[data-calendar-ready="true"]').waitFor()
+  const calendar = page.getByRole('region', { name: 'Meeting calendar' })
+  await calendar.getByRole('button', { name: /Next month from September 2026/ }).click()
+  await expect(calendar.getByText('October 2026', { exact: true })).toBeVisible()
+
+  const middle = calendar.getByRole('button', { name: /Saved Summer Institute.*Saved Research Competition.*2026-10-14/ })
+  await expect(middle.locator('.meeting-day__saved-signal')).toBeVisible()
+  const segments = middle.locator('.meeting-day__period')
+  await expect(segments).toHaveCount(2)
+  const laneTops = await segments.evaluateAll((items) =>
+    items.map((item) => Number.parseFloat(getComputedStyle(item).top)),
+  )
+  expect(Math.abs(laneTops[0]! - laneTops[1]!)).toBeGreaterThanOrEqual(3.5)
+  await expect(segments.first()).toHaveCSS('border-radius', '0px')
+  await middle.click()
+  await expect(page.getByRole('dialog')).toContainText('Saved on this device')
+})

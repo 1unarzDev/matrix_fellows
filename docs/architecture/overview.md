@@ -18,6 +18,7 @@ Nuxt Cloudflare Worker                Supabase
   ├─ GET /api/content ───────────────► published content + opportunities
   ├─ GET /api/opportunities ─────────► bounded RLS-protected catalog search
   ├─ GET /api/opportunities/:slug ───► one published opportunity route
+  ├─ POST /api/opportunities/saved-calendar ► bounded public dates for device-local saves
   ├─ POST /api/join ────────────────► validated private responses
   └─ GET /api/join-sheet ───────────► token-protected Sheets synchronization
 

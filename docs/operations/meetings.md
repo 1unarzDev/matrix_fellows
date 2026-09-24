@@ -57,6 +57,17 @@ the monitor confirms a changed date, the calendar projection moves automatically
 organizer's inclusion settings survive. Correct source facts through the opportunity review
 workflow; use the calendar editor only for inclusion.
 
+Device-local saves are projected through `POST /api/opportunities/saved-calendar`. The request is
+bounded to 100 public IDs, returns only published and unsuppressed records, is never cached, and
+does not create a server-side save record. This lets the same calendar show a restrained gold glow
+for a student's saved routes while continuing to receive current Worker-maintained milestones.
+
+Continuous event, conference, competition, internship, and program periods may render as rounded
+multi-day rails. A rail requires either an explicit monitored `endDate` supported by the same
+official evidence quote or an unambiguous checked-in start/end event pair. Application windows and
+unrelated checkpoints never become spans. Ambiguous ranges remain separate start/end markers;
+overlapping verified spans occupy separate lanes and every middle day remains selectable.
+
 ## Public behavior and fallback
 
 - `/meetings` remains canonical, dynamically SSR-rendered, and crawlable without client JavaScript.
@@ -70,6 +81,8 @@ workflow; use the calendar editor only for inclusion.
 - Multiple items on one day share one accessible dialog with a compact item switcher. Opportunity
   panels show requirements, official evidence, original timezone/precision, last verification,
   catalog details, and a submission portal only when one is explicitly registered.
+- Saved dates retain their deadline/event shape and add a device-local glow; saved multi-day rails
+  use the same gold/violet accent without overpowering meeting markers.
 - Database failures preserve the last checked-in schedule rather than returning an empty calendar.
 - The 30-second public-content cache means a saved meeting may take roughly 30 seconds to appear.
 

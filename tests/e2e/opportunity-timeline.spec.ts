@@ -56,6 +56,16 @@ const fixtures = [
   ...Array.from({ length: 28 }, (_, index) => opportunity(index + 5, { kind: 'Workshop' })),
 ]
 
+test('catalog exposes a polished calendar transition control', async ({ page }) => {
+  await page.goto('/opportunities')
+  const link = page.getByRole('link', { name: /Open the research calendar/i })
+  await expect(link).toHaveAttribute('href', '/meetings#calendar-heading')
+  const icon = link.locator('.catalog-calendar-link__icon')
+  const before = await icon.evaluate((element) => getComputedStyle(element).transform)
+  await link.hover()
+  await expect.poll(() => icon.evaluate((element) => getComputedStyle(element).transform)).not.toBe(before)
+})
+
 async function openBoard(page: Page) {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   // Start a client render with an empty Nuxt payload so useFetch requests our API fixture.

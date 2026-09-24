@@ -232,6 +232,17 @@ useHead({
           Eligibility, program costs, compensation, and participation requirements remain explicit
           when organizers have not stated them.
         </p>
+        <NuxtLink to="/meetings#calendar-heading" class="catalog-calendar-link">
+          <span class="catalog-calendar-link__icon" aria-hidden="true">
+            <SiteIcon name="calendar" :size="17" />
+            <i />
+          </span>
+          <span>
+            <strong>Open the research calendar</strong>
+            <small>Saved opportunities glow on your device</small>
+          </span>
+          <SiteIcon name="right" :size="14" class="catalog-calendar-link__arrow" />
+        </NuxtLink>
       </div>
 
       <form
@@ -490,6 +501,88 @@ useHead({
 .catalog-search {
   animation: catalog-arrive 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+.catalog-calendar-link {
+  position: relative;
+  display: inline-flex;
+  min-height: 3.25rem;
+  align-items: center;
+  gap: 0.8rem;
+  overflow: hidden;
+  margin-top: 1.5rem;
+  border: 1px solid color-mix(in srgb, #e0b768 22%, transparent);
+  border-radius: 999px;
+  padding: 0.48rem 0.75rem 0.48rem 0.55rem;
+  color: rgb(244 241 233 / 72%);
+  background: color-mix(in srgb, var(--color-paper) 2.6%, transparent);
+  box-shadow: inset 0 1px rgb(255 255 255 / 3%);
+  transition:
+    color 220ms ease,
+    border-color 280ms ease,
+    background-color 280ms ease,
+    box-shadow 420ms ease,
+    transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.catalog-calendar-link::before {
+  position: absolute;
+  inset: 0;
+  content: '';
+  background: linear-gradient(105deg, transparent 20%, rgb(228 187 114 / 7%), transparent 70%);
+  translate: -110% 0;
+  transition: translate 620ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.catalog-calendar-link > span,
+.catalog-calendar-link > svg {
+  position: relative;
+  z-index: 1;
+}
+.catalog-calendar-link strong,
+.catalog-calendar-link small {
+  display: block;
+  font-weight: 400;
+}
+.catalog-calendar-link strong { font-size: .72rem; }
+.catalog-calendar-link small { margin-top:.12rem;font-size:.58rem;color:rgb(244 241 233/38%); }
+.catalog-calendar-link__icon {
+  position: relative;
+  display: grid;
+  width: 2.15rem;
+  height: 2.15rem;
+  flex: none;
+  place-items: center;
+  border: 1px solid rgb(196 178 238 / 25%);
+  border-radius: 999px;
+  color: #e0b768;
+  background: rgb(196 178 238 / 4%);
+  transition: transform 520ms cubic-bezier(0.16, 1, 0.3, 1),box-shadow 360ms ease;
+}
+.catalog-calendar-link__icon i {
+  position: absolute;
+  top: -.12rem;
+  right: .14rem;
+  width: .26rem;
+  height: .26rem;
+  border-radius: 999px;
+  background: #c4b2ee;
+  box-shadow: 0 0 8px rgb(196 178 238 / 65%);
+  transition: transform 560ms cubic-bezier(.16,1,.3,1);
+}
+.catalog-calendar-link__arrow { margin-left:.15rem;color:#e0b768;transition:transform 420ms cubic-bezier(.16,1,.3,1); }
+.catalog-calendar-link:hover,
+.catalog-calendar-link:focus-visible {
+  color: var(--color-paper);
+  border-color: rgb(228 187 114 / 42%);
+  background: rgb(228 187 114 / 5%);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 14%),0 0 24px rgb(228 187 114 / 7%);
+  transform: translate3d(0,-2px,0);
+}
+.catalog-calendar-link:hover::before,
+.catalog-calendar-link:focus-visible::before { translate:110% 0; }
+.catalog-calendar-link:hover .catalog-calendar-link__icon,
+.catalog-calendar-link:focus-visible .catalog-calendar-link__icon { transform:rotate(-5deg) scale(1.06);box-shadow:0 0 18px rgb(196 178 238/12%); }
+.catalog-calendar-link:hover .catalog-calendar-link__icon i,
+.catalog-calendar-link:focus-visible .catalog-calendar-link__icon i { transform:translate3d(-1.55rem,1.8rem,0) scale(.75); }
+.catalog-calendar-link:hover .catalog-calendar-link__arrow,
+.catalog-calendar-link:focus-visible .catalog-calendar-link__arrow { transform:translate3d(3px,0,0); }
 .catalog-search {
   animation-delay: 70ms;
 }
@@ -695,7 +788,12 @@ useHead({
   .catalog-search__icon,
   .catalog-search__submit,
   .catalog-apply,
-  .catalog-control {
+  .catalog-control,
+  .catalog-calendar-link,
+  .catalog-calendar-link::before,
+  .catalog-calendar-link__icon,
+  .catalog-calendar-link__icon i,
+  .catalog-calendar-link__arrow {
     transform: none !important;
     transition: none !important;
   }

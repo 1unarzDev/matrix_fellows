@@ -3,9 +3,15 @@ import type { CalendarOpportunityEntry } from '#shared/types/content'
 import { displayDate } from '#shared/utils/opportunities'
 
 const props = defineProps<{ entry: CalendarOpportunityEntry }>()
-const isPast = computed(() => props.entry.date < new Date().toISOString().slice(0, 10))
+const isPast = computed(
+  () => (props.entry.period?.endDate || props.entry.date) < new Date().toISOString().slice(0, 10),
+)
 const dateContext = computed(() => {
-  const details = [displayDate(props.entry.date)]
+  const details = [
+    props.entry.period?.display === 'span'
+      ? `${displayDate(props.entry.period.startDate)} – ${displayDate(props.entry.period.endDate)}`
+      : displayDate(props.entry.date),
+  ]
   if (props.entry.originalTimezone) details.push(props.entry.originalTimezone)
   else if (props.entry.timezone) details.push(props.entry.timezone)
   if (props.entry.precision === 'date-only') details.push('date only')
@@ -14,13 +20,16 @@ const dateContext = computed(() => {
 </script>
 
 <template>
-  <article class="calendar-detail" :class="[`calendar-detail--${entry.kind}`, `calendar-detail--${entry.state}`]">
+  <article class="calendar-detail" :class="[`calendar-detail--${entry.kind}`, `calendar-detail--${entry.state}`, { 'calendar-detail--saved': entry.saved }]">
     <div class="calendar-detail__glow" aria-hidden="true" />
     <div class="relative">
       <div class="calendar-detail__header">
         <p class="calendar-detail__status">
           <span class="calendar-detail__signal" aria-hidden="true" />
           {{ entry.state === 'tentative' ? 'Projected · awaiting confirmation' : entry.kind === 'deadline' ? 'Verified deadline' : 'Verified event date' }}
+        </p>
+        <p v-if="entry.saved" class="calendar-detail__saved">
+          <span aria-hidden="true" /> Saved on this device
         </p>
         <time :datetime="entry.date" class="text-[10px] tracking-[.08em] text-paper/42">{{ dateContext }}</time>
       </div>
@@ -73,9 +82,12 @@ const dateContext = computed(() => {
 .calendar-detail { --entry-accent:#c4b2ee; position:relative; overflow:hidden; border:1px solid color-mix(in srgb,var(--entry-accent) 18%,transparent); border-radius:1.5rem; padding:clamp(1.15rem,3vw,2rem); background:color-mix(in srgb,var(--color-paper) 3.6%,transparent); backdrop-filter:blur(18px) saturate(118%); }
 .calendar-detail--event { --entry-accent:#91b9d9; }
 .calendar-detail--tentative { border-style:dashed; }
+.calendar-detail--saved { box-shadow:0 0 34px rgb(228 187 114/.055),inset 0 0 0 1px rgb(228 187 114/.08); }
 .calendar-detail__glow { position:absolute; inset:0; pointer-events:none; background:radial-gradient(28rem 18rem at 100% 0%,color-mix(in srgb,var(--entry-accent) 9%,transparent),transparent 70%); }
 .calendar-detail__header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.75rem; padding-right:3.25rem; }
 .calendar-detail__status { display:inline-flex; align-items:center; gap:.55rem; font-size:.5625rem; letter-spacing:.14em; text-transform:uppercase; color:color-mix(in srgb,var(--entry-accent) 82%,var(--color-paper)); }
+.calendar-detail__saved { display:inline-flex;align-items:center;gap:.45rem;font-size:.5625rem;letter-spacing:.12em;text-transform:uppercase;color:rgb(228 187 114/72%); }
+.calendar-detail__saved span { width:.32rem;height:.32rem;border:1px solid currentColor;border-radius:999px;box-shadow:0 0 8px currentColor; }
 .calendar-detail__signal { width:.38rem; height:.38rem; border:1px solid currentColor; transform:rotate(45deg); background:color-mix(in srgb,var(--entry-accent) 25%,transparent); }
 .calendar-detail--event .calendar-detail__signal { border-radius:999px; transform:none; box-shadow:0 0 9px color-mix(in srgb,var(--entry-accent) 50%,transparent); }
 .calendar-detail--tentative .calendar-detail__signal { background:transparent; border-style:dashed; }

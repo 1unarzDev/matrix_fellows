@@ -145,6 +145,9 @@ export const opportunitySchema = z.object({
         tentative: z.boolean().optional(),
         conflict: z.string().max(700).nullable().optional(),
         sourceRef: z.string().max(240).optional(),
+        endDate: date.optional(),
+        rangeDisplay: z.enum(['span', 'endpoints']).optional(),
+        periodId: z.string().max(180).optional(),
       }),
     )
     .max(120)

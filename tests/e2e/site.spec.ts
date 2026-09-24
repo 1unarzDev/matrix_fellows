@@ -149,7 +149,7 @@ test('hero priorities remain clear of the journey navigation on narrow screens',
   expect(tabletBounds[0]!.y + tabletBounds[0]!.height).toBeLessThan(tabletBounds[1]!.y)
 })
 
-test('meeting facts stack on phones and featured opportunities traverse horizontally', async ({
+test('meeting calendar and details stay side by side while featured opportunities traverse horizontally', async ({
   page,
 }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
@@ -157,11 +157,14 @@ test('meeting facts stack on phones and featured opportunities traverse horizont
   await page.goto('/#beginning')
   await page.locator('[data-ready="true"]').waitFor()
 
-  const date = await page.locator('[data-meeting-date]').boundingBox()
-  const time = await page.locator('[data-meeting-time]').boundingBox()
-  expect(date).not.toBeNull()
-  expect(time).not.toBeNull()
-  expect(time!.y).toBeGreaterThanOrEqual(date!.y + date!.height)
+  const meetingLayout = page.locator('[data-meeting-layout]')
+  const [meetingIntro, meetingPanel] = await Promise.all([
+    meetingLayout.locator('.meeting-layout__left').boundingBox(),
+    meetingLayout.locator('.meeting-layout__detail').boundingBox(),
+  ])
+  expect(meetingIntro).not.toBeNull()
+  expect(meetingPanel).not.toBeNull()
+  expect(meetingPanel!.x).toBeGreaterThanOrEqual(meetingIntro!.x + meetingIntro!.width)
 
   await page
     .locator('#community')
@@ -184,14 +187,13 @@ test('meeting facts stack on phones and featured opportunities traverse horizont
   await expect(page.getByText('Featured route', { exact: false })).toContainText('2 / 6')
 
   await page.setViewportSize({ width: 810, height: 1080 })
-  const meetingColumns = page.locator('#meeting-details > div')
-  const [meetingIntro, meetingPanel] = await Promise.all([
-    meetingColumns.nth(0).boundingBox(),
-    meetingColumns.nth(1).boundingBox(),
+  const [tabletIntro, tabletPanel] = await Promise.all([
+    meetingLayout.locator('.meeting-layout__left').boundingBox(),
+    meetingLayout.locator('.meeting-layout__detail').boundingBox(),
   ])
-  expect(meetingIntro).not.toBeNull()
-  expect(meetingPanel).not.toBeNull()
-  expect(meetingPanel!.y).toBeGreaterThanOrEqual(meetingIntro!.y + meetingIntro!.height)
+  expect(tabletIntro).not.toBeNull()
+  expect(tabletPanel).not.toBeNull()
+  expect(tabletPanel!.x).toBeGreaterThanOrEqual(tabletIntro!.x + tabletIntro!.width)
 })
 
 test('footer links to the official Instagram profile', async ({ page }) => {

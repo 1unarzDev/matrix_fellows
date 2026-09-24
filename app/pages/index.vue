@@ -784,14 +784,10 @@ onBeforeUnmount(() => {
                 <span class="footer-action__icon"><SiteIcon name="compass" :size="15" /></span>
                 <span>Opportunities</span>
               </NuxtLink>
-              <a
-                href="#community"
-                class="footer-action group"
-                @click="scrollTo($event, 'community')"
-              >
+              <NuxtLink to="/meetings" class="footer-action group">
                 <span class="footer-action__icon"><SiteIcon name="calendar" :size="15" /></span>
-                <span>Next meeting</span>
-              </a>
+                <span>Meetings</span>
+              </NuxtLink>
             </div>
           </nav>
 

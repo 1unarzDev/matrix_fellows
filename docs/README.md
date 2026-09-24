@@ -13,6 +13,7 @@ to local setup and deployment; this index explains how the system works and why.
 | Work on visual direction                    | [Art direction](design/art-direction.md)                       |
 | Operate opportunity updates                 | [Opportunity monitoring](operations/opportunity-monitoring.md) |
 | Write or maintain research guides           | [Research-guide authoring](operations/research-guides.md)      |
+| Update meeting dates, agendas, or resources | [Meeting schedule](operations/meetings.md)                     |
 | Configure membership responses              | [Membership form and Sheets](operations/join-form.md)          |
 | Run verification or investigate regressions | [Validation](quality/validation.md)                            |
 | Check asset attribution                     | [Asset licenses](legal/asset-licenses.md)                      |
@@ -49,6 +50,7 @@ Owner and maintainer runbooks.
 - [Living opportunity catalog](operations/opportunity-monitoring.md)
 - [Catalog search and source review](operations/opportunity-catalog.md)
 - [Research-guide authoring](operations/research-guides.md)
+- [Meeting schedule and archive](operations/meetings.md)
 - [Legacy/manual opportunity imports](operations/opportunity-imports.md)
 - [Search audit](operations/seo-audit.md) and [Search Console setup](operations/seo-setup.md)
 

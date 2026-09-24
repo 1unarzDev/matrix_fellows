@@ -32,6 +32,7 @@ export default defineCachedEventHandler(
       `${root}/`,
       `${root}/opportunities`,
       `${root}/guides`,
+      `${root}/meetings`,
       `${root}/join`,
       ...guideRoutes.map((path) => `${root}${path}`),
       ...slugs.map((slug) => `${root}/opportunities/${slug}`),

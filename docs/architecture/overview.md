@@ -59,6 +59,13 @@ to `MDCRenderer`. The static registry in `shared/data/guides.ts` owns ordering,
 route generation, homepage summaries, sitemap membership, and prerender routes.
 No full guide body enters the homepage payload.
 
+Meeting content follows the same bounded pattern. The editable confirmed
+meeting is combined with reviewed projected sessions by
+`shared/data/meetings.ts`; the homepage renders a compact calendar/detail rail,
+while `/meetings` provides an SSR archive with stable meeting IDs, agendas, and
+resource links. Calendar interactions are client enhancements—the schedule and
+details remain present in server-rendered HTML.
+
 ### Cinematic scroll
 
 [The cinematic adapter](../../app/components/CinematicWorld.client.vue) connects DOM scroll and
@@ -122,7 +129,7 @@ response from silently publishing arbitrary data. See the
 | Supabase public read failure      | Validated defaults, `unavailable` status, and `no-store` response |
 | Opportunity source failure        | Previous observations remain; source health records the issue     |
 | Owner/admin code unused           | Admin chunks stay out of the initial interaction path             |
-| JavaScript or WebGL unavailable   | Guide text and links remain present in SSR HTML                   |
+| JavaScript or WebGL unavailable   | Guide and meeting text/resources remain present in SSR HTML       |
 | Membership backend unavailable    | Form reports a retryable error; no false success is stored        |
 
 ## Configuration and ownership

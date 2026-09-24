@@ -15,7 +15,7 @@ export default defineEventHandler((event) => {
   }
   if (
     /^\/(?:guides|opportunities)(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)?\/_payload\.json$/.test(path) ||
-    path === '/join/_payload.json'
+    /^(?:\/join|\/meetings)\/_payload\.json$/.test(path)
   ) {
     setHeader(event, 'X-Robots-Tag', 'noindex')
     return
@@ -25,6 +25,7 @@ export default defineEventHandler((event) => {
     path === '/opportunities' ||
     /^\/opportunities\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(path) ||
     path === '/guides' ||
+    path === '/meetings' ||
     path === '/join' ||
     /^\/guides\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(path) ||
     path === '/robots.txt' ||

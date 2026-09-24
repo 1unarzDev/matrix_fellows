@@ -7,6 +7,19 @@ export interface Meeting {
   topics: string[]
   url: string
 }
+export type MeetingState = 'confirmed' | 'tentative'
+export type MeetingDisplayStatus = MeetingState | 'past'
+export interface MeetingResource {
+  title: string
+  url: string
+  note: string
+}
+export interface MeetingEvent extends Meeting {
+  id: string
+  summary: string
+  state: MeetingState
+  resources: MeetingResource[]
+}
 export interface Project {
   id: string
   title: string

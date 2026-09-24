@@ -4,6 +4,7 @@ const showCatalogHeader = computed(
   () =>
     route.path.startsWith('/opportunities') ||
     route.path.startsWith('/guides') ||
+    route.path === '/meetings' ||
     route.path === '/join',
 )
 const pageTransition = {

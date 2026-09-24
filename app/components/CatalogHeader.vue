@@ -3,11 +3,13 @@ const route = useRoute()
 const activeResource = computed(() =>
   route.path === '/join'
     ? 'join'
-    : route.path.startsWith('/guides')
-      ? 'guides'
-      : route.path.startsWith('/opportunities')
-        ? 'opportunities'
-        : '',
+    : route.path === '/meetings'
+      ? 'meetings'
+      : route.path.startsWith('/guides')
+        ? 'guides'
+        : route.path.startsWith('/opportunities')
+          ? 'opportunities'
+          : '',
 )
 </script>
 
@@ -34,16 +36,18 @@ const activeResource = computed(() =>
         <nav aria-label="Resource library" class="catalog-header__switcher">
           <NuxtLink
             to="/opportunities"
+            aria-label="Opportunities"
             class="catalog-header__resource"
             :class="{ 'catalog-header__resource--active': activeResource === 'opportunities' }"
             :aria-current="activeResource === 'opportunities' ? 'page' : undefined"
           >
             <span class="catalog-header__dot" aria-hidden="true" />
-            <span class="hidden min-[390px]:inline">Opportunities</span>
-            <span class="min-[390px]:hidden">Openings</span>
+            <span class="hidden min-[440px]:inline">Opportunities</span>
+            <span class="min-[440px]:hidden">Openings</span>
           </NuxtLink>
           <NuxtLink
             to="/guides"
+            aria-label="Guides"
             class="catalog-header__resource"
             :class="{ 'catalog-header__resource--active': activeResource === 'guides' }"
             :aria-current="activeResource === 'guides' ? 'page' : undefined"
@@ -51,7 +55,19 @@ const activeResource = computed(() =>
             <span class="catalog-header__dot" aria-hidden="true" /> Guides
           </NuxtLink>
           <NuxtLink
+            to="/meetings"
+            aria-label="Meetings"
+            class="catalog-header__resource"
+            :class="{ 'catalog-header__resource--active': activeResource === 'meetings' }"
+            :aria-current="activeResource === 'meetings' ? 'page' : undefined"
+          >
+            <span class="catalog-header__dot" aria-hidden="true" />
+            <span class="hidden min-[440px]:inline">Meetings</span>
+            <span class="min-[440px]:hidden">Meet</span>
+          </NuxtLink>
+          <NuxtLink
             to="/join"
+            aria-label="Join"
             class="catalog-header__resource"
             :class="{ 'catalog-header__resource--active': activeResource === 'join' }"
             :aria-current="activeResource === 'join' ? 'page' : undefined"
@@ -187,6 +203,25 @@ const activeResource = computed(() =>
   color: var(--color-acid);
   text-shadow: 0 0 18px color-mix(in srgb, var(--color-acid) 20%, transparent);
   transform: translate3d(-3px, 0, 0);
+}
+@media (max-width: 439px) {
+  .catalog-header__mark {
+    width: 2rem;
+    height: 2rem;
+  }
+  .catalog-header__switcher {
+    gap: 0;
+    padding: 0.125rem;
+  }
+  .catalog-header__resource {
+    min-height: 2.25rem;
+    gap: 0;
+    padding-inline: 0.48rem;
+    font-size: 0.625rem;
+  }
+  .catalog-header__dot {
+    display: none;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .catalog-header__brand,

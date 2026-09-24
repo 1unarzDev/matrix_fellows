@@ -71,6 +71,13 @@ test('guide section navigation is smooth, shareable, and synchronized with readi
   )
   await stages.getByRole('link', { name: /Analyze/ }).click()
   await expect(page).toHaveURL(/#analyze$/)
+  const activeDuringScroll: string[] = []
+  for (let frame = 0; frame < 60; frame++) {
+    const href = await stages.locator('[aria-current="location"]').getAttribute('href')
+    if (href && href !== activeDuringScroll.at(-1)) activeDuringScroll.push(href)
+    await page.waitForTimeout(16)
+  }
+  expect(activeDuringScroll).toEqual(['#analyze'])
   await expect(stages.getByRole('link', { name: /Analyze/ })).toHaveAttribute(
     'aria-current',
     'location',

@@ -80,7 +80,11 @@ useHead({
         class="guide-library mt-8 lg:grid lg:grid-cols-[11rem_minmax(0,1fr)] lg:gap-12 xl:gap-18"
       >
         <aside class="guide-stage-shell">
-          <nav aria-label="Guide stages" class="guide-stage-nav">
+          <nav
+            aria-label="Guide stages"
+            class="guide-stage-nav"
+            :style="{ '--stage-index': String(activeStageIndex) }"
+          >
             <p class="guide-stage-nav__eyebrow">Guide path</p>
             <div class="guide-stage-nav__links">
               <span
@@ -176,11 +180,18 @@ useHead({
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--color-paper) 12%, transparent);
   border-radius: 1rem;
-  background: color-mix(in srgb, var(--color-ink) 84%, transparent);
+  background:
+    radial-gradient(
+      70% 120% at calc((var(--stage-index, 0) + 0.5) * 25%) 0%,
+      color-mix(in srgb, #b9a4ef 4%, transparent),
+      transparent 72%
+    ),
+    color-mix(in srgb, var(--color-ink) 86%, transparent);
   box-shadow:
-    0 14px 38px rgb(0 0 0 / 18%),
-    inset 0 1px 0 color-mix(in srgb, var(--color-paper) 3%, transparent);
-  backdrop-filter: blur(18px) saturate(125%);
+    0 16px 42px rgb(0 0 0 / 20%),
+    0 0 30px color-mix(in srgb, #b9a4ef 2.5%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--color-paper) 4%, transparent);
+  backdrop-filter: blur(20px) saturate(118%);
 }
 .guide-stage-nav__eyebrow {
   display: none;
@@ -196,16 +207,38 @@ useHead({
   bottom: 0.3rem;
   left: calc(var(--stage-index) * 25% + 0.3rem);
   width: calc(25% - 0.15rem);
-  border: 1px solid color-mix(in srgb, var(--color-acid) 26%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-acid) 30%, transparent);
   border-radius: 0.75rem;
-  background: color-mix(in srgb, var(--color-acid) 5%, transparent);
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-acid) 8%, transparent),
+      color-mix(in srgb, #b9a4ef 4%, transparent)
+    ),
+    color-mix(in srgb, var(--color-paper) 1.5%, transparent);
   box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--color-paper) 4%, transparent),
-    0 0 22px color-mix(in srgb, var(--color-acid) 5%, transparent);
+    inset 0 1px 0 color-mix(in srgb, var(--color-paper) 7%, transparent),
+    0 7px 18px rgb(0 0 0 / 12%),
+    0 0 24px color-mix(in srgb, var(--color-acid) 6%, transparent);
   transform: none;
   transition:
-    left 560ms cubic-bezier(0.22, 1, 0.36, 1),
-    transform 560ms cubic-bezier(0.22, 1, 0.36, 1);
+    left 480ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 480ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.guide-stage-nav__indicator::before {
+  content: '';
+  position: absolute;
+  top: 0.28rem;
+  right: 22%;
+  left: 22%;
+  height: 1px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--color-paper) 24%, transparent),
+    transparent
+  );
 }
 .guide-stage-nav__link {
   position: relative;
@@ -313,6 +346,17 @@ useHead({
     box-shadow: 0 0 12px color-mix(in srgb, var(--color-acid) 38%, transparent);
     transform: translate3d(0, calc(var(--stage-index) * 3.5rem), 0);
   }
+  .guide-stage-nav__indicator::before {
+    top: 50%;
+    right: auto;
+    left: -0.08rem;
+    width: 0.28rem;
+    height: 0.28rem;
+    border-radius: 50%;
+    background: var(--color-acid);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--color-acid) 65%, transparent);
+    transform: translateY(-50%);
+  }
   .guide-stage-nav__link {
     width: 100%;
     min-height: 3.5rem;
@@ -325,6 +369,14 @@ useHead({
   .guide-stage-nav__link:hover,
   .guide-stage-nav__link:focus-visible {
     transform: translate3d(4px, 0, 0);
+  }
+  .guide-stage-nav__link--active {
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--color-acid) 4.5%, transparent),
+      transparent 82%
+    );
+    box-shadow: inset 1px 0 0 color-mix(in srgb, var(--color-acid) 16%, transparent);
   }
   .guide-stage-nav__description {
     display: block;

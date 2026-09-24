@@ -67,15 +67,31 @@
       />
       <span class="relative ml-3 flex items-center text-left">
         <span
-          class="text-[8px] uppercase tracking-[.25em] text-paper/40 transition-[color,transform] duration-[900ms] ease-[cubic-bezier(.22,1,.36,1)] group-hover/unknown:translate-x-1 group-hover/unknown:-translate-y-[6px] group-hover/unknown:text-acid/80 group-focus-visible/unknown:translate-x-1 group-focus-visible/unknown:-translate-y-[6px] group-focus-visible/unknown:text-acid/80 motion-reduce:transform-none motion-reduce:transition-none"
+          class="text-[8px] uppercase tracking-[.25em] text-paper/40 transition-[color,translate] duration-[900ms] ease-[cubic-bezier(.22,1,.36,1)] group-hover/unknown:translate-x-1 group-hover/unknown:-translate-y-[6px] group-hover/unknown:text-acid/80 group-focus-visible/unknown:translate-x-1 group-focus-visible/unknown:-translate-y-[6px] group-focus-visible/unknown:text-acid/80 motion-reduce:translate-none motion-reduce:transition-none"
           >The unexplored</span
         >
         <span
           aria-hidden="true"
-          class="absolute left-0 top-[calc(50%+3px)] flex -translate-x-1 items-center gap-1.5 text-[8px] tracking-[.08em] text-paper/0 opacity-0 transition-[color,opacity,transform] duration-500 ease-[cubic-bezier(.22,1,.36,1)] group-hover/unknown:translate-x-1 group-hover/unknown:text-paper/55 group-hover/unknown:opacity-100 group-focus-visible/unknown:translate-x-1 group-focus-visible/unknown:text-paper/55 group-focus-visible/unknown:opacity-100 motion-reduce:transform-none motion-reduce:transition-none"
+          class="unexplored-action absolute left-0 top-[calc(50%+3px)] flex -translate-x-1 translate-y-1 items-center gap-1.5 text-[8px] tracking-[.08em] text-paper/45 opacity-0 group-hover/unknown:translate-x-1 group-hover/unknown:translate-y-0 group-hover/unknown:text-paper/55 group-hover/unknown:opacity-100 group-focus-visible/unknown:translate-x-1 group-focus-visible/unknown:translate-y-0 group-focus-visible/unknown:text-paper/55 group-focus-visible/unknown:opacity-100 motion-reduce:translate-none"
           >Find your question <SiteIcon :size="9"
         /></span>
       </span>
     </span>
   </NuxtLink>
 </template>
+
+<style scoped>
+.unexplored-action {
+  transition-property: color, opacity, translate;
+  transition-duration: 1100ms, 1500ms, 1100ms;
+  transition-delay: 60ms, 100ms, 60ms;
+  transition-timing-function:
+    cubic-bezier(0.33, 0.01, 0.2, 1), linear, cubic-bezier(0.33, 0.01, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .unexplored-action {
+    transition: none;
+  }
+}
+</style>

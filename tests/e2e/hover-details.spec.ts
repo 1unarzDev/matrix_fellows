@@ -75,6 +75,7 @@ test('unexplored marker label rests on its rule then lifts to reveal its action'
   test.skip(info.project.name !== 'desktop')
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await page.goto('/')
+  await expect(page.locator('[data-ready="true"]')).toBeVisible()
   const marker = page.getByRole('link', {
     name: 'The unexplored — find a research idea worth pursuing',
   })
@@ -94,6 +95,45 @@ test('unexplored marker label rests on its rule then lifts to reveal its action'
   await marker.hover()
   await expect.poll(async () => restingLabelY - (await centerY(label))).toBeGreaterThanOrEqual(5)
   await expect(marker.getByText('Find your question')).toHaveCSS('opacity', '1')
+})
+
+test('unexplored marker action eases in behind the lifted label', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop')
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await page.goto('/')
+  await expect(page.locator('[data-ready="true"]')).toBeVisible()
+  const marker = page.getByRole('link', {
+    name: 'The unexplored — find a research idea worth pursuing',
+  })
+  const action = marker.getByText('Find your question')
+  await expect(marker).toBeVisible()
+  await expect(action).toHaveCSS('transition-property', 'color, opacity, translate')
+  const markerBox = await marker.boundingBox()
+  expect(markerBox).not.toBeNull()
+  await page.mouse.move(5, 5)
+  await page.mouse.move(markerBox!.x + markerBox!.width / 2, markerBox!.y + markerBox!.height / 2)
+
+  const sampleAt = (time: number) =>
+    action.evaluate((element, currentTime) => {
+      for (const animation of element.getAnimations()) {
+        animation.pause()
+        animation.currentTime = currentTime
+      }
+      const style = getComputedStyle(element)
+      return { opacity: Number(style.opacity), translate: style.translate }
+    }, time)
+
+  const early = await sampleAt(250)
+  expect(early.opacity).toBeGreaterThan(0.05)
+  expect(early.opacity).toBeLessThan(0.25)
+
+  const middle = await sampleAt(700)
+  expect(middle.opacity).toBeGreaterThan(0.3)
+  expect(middle.opacity).toBeLessThan(0.55)
+
+  const settled = await sampleAt(1700)
+  expect(settled.opacity).toBe(1)
+  expect(settled.translate).toBe('4px')
 })
 
 test('unexplored marker turns curiosity into a guide action', async ({ page }, info) => {

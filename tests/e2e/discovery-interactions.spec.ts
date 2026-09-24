@@ -27,6 +27,14 @@ test('discovery thought follows the pointer and reveals as one composition', asy
   await expect(reveal.locator('.discovery-reveal__original')).toHaveCSS('opacity', '1')
   await expect(reveal.locator('.discovery-reveal__lens')).toHaveCSS('opacity', '0.82')
   await expect(reveal.locator('.discovery-reveal__bloom')).toHaveCount(0)
+  await expect(reveal.locator('.discovery-reveal__xray')).toHaveCSS(
+    'background-color',
+    'rgba(16, 46, 54, 0.82)',
+  )
+  await expect(reveal.locator('.discovery-reveal__xray')).not.toHaveCSS('mask-image', 'none')
+  await expect(reveal.locator('.discovery-reveal__lens > .discovery-reveal__particle')).toHaveCount(
+    12,
+  )
 
   const clipPath = await reveal
     .locator('.discovery-reveal__xray')
@@ -86,6 +94,7 @@ test('touch layouts use an accessible tap toggle and preserve native scrolling',
   await expect(toggle).toHaveAttribute('aria-pressed', 'true')
   await expect(toggle).toHaveAccessibleName('Return to the original discovery note')
   await expect(reveal.locator('.discovery-reveal__lens')).toHaveCSS('opacity', '0.72')
+  await expect(reveal.locator('.discovery-reveal__original')).toHaveCSS('opacity', '0.16')
 
   await toggle.click()
   await expect(toggle).toHaveAttribute('aria-pressed', 'false')

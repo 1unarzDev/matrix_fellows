@@ -51,6 +51,29 @@ test('guides and opportunities share the resource library header', async ({ page
   )
 })
 
+test('mobile resource switcher remains anchored while changing sections', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/opportunities')
+  await page.locator('[data-catalog-ready="true"]').waitFor()
+
+  const positions = await page.evaluate(async () => {
+    const navigation = document.querySelector<HTMLElement>('[aria-label="Resource library"]')!
+    const guides = navigation.querySelector<HTMLAnchorElement>('a[href="/guides"]')!
+    const samples: number[] = []
+    guides.click()
+    const start = performance.now()
+    while (performance.now() - start < 700) {
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+      const current = document.querySelector<HTMLElement>('[aria-label="Resource library"]')
+      if (current) samples.push(current.getBoundingClientRect().top)
+    }
+    return samples
+  })
+
+  expect(Math.max(...positions) - Math.min(...positions)).toBeLessThan(1)
+  await expect(page).toHaveURL('/guides')
+})
+
 test('catalog replaces legacy hidden filters and obsolete sorting', async ({ page }) => {
   await page.goto('/opportunities?highSchool=supported&sort=verified')
   await page.locator('[data-catalog-ready="true"]').waitFor()

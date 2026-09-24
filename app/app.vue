@@ -1,4 +1,8 @@
 <script setup lang="ts">
+const route = useRoute()
+const showCatalogHeader = computed(
+  () => route.path.startsWith('/opportunities') || route.path.startsWith('/guides'),
+)
 const pageTransition = {
   name: 'matrix-page',
   mode: 'out-in' as const,
@@ -7,10 +11,23 @@ const pageTransition = {
 
 <template>
   <RouteVeil />
+  <Transition name="catalog-header">
+    <CatalogHeader v-if="showCatalogHeader" />
+  </Transition>
   <NuxtPage :transition="pageTransition" />
 </template>
 
 <style>
+.catalog-header-enter-active,
+.catalog-header-leave-active {
+  transition: opacity 180ms ease;
+}
+
+.catalog-header-enter-from,
+.catalog-header-leave-to {
+  opacity: 0;
+}
+
 .matrix-page-enter-active {
   transition:
     opacity 300ms cubic-bezier(0.22, 1, 0.36, 1),
@@ -35,7 +52,9 @@ const pageTransition = {
 
 @media (prefers-reduced-motion: reduce) {
   .matrix-page-enter-active,
-  .matrix-page-leave-active {
+  .matrix-page-leave-active,
+  .catalog-header-enter-active,
+  .catalog-header-leave-active {
     transition: none;
   }
 

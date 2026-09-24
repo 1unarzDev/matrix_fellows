@@ -88,7 +88,6 @@ const modeLabels = {
 
 <template>
   <div class="catalog-detail min-h-screen bg-ink text-paper">
-    <CatalogHeader />
     <main class="relative z-[1] mx-auto max-w-5xl px-5 pb-24 pt-12 sm:px-8 lg:pt-18">
       <NuxtLink
         to="/opportunities"

@@ -192,7 +192,6 @@ useHead({
 
 <template>
   <div class="catalog-page min-h-screen bg-ink text-paper" :data-catalog-ready="hydrated">
-    <CatalogHeader />
     <div class="catalog-cosmos" aria-hidden="true">
       <svg viewBox="0 0 720 390" fill="none">
         <path d="M88 278 194 192l116 34 92-132 118 65 109-91" />

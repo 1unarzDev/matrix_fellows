@@ -56,7 +56,6 @@ useHead({
 
 <template>
   <div class="guide-page min-h-screen bg-ink text-paper">
-    <CatalogHeader />
     <GuideAtmosphere />
     <main class="relative z-[1] mx-auto max-w-[86rem] px-5 pb-24 pt-14 sm:px-8 lg:px-12 lg:pt-20">
       <div

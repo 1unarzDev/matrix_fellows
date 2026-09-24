@@ -573,7 +573,7 @@ onBeforeUnmount(() => {
       >
         <div
           data-depths-panel
-          class="depths-panel relative isolate max-w-xl overflow-hidden rounded-[2rem] border border-paper/[.07] px-7 py-8 max-sm:overflow-visible max-sm:border-transparent max-sm:px-0 max-sm:py-0 sm:px-10 sm:py-10"
+          class="depths-panel relative isolate max-w-xl overflow-visible px-0 py-8 sm:px-8 sm:py-10"
           :class="{ 'depths-panel--active': active === 3 }"
         >
           <div aria-hidden="true" class="depths-panel__light absolute inset-0 -z-10" />
@@ -584,40 +584,25 @@ onBeforeUnmount(() => {
             id="frontiers-title"
             class="font-display text-5xl font-medium leading-[1.08] tracking-[-.055em] sm:text-7xl"
           >
-            The
-            <span class="font-serif font-normal italic tracking-[-.065em] text-[#c4dadd]"
-              >unknown</span
-            ><br />is an invitation.
+            <span class="depths-title-line"
+              >The
+              <span class="font-serif font-normal italic tracking-[-.065em] text-[#c4dadd]"
+                >unknown</span
+              ></span
+            ><br /><span class="depths-title-line depths-title-line--second"
+              >is an invitation.</span
+            >
           </h2>
-          <p class="mt-8 max-w-md text-base leading-relaxed text-paper/70">
-            Research asks us to stay with the difficult questions. To look closer when the answer
-            isn’t obvious. To try again when an idea doesn’t hold.
-          </p>
-          <p class="mt-5 max-w-md text-base leading-relaxed text-paper/70">
-            You don’t need to have it all figured out. You need curiosity, a little courage, and
-            people willing to go deeper with you.
-          </p>
-          <svg
-            aria-hidden="true"
-            class="depths-current mt-11 h-5 w-24 overflow-visible text-acid/60"
-            viewBox="0 0 96 20"
-            fill="none"
-          >
-            <path
-              class="depths-current__line depths-current__line--near"
-              d="M1 9.5C17 4.5 29 14.5 46 9.5S76 4.5 95 9.5"
-              stroke="currentColor"
-              stroke-width="1"
-              stroke-linecap="round"
-            />
-            <path
-              class="depths-current__line depths-current__line--far"
-              d="M7 14C22 10.5 34 17 50 13.5S76 10.5 89 13"
-              stroke="currentColor"
-              stroke-width="0.65"
-              stroke-linecap="round"
-            />
-          </svg>
+          <div class="depths-copy">
+            <p class="mt-8 max-w-md text-base leading-relaxed text-paper/70">
+              Research asks us to stay with the difficult questions. To look closer when the answer
+              isn’t obvious. To try again when an idea doesn’t hold.
+            </p>
+            <p class="mt-5 max-w-md text-base leading-relaxed text-paper/70">
+              You don’t need to have it all figured out. You need curiosity, a little courage, and
+              people willing to go deeper with you.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -858,34 +843,37 @@ onBeforeUnmount(() => {
 .depths-panel {
   --depths-drift: 1.4px;
   animation: depths-buoyancy 14s cubic-bezier(0.45, 0.05, 0.3, 1) infinite both paused;
-  background: linear-gradient(132deg, rgb(7 31 43 / 0.34), rgb(6 22 37 / 0.13) 62%, transparent);
-  box-shadow:
-    inset 0 1px rgb(214 244 246 / 0.025),
-    0 24px 70px rgb(1 12 24 / 0.08);
+  background: none;
   transform-origin: 72% 58%;
 }
 .depths-panel--active {
   animation-play-state: running;
 }
 .depths-panel__light {
+  inset: -5rem -7rem;
   background:
-    radial-gradient(26rem 12rem at 12% 0%, rgb(116 225 225 / 0.055), transparent 70%),
-    linear-gradient(112deg, transparent 18%, rgb(129 220 224 / 0.025) 42%, transparent 64%);
-  opacity: 0.85;
-  transform: translate3d(-1.5%, 0, 0);
+    radial-gradient(21rem 14rem at 28% 31%, rgb(116 225 225 / 0.055), transparent 72%),
+    radial-gradient(18rem 20rem at 62% 57%, rgb(108 151 202 / 0.03), transparent 78%);
+  opacity: 0.72;
+  transform: translate3d(-1%, 0, 0);
   transition: opacity 800ms ease;
 }
-.depths-current__line {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: depths-current 9s ease-in-out infinite both paused;
+.depths-title-line,
+.depths-copy {
+  display: inline-block;
+  will-change: transform;
+  animation: depths-text-drift 11s cubic-bezier(0.45, 0.05, 0.35, 1) infinite both paused;
 }
-.depths-current__line--far {
-  opacity: 0.35;
-  animation-duration: 12s;
-  animation-direction: reverse;
+.depths-title-line--second {
+  animation-delay: -5.4s;
+  animation-duration: 13s;
 }
-.depths-panel--active .depths-current__line {
+.depths-copy {
+  animation-delay: -8.2s;
+  animation-duration: 16s;
+}
+.depths-panel--active .depths-title-line,
+.depths-panel--active .depths-copy {
   animation-play-state: running;
 }
 @keyframes depths-buoyancy {
@@ -900,25 +888,22 @@ onBeforeUnmount(() => {
     transform: translate3d(0.35px, calc(var(--depths-drift) * 0.38), 0) rotate(0.018deg);
   }
 }
-@keyframes depths-current {
+@keyframes depths-text-drift {
   0%,
   100% {
-    transform: translate3d(0, 0, 0) scaleY(1);
-    opacity: 0.42;
+    transform: translate3d(0, 0, 0) rotate(0deg);
   }
-  45% {
-    transform: translate3d(1.5px, -0.7px, 0) scaleY(0.72);
-    opacity: 0.72;
+  34% {
+    transform: translate3d(0.8px, -1.15px, 0) rotate(-0.018deg);
   }
-  74% {
-    transform: translate3d(-0.6px, 0.45px, 0) scaleY(1.08);
+  69% {
+    transform: translate3d(-0.55px, 0.7px, 0) rotate(0.012deg);
   }
 }
 @media (max-width: 639px) {
   .depths-panel {
     animation: none;
     background: none;
-    box-shadow: none;
   }
   .depths-panel__light {
     display: none;
@@ -1036,7 +1021,8 @@ onBeforeUnmount(() => {
 }
 @media (prefers-reduced-motion: reduce) {
   .depths-panel,
-  .depths-current__line {
+  .depths-title-line,
+  .depths-copy {
     animation: none;
     transform: none;
   }

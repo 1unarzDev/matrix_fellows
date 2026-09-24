@@ -479,17 +479,31 @@ void main() {
 
   if(submerged>0.0 && cosmos<.999) {
   vec2 warp=uv+vec2(sin(uv.y*9.0+uTime*.24),cos(uv.x*7.0-uTime*.19))*.022;
-  // A slowly advected caustic web replaces the old repeating sine streaks.
-  // Two warped wave families form irregular cells with a soft falloff; this
-  // stays analytic inside the existing world pass and needs no light texture.
-  vec2 causticUv=vec2((warp.x-.5)*uAspect,warp.y)*vec2(8.2,6.4);
-  float causticWarp=atmosphericFbm(causticUv*.31+vec2(uTime*.018,-uTime*.013));
-  causticUv+=vec2(causticWarp-.5,noise(causticUv*.19+vec2(7.3,-uTime*.011))-.5)*1.15;
-  float causticA=abs(sin(causticUv.x+sin(causticUv.y*.83+uTime*.105)*1.18));
-  float causticB=abs(sin(causticUv.y*1.14-uTime*.078+sin(causticUv.x*.69-uTime*.052)));
-  float causticWeb=1.0-smoothstep(.055,.36,min(causticA,causticB));
-  float causticBreak=.34+.66*smoothstep(.22,.78,noise(causticUv*.47+uTime*.009));
-  causticWeb*=causticWeb*causticBreak;
+  // A moving cellular boundary field produces the irregular connected
+  // membranes of refracted light. Unlike crossed sine waves, it has no shared
+  // row/column period for the eye to resolve as a grid.
+  vec2 causticUv=vec2((warp.x-.5)*uAspect,warp.y)*vec2(5.4,4.2);
+  float causticWarp=atmosphericFbm(causticUv*.27+vec2(uTime*.012,-uTime*.009));
+  causticUv+=vec2(causticWarp-.5,noise(causticUv*.21+vec2(7.3,-uTime*.008))-.5)*1.35;
+  vec2 causticCell=floor(causticUv),causticLocal=fract(causticUv);
+  float nearestCell=8.0,secondCell=8.0;
+  for(int cy=-1;cy<=1;cy++) {
+    for(int cx=-1;cx<=1;cx++) {
+      vec2 neighbor=vec2(float(cx),float(cy));
+      vec2 lattice=causticCell+neighbor;
+      vec2 seed=vec2(hash(lattice+vec2(17.2,4.7)),hash(lattice+vec2(3.1,29.4)));
+      vec2 feature=.5+.36*sin(seed*6.28318+uTime*vec2(.045,-.038));
+      float cellDistance=length(neighbor+feature-causticLocal);
+      if(cellDistance<nearestCell){secondCell=nearestCell;nearestCell=cellDistance;}
+      else if(cellDistance<secondCell)secondCell=cellDistance;
+    }
+  }
+  float membraneGap=secondCell-nearestCell;
+  float membraneAA=max(fwidth(membraneGap)*1.25,.012);
+  float membraneCore=1.0-smoothstep(.018,.052+membraneAA,membraneGap);
+  float membraneAura=1.0-smoothstep(.045,.19+membraneAA,membraneGap);
+  float causticBreak=.28+.72*smoothstep(.18,.8,noise(causticUv*.43+uTime*.006));
+  float causticWeb=(membraneCore*.48+membraneAura*.23)*causticBreak;
   // Refraction can move UVs below the frame. Fractional powers of negative
   // height produce NaNs on hardware GPUs and contaminate HDR bloom buffers.
   float lightHeight=clamp(uv.y,0.0,1.0);
@@ -513,7 +527,7 @@ void main() {
     deep+=vec3(.055,.28,.30)*rim*mineralGlow*(1.0-fi*.25);
   }
   float causticReach=mix(.18,1.0,pow(lightHeight,1.35))*exp(-abs(uv.x-.36)*.72);
-  deep+=vec3(.035,.19,.21)*causticWeb*causticReach*.72;
+  deep+=vec3(.035,.19,.21)*causticWeb*causticReach;
   float beam1=exp(-pow((uv.x-.16-uv.y*.19+sin(uTime*.071)*.012)*14.0,2.0));
   float beam2=exp(-pow((uv.x-.45+uv.y*.04+sin(uTime*.053+1.7)*.009)*25.0,2.0));
   deep+=vec3(.035,.15,.18)*(beam1+beam2*.55)*pow(lightHeight,1.4);

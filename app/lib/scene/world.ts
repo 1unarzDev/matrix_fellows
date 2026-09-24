@@ -445,8 +445,8 @@ export function createWorld(
       THREE.MathUtils.smoothstep(progress, 0.16, 0.34) *
       (1 - THREE.MathUtils.smoothstep(progress, 0.52, 0.82))
     const fog = scene.fog as THREE.Fog
-    fog.near = THREE.MathUtils.lerp(THREE.MathUtils.lerp(35, 18, crestVeil), 12, curtain)
-    fog.far = THREE.MathUtils.lerp(THREE.MathUtils.lerp(150, 70, crestVeil), 62, curtain)
+    fog.near = THREE.MathUtils.lerp(THREE.MathUtils.lerp(35, 28, crestVeil), 12, curtain)
+    fog.far = THREE.MathUtils.lerp(THREE.MathUtils.lerp(150, 112, crestVeil), 62, curtain)
     scene.fog!.color.setRGB(0.6, 0.42, 0.25).lerp(new THREE.Color(0.095, 0.12, 0.125), weather)
     camera.lookAt(target)
     lineMaterial.uniforms.uOpacity!.value = THREE.MathUtils.smoothstep(progress, 3.75, 4.15) * 0.25

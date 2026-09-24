@@ -127,6 +127,12 @@ transitions. Distant water filters micro-detail while retaining broad swell
 normals. Fog, darkness, haze, and silhouettes control visibility instead of
 requiring dense geometry.
 
+The opening ridge reveal's dune-scale haze is evaluated in that existing world
+fragment pass. It uses bounded low-frequency noise and a scroll-owned envelope;
+it adds no render target, particle system, scene pass, or animation loop. The
+separate oasis geometry uses only a milder scene-fog adjustment so its edges do
+not receive a stronger tan veil than the shader-rendered terrain.
+
 Deep-sea caustics are an analytic, domain-warped light field evaluated inside
 the existing world fragment pass. They replace the former powered-sine streak
 band without adding a texture, render target, or light pass. The Depths copy

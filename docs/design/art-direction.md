@@ -86,6 +86,13 @@ Inspected the official [Alto’s Odyssey](https://www.altosodyssey.com/) “Palm
 
 The oasis now has an irregular, raised shoreline, nine shared-asset palms, 38 embedded stones, and 640 instanced grass/reed blades in 32 clumps. Leaves use shader-driven wind; the sand no longer transitions to green. The palm's two trunk and two foliage primitives are preserved while merging into one typed instanced mesh, preventing the earlier mobile batch from retaining only the final leaf primitive. The small palm asset starts loading with the already-lazy world, instead of being requested midway into the reveal. The dressing lives in `app/lib/scene/oasis.ts`, shares the terrain GLSL for grounding, and disposes its geometries, materials, and textures on teardown. Hero copy/details recede before the crest, and discovery copy waits until the reveal has had a clear visual beat.
 
+The ridge reveal uses a muted, low-frequency amber-gray haze across the full
+dune field while the dressing resolves. It deliberately avoids concentrating
+warm scene fog around the separately rendered palms and rocks, which made them
+look like tan cut-outs against a crisp foreground. The veil clears with scroll
+progress in both directions and restores the oasis's real material color before
+the discovery framing settles.
+
 ### Storm and flood
 
 The subsequent deep sea revisits ABZÛ's layered-school composition, relying on coordinated currents, suspended particles, and light shafts. The experimental jellyfish have been removed. The community section preserves a dim view of the nebula, complemented by broad violet/teal background accents that visually connect the closing invitation to its surroundings.

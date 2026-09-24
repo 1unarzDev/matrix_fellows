@@ -406,11 +406,20 @@ void main() {
       col=mix(col,atmosphere,fog);
     }
     if(oasis<.999) {
-    float dust=atmosphericFbm(vec2(uv.x*3.0-uTime*.16,uv.y*8.0+uTime*.035));
-    float wisps=atmosphericFbm(vec2(uv.x*1.4-uTime*.22,uv.y*16.0+sin(uv.x*2.0)*1.3));
-    float dustStorm=(1.0-oasis)*(.08+pow(dust,1.5)*.62+wisps*.19);
-    col=mix(col,vec3(.62,.36,.18),dustStorm*.65);
-    col+=vec3(.16,.08,.035)*pow(wisps,2.0)*(1.0-oasis);
+      // Keep airborne sand as a broad field across the terrain. Fine vertical
+      // wisps alone made the separately rendered grove read as tan cut-outs
+      // while the foreground dune stayed unnaturally crisp.
+      float dust=atmosphericFbm(vec2(uv.x*2.2-uTime*.09,uv.y*3.6+uTime*.025));
+      float wisps=atmosphericFbm(vec2(uv.x*1.3-uTime*.13,uv.y*10.0+sin(uv.x*2.0)));
+      float dustStorm=(1.0-oasis)*(.045+pow(dust,1.35)*.30+wisps*.08);
+      col=mix(col,vec3(.54,.39,.27),dustStorm*.38);
+
+      float reveal=smoothstep(.16,.32,p)*(1.0-smoothstep(.55,.82,p));
+      float billow=atmosphericFbm(vec2(uv.x*1.15-uTime*.035,uv.y*1.65+uTime*.012));
+      float duneReach=.42+.58*(1.0-smoothstep(.70,1.0,uv.y));
+      float revealHaze=reveal*(.20+billow*.13)*duneReach;
+      col=mix(col,vec3(.49,.40,.32),revealHaze);
+      col+=vec3(.045,.035,.025)*pow(wisps,2.0)*(1.0-oasis);
     }
     // Lens response follows the projected light as the camera rises and descends.
     float sunDepth=dot(sun,forward);

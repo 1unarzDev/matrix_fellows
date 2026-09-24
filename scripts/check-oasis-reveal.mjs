@@ -29,15 +29,32 @@ try {
       await image.decode()
       const canvas = document.createElement('canvas')
       canvas.width = 1440
-      canvas.height = 250
+      canvas.height = 960
       const context = canvas.getContext('2d', { willReadFrequently: true })
-      context.drawImage(image, 0, 80, 1440, 250, 0, 0, 1440, 250)
-      const pixels = context.getImageData(0, 0, 1440, 250).data
+      context.drawImage(image, 0, 0)
+      const pixels = context.getImageData(0, 0, 1440, 960).data
       const luminance = (index) =>
         0.2126 * pixels[index] + 0.7152 * pixels[index + 1] + 0.0722 * pixels[index + 2]
+      const band = (x0, y0, x1, y1) => {
+        let luminanceTotal = 0
+        let chromaTotal = 0
+        let samples = 0
+        for (let y = y0; y < y1; y++) {
+          for (let x = x0; x < x1; x++) {
+            const index = (y * 1440 + x) * 4
+            const red = pixels[index]
+            const green = pixels[index + 1]
+            const blue = pixels[index + 2]
+            luminanceTotal += luminance(index)
+            chromaTotal += Math.max(red, green, blue) - Math.min(red, green, blue)
+            samples++
+          }
+        }
+        return { luminance: luminanceTotal / samples, chroma: chromaTotal / samples }
+      }
       let strong = 0
       let count = 0
-      for (let y = 1; y < 249; y++) {
+      for (let y = 81; y < 329; y++) {
         for (let x = 1; x < 1439; x++) {
           const index = (y * 1440 + x) * 4
           const edge =
@@ -47,21 +64,33 @@ try {
           count++
         }
       }
-      return strong / count
+      return {
+        edgeRatio: strong / count,
+        dressingBand: band(100, 250, 1300, 500),
+        duneBand: band(0, 500, 1440, 850),
+      }
     }, { source: dataURL })
   }
 
+  const early = await sample(0.35, 'early')
   const transition = await sample(0.45, 'transition')
+  const clearing = await sample(0.55, 'clearing')
+  const late = await sample(0.7, 'late')
   const settled = await sample(0.85, 'settled')
   assert.ok(
-    transition < 0.0035,
-    `Ridge haze exposes high-contrast dressing during its fade (${transition.toFixed(5)})`,
+    transition.edgeRatio < 0.0035,
+    `Ridge haze exposes high-contrast dressing during its fade (${transition.edgeRatio.toFixed(5)})`,
   )
   assert.ok(
-    settled > 0.006,
-    `Ridge haze does not clear enough for the settled oasis (${settled.toFixed(5)})`,
+    settled.edgeRatio > 0.006,
+    `Ridge haze does not clear enough for the settled oasis (${settled.edgeRatio.toFixed(5)})`,
   )
-  console.log({ transitionEdgeRatio: transition, settledEdgeRatio: settled })
+  const transitionBandGap = transition.dressingBand.luminance - transition.duneBand.luminance
+  assert.ok(
+    transitionBandGap < 34,
+    `Reveal haze is concentrated around the dressing instead of spanning the dunes (${transitionBandGap.toFixed(2)} luminance gap)`,
+  )
+  console.log({ early, transition, clearing, late, settled, transitionBandGap })
 } finally {
   await browser.close()
 }

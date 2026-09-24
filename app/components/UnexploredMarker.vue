@@ -65,14 +65,14 @@
         aria-hidden="true"
         class="h-px w-5 bg-paper/20 transition-[width,background-color] duration-[900ms] ease-[cubic-bezier(.22,1,.36,1)] group-hover/unknown:w-7 group-hover/unknown:bg-acid/45 group-focus-visible/unknown:w-7 group-focus-visible/unknown:bg-acid/45 motion-reduce:transition-none"
       />
-      <span class="ml-3 flex flex-col items-start text-left">
+      <span class="relative ml-3 flex items-center text-left">
         <span
-          class="text-[8px] uppercase tracking-[.25em] text-paper/40 transition-[color,transform] duration-[900ms] ease-[cubic-bezier(.22,1,.36,1)] group-hover/unknown:translate-x-1 group-hover/unknown:text-acid/80 group-focus-visible/unknown:translate-x-1 group-focus-visible/unknown:text-acid/80 motion-reduce:transform-none motion-reduce:transition-none"
+          class="text-[8px] uppercase tracking-[.25em] text-paper/40 transition-[color,transform] duration-[900ms] ease-[cubic-bezier(.22,1,.36,1)] group-hover/unknown:translate-x-1 group-hover/unknown:-translate-y-[6px] group-hover/unknown:text-acid/80 group-focus-visible/unknown:translate-x-1 group-focus-visible/unknown:-translate-y-[6px] group-focus-visible/unknown:text-acid/80 motion-reduce:transform-none motion-reduce:transition-none"
           >The unexplored</span
         >
         <span
           aria-hidden="true"
-          class="mt-2 flex -translate-x-1 items-center gap-1.5 text-[8px] tracking-[.08em] text-paper/0 opacity-0 transition-[color,opacity,transform] duration-500 ease-[cubic-bezier(.22,1,.36,1)] group-hover/unknown:translate-x-1 group-hover/unknown:text-paper/55 group-hover/unknown:opacity-100 group-focus-visible/unknown:translate-x-1 group-focus-visible/unknown:text-paper/55 group-focus-visible/unknown:opacity-100 motion-reduce:transform-none motion-reduce:transition-none"
+          class="absolute left-0 top-[calc(50%+3px)] flex -translate-x-1 items-center gap-1.5 text-[8px] tracking-[.08em] text-paper/0 opacity-0 transition-[color,opacity,transform] duration-500 ease-[cubic-bezier(.22,1,.36,1)] group-hover/unknown:translate-x-1 group-hover/unknown:text-paper/55 group-hover/unknown:opacity-100 group-focus-visible/unknown:translate-x-1 group-focus-visible/unknown:text-paper/55 group-focus-visible/unknown:opacity-100 motion-reduce:transform-none motion-reduce:transition-none"
           >Find your question <SiteIcon :size="9"
         /></span>
       </span>

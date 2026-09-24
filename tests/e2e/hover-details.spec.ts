@@ -58,6 +58,35 @@ test('unexplored marker keeps its label clear of the instrument', async ({ page 
   expect(labelBox!.x).toBeGreaterThanOrEqual(markerBox!.x + markerBox!.width + 12)
 })
 
+test('unexplored marker label rests on its rule then lifts to reveal its action', async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== 'desktop')
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await page.goto('/')
+  const marker = page.getByRole('link', {
+    name: 'The unexplored — find a research idea worth pursuing',
+  })
+  await expect(marker).toBeVisible()
+  const label = marker.getByText('The unexplored', { exact: true })
+  const rule = marker.locator('span[aria-hidden="true"].h-px')
+  const centerY = async (element: typeof label) => {
+    const box = await element.boundingBox()
+    if (!box) throw new Error('Marker element has no layout box')
+    return box.y + box.height / 2
+  }
+
+  const restingRuleY = await centerY(rule)
+  const restingLabelY = await centerY(label)
+  expect(Math.abs(restingLabelY - restingRuleY)).toBeLessThan(2)
+
+  await marker.hover()
+  await expect
+    .poll(async () => restingLabelY - (await centerY(label)))
+    .toBeGreaterThanOrEqual(5)
+  await expect(marker.getByText('Find your question')).toHaveCSS('opacity', '1')
+})
+
 test('unexplored marker turns curiosity into a guide action', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop')
   await page.emulateMedia({ reducedMotion: 'reduce' })

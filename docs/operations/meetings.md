@@ -16,15 +16,15 @@ overwritten by the meeting editor.
 3. Retain the existing `NUXT_SUPABASE_SERVICE_ROLE_KEY`. It is used only inside server
    endpoints and must never be exposed as public runtime configuration.
 
-The PIN unlocks meeting CRUD only. A successful unlock creates an HttpOnly,
+The PIN unlocks the complete organizer editor, including meeting CRUD, site content,
+opportunity review, source controls, and private membership responses. A successful unlock creates an HttpOnly,
 SameSite=Strict, two-hour signed session. Five failed attempts in 15 minutes create a
-15-minute server-side lockout keyed by a one-way HMAC of the network address. The broader
-content editor and private membership responses still require Supabase owner authentication.
+15-minute server-side lockout keyed by a one-way HMAC of the network address.
 
-Public visitors can select only published meetings. Existing Supabase editors can also manage
-meeting rows under RLS, while the focused PIN endpoints use the server-held service role. All
-mutation endpoints require the configured site origin, bounded typed input, and a valid signed
-meeting session.
+Public visitors can select only published meetings. The organizer endpoints use the server-held
+service role only after validating the signed session. All mutation endpoints require the
+configured site origin, bounded typed input, and a valid organizer session. Locking the editor
+clears the cookie and returns keyboard focus to the PIN input.
 
 ## Organizer workflow
 

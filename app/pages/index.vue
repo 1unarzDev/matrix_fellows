@@ -236,24 +236,10 @@ onMounted(() => {
   }, 12000)
   window.addEventListener('keydown', keydown)
   const url = new URL(window.location.href)
-  // Complete email sign-in quietly, without opening the editor or leaving a
-  // persistent auto-open flag on reload. Keep other query parameters and hashes.
+  // Remove the retired editor auto-open flag without disturbing other route state.
   if (url.searchParams.has('admin')) {
     url.searchParams.delete('admin')
     history.replaceState(history.state, '', `${url.pathname}${url.search}${url.hash}`)
-  }
-  if (
-    (new URLSearchParams(url.hash.slice(1)).has('access_token') || url.searchParams.has('code')) &&
-    publicConfig.supabaseUrl &&
-    publicConfig.supabaseAnonKey
-  ) {
-    void import('~/lib/admin-client')
-      .then(({ getAdminClient }) =>
-        getAdminClient(publicConfig.supabaseUrl, publicConfig.supabaseAnonKey).auth.getSession(),
-      )
-      .catch(() => {
-        /* The editor will report sign-in problems when opened. */
-      })
   }
 })
 onBeforeUnmount(() => {

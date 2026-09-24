@@ -54,9 +54,9 @@ The unit tests execute the actual SQL migration in an embedded PostgreSQL engine
 6. Apply the remaining additive migrations. Configure the server-only join and meeting-admin
    values documented in `docs/operations/join-form.md` and `docs/operations/meetings.md`; never
    expose the service role, Sheets token, meeting PIN, or meeting session secret as public config.
-7. Open the editor with **Ctrl/⌘+Shift+E** or **Member admin** in the footer. The focused meeting studio uses its PIN; private responses and the full content editor retain owner-email authentication. Published updates are cached for up to 30 seconds.
+7. Open the editor with **Ctrl/⌘+Shift+E** or **Member admin** in the footer. One organizer PIN unlocks the meeting studio, content editor, opportunity tools, and private responses for a signed two-hour session. Published updates are cached for up to 30 seconds.
 
-The shortcut is an entrance, not an authorization mechanism. Database RLS protects all mutations. Anonymous requests cannot read draft columns. Non-owner authenticated users cannot access the editor's records. The public server endpoint uses only the public Supabase key.
+The shortcut is an entrance, not an authorization mechanism. Anonymous requests cannot read draft columns or private responses. Editor reads and mutations pass through typed, same-origin server endpoints that require the signed HttpOnly organizer session; the service role and PIN never reach browser code. Public server reads continue to expose only approved fields.
 
 Editable content includes meeting time/date/timezone/location/topics, the three research projects, membership benefits, external CTA links, opportunity listings, and trusted sources. Narrative text and cinematic parameters remain in code. Blank links show forthcoming states rather than broken buttons. The initial timezone is `America/Chicago`; change it before announcing a meeting if appropriate.
 

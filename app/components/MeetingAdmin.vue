@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { MeetingEvent, MeetingResource } from '#shared/types/content'
 
-const emit = defineEmits<{ saved: []; 'full-editor': [] }>()
+const emit = defineEmits<{ saved: []; 'full-editor': []; authorized: []; locked: [] }>()
 const unlocked = ref(false)
 const loading = ref(true)
 const busy = ref(false)
@@ -13,19 +13,23 @@ const creating = ref(false)
 const confirmingDelete = ref(false)
 const topicsText = ref('')
 const resourcesText = ref('')
+const celebrating = ref(false)
+const gate = ref<{ focus: () => void }>()
+const gateKey = ref(0)
 
 const errorMessage = (cause: unknown) =>
   (cause as { data?: { statusMessage?: string }; statusMessage?: string })?.data?.statusMessage ||
   (cause as { statusMessage?: string })?.statusMessage ||
   'Something went wrong. Please try again.'
 
-const load = async () => {
-  loading.value = true
+const load = async (showLoading = false) => {
+  if (showLoading) loading.value = true
   error.value = ''
   try {
     const response = await $fetch<{ meetings: MeetingEvent[] }>('/api/meeting-admin/meetings')
     meetings.value = response.meetings
     unlocked.value = true
+    emit('authorized')
   } catch (cause) {
     const status =
       (cause as { statusCode?: number; response?: { status?: number } })?.statusCode ||
@@ -42,10 +46,14 @@ const unlock = async (pin: string) => {
   error.value = ''
   try {
     await $fetch('/api/meeting-admin/unlock', { method: 'POST', body: { pin } })
+    celebrating.value = true
+    const reduced = import.meta.client && matchMedia('(prefers-reduced-motion: reduce)').matches
+    await new Promise((resolve) => setTimeout(resolve, reduced ? 120 : 820))
     await load()
   } catch (cause) {
     error.value = errorMessage(cause)
   } finally {
+    celebrating.value = false
     busy.value = false
   }
 }
@@ -148,173 +156,187 @@ const lock = async () => {
   unlocked.value = false
   meetings.value = []
   editing.value = null
+  gateKey.value++
+  emit('locked')
+  await nextTick()
+  gate.value?.focus()
 }
 
-onMounted(load)
+onMounted(() => load(true))
 </script>
 
 <template>
   <div>
-    <p v-if="loading" role="status" class="py-10 text-sm text-paper/48">
-      Opening the meeting studio…
-    </p>
-    <MeetingPinGate v-else-if="!unlocked" :busy="busy" :error="error" @unlock="unlock" />
-    <template v-else>
-      <div class="mb-7 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p class="text-[9px] uppercase tracking-[.2em] text-acid">Meeting studio</p>
-          <h3 class="mt-2 font-display text-2xl tracking-[-.04em]">The gathering schedule.</h3>
-        </div>
-        <div class="flex gap-2">
-          <button class="meeting-admin-chip" type="button" @click="emit('full-editor')">
-            Full editor
-          </button>
-          <button class="meeting-admin-chip" type="button" @click="lock">Lock</button>
-        </div>
-      </div>
-
-      <p
-        v-if="message"
-        role="status"
-        class="mb-5 rounded-xl bg-acid/[.07] px-4 py-3 text-xs text-acid"
-      >
-        {{ message }}
+    <Transition name="meeting-access" mode="out-in">
+      <p v-if="loading" key="loading" role="status" class="py-10 text-sm text-paper/48">
+        Opening the editing room…
       </p>
-      <p
-        v-if="error"
-        role="alert"
-        class="mb-5 rounded-xl bg-rose-300/[.07] px-4 py-3 text-xs text-rose-200"
-      >
-        {{ error }}
-      </p>
-
-      <Transition name="meeting-editor" mode="out-in">
-        <form v-if="editing" key="editor" class="space-y-5" @submit.prevent="save">
-          <button type="button" class="text-xs text-acid" @click="editing = null">
-            ← All meetings
-          </button>
-          <div class="meeting-admin-surface space-y-4">
-            <AdminField v-model="editing.title" label="Meeting title" />
-            <AdminField v-model="editing.summary" label="Short summary" multiline />
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <AdminField v-model="editing.date" label="Date" type="date" />
-              <AdminField v-model="editing.time" label="Time label" />
-            </div>
-            <div>
-              <p class="mb-2.5 text-[11px] tracking-wide text-paper/55">Status</p>
-              <ThemedSelect
-                :model-value="editing.state"
-                :options="[
-                  { label: 'Confirmed', value: 'confirmed' },
-                  { label: 'Pending · unconfirmed', value: 'tentative' },
-                ]"
-                label="Meeting status"
-                full-width
-                @update:model-value="editing.state = $event as MeetingEvent['state']"
-              />
-            </div>
-            <AdminField v-model="editing.location" label="Location" />
-            <AdminField v-model="editing.timezone" label="Timezone" />
-            <AdminField v-model="topicsText" label="Meeting points · one per line" multiline />
-            <AdminField
-              v-model="resourcesText"
-              label="Resources · one per line: Title | URL | Note"
-              multiline
-            />
-            <AdminField
-              v-model="editing.url"
-              label="Optional meeting / RSVP URL"
-              placeholder="https://"
-            />
-            <label class="flex min-h-11 items-center gap-3 text-sm text-paper/65">
-              <input v-model="editing.published" type="checkbox" class="h-4 w-4 accent-acid" />
-              Visible on the public calendar
-            </label>
+      <MeetingPinGate
+        v-else-if="!unlocked"
+        :key="`gate-${gateKey}`"
+        ref="gate"
+        :busy="busy"
+        :error="error"
+        :success="celebrating"
+        @unlock="unlock"
+      />
+      <div v-else key="editor" class="meeting-admin-editor">
+        <div class="mb-7 flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p class="text-[9px] uppercase tracking-[.2em] text-acid">Meeting studio</p>
+            <h3 class="mt-2 font-display text-2xl tracking-[-.04em]">The gathering schedule.</h3>
           </div>
-          <div class="flex flex-wrap items-center gap-3">
-            <button
-              :disabled="busy"
-              class="rounded-full bg-acid px-6 py-3 text-sm text-ink disabled:opacity-40"
-            >
-              {{ busy ? 'Saving…' : creating ? 'Schedule meeting' : 'Save changes' }}
+          <div class="flex gap-2">
+            <button class="meeting-admin-chip" type="button" @click="emit('full-editor')">
+              Full editor
             </button>
-            <template v-if="!creating">
+            <button class="meeting-admin-chip" type="button" @click="lock">Lock</button>
+          </div>
+        </div>
+
+        <p
+          v-if="message"
+          role="status"
+          class="mb-5 rounded-xl bg-acid/[.07] px-4 py-3 text-xs text-acid"
+        >
+          {{ message }}
+        </p>
+        <p
+          v-if="error"
+          role="alert"
+          class="mb-5 rounded-xl bg-rose-300/[.07] px-4 py-3 text-xs text-rose-200"
+        >
+          {{ error }}
+        </p>
+
+        <Transition name="meeting-editor" mode="out-in">
+          <form v-if="editing" key="editor" class="space-y-5" @submit.prevent="save">
+            <button type="button" class="text-xs text-acid" @click="editing = null">
+              ← All meetings
+            </button>
+            <div class="meeting-admin-surface space-y-4">
+              <AdminField v-model="editing.title" label="Meeting title" />
+              <AdminField v-model="editing.summary" label="Short summary" multiline />
+              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <AdminField v-model="editing.date" label="Date" type="date" />
+                <AdminField v-model="editing.time" label="Time label" />
+              </div>
+              <div>
+                <p class="mb-2.5 text-[11px] tracking-wide text-paper/55">Status</p>
+                <ThemedSelect
+                  :model-value="editing.state"
+                  :options="[
+                    { label: 'Confirmed', value: 'confirmed' },
+                    { label: 'Pending · unconfirmed', value: 'tentative' },
+                  ]"
+                  label="Meeting status"
+                  full-width
+                  @update:model-value="editing.state = $event as MeetingEvent['state']"
+                />
+              </div>
+              <AdminField v-model="editing.location" label="Location" />
+              <AdminField v-model="editing.timezone" label="Timezone" />
+              <AdminField v-model="topicsText" label="Meeting points · one per line" multiline />
+              <AdminField
+                v-model="resourcesText"
+                label="Resources · one per line: Title | URL | Note"
+                multiline
+              />
+              <AdminField
+                v-model="editing.url"
+                label="Optional meeting / RSVP URL"
+                placeholder="https://"
+              />
+              <label class="flex min-h-11 items-center gap-3 text-sm text-paper/65">
+                <input v-model="editing.published" type="checkbox" class="h-4 w-4 accent-acid" />
+                Visible on the public calendar
+              </label>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
               <button
-                v-if="!confirmingDelete"
-                type="button"
-                class="px-3 py-2 text-xs text-paper/45 hover:text-rose-200"
-                @click="confirmingDelete = true"
+                :disabled="busy"
+                class="rounded-full bg-acid px-6 py-3 text-sm text-ink disabled:opacity-40"
               >
-                Delete
+                {{ busy ? 'Saving…' : creating ? 'Schedule meeting' : 'Save changes' }}
               </button>
-              <span v-else class="flex flex-wrap items-center gap-2 text-xs text-rose-100">
-                Delete this meeting?
+              <template v-if="!creating">
                 <button
+                  v-if="!confirmingDelete"
                   type="button"
-                  class="rounded-full border border-rose-200/30 px-3 py-2"
-                  @click="remove"
+                  class="px-3 py-2 text-xs text-paper/45 hover:text-rose-200"
+                  @click="confirmingDelete = true"
                 >
-                  Yes, delete
+                  Delete
                 </button>
-                <button
-                  type="button"
-                  class="px-2 py-2 text-paper/55"
-                  @click="confirmingDelete = false"
-                >
-                  Cancel
-                </button>
-              </span>
-            </template>
-          </div>
-        </form>
-
-        <div v-else key="list">
-          <button
-            class="mb-6 rounded-full border border-acid/35 bg-acid/[.06] px-5 py-3 text-xs text-acid hover:-translate-y-0.5 hover:border-acid/60"
-            @click="edit()"
-          >
-            + Schedule a meeting
-          </button>
-          <div class="grid gap-3">
-            <button
-              v-for="meeting in meetings"
-              :key="meeting.id"
-              type="button"
-              class="meeting-admin-row group"
-              @click="edit(meeting)"
-            >
-              <span class="meeting-admin-row__date">{{
-                meeting.date.slice(5).replace('-', '·')
-              }}</span>
-              <span class="min-w-0 flex-1 text-left">
-                <span class="block truncate text-sm text-paper/85">{{ meeting.title }}</span>
-                <span
-                  class="mt-1 flex items-center gap-2 text-[10px] uppercase tracking-[.12em] text-paper/38"
-                >
-                  <span
-                    class="h-1.5 w-1.5 rounded-full"
-                    :class="
-                      meeting.state === 'confirmed'
-                        ? 'bg-[#e4bb72] shadow-[0_0_7px_#e4bb72]'
-                        : 'rotate-45 rounded-[1px] border border-[#b7a2e2]'
-                    "
-                  />
-                  {{ meeting.state === 'confirmed' ? 'Confirmed' : 'Pending' }} ·
-                  {{ meeting.location }}
+                <span v-else class="flex flex-wrap items-center gap-2 text-xs text-rose-100">
+                  Delete this meeting?
+                  <button
+                    type="button"
+                    class="rounded-full border border-rose-200/30 px-3 py-2"
+                    @click="remove"
+                  >
+                    Yes, delete
+                  </button>
+                  <button
+                    type="button"
+                    class="px-2 py-2 text-paper/55"
+                    @click="confirmingDelete = false"
+                  >
+                    Cancel
+                  </button>
                 </span>
-              </span>
-              <SiteIcon
-                :size="13"
-                class="text-paper/35 transition-transform duration-500 group-hover:translate-x-1"
-              />
+              </template>
+            </div>
+          </form>
+
+          <div v-else key="list">
+            <button
+              class="mb-6 rounded-full border border-acid/35 bg-acid/[.06] px-5 py-3 text-xs text-acid hover:-translate-y-0.5 hover:border-acid/60"
+              @click="edit()"
+            >
+              + Schedule a meeting
             </button>
+            <div class="grid gap-3">
+              <button
+                v-for="meeting in meetings"
+                :key="meeting.id"
+                type="button"
+                class="meeting-admin-row group"
+                @click="edit(meeting)"
+              >
+                <span class="meeting-admin-row__date">{{
+                  meeting.date.slice(5).replace('-', '·')
+                }}</span>
+                <span class="min-w-0 flex-1 text-left">
+                  <span class="block truncate text-sm text-paper/85">{{ meeting.title }}</span>
+                  <span
+                    class="mt-1 flex items-center gap-2 text-[10px] uppercase tracking-[.12em] text-paper/38"
+                  >
+                    <span
+                      class="h-1.5 w-1.5 rounded-full"
+                      :class="
+                        meeting.state === 'confirmed'
+                          ? 'bg-[#e4bb72] shadow-[0_0_7px_#e4bb72]'
+                          : 'rotate-45 rounded-[1px] border border-[#b7a2e2]'
+                      "
+                    />
+                    {{ meeting.state === 'confirmed' ? 'Confirmed' : 'Pending' }} ·
+                    {{ meeting.location }}
+                  </span>
+                </span>
+                <SiteIcon
+                  :size="13"
+                  class="text-paper/35 transition-transform duration-500 group-hover:translate-x-1"
+                />
+              </button>
+            </div>
+            <p v-if="!meetings.length" class="py-10 text-center text-sm text-paper/40">
+              No meetings yet. Schedule the first one.
+            </p>
           </div>
-          <p v-if="!meetings.length" class="py-10 text-center text-sm text-paper/40">
-            No meetings yet. Schedule the first one.
-          </p>
-        </div>
-      </Transition>
-    </template>
+        </Transition>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -326,6 +348,26 @@ onMounted(load)
   background: rgb(244 241 233 / 3.5%);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 4%);
   backdrop-filter: blur(18px);
+}
+.meeting-access-enter-active,
+.meeting-access-leave-active {
+  transition:
+    opacity 360ms ease,
+    translate 680ms cubic-bezier(0.16, 1.22, 0.3, 1),
+    scale 680ms cubic-bezier(0.16, 1.22, 0.3, 1);
+}
+.meeting-access-enter-from {
+  opacity: 0;
+  translate: 0 -18px;
+  scale: 0.965;
+}
+.meeting-access-leave-to {
+  opacity: 0;
+  translate: 0 34px;
+  scale: 0.94;
+}
+.meeting-admin-editor {
+  transform-origin: 50% 0;
 }
 .meeting-admin-chip {
   min-height: 2.5rem;
@@ -387,6 +429,8 @@ onMounted(load)
 }
 @media (prefers-reduced-motion: reduce) {
   .meeting-admin-row,
+  .meeting-access-enter-active,
+  .meeting-access-leave-active,
   .meeting-editor-enter-active,
   .meeting-editor-leave-active {
     transition: none;

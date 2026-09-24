@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import MatrixMark from '~/components/MatrixMark.vue'
-import type { SupabaseClient } from '@supabase/supabase-js'
-import { getAdminClient } from '~/lib/admin-client'
 import type { SiteContent, Opportunity, ImportSource } from '#shared/types/content'
 import { contentSchema, opportunitySchema, sourceSchema } from '#shared/utils/validation'
 
@@ -14,24 +12,21 @@ const visible = ref(false)
 function close() {
   visible.value = false
 }
-const email = ref(''),
-  message = ref(''),
+const message = ref(''),
   error = ref('')
-const checking = ref(configured),
+const checking = ref(false),
   authenticated = ref(false),
   busy = ref(false)
 const meetingMode = ref(true)
 const tab = ref('Meeting')
+const errorMessage = (cause: unknown) =>
+  (cause as { data?: { statusMessage?: string }; statusMessage?: string })?.data?.statusMessage ||
+  (cause as { statusMessage?: string })?.statusMessage ||
+  'Something went wrong. Please try again.'
 function changeTab(name: string) {
   tab.value = name
   error.value = ''
   message.value = ''
-}
-async function signOut() {
-  if (!client) return
-  const result = await client.auth.signOut()
-  if (result.error) error.value = result.error.message
-  else authenticated.value = false
 }
 const draft = ref<SiteContent>(JSON.parse(JSON.stringify(props.initialContent)))
 const listings = ref<Opportunity[]>([...props.opportunities])
@@ -60,24 +55,29 @@ const monitors = ref<
   }>
 >([])
 async function toggleMonitor(id: string, enabled: boolean) {
-  if (!client) return
   busy.value = true
-  const result = await client.from('opportunity_monitors').update({ enabled }).eq('id', id)
-  if (result.error) error.value = result.error.message
-  else await authorize()
+  try {
+    await $fetch('/api/admin', { method: 'POST', body: { action: 'monitor', id, enabled } })
+    await authorize()
+  } catch (cause) {
+    error.value = errorMessage(cause)
+  }
   busy.value = false
 }
 async function reviewCandidate(item: Opportunity, approve: boolean) {
-  if (!client || !item.provenance) return
+  if (!item.provenance) return
   busy.value = true
   error.value = ''
   try {
-    const result = await client.rpc('review_import', {
-      candidate_id: item.id,
-      expected_hash: item.provenance.contentHash,
-      approve,
+    await $fetch('/api/admin', {
+      method: 'POST',
+      body: {
+        action: 'candidate',
+        id: item.id,
+        expectedHash: item.provenance.contentHash,
+        approve,
+      },
     })
-    if (result.error) throw result.error
     await authorize()
     if (approve) emit('saved')
     message.value = approve
@@ -100,96 +100,73 @@ const topics = computed({
     draft.value.meeting.topics = value.split('\n').filter(Boolean)
   },
 })
-let client: SupabaseClient | undefined
-let unsubscribe: (() => void) | undefined
 let previousFocus: HTMLElement | null
 let alreadyLocked = false
 let disposed = false
 let originalListing: Opportunity | undefined
 
 async function authorize() {
-  if (!client || disposed) return
+  if (disposed) return
   checking.value = true
-  const {
-    data: { session },
-  } = await client.auth.getSession()
-  if (!session) {
+  error.value = ''
+  try {
+    const state = await $fetch<{
+      site?: { data?: SiteContent; draft?: SiteContent }
+      opportunities: Array<{
+        id: string
+        data: Opportunity
+        overrides?: Partial<Opportunity>
+        published: boolean
+        suppressed: boolean
+      }>
+      sources: Array<ImportSource & { last_run?: string; last_error?: string }>
+      candidates: Array<{ data: unknown }>
+      monitors: typeof monitors.value
+      discoveryCount: number
+      queueHealth: typeof queueHealth.value
+    }>('/api/admin')
+    if (disposed) return
+    authenticated.value = true
+    if (state.site?.draft || state.site?.data) draft.value = state.site.draft || state.site.data!
+    listings.value = state.opportunities.map((row) => ({
+      ...row.data,
+      ...row.overrides,
+      id: row.id,
+      published: row.published && !row.suppressed,
+    }))
+    sources.value = state.sources
+    monitors.value = state.monitors
+    discoveryCount.value = state.discoveryCount
+    queueHealth.value = state.queueHealth
+    candidates.value = state.candidates.flatMap((row) => {
+      const parsed = opportunitySchema.safeParse(row.data)
+      return parsed.success ? [parsed.data] : []
+    })
+  } catch (cause) {
     authenticated.value = false
+    meetingMode.value = true
+    error.value = errorMessage(cause)
+  } finally {
     checking.value = false
-    return
   }
-  const { data: allowed, error: authError } = await client.rpc('is_editor')
-  if (disposed) return
-  authenticated.value = Boolean(allowed && !authError)
-  checking.value = false
-  if (!authenticated.value) {
-    error.value = 'This account does not have editing access.'
-    return
-  }
-  meetingMode.value = false
-  const [site, rows, feeds, proposals, monitoring, discoveries, queues] = await Promise.all([
-    client.from('site_content').select('data,draft').eq('id', 'main').maybeSingle(),
-    client.from('opportunities').select('*').order('updated_at', { ascending: false }),
-    client.from('import_sources').select('*'),
-    client
-      .from('import_candidates')
-      .select('data')
-      .eq('status', 'pending')
-      .order('fetched_at', { ascending: false }),
-    client.from('opportunity_monitors').select('*').order('id'),
-    client
-      .from('opportunity_discoveries')
-      .select('id', { count: 'exact', head: true })
-      .eq('review_status', 'pending'),
-    client.rpc('opportunity_queue_health'),
-  ])
-  if (disposed) return
-  if (
-    site.error ||
-    rows.error ||
-    feeds.error ||
-    proposals.error ||
-    monitoring.error ||
-    discoveries.error ||
-    queues.error
-  ) {
-    error.value = 'Could not load all editor data. Please retry.'
-    return
-  }
-  if (site.data?.draft || site.data?.data) draft.value = site.data.draft || site.data.data
-  listings.value = (rows.data || []).map((row) => ({
-    ...row.data,
-    ...row.overrides,
-    id: row.id,
-    published: row.published && !row.suppressed,
-  }))
-  sources.value = feeds.data || []
-  monitors.value = monitoring.data || []
-  discoveryCount.value = discoveries.count || 0
-  queueHealth.value = queues.data || []
-  candidates.value = (proposals.data || []).flatMap((row) => {
-    const parsed = opportunitySchema.safeParse(row.data)
-    return parsed.success ? [parsed.data] : []
-  })
 }
 
-async function login() {
-  if (!client) return
-  busy.value = true
+const handleAuthorized = () => {
+  authenticated.value = true
+}
+const openFullEditor = async () => {
+  meetingMode.value = false
+  await authorize()
+}
+const lockEditor = async () => {
+  await $fetch('/api/meeting-admin/logout', { method: 'POST' }).catch(() => {})
+  authenticated.value = false
+  meetingMode.value = true
   error.value = ''
   message.value = ''
-  const { error: loginError } = await client.auth.signInWithOtp({
-    email: email.value,
-    options: { shouldCreateUser: false, emailRedirectTo: `${config.public.siteUrl}/` },
-  })
-  busy.value = false
-  if (loginError) error.value = loginError.message
-  else
-    message.value = 'Check your email for a secure sign-in link. Only the owner account can edit.'
 }
 
 async function save(publish: boolean) {
-  if (!client) return
   error.value = ''
   message.value = ''
   const parsed = contentSchema.safeParse(draft.value)
@@ -198,18 +175,19 @@ async function save(publish: boolean) {
     return
   }
   busy.value = true
-  const payload: { id: string; data?: SiteContent; draft: SiteContent; published?: boolean } =
-    publish
-      ? { id: 'main', data: parsed.data, draft: parsed.data, published: true }
-      : { id: 'main', draft: parsed.data }
-  const { error: saveError } = await client.from('site_content').upsert(payload)
-  busy.value = false
-  if (saveError) error.value = saveError.message
-  else {
+  try {
+    await $fetch('/api/admin', {
+      method: 'POST',
+      body: { action: 'content', draft: parsed.data, publish },
+    })
     message.value = publish
       ? 'Published. Public updates may take up to 30 seconds.'
       : 'Draft saved. The public page is unchanged.'
     if (publish) emit('saved')
+  } catch (cause) {
+    error.value = errorMessage(cause)
+  } finally {
+    busy.value = false
   }
 }
 
@@ -238,7 +216,7 @@ function editListing(item?: Opportunity) {
 }
 
 async function saveListing() {
-  if (!client || !editing.value) return
+  if (!editing.value) return
   error.value = ''
   message.value = ''
   const parsed = opportunitySchema.safeParse(editing.value)
@@ -248,55 +226,41 @@ async function saveListing() {
   }
   busy.value = true
   const item = parsed.data
-  let result
-  if (originalListing) {
-    const changed: Record<string, unknown> = {}
-    for (const key of Object.keys(item) as Array<keyof Opportunity>) {
-      if (
-        item[key] !== originalListing[key] &&
-        !['id', 'sourceId', 'externalId', 'published'].includes(key)
-      )
-        changed[key] = item[key]
-    }
-    result = await client.rpc('edit_opportunity', {
-      opportunity_id: item.id,
-      changes: changed,
-      make_public: item.published,
+  try {
+    await $fetch('/api/admin', {
+      method: 'POST',
+      body: { action: 'listing', item, existing: Boolean(originalListing) },
     })
-  } else
-    result = await client.from('opportunities').insert({
-      id: item.id,
-      source_id: item.sourceId,
-      external_id: item.externalId,
-      canonical_url: item.url,
-      data: item,
-      published: item.published,
-    })
-  busy.value = false
-  if (result.error) error.value = result.error.message
-  else {
     editing.value = null
     message.value = 'Listing saved.'
     await authorize()
     emit('saved')
+  } catch (cause) {
+    error.value = errorMessage(cause)
+  } finally {
+    busy.value = false
   }
 }
 
 async function saveSource() {
-  if (!client) return
   const parsed = sourceSchema.safeParse(source.value)
   if (!parsed.success) {
     error.value = parsed.error.issues.map((i) => i.message).join('\n')
     return
   }
   busy.value = true
-  const { error: sourceError } = await client.from('import_sources').upsert(parsed.data)
-  busy.value = false
-  if (sourceError) error.value = sourceError.message
-  else {
+  try {
+    await $fetch('/api/admin', {
+      method: 'POST',
+      body: { action: 'source', source: parsed.data },
+    })
     message.value = 'Source saved. Enabled sources run on the daily schedule.'
     source.value = { id: '', name: '', kind: 'json', url: '', enabled: false }
     await authorize()
+  } catch (cause) {
+    error.value = errorMessage(cause)
+  } finally {
+    busy.value = false
   }
 }
 
@@ -328,19 +292,9 @@ onMounted(async () => {
   visible.value = true
   await nextTick()
   panel.value?.focus()
-  if (!configured) return
-  client = getAdminClient(config.public.supabaseUrl, config.public.supabaseAnonKey)
-  const { data } = client.auth.onAuthStateChange(() => {
-    setTimeout(() => {
-      if (!disposed) void authorize()
-    }, 0)
-  })
-  unsubscribe = () => data.subscription.unsubscribe()
-  await authorize()
 })
 onBeforeUnmount(() => {
   disposed = true
-  unsubscribe?.()
   if (!alreadyLocked) document.body.classList.remove('overflow-hidden')
   previousFocus?.focus({ preventScroll: true })
 })
@@ -396,7 +350,7 @@ onBeforeUnmount(() => {
               <h3 class="mt-5 text-lg">A home for your updates.</h3>
               <p class="mt-3 text-sm leading-relaxed text-paper/60">
                 The editor is ready to connect. Configure Supabase, apply the included database
-                migration, and authorize the owner account to enable secure editing.
+                migration, and configure the organizer PIN to enable secure editing.
               </p>
               <p class="mt-4 text-xs leading-relaxed text-paper/40">
                 Setup instructions are included in the project README. Your content stays visible
@@ -406,29 +360,19 @@ onBeforeUnmount(() => {
             <MeetingAdmin
               v-else-if="meetingMode"
               @saved="emit('saved')"
-              @full-editor="meetingMode = false"
+              @authorized="handleAuthorized"
+              @locked="authenticated = false"
+              @full-editor="openFullEditor"
             />
             <p v-else-if="checking" role="status" class="text-sm text-paper/60">
               Checking your access…
             </p>
-            <form v-else-if="!authenticated" class="space-y-5" @submit.prevent="login">
-              <p class="text-sm leading-relaxed text-paper/60">
-                Sign in with the owner email. We’ll send a secure link; no password to remember.
-              </p>
-              <AdminField v-model="email" label="Owner email" type="email" /><button
-                :disabled="busy || !email"
-                class="rounded-full bg-acid px-6 py-3 text-sm text-ink disabled:opacity-40"
-              >
-                {{ busy ? 'Sending…' : 'Send sign-in link' }}
-              </button>
-              <button
-                type="button"
-                class="ml-3 px-3 py-2 text-xs text-paper/45"
-                @click="meetingMode = true"
-              >
-                Back to meeting studio
-              </button>
-            </form>
+            <MeetingAdmin
+              v-else-if="!authenticated"
+              @saved="emit('saved')"
+              @authorized="handleAuthorized"
+              @full-editor="openFullEditor"
+            />
             <template v-else>
               <div class="relative z-20 mb-8">
                 <p class="mb-2.5 text-[10px] uppercase tracking-[.16em] text-paper/40">
@@ -460,10 +404,12 @@ onBeforeUnmount(() => {
                 leave-to-class="-translate-y-1 opacity-0 motion-reduce:translate-y-0"
               >
                 <div :key="tab" class="min-h-64">
-                  <AdminResponses v-if="tab === 'Responses' && client" :client="client" />
+                  <AdminResponses v-if="tab === 'Responses'" />
                   <MeetingAdmin
                     v-if="tab === 'Meeting'"
                     @saved="emit('saved')"
+                    @authorized="handleAuthorized"
+                    @locked="lockEditor"
                     @full-editor="tab = 'Research'"
                   />
                   <div v-if="tab === 'Research'" class="space-y-8">
@@ -870,7 +816,7 @@ onBeforeUnmount(() => {
               >
                 {{ busy ? 'Saving…' : 'Publish content' }}
               </button></template
-            ><button class="ml-auto text-xs text-paper/45" @click="signOut">Sign out</button>
+            ><button class="ml-auto text-xs text-paper/45" @click="lockEditor">Lock</button>
           </footer>
         </section>
       </div>

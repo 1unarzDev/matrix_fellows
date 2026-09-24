@@ -1,8 +1,6 @@
 <script setup lang="ts">
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { csvCell } from '#shared/utils/join'
 
-const props = defineProps<{ client: SupabaseClient }>()
 type Metric = { label: string; count: number }
 type Analytics = {
   total: number
@@ -40,23 +38,13 @@ async function load() {
   busy.value = true
   error.value = ''
   try {
-    const [analytics, rows] = await Promise.all([
-      props.client.rpc('join_response_analytics'),
-      props.client
-        .from('join_responses')
-        .select(
-          'id,created_at,name,email,student_id,grade,interests,interest_other,goals,stage,note,parent_name,parent_email,parent_permission_confirmed',
-        )
-        .order('id', { ascending: false })
-        .range(page.value * 20, page.value * 20 + 19),
-    ])
+    const result = await $fetch<{ analytics: Analytics; responses: Response[] }>('/api/admin', {
+      method: 'POST',
+      body: { action: 'responses', page: page.value },
+    })
     if (disposed) return
-    if (analytics.error || rows.error)
-      throw new Error(
-        'Could not load responses. Check your connection and editor access, then retry.',
-      )
-    stats.value = analytics.data
-    responses.value = rows.data || []
+    stats.value = result.analytics
+    responses.value = result.responses
   } catch (err) {
     if (!disposed) error.value = (err as Error).message
   } finally {
@@ -69,7 +57,12 @@ async function remove(id: number) {
     return
   }
   deleting.value = true
-  const { error: failure } = await props.client.from('join_responses').delete().eq('id', id)
+  let failure = false
+  try {
+    await $fetch('/api/admin', { method: 'POST', body: { action: 'delete-response', id } })
+  } catch {
+    failure = true
+  }
   pendingDelete.value = null
   if (failure) error.value = 'Could not delete this response. Please retry.'
   else {

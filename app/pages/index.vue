@@ -442,7 +442,8 @@ onBeforeUnmount(() => {
                   class="flex items-center gap-2 text-[9px] font-medium uppercase tracking-[.2em] text-[#f4ce89]"
                 >
                   <span
-                    class="h-1.5 w-1.5 border border-current transition-[transform,box-shadow] duration-[620ms] ease-[cubic-bezier(.16,1.28,.3,1)] group-hover/meeting:scale-[1.45] group-focus-within/meeting:scale-[1.45] motion-reduce:transform-none motion-reduce:transition-none"
+                    data-meeting-signal
+                    class="h-1.5 w-1.5 border border-current transition-[transform,box-shadow] duration-[850ms] ease-[cubic-bezier(.33,0,.2,1)] group-hover/meeting:scale-[1.35] group-focus-within/meeting:scale-[1.35] motion-reduce:transform-none motion-reduce:transition-none"
                     :class="
                       nextMeeting.state === 'confirmed'
                         ? 'rounded-full bg-[#f4ce89] shadow-[0_0_8px_#f4ce89]'

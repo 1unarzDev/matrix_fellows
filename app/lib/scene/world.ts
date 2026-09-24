@@ -19,6 +19,7 @@ import {
   stormStrength,
   cameraFloodRise,
   lightningState,
+  meteorChapterVisibility,
 } from './shaders'
 
 export interface World {
@@ -75,6 +76,7 @@ export function createWorld(
     uClip: { value: new THREE.Vector2(camera.near, camera.far) },
     uLightning: { value: new THREE.Vector2() },
     uMeteor: { value: new THREE.Vector4(-1, 0, 0, 0) },
+    uMeteorVisibility: { value: 1 },
     uCosmicTime: { value: 0 },
     uDetail: { value: quality.detail ? 1 : 0 },
   }
@@ -106,11 +108,13 @@ export function createWorld(
           sourceSize: { value: new THREE.Vector2(1, 1) },
           progress: uniforms.uProgress,
           meteor: uniforms.uMeteor,
+          meteorVisibility: uniforms.uMeteorVisibility,
           aspect: uniforms.uAspect,
         },
         vertexShader: screenVertex,
         fragmentShader: `uniform sampler2D colorBuffer; uniform sampler2D depthBuffer;
       uniform vec2 sourceSize; uniform float progress; uniform vec4 meteor;
+      uniform float meteorVisibility;
       uniform float aspect; varying vec2 vUv;
       vec4 cubic(float v) {
         vec4 n=vec4(1.0,2.0,3.0,4.0)-v;
@@ -172,7 +176,7 @@ export function createWorld(
           float tailVeil=exp(-pow(across/.010,2.0)*1.4)*taper*(1.0-tailPosition)*.12;
           float headCore=exp(-dot(delta,delta)*85000.0);
           float headGlow=exp(-dot(delta,delta)*4200.0);
-          float eventFade=smoothstep(0.0,.13,meteor.x)*(1.0-smoothstep(.76,1.0,meteor.x));
+          float eventFade=smoothstep(0.0,.13,meteor.x)*(1.0-smoothstep(.76,1.0,meteor.x))*meteorVisibility;
           vec3 meteorColor=mix(vec3(.42,.57,.72),vec3(.68,.46,.39),seed);
           c+=meteorColor*(tailCore*.46+tailVeil+headCore*.92+headGlow*.14)*eventFade;
         }
@@ -205,11 +209,12 @@ export function createWorld(
       texel: { value: new THREE.Vector2() },
       haloEnabled: { value: quality.halo ? 1 : 0 },
       meteor: { value: new THREE.Vector4(-1, 0, 0, 0) },
+      meteorVisibility: { value: 1 },
       aspect: { value: 1 },
     },
     vertexShader: screenVertex,
     fragmentShader: `uniform sampler2D tDiffuse; uniform vec2 texel; uniform float haloEnabled;
-      uniform vec4 meteor; uniform float aspect; varying vec2 vUv;
+      uniform vec4 meteor; uniform float meteorVisibility; uniform float aspect; varying vec2 vUv;
       void main(){vec3 center=max(texture2D(tDiffuse,vUv).rgb,vec3(0));vec3 c=center;
       ${
         efficient
@@ -250,7 +255,7 @@ export function createWorld(
         float tailVeil=exp(-pow(across/.010,2.0)*1.4)*taper*(1.0-tailPosition)*.12;
         float headCore=exp(-dot(delta,delta)*85000.0);
         float headGlow=exp(-dot(delta,delta)*4200.0);
-        float eventFade=smoothstep(0.0,.13,meteor.x)*(1.0-smoothstep(.76,1.0,meteor.x));
+        float eventFade=smoothstep(0.0,.13,meteor.x)*(1.0-smoothstep(.76,1.0,meteor.x))*meteorVisibility;
         vec3 meteorColor=mix(vec3(.42,.57,.72),vec3(.68,.46,.39),seed);
         c+=meteorColor*(tailCore*.46+tailVeil+headCore*.92+headGlow*.14)*eventFade;
       }
@@ -498,6 +503,9 @@ export function createWorld(
     scene.fog!.color.setRGB(0.6, 0.42, 0.25).lerp(new THREE.Color(0.095, 0.12, 0.125), weather)
     camera.lookAt(target)
     lineMaterial.uniforms.uOpacity!.value = THREE.MathUtils.smoothstep(progress, 3.75, 4.15) * 0.25
+    const meteorVisibility = meteorChapterVisibility(progress)
+    uniforms.uMeteorVisibility.value = meteorVisibility
+    grade.uniforms.meteorVisibility!.value = meteorVisibility
     oasisDressing.setProgress(progress)
   }
   function setProgress(value: number) {
@@ -593,6 +601,7 @@ export function createWorld(
       canvas.dataset.cosmicTime = cosmicElapsed.toFixed(2)
       canvas.dataset.meteorCount = String(meteorIndex)
       canvas.dataset.meteorActive = uniforms.uMeteor.value.x >= 0 ? 'true' : 'false'
+      canvas.dataset.meteorVisibility = uniforms.uMeteorVisibility.value.toFixed(3)
       canvas.dataset.qualityStep = String(quality.step)
       sampleStart = now
       sampleFrames = 0

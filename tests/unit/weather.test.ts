@@ -4,6 +4,7 @@ import {
   stormStrength,
   cameraFloodRise,
   lightningState,
+  meteorChapterVisibility,
   nearSwellFactor,
   rainStrength,
   swellStrength,
@@ -68,5 +69,13 @@ describe('scroll-driven storm and flood', () => {
       if (strike.intensity > 0.5) strikes.add(strike.seed)
     }
     expect([...strikes]).toEqual([0, 1, 2, 3])
+  })
+
+  it('fades an active meteor away when scrolling out of the cosmic chapter', () => {
+    expect(meteorChapterVisibility(4)).toBe(1)
+    expect(meteorChapterVisibility(4.3)).toBeGreaterThan(0)
+    expect(meteorChapterVisibility(4.3)).toBeLessThan(1)
+    expect(meteorChapterVisibility(4.5)).toBe(0)
+    expect(meteorChapterVisibility(5)).toBe(0)
   })
 })

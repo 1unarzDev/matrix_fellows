@@ -42,6 +42,22 @@ test('landscape phones retain the efficient render path and sharp foreground', a
   await expect(canvas).toHaveAttribute('data-progress', /^2\./)
 })
 
+test('shooting stars fade out when the journey leaves the cosmic chapter', async ({ page }) => {
+  await page.goto('/#connection')
+  const canvas = page.locator('canvas[data-engine]')
+  await expect(canvas).toHaveCSS('opacity', '1', { timeout: 20_000 })
+  await expect(canvas).toHaveAttribute('data-progress', /^4\./)
+  await expect(canvas).toHaveAttribute('data-meteor-visibility', '1.000')
+
+  await page.locator('#community').evaluate((element) =>
+    element.scrollIntoView({
+      behavior: 'instant',
+    }),
+  )
+  await expect(canvas).toHaveAttribute('data-progress', /^5\./, { timeout: 10_000 })
+  await expect(canvas).toHaveAttribute('data-meteor-visibility', '0.000')
+})
+
 test('mobile camera settles after a touch-sized scroll step and keeps foreground sharp', async ({
   page,
 }, info) => {

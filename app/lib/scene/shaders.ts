@@ -42,6 +42,7 @@ export function lightningState(seconds: number) {
 }
 export const stormStrength = (progress: number) =>
   smooth(1.06, 1.42, progress) * (1 - smooth(2.9, 3.15, progress))
+export const meteorChapterVisibility = (progress: number) => 1 - smooth(4.12, 4.5, progress)
 export const rainStrength = (progress: number) =>
   smooth(1.06, 1.42, progress) * (1 - smooth(2.1, 2.38, progress))
 const SWELL_START = 1.16

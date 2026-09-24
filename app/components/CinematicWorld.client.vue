@@ -16,6 +16,17 @@ let idle: ReturnType<typeof setTimeout>
 let media: MediaQueryList
 let mediaChanged: () => void
 const mountedAt = typeof performance === 'undefined' ? 0 : performance.now()
+const SCROLL_INTENT_IDLE_MS = 240
+const SCROLL_INTENT_VELOCITY = 700
+
+function updateScrollIntentVelocity(previous: number, distance: number, elapsed: number) {
+  const magnitude = Math.abs(distance)
+  if (elapsed > SCROLL_INTENT_IDLE_MS)
+    return magnitude >= 45 ? Math.min(2_400, Math.max(900, magnitude * 12.5)) : 0
+
+  const instantaneous = (magnitude / Math.max(16, elapsed)) * 1000
+  return previous * 0.62 + instantaneous * 0.38
+}
 
 async function yieldToMain() {
   const browserScheduler = (
@@ -145,7 +156,7 @@ onMounted(() => {
     let viewportHeight = window.innerHeight
     let lastNativeY = window.scrollY
     let lastNativeAt = performance.now()
-    let nativeStrongIntent = false
+    let nativeIntentVelocity = 0
     const state = { position: 0 }
     const measure = () => {
       viewportHeight = window.innerHeight
@@ -258,16 +269,14 @@ onMounted(() => {
       const now = performance.now()
       const elapsed = now - lastNativeAt
       const distance = Math.abs(window.scrollY - lastNativeY)
-      if (elapsed > 240) nativeStrongIntent = false
-      if (distance >= 120 || (elapsed > 0 && (distance / elapsed) * 1000 >= 650))
-        nativeStrongIntent = true
+      nativeIntentVelocity = updateScrollIntentVelocity(nativeIntentVelocity, distance, elapsed)
       lastNativeY = window.scrollY
       lastNativeAt = now
     }
     if (!smoothScroll) window.addEventListener('scroll', trackNativeIntent, { passive: true })
     let smoothSettleTimer: ReturnType<typeof setTimeout> | undefined
     let smoothSettleDirection = 0
-    let smoothStrongIntent = false
+    let smoothIntentVelocity = 0
     let lastSmoothInputAt = 0
     const scheduleSmoothSettle = () => {
       if (!smoothScroll || media.matches) return
@@ -279,15 +288,24 @@ onMounted(() => {
           settleTimeline(
             smoothScroll.targetScroll / maxScroll,
             smoothSettleDirection,
-            smoothStrongIntent,
+            smoothIntentVelocity >= SCROLL_INTENT_VELOCITY,
           ) * maxScroll
-        if (Math.abs(destination - smoothScroll.targetScroll) < 2) return
+        if (Math.abs(destination - smoothScroll.targetScroll) < 2) {
+          smoothIntentVelocity = 0
+          return
+        }
+        const intentStrength = Math.max(
+          0,
+          Math.min(1, (smoothIntentVelocity - SCROLL_INTENT_VELOCITY) / 1_700),
+        )
         smoothScroll.scrollTo(destination, {
-          duration: 0.48,
+          // Borderline gestures get a calmer completion; decisive flicks stay
+          // quick. The destination remains direction-aware and deterministic.
+          duration: 0.76 - intentStrength * 0.28,
           easing: (value: number) => 1 - Math.pow(1 - value, 3),
           userData: { timelineSnap: true },
           onComplete: () => {
-            smoothStrongIntent = false
+            smoothIntentVelocity = 0
           },
         })
       }, 180)
@@ -295,9 +313,7 @@ onMounted(() => {
     const removeSmoothSettle = smoothScroll?.on('virtual-scroll', ({ deltaY }) => {
       const now = performance.now()
       const elapsed = now - lastSmoothInputAt
-      if (elapsed > 240) smoothStrongIntent = false
-      if (Math.abs(deltaY) >= 45 || (elapsed > 0 && (Math.abs(deltaY) / elapsed) * 1000 >= 750))
-        smoothStrongIntent = true
+      smoothIntentVelocity = updateScrollIntentVelocity(smoothIntentVelocity, deltaY, elapsed)
       lastSmoothInputAt = now
       smoothSettleDirection = Math.sign(deltaY)
       scheduleSmoothSettle()
@@ -314,17 +330,21 @@ onMounted(() => {
           ? undefined
           : {
               snapTo: (value, trigger) =>
-                settleTimeline(value, trigger?.direction || 0, nativeStrongIntent),
+                settleTimeline(
+                  value,
+                  trigger?.direction || 0,
+                  nativeIntentVelocity >= SCROLL_INTENT_VELOCITY,
+                ),
               delay: 0.18,
-              duration: { min: 0.28, max: 0.65 },
+              duration: { min: 0.36, max: 0.78 },
               ease: 'power3.out',
               inertia: false,
               directional: false,
               onComplete: () => {
-                nativeStrongIntent = false
+                nativeIntentVelocity = 0
               },
               onInterrupt: () => {
-                nativeStrongIntent = false
+                nativeIntentVelocity = 0
               },
             },
         invalidateOnRefresh: true,

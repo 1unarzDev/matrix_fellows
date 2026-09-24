@@ -106,6 +106,51 @@ test.describe('cinematic timeline settling', () => {
       .toBeLessThan(5)
   })
 
+  test('does not turn a decelerated research scroll into an abrupt depths jump', async ({
+    page,
+  }, testInfo) => {
+    await page.addInitScript(() => {
+      const getContext = HTMLCanvasElement.prototype.getContext
+      HTMLCanvasElement.prototype.getContext = function (type, ...args) {
+        if (String(type).startsWith('webgl')) return null
+        return getContext.call(this, type, ...args)
+      } as typeof HTMLCanvasElement.prototype.getContext
+    })
+    await page.goto('/#research')
+    await page.waitForTimeout(1_800)
+
+    const [researchTop, frontiersTop] = await Promise.all([
+      page.locator('#research').evaluate((chapter) => chapter.offsetTop),
+      page.locator('#frontiers').evaluate((chapter) => chapter.offsetTop),
+    ])
+    const transitionLength = frontiersTop - researchTop
+    const preTransition = researchTop + transitionLength * 0.56
+    if (testInfo.project.name === 'desktop') {
+      const current = await page.evaluate(() => window.scrollY)
+      await page.mouse.wheel(0, (preTransition - current) / 0.7)
+    } else {
+      await page.evaluate((top) => window.scrollTo({ top, behavior: 'instant' }), preTransition)
+    }
+    await page.waitForTimeout(900)
+
+    // A brief initial impulse followed by a long, slow tail models a trackpad
+    // or touch gesture that has clearly decelerated before the handoff.
+    if (testInfo.project.name === 'desktop') await page.mouse.wheel(0, 200)
+    else await page.evaluate(() => window.scrollBy({ top: 140, behavior: 'instant' }))
+    await page.waitForTimeout(70)
+    for (let step = 0; step < 20; step++) {
+      if (testInfo.project.name === 'desktop') await page.mouse.wheel(0, 5)
+      else await page.evaluate(() => window.scrollBy({ top: 3.5, behavior: 'instant' }))
+      await page.waitForTimeout(100)
+    }
+    const releasedAt = await page.evaluate(() => window.scrollY)
+    await page.waitForTimeout(1_200)
+    const settledAt = await page.evaluate(() => window.scrollY)
+
+    expect(Math.abs(settledAt - releasedAt)).toBeLessThan(40)
+    expect(settledAt).toBeLessThan(frontiersTop - transitionLength * 0.2)
+  })
+
   test('does not pull long-form community content back to the chapter start', async ({ page }) => {
     await page.goto('/#community')
     await page.locator('canvas[data-progress]').waitFor({ timeout: 20_000 })

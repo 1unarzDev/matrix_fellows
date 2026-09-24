@@ -230,7 +230,7 @@ onMounted(() => {
           ><span class="legend legend--next" />Next</span
         >
         <span class="inline-flex items-center gap-1.5"
-          ><span class="legend legend--tentative" />Projected</span
+          ><span class="legend legend--tentative" />Projected meeting</span
         >
         <span class="inline-flex items-center gap-1.5"
           ><span class="legend legend--past" />Past</span
@@ -407,11 +407,24 @@ onMounted(() => {
   background: rgb(196 178 238 / 2.5%);
 }
 .meeting-day--tentative .meeting-day__signal {
-  border: 1px solid #b7a2e2;
-  border-radius: 0.06rem;
+  width: 0.36rem;
+  height: 0.36rem;
+  border: 1px dashed #b7a2e2;
+  border-radius: 999px;
   background: transparent;
   box-shadow: 0 0 7px rgb(183 162 226 / 35%);
-  transform: rotate(45deg);
+  transform: none;
+}
+.meeting-day--tentative .meeting-day__signal::after {
+  position: absolute;
+  top: -0.08rem;
+  right: -0.08rem;
+  width: 0.12rem;
+  height: 0.12rem;
+  border-radius: 999px;
+  content: '';
+  background: #b7a2e2;
+  box-shadow: 0 0 5px rgb(183 162 226 / 60%);
 }
 .meeting-day--past .meeting-day__signal {
   width: 0.2rem;
@@ -433,11 +446,24 @@ onMounted(() => {
   box-shadow: 0 0 7px rgb(228 187 114 / 55%);
 }
 .legend--tentative {
-  border: 1px solid #b7a2e2;
-  border-radius: 0.05rem;
+  position: relative;
+  width: 0.34rem;
+  height: 0.34rem;
+  border: 1px dashed #b7a2e2;
+  border-radius: 999px;
   background: transparent;
   box-shadow: none;
-  transform: rotate(45deg);
+  transform: none;
+}
+.legend--tentative::after {
+  position: absolute;
+  top: -0.08rem;
+  right: -0.08rem;
+  width: 0.11rem;
+  height: 0.11rem;
+  border-radius: 999px;
+  content: '';
+  background: #b7a2e2;
 }
 .legend--past {
   width: 0.22rem;

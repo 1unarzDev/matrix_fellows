@@ -60,7 +60,7 @@ onMounted(() => {
 <template>
   <article
     :aria-labelledby="`${id}-title`"
-    class="opportunity-card flex min-w-0 flex-col overflow-hidden rounded-2xl border border-paper/15 transition-[border-color,background-color,box-shadow] duration-1000 ease-[cubic-bezier(.22,1,.36,1)] hover:border-paper/30 hover:shadow-[0_16px_48px_#00000012] motion-reduce:transition-none"
+    class="opportunity-card flex min-w-0 flex-col overflow-hidden rounded-2xl border border-paper/15 bg-paper/[.015] transition-[border-color,background-color,box-shadow] duration-1000 ease-[cubic-bezier(.22,1,.36,1)] hover:border-paper/30 hover:bg-paper/[.025] hover:shadow-[0_16px_48px_#00000012] motion-reduce:transition-none"
   >
     <div class="flex-1 p-6 sm:p-7">
       <div class="flex flex-wrap items-center justify-between gap-3">
@@ -293,13 +293,3 @@ onMounted(() => {
     </div>
   </article>
 </template>
-
-<style scoped>
-.opportunity-card {
-  background: color-mix(in srgb, var(--color-paper) 3%, var(--color-ink));
-}
-.opportunity-card:hover,
-.opportunity-card:focus-within {
-  background: color-mix(in srgb, var(--color-paper) 4%, var(--color-ink));
-}
-</style>

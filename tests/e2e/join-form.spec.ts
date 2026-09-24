@@ -108,7 +108,9 @@ test('join form animates in, traps keyboard focus and retains an unfinished draf
   }
 })
 
-test('join form and opportunity cards share a coherent neutral surface', async ({ page }) => {
+test('join form stays neutral while opportunity cards retain their atmospheric surface', async ({
+  page,
+}) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('/#frontiers')
   await expect(page.locator('[data-ready="true"]')).toBeVisible()
@@ -136,12 +138,11 @@ test('join form and opportunity cards share a coherent neutral surface', async (
       backdrop: rgba(document.querySelector('.join-backdrop')!),
     }
   })
-  const distance = Math.hypot(
-    colors.card[0]! - colors.panel[0]!,
-    colors.card[1]! - colors.panel[1]!,
-    colors.card[2]! - colors.panel[2]!,
-  )
-  expect(colors.card[3]).toBe(255)
-  expect(distance).toBeLessThan(6)
+  // The chapter cards deliberately allow the cinematic atmosphere to remain
+  // visible. The modal needs a denser version of the same neutral family so
+  // form controls remain legible over every chapter, without the old blue cast.
+  expect(colors.card[3]).toBeLessThanOrEqual(5)
+  expect(colors.panel[3]).toBeGreaterThanOrEqual(200)
+  expect(Math.abs(colors.panel[1]! - colors.panel[2]!)).toBeLessThanOrEqual(3)
   expect(colors.backdrop[3]).toBeLessThanOrEqual(66)
 })

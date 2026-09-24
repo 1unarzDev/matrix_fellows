@@ -546,7 +546,16 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .join-panel {
-  background: color-mix(in srgb, var(--color-paper) 3.5%, var(--color-ink));
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--color-paper) 4.5%, transparent),
+      color-mix(in srgb, var(--color-paper) 1.5%, transparent) 48%,
+      transparent 78%
+    ),
+    color-mix(in srgb, var(--color-ink) 82%, transparent);
+  -webkit-backdrop-filter: blur(24px) saturate(105%);
+  backdrop-filter: blur(24px) saturate(105%);
 }
 .join-backdrop {
   background: color-mix(in srgb, var(--color-ink) 25%, transparent);

@@ -50,8 +50,11 @@ The unit tests execute the actual SQL migration in an embedded PostgreSQL engine
    NUXT_PUBLIC_SITE_URL=http://localhost:3000
    ```
 
-5. Optionally seed the introductory content and four official opportunity links. Temporarily add `SUPABASE_SERVICE_ROLE_KEY` to your local environment and run `npm run seed`. Existing records are preserved. Remove the service-role key from your frontend environment afterward; it is never needed by the website.
-6. Open the editor with **Ctrl/⌘+Shift+E** or **Member admin** in the footer. Sign in through the owner email link. Save a draft or publish content; published updates are cached for up to 30 seconds.
+5. Optionally seed the introductory content and four official opportunity links. Temporarily add `SUPABASE_SERVICE_ROLE_KEY` to your local environment and run `npm run seed`. Existing records are preserved.
+6. Apply the remaining additive migrations. Configure the server-only join and meeting-admin
+   values documented in `docs/operations/join-form.md` and `docs/operations/meetings.md`; never
+   expose the service role, Sheets token, meeting PIN, or meeting session secret as public config.
+7. Open the editor with **Ctrl/⌘+Shift+E** or **Member admin** in the footer. The focused meeting studio uses its PIN; private responses and the full content editor retain owner-email authentication. Published updates are cached for up to 30 seconds.
 
 The shortcut is an entrance, not an authorization mechanism. Database RLS protects all mutations. Anonymous requests cannot read draft columns. Non-owner authenticated users cannot access the editor's records. The public server endpoint uses only the public Supabase key.
 
@@ -62,6 +65,10 @@ Editable content includes meeting time/date/timezone/location/topics, the three 
 The frontend is a Nuxt application on **Cloudflare Workers with static assets**. This supports server-rendered content and a small read-only API without maintaining a Node backend. The separate importer is another Worker with a daily cron trigger.
 
 Set the three `NUXT_PUBLIC_*` variables in the frontend Worker's Cloudflare environment (or non-secret `vars` in `wrangler.jsonc`). Then, from an authenticated Cloudflare CLI session:
+
+Set `NUXT_SUPABASE_SERVICE_ROLE_KEY`, `NUXT_SHEETS_SYNC_TOKEN`,
+`NUXT_MEETING_ADMIN_PIN`, and `NUXT_MEETING_ADMIN_SESSION_SECRET` with
+`npx wrangler secret put NAME`; keep their values out of shell history and source control.
 
 ```sh
 npm run deploy

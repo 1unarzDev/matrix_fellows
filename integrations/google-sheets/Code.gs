@@ -1,6 +1,9 @@
 /** Paste into Extensions → Apps Script in the private organizer spreadsheet. */
 const MATRIX_SHEET_ID = '1zOpBa4Z3RACdbAthXltReQa8bdWU2yRPHZiqqQlWkk4'
 const MATRIX_TAB = 'Matrix Fellows responses'
+const MATRIX_STATUS_TAB = 'Sync status'
+const MATRIX_API_URL = 'https://matrixfellows.com/api/join-sheet'
+const MATRIX_SCHEMA_VERSION = 'join-v2.1'
 const MATRIX_HEADERS = [
   'Response ID',
   'Submitted (Central)',
@@ -16,8 +19,18 @@ const MATRIX_HEADERS = [
   'Other interest',
   'Parent/guardian name',
   'Parent/guardian email',
-  'Permission confirmed',
+  'Student confirmed parent permission',
 ]
+
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu('Matrix Fellows')
+    .addItem('Sync responses now', 'syncMatrixResponses')
+    .addItem('Repair formatting', 'styleMatrixResponses')
+    .addSeparator()
+    .addItem('Open sync status', 'openMatrixSyncStatus')
+    .addToUi()
+}
 
 function installMatrixSync() {
   if (!PropertiesService.getScriptProperties().getProperty('MATRIX_SYNC_TOKEN')) {
@@ -44,6 +57,7 @@ function syncMatrixResponses() {
     }
     const headers = sheet.getRange(1, 1, 1, MATRIX_HEADERS.length).getValues()[0]
     if (headers[1] === 'Submitted (UTC)') headers[1] = MATRIX_HEADERS[1]
+    if (headers[14] === 'Permission confirmed') headers[14] = MATRIX_HEADERS[14]
     // Append newly collected fields without moving or rewriting existing response data.
     if (headers.slice(0, 9).join('|') === MATRIX_HEADERS.slice(0, 9).join('|')) {
       for (let column = 10; column <= MATRIX_HEADERS.length; column++) {
@@ -65,6 +79,7 @@ function syncMatrixResponses() {
     }
     if (headers.join('|') !== MATRIX_HEADERS.join('|'))
       throw new Error('Response tab headers changed. Restore the original columns before syncing.')
+    sheet.getRange(1, 15).setValue(MATRIX_HEADERS[14])
     const existing =
       sheet.getLastRow() > 1
         ? sheet.getRange(2, 1, sheet.getLastRow() - 1, MATRIX_HEADERS.length).getValues()
@@ -76,15 +91,14 @@ function syncMatrixResponses() {
     // Scan from zero each run: sequence IDs can commit out of order. Dedup by ID
     // makes retries safe, including failures after Sheets writes a batch.
     let cursor = 0
+    let appended = 0
+    let fetched = 0
     const started = Date.now()
     while (true) {
-      const response = UrlFetchApp.fetch(
-        'https://matrixfellows.com/api/join-sheet?after=' + cursor,
-        {
-          headers: { Authorization: 'Bearer ' + token },
-          muteHttpExceptions: true,
-        },
-      )
+      const response = UrlFetchApp.fetch(MATRIX_API_URL + '?after=' + cursor, {
+        headers: { Authorization: 'Bearer ' + token },
+        muteHttpExceptions: true,
+      })
       if (response.getResponseCode() !== 200)
         throw new Error(
           'Matrix sync failed (HTTP ' +
@@ -93,6 +107,7 @@ function syncMatrixResponses() {
         )
       const payload = JSON.parse(response.getContentText())
       if (!Array.isArray(payload.responses)) throw new Error('Unexpected response format.')
+      fetched += payload.responses.length
       // Backfill feedback captured while an older version of this script ran.
       // Never overwrite an organizer's existing feedback cell.
       payload.responses.forEach((item) => {
@@ -115,8 +130,8 @@ function syncMatrixResponses() {
             item.name,
             item.email,
             item.grade,
-            item.interests.join(' · '),
-            item.goals.join(' · '),
+            Array.isArray(item.interests) ? item.interests.join(' · ') : '',
+            Array.isArray(item.goals) ? item.goals.join(' · ') : '',
             item.stage,
             item.consent_version,
             item.note || '',
@@ -131,6 +146,7 @@ function syncMatrixResponses() {
         const range = sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, MATRIX_HEADERS.length)
         range.setNumberFormat('@').setValues(rows).setVerticalAlignment('top').setWrap(true)
         SpreadsheetApp.flush()
+        appended += rows.length
       }
       payload.responses.forEach((item) => seen.add(String(item.id)))
       if (!payload.hasMore) break
@@ -146,9 +162,64 @@ function syncMatrixResponses() {
       'MATRIX_LAST_SUCCESS',
       new Date().toISOString(),
     )
+    PropertiesService.getScriptProperties().deleteProperty('MATRIX_LAST_ERROR')
+    matrixWriteSyncStatus_('Healthy', fetched, appended, '')
+  } catch (error) {
+    const detail = error && error.message ? error.message : String(error)
+    PropertiesService.getScriptProperties().setProperty('MATRIX_LAST_ERROR', detail)
+    matrixWriteSyncStatus_('Needs attention', 0, 0, detail)
+    throw error
   } finally {
     lock.releaseLock()
   }
+}
+
+function openMatrixSyncStatus() {
+  const spreadsheet = SpreadsheetApp.openById(MATRIX_SHEET_ID)
+  const sheet = spreadsheet.getSheetByName(MATRIX_STATUS_TAB)
+  if (sheet) spreadsheet.setActiveSheet(sheet)
+  else
+    matrixWriteSyncStatus_(
+      'Not run yet',
+      0,
+      0,
+      'Run “Sync responses now” from the Matrix Fellows menu.',
+    )
+}
+
+function matrixWriteSyncStatus_(state, fetched, appended, detail) {
+  const spreadsheet = SpreadsheetApp.openById(MATRIX_SHEET_ID)
+  const sheet =
+    spreadsheet.getSheetByName(MATRIX_STATUS_TAB) || spreadsheet.insertSheet(MATRIX_STATUS_TAB)
+  const lastSuccess =
+    PropertiesService.getScriptProperties().getProperty('MATRIX_LAST_SUCCESS') ||
+    'No successful sync yet'
+  const rows = [
+    ['Matrix Fellows join sync', ''],
+    ['Status', state],
+    ['Last successful sync', matrixCentralTime(lastSuccess)],
+    ['Schema', MATRIX_SCHEMA_VERSION],
+    ['Rows fetched this run', fetched],
+    ['New rows appended', appended],
+    ['Detail', detail || 'Responses are append-only; organizer edits are preserved.'],
+  ]
+  sheet.clear()
+  sheet.getRange(1, 1, rows.length, 2).setValues(rows).setWrap(true).setVerticalAlignment('top')
+  sheet.setColumnWidth(1, 190)
+  sheet.setColumnWidth(2, 480)
+  sheet.setHiddenGridlines(true)
+  sheet
+    .getRange(1, 1, 1, 2)
+    .merge()
+    .setBackground('#e8edf7')
+    .setFontWeight('bold')
+    .setFontColor('#344660')
+  sheet
+    .getRange(2, 1, rows.length - 1, 1)
+    .setFontWeight('bold')
+    .setFontColor('#68778d')
+  sheet.getRange(2, 2, rows.length - 1, 1).setFontColor('#354155')
+  sheet.setTabColor(state === 'Healthy' ? '#7ea58b' : '#d1a36f')
 }
 
 /** Run once after replacing this script to restyle an existing response tab.
@@ -172,6 +243,7 @@ function matrixApplyLightTheme(sheet) {
   // Accept and upgrade the original response layout without moving existing columns.
   const headers = sheet.getRange(1, 1, 1, MATRIX_HEADERS.length).getValues()[0]
   if (headers[1] === 'Submitted (UTC)') headers[1] = MATRIX_HEADERS[1]
+  if (headers[14] === 'Permission confirmed') headers[14] = MATRIX_HEADERS[14]
   let columns = 0
   headers.forEach((value, index) => {
     if (value !== '') columns = index + 1
@@ -181,6 +253,7 @@ function matrixApplyLightTheme(sheet) {
   }
   const lastRow = sheet.getLastRow()
   sheet.getRange(1, 2).setValue(MATRIX_HEADERS[1])
+  if (columns >= 15) sheet.getRange(1, 15).setValue(MATRIX_HEADERS[14])
   // Keep deduplication/audit metadata intact, but out of the organizer's view.
   sheet.hideColumns(1)
   sheet.hideColumns(9)

@@ -20,6 +20,7 @@ const email = ref(''),
 const checking = ref(configured),
   authenticated = ref(false),
   busy = ref(false)
+const meetingMode = ref(true)
 const tab = ref('Meeting')
 function changeTab(name: string) {
   tab.value = name
@@ -125,6 +126,7 @@ async function authorize() {
     error.value = 'This account does not have editing access.'
     return
   }
+  meetingMode.value = false
   const [site, rows, feeds, proposals, monitoring, discoveries, queues] = await Promise.all([
     client.from('site_content').select('data,draft').eq('id', 'main').maybeSingle(),
     client.from('opportunities').select('*').order('updated_at', { ascending: false }),
@@ -401,6 +403,11 @@ onBeforeUnmount(() => {
                 while setup is pending.
               </p>
             </div>
+            <MeetingAdmin
+              v-else-if="meetingMode"
+              @saved="emit('saved')"
+              @full-editor="meetingMode = false"
+            />
             <p v-else-if="checking" role="status" class="text-sm text-paper/60">
               Checking your access…
             </p>
@@ -413,6 +420,13 @@ onBeforeUnmount(() => {
                 class="rounded-full bg-acid px-6 py-3 text-sm text-ink disabled:opacity-40"
               >
                 {{ busy ? 'Sending…' : 'Send sign-in link' }}
+              </button>
+              <button
+                type="button"
+                class="ml-3 px-3 py-2 text-xs text-paper/45"
+                @click="meetingMode = true"
+              >
+                Back to meeting studio
               </button>
             </form>
             <template v-else>
@@ -447,28 +461,11 @@ onBeforeUnmount(() => {
               >
                 <div :key="tab" class="min-h-64">
                   <AdminResponses v-if="tab === 'Responses' && client" :client="client" />
-                  <div v-if="tab === 'Meeting'" class="space-y-4">
-                    <AdminField v-model="draft.meeting.title" label="Meeting title" />
-                    <div class="grid grid-cols-2 gap-4">
-                      <AdminField
-                        v-model="draft.meeting.date"
-                        label="Date"
-                        type="date"
-                      /><AdminField v-model="draft.meeting.time" label="Time" type="time" />
-                    </div>
-                    <AdminField v-model="draft.meeting.timezone" label="Timezone" /><AdminField
-                      v-model="draft.meeting.location"
-                      label="Location"
-                    /><AdminField
-                      v-model="topics"
-                      label="Discussion topics · one per line"
-                      multiline
-                    /><AdminField
-                      v-model="draft.meeting.url"
-                      label="RSVP link · optional"
-                      placeholder="https://"
-                    />
-                  </div>
+                  <MeetingAdmin
+                    v-if="tab === 'Meeting'"
+                    @saved="emit('saved')"
+                    @full-editor="tab = 'Research'"
+                  />
                   <div v-if="tab === 'Research'" class="space-y-8">
                     <fieldset
                       v-for="(project, index) in draft.projects"
@@ -856,10 +853,10 @@ onBeforeUnmount(() => {
             </p>
           </div>
           <footer
-            v-if="authenticated"
+            v-if="authenticated && !meetingMode"
             class="flex shrink-0 flex-wrap items-center gap-3 border-t border-paper/10 bg-paper/[.02] px-6 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:px-8"
           >
-            <template v-if="!['Listings', 'Sources', 'Responses'].includes(tab)"
+            <template v-if="!['Meeting', 'Listings', 'Sources', 'Responses'].includes(tab)"
               ><button
                 :disabled="busy"
                 class="rounded-full border border-paper/20 px-4 py-3 text-xs disabled:opacity-40"

@@ -11,11 +11,14 @@ const { data } = await useFetch<PublicContent>('/api/content', {
   default: () => ({
     content: defaultContent,
     opportunities: defaultOpportunities,
+    meetings: buildMeetingSchedule(defaultContent.meeting),
     configured: false,
   }),
 })
 const meetings = computed(() =>
-  buildMeetingSchedule(data.value?.content.meeting || defaultContent.meeting),
+  data.value?.meetings?.length
+    ? data.value.meetings
+    : buildMeetingSchedule(data.value?.content.meeting || defaultContent.meeting),
 )
 const selected = ref<MeetingEvent>(meetings.value[0]!)
 watch(meetings, (next) => {

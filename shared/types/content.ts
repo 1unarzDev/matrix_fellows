@@ -19,6 +19,7 @@ export interface MeetingEvent extends Meeting {
   summary: string
   state: MeetingState
   resources: MeetingResource[]
+  published?: boolean
 }
 export interface Project {
   id: string
@@ -201,6 +202,7 @@ export interface OpportunitySearchResult {
 export interface PublicContent {
   content: SiteContent
   opportunities: Opportunity[]
+  meetings: MeetingEvent[]
   configured: boolean
   unavailable?: boolean
 }

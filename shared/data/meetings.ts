@@ -75,6 +75,14 @@ export const buildMeetingSchedule = (nextMeeting: Meeting): MeetingEvent[] => [
   ...projectedMeetings,
 ]
 
+export const sortMeetings = (meetings: MeetingEvent[]) =>
+  [...meetings].sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id))
+
+export const selectNextMeeting = (meetings: MeetingEvent[], today?: string) => {
+  const sorted = sortMeetings(meetings)
+  return sorted.find((meeting) => meetingDisplayStatus(meeting, today) !== 'past') || sorted.at(-1)
+}
+
 const dateInTimezone = (date: Date, timezone: string) => {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: timezone,

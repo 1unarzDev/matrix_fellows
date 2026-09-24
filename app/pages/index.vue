@@ -4,6 +4,12 @@ import MatrixMark from '~/components/MatrixMark.vue'
 import { defaultContent, defaultOpportunities } from '#shared/data/defaults'
 import type { PublicContent } from '#shared/types/content'
 import { displayDate } from '#shared/utils/opportunities'
+import {
+  buildMeetingSchedule,
+  meetingDisplayStatus,
+  meetingStatusLabel,
+  selectNextMeeting,
+} from '#shared/data/meetings'
 
 const publicConfig = useRuntimeConfig().public
 const siteUrl = publicConfig.siteUrl
@@ -71,12 +77,17 @@ const { data, refresh } = await useFetch<PublicContent>('/api/content', {
   default: () => ({
     content: defaultContent,
     opportunities: defaultOpportunities,
+    meetings: buildMeetingSchedule(defaultContent.meeting),
     configured: false,
   }),
 })
 const content = computed(() => data.value?.content || defaultContent)
+const meetings = computed(() =>
+  data.value?.meetings?.length ? data.value.meetings : buildMeetingSchedule(content.value.meeting),
+)
+const nextMeeting = computed(() => selectNextMeeting(meetings.value) || meetings.value[0]!)
 const meetingDate = computed(() =>
-  content.value.meeting.date ? displayDate(content.value.meeting.date) : 'Date forthcoming',
+  nextMeeting.value?.date ? displayDate(nextMeeting.value.date) : 'Date forthcoming',
 )
 const progress = ref(0)
 const hydrated = ref(false)
@@ -398,15 +409,22 @@ onBeforeUnmount(() => {
                   class="flex items-center gap-2 text-[9px] font-medium uppercase tracking-[.2em] text-[#f4ce89]"
                 >
                   <span
-                    class="h-1 w-1 rounded-full bg-[#f4ce89] shadow-[0_0_8px_#f4ce89] transition-[transform,box-shadow] duration-[620ms] ease-[cubic-bezier(.16,1.28,.3,1)] group-hover/meeting:scale-[1.7] group-hover/meeting:shadow-[0_0_13px_#f4ce89] group-focus-within/meeting:scale-[1.7] group-focus-within/meeting:shadow-[0_0_13px_#f4ce89] motion-reduce:transform-none motion-reduce:transition-none"
+                    class="h-1.5 w-1.5 border border-current transition-[transform,box-shadow] duration-[620ms] ease-[cubic-bezier(.16,1.28,.3,1)] group-hover/meeting:scale-[1.45] group-focus-within/meeting:scale-[1.45] motion-reduce:transform-none motion-reduce:transition-none"
+                    :class="
+                      nextMeeting.state === 'confirmed'
+                        ? 'rounded-full bg-[#f4ce89] shadow-[0_0_8px_#f4ce89]'
+                        : 'rotate-45 rounded-[1px] bg-transparent shadow-[0_0_7px_#f4ce8980]'
+                    "
                   />
-                  Meetings
+                  <span>Meetings</span>
+                  <span aria-hidden="true">·</span>
+                  <span>{{ meetingStatusLabel(meetingDisplayStatus(nextMeeting)) }}</span>
                 </p>
                 <p class="mt-2 text-sm font-medium leading-snug text-paper">
                   <span data-meeting-date class="block sm:inline">{{ meetingDate }}</span>
                   <span aria-hidden="true" class="hidden sm:inline"> · </span>
                   <span data-meeting-time class="mt-1 block sm:mt-0 sm:inline">{{
-                    content.meeting.time || 'Time forthcoming'
+                    nextMeeting.time || 'Time forthcoming'
                   }}</span>
                 </p>
                 <div
@@ -415,7 +433,7 @@ onBeforeUnmount(() => {
                   <p
                     class="text-[11px] leading-relaxed text-paper/80 sm:whitespace-nowrap sm:text-xs"
                   >
-                    {{ content.meeting.location || 'Location forthcoming' }}
+                    {{ nextMeeting.location || 'Location forthcoming' }}
                   </p>
                   <a
                     href="#meeting-details"
@@ -674,7 +692,7 @@ onBeforeUnmount(() => {
             Bring an idea, a question, or simply yourself.<br />Let’s find out what comes next.
           </p>
         </div>
-        <MeetingCard :meeting="content.meeting" />
+        <MeetingCard :meetings="meetings" />
         <div class="grid gap-12 border-t border-paper/15 py-16 lg:grid-cols-[1fr_2fr]">
           <div>
             <p class="text-[10px] uppercase tracking-[.2em] text-paper/45">Room to grow</p>

@@ -32,6 +32,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     supabaseServiceRoleKey: '',
     sheetsSyncToken: '',
+    meetingAdminPin: '',
+    meetingAdminSessionSecret: '',
     public: {
       supabaseUrl: '',
       supabaseAnonKey: '',

@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import type { Meeting, MeetingEvent } from '#shared/types/content'
-import { buildMeetingSchedule, meetingDisplayStatus } from '#shared/data/meetings'
+import type { MeetingEvent } from '#shared/types/content'
+import { meetingDisplayStatus, selectNextMeeting } from '#shared/data/meetings'
 
-const props = defineProps<{ meeting: Meeting }>()
-const meetings = computed(() => buildMeetingSchedule(props.meeting))
-const selected = ref<MeetingEvent>(meetings.value[0]!)
-watch(meetings, (next) => {
-  selected.value = next.find((meeting) => meeting.id === selected.value.id) || next[0]!
-})
+const props = defineProps<{ meetings: MeetingEvent[] }>()
+const selected = ref<MeetingEvent>(selectNextMeeting(props.meetings) || props.meetings[0]!)
+watch(
+  () => props.meetings,
+  (next) => {
+    selected.value = next.find((meeting) => meeting.id === selected.value.id) || next[0]!
+  },
+)
 </script>
 
 <template>
@@ -34,7 +36,7 @@ watch(meetings, (next) => {
               id="next-gathering-title"
               class="mt-4 font-display text-3xl leading-tight tracking-[-.04em] sm:text-4xl"
             >
-              {{ meeting.title }}
+              {{ (selectNextMeeting(meetings) || meetings[0])?.title }}
             </h3>
             <p class="mt-5 max-w-sm text-sm leading-relaxed text-paper/55">
               A space to share what you’re working on, explore something new, and ask better

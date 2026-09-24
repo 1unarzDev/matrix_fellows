@@ -61,7 +61,9 @@ stay unchanged.
    It creates the dedicated **Matrix Fellows responses** tab and one 15-minute
    trigger. Existing tabs are not overwritten. Re-running installation replaces
    only this script's own sync trigger.
-5. Check **Executions** for success and Script Properties for `MATRIX_LAST_SUCCESS`.
+5. Reload the spreadsheet to reveal the **Matrix Fellows** menu. Confirm the private
+   **Sync status** tab reports `Healthy`; it shows the schema version and append count
+   without exposing the token. Also check **Executions** for success.
    Submit a real, consented test response via the site, run `syncMatrixResponses`,
    and confirm exactly one row. Run it again to verify there is no duplicate.
    Remove the test from both the admin dashboard and sheet afterward if desired.
@@ -79,6 +81,9 @@ overlapping runs. This handles retries and out-of-order database commits. It is
 intended for club-scale datasets; it raises an actionable error rather than silently
 truncating if a scan exceeds four minutes. It does not overwrite manually edited
 rows or propagate deletions. Do not remove or rename the ID/header columns.
+Formula-like student input is escaped before it reaches a cell. The permission
+column is deliberately labeled **Student confirmed parent permission** because the
+form records the student's attestation, not an independently verified parent signature.
 
 ## Privacy and sponsor sharing
 

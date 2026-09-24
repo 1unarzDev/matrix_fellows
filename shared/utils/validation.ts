@@ -56,6 +56,28 @@ export const contentSchema = z.object({
     contact: z.union([optionalUrl, z.string().regex(/^mailto:[^\s<>]+@[^\s<>]+$/)]),
   }),
 })
+export const meetingResourceSchema = z.object({
+  title: z.string().trim().min(1).max(160),
+  url: z.union([z.literal(''), httpsUrl]),
+  note: z.string().trim().max(500),
+})
+export const meetingEventSchema = z.object({
+  id: z
+    .string()
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+    .max(120),
+  title: z.string().trim().min(1).max(300),
+  summary: z.string().trim().min(1).max(1200),
+  date,
+  time: z.string().trim().min(1).max(80),
+  timezone,
+  location: z.string().trim().min(1).max(300),
+  state: z.enum(['confirmed', 'tentative']),
+  topics: z.array(z.string().trim().min(1).max(700)).min(1).max(24),
+  resources: z.array(meetingResourceSchema).max(16),
+  url: optionalUrl,
+  published: z.boolean().default(true),
+})
 export const opportunitySchema = z.object({
   id: z.string().min(1).max(650),
   sourceId: shortText.min(1),

@@ -4,6 +4,7 @@ import {
   buildMeetingSchedule,
   meetingDisplayStatus,
   projectedMeetings,
+  selectNextMeeting,
 } from '../../shared/data/meetings'
 import { contentSchema } from '../../shared/utils/validation'
 
@@ -42,6 +43,10 @@ it('builds a dated meeting schedule with honest confirmed and projected states',
   expect(meetingDisplayStatus(schedule[0]!, '2026-09-24')).toBe('confirmed')
   expect(meetingDisplayStatus(schedule[0]!, '2026-09-26')).toBe('past')
   expect(meetingDisplayStatus(schedule[1]!, '2026-09-24')).toBe('tentative')
+  expect(selectNextMeeting([...schedule].reverse(), '2026-09-26')?.id).toBe(
+    'isef-pathway-2026-10-09',
+  )
+  expect(selectNextMeeting(schedule, '2026-10-10')?.id).toBe('isef-pathway-2026-10-09')
 
   const projected = projectedMeetings[0]!
   expect(projected.topics.join(' ')).toMatch(/ISEF works/)

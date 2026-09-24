@@ -2,8 +2,10 @@ import { createClient } from '@supabase/supabase-js'
 import { defaultContent, defaultOpportunities } from '../../shared/data/defaults'
 import { contentSchema, opportunitySchema } from '../../shared/utils/validation'
 import { selectHomepageOpportunities } from '../../shared/utils/opportunities'
+import { buildMeetingSchedule, sortMeetings } from '../../shared/data/meetings'
 import type { PublicContent } from '../../shared/types/content'
 import type { H3Event } from 'h3'
+import { rowToMeeting } from '../utils/meeting-admin'
 
 const loadPublicContent = defineCachedFunction(
   async (event: H3Event): Promise<PublicContent> => {
@@ -16,7 +18,7 @@ const loadPublicContent = defineCachedFunction(
         fetch: (input, init) => fetch(input, { ...init, signal: AbortSignal.timeout(6000) }),
       },
     })
-    const [site, listings, health] = await Promise.all([
+    const [site, listings, health, meetingRows] = await Promise.all([
       client
         .from('site_content')
         .select('data')
@@ -41,6 +43,13 @@ const loadPublicContent = defineCachedFunction(
         p_offset: 0,
       }),
       client.rpc('opportunity_monitor_health'),
+      client
+        .from('meetings')
+        .select(
+          'id,title,summary,meeting_date,time_label,timezone,location,status,topics,resources,url,published',
+        )
+        .eq('published', true)
+        .order('meeting_date'),
     ])
     if (site.error || listings.error) throw new Error('Content query failed')
     const parsed = contentSchema.safeParse(site.data?.data)
@@ -74,6 +83,10 @@ const loadPublicContent = defineCachedFunction(
     return {
       content: parsed.success ? parsed.data : defaultContent,
       opportunities: selectHomepageOpportunities(opportunities),
+      meetings:
+        !meetingRows.error && meetingRows.data?.length
+          ? sortMeetings(meetingRows.data.map(rowToMeeting))
+          : buildMeetingSchedule(parsed.success ? parsed.data.meeting : defaultContent.meeting),
       configured: true,
     }
   },
@@ -90,7 +103,12 @@ export default defineEventHandler(async (event): Promise<PublicContent> => {
   const config = useRuntimeConfig(event)
   if (!config.public.supabaseUrl || !config.public.supabaseAnonKey) {
     setHeader(event, 'Cache-Control', 'public, max-age=30, stale-while-revalidate=120')
-    return { content: defaultContent, opportunities: defaultOpportunities, configured: false }
+    return {
+      content: defaultContent,
+      opportunities: defaultOpportunities,
+      meetings: buildMeetingSchedule(defaultContent.meeting),
+      configured: false,
+    }
   }
   try {
     const result = await loadPublicContent(event)
@@ -101,6 +119,7 @@ export default defineEventHandler(async (event): Promise<PublicContent> => {
     return {
       content: defaultContent,
       opportunities: defaultOpportunities,
+      meetings: buildMeetingSchedule(defaultContent.meeting),
       configured: true,
       unavailable: true,
     }

@@ -237,18 +237,14 @@ onBeforeUnmount(() => {
       :class="sceneStatus === 'ready' || progress > 0.2 ? 'opacity-0' : 'opacity-100'"
     >
       <div
-        class="absolute inset-0 bg-[radial-gradient(ellipse_at_78%_30%,#d8a36870,transparent_45%),linear-gradient(#45352d,#9c6647_55%,#372a25)]"
+        class="absolute inset-0 bg-[radial-gradient(ellipse_at_76%_27%,#d8a36866,transparent_42%),radial-gradient(ellipse_at_50%_76%,#b2734a38,transparent_52%),linear-gradient(180deg,#45352d_0%,#84573f_57%,#272522_100%)]"
       />
-      <div class="absolute left-0 right-0 top-[53%] h-20 bg-[#eac279]/15 blur-3xl" />
-      <svg
-        viewBox="0 0 1600 1000"
-        preserveAspectRatio="none"
-        class="absolute inset-0 h-full w-full"
-      >
-        <path d="M0 680C220 590 380 580 650 640S1160 520 1600 600V1000H0Z" class="fill-[#634631]" />
-        <path d="M0 740C340 530 520 590 780 750S1290 780 1600 670V1000H0Z" class="fill-[#443328]" />
-        <path d="M0 850C330 710 700 760 960 900S1400 820 1600 860V1000H0Z" class="fill-[#282320]" />
-      </svg>
+      <div
+        class="absolute inset-x-0 bottom-0 h-[44%] bg-linear-to-b from-transparent via-[#191b1a]/20 to-[#101413]/72"
+      />
+      <div
+        class="absolute left-[12%] right-[8%] top-[58%] h-px bg-linear-to-r from-transparent via-[#f0c982]/20 to-transparent shadow-[0_0_34px_8px_#eac27912]"
+      />
       <OrbitalLoader
         v-if="sceneStatus === 'pending' && progress <= 0.2"
         class="absolute right-6 top-32 xl:right-[19%] xl:top-1/2"

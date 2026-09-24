@@ -43,9 +43,10 @@ the background and foreground programs before starting its RAF loop; compilation
 failure falls back to normal first-use compilation. Import, construction,
 compile, and first-scene timings are exposed as canvas data attributes.
 
-The loader keeps its full-screen artwork static. The server-rendered horizon is
-used only at the opening chapter, and there is no second canvas or JavaScript
-loading loop. One optional 64 px accent rotates around a stable identity mark
+The loader keeps its full-screen artwork static. The server-rendered opening is
+a gradient atmosphere and fine horizon glow rather than proxy terrain, is used
+only at the opening chapter, and has no second canvas or JavaScript loading
+loop. One optional 64 px accent rotates around a stable identity mark
 using a compositor-only transform, then stops when the first valid composer
 frame starts the single 300 ms opacity reveal. A 12-second safety path falls
 back if the world never becomes ready; page content and navigation remain

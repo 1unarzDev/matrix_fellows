@@ -39,6 +39,11 @@ try {
       assert.equal(await page.locator('[data-arrival-veil]').count(), 0)
       assert.equal(await page.locator('[data-loading-orbit]').count(), 1)
       assert.equal(
+        await page.locator('[data-horizon-preview] > svg').count(),
+        0,
+        'loading preview should not restore the geometric dune SVG',
+      )
+      assert.equal(
         await page.locator('[data-loading-orbit]').evaluate((el) => getComputedStyle(el).pointerEvents),
         'none',
       )

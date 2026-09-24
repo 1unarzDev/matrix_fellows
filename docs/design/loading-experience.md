@@ -1,6 +1,12 @@
 # Initial scene reveal
 
-The first paint is server-rendered and complete. At the opening chapter, an original inline-SVG dune silhouette and warm horizon sit behind the header, hero, meeting summary, and navigation. Other hashes use the shared static atmospheric background rather than briefly painting the desert. These layers are pointer-transparent and never gate navigation.
+The first paint is server-rendered and complete. At the opening chapter, a warm
+static atmospheric field and fine horizon glow sit behind the header, hero,
+meeting summary, and navigation. The former three-layer SVG dune preview was
+removed because its geometric ridges read as a separate low-detail scene before
+the real terrain arrived. Other hashes use the shared static atmospheric
+background rather than briefly painting the desert. These layers are
+pointer-transparent and never gate navigation.
 
 There is no animated arrival canvas, procedural loading particle system, or percentage. While the opening scene is genuinely pending, one small orbital accent can rotate around a stable Matrix mark. It uses only a compositor transform, remains pointer-transparent, stops as soon as the scene is ready, and becomes static under reduced motion. The desktop accent temporarily occupies the later unexplored-marker area so two orbital motifs never overlap. This retains the calm static horizon while avoiding the former arrangement in which multiple independently animated loaders ran during WebGL compilation.
 

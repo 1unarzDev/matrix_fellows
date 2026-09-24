@@ -6,18 +6,22 @@ let pointerQuery: MediaQueryList | undefined
 let syncPointer: (() => void) | undefined
 
 const particles = [
-  { x: '-47%', y: '-16%', size: '2px', delay: '-1.8s', duration: '5.8s', tone: 'blue' },
-  { x: '-38%', y: '31%', size: '1.5px', delay: '-3.1s', duration: '6.4s', tone: 'gold' },
-  { x: '-18%', y: '-47%', size: '2px', delay: '-0.7s', duration: '5.2s', tone: 'blue' },
-  { x: '12%', y: '-49%', size: '1.5px', delay: '-2.4s', duration: '6.1s', tone: 'gold' },
-  { x: '39%', y: '-30%', size: '2px', delay: '-1.1s', duration: '5.6s', tone: 'blue' },
-  { x: '49%', y: '-5%', size: '1px', delay: '-3.6s', duration: '6.8s', tone: 'blue' },
-  { x: '43%', y: '24%', size: '2px', delay: '-2.2s', duration: '5.9s', tone: 'gold' },
-  { x: '22%', y: '44%', size: '1.5px', delay: '-0.2s', duration: '5.4s', tone: 'blue' },
-  { x: '-6%', y: '50%', size: '1px', delay: '-4.2s', duration: '6.6s', tone: 'blue' },
-  { x: '-31%', y: '39%', size: '2px', delay: '-2.8s', duration: '6.2s', tone: 'gold' },
-  { x: '-50%', y: '8%', size: '1.5px', delay: '-0.9s', duration: '5.7s', tone: 'blue' },
-  { x: '31%', y: '38%', size: '1px', delay: '-3.9s', duration: '6.5s', tone: 'blue' },
+  { x: '-48%', y: '-13%', size: '2px', delay: '-1.8s', duration: '5.8s', tone: 'blue' },
+  { x: '-43%', y: '23%', size: '1px', delay: '-4.3s', duration: '7.1s', tone: 'blue' },
+  { x: '-34%', y: '37%', size: '1.5px', delay: '-3.1s', duration: '6.4s', tone: 'gold' },
+  { x: '-19%', y: '-46%', size: '2px', delay: '-0.7s', duration: '5.2s', tone: 'blue' },
+  { x: '-4%', y: '-51%', size: '1px', delay: '-3.7s', duration: '6.9s', tone: 'blue' },
+  { x: '14%', y: '-48%', size: '1.5px', delay: '-2.4s', duration: '6.1s', tone: 'gold' },
+  { x: '33%', y: '-37%', size: '1px', delay: '-4.8s', duration: '7.4s', tone: 'blue' },
+  { x: '44%', y: '-22%', size: '2px', delay: '-1.1s', duration: '5.6s', tone: 'blue' },
+  { x: '50%', y: '1%', size: '1px', delay: '-3.6s', duration: '6.8s', tone: 'blue' },
+  { x: '45%', y: '22%', size: '2px', delay: '-2.2s', duration: '5.9s', tone: 'gold' },
+  { x: '34%', y: '37%', size: '1px', delay: '-5.1s', duration: '7.2s', tone: 'blue' },
+  { x: '20%', y: '46%', size: '1.5px', delay: '-0.2s', duration: '5.4s', tone: 'blue' },
+  { x: '1%', y: '51%', size: '1px', delay: '-4.2s', duration: '6.6s', tone: 'blue' },
+  { x: '-17%', y: '47%', size: '1px', delay: '-1.4s', duration: '7.3s', tone: 'gold' },
+  { x: '-48%', y: '7%', size: '1.5px', delay: '-0.9s', duration: '5.7s', tone: 'blue' },
+  { x: '-37%', y: '-34%', size: '1px', delay: '-3.9s', duration: '6.5s', tone: 'blue' },
 ]
 
 function setRevealPosition(clientX: number, clientY: number) {
@@ -100,7 +104,9 @@ onBeforeUnmount(() => {
 
     <div aria-hidden="true" class="discovery-reveal__xray absolute inset-0">
       <div class="discovery-reveal__alternate max-w-xl">
-        <p class="mb-4 text-[10px] uppercase tracking-[.24em] text-[#b7dce3]/75">
+        <p
+          class="discovery-reveal__eyebrow text-[10px] uppercase tracking-[.24em] text-[#b7dce3]/75"
+        >
           Under the surface
         </p>
         <h3
@@ -119,6 +125,8 @@ onBeforeUnmount(() => {
     </div>
 
     <span aria-hidden="true" class="discovery-reveal__lens">
+      <span class="discovery-reveal__wave discovery-reveal__wave--outer" />
+      <span class="discovery-reveal__wave discovery-reveal__wave--inner" />
       <span
         v-for="(particle, index) in particles"
         :key="index"
@@ -128,6 +136,34 @@ onBeforeUnmount(() => {
       />
       <span class="discovery-reveal__lens-core" />
     </span>
+
+    <svg aria-hidden="true" class="discovery-reveal__filters" width="0" height="0">
+      <defs>
+        <filter
+          id="discovery-liquid-edge"
+          x="-25%"
+          y="-25%"
+          width="150%"
+          height="150%"
+          color-interpolation-filters="sRGB"
+        >
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency="0.012 0.035"
+            numOctaves="2"
+            seed="17"
+            result="edgeNoise"
+          />
+          <feDisplacementMap
+            in="SourceGraphic"
+            in2="edgeNoise"
+            scale="18"
+            xChannelSelector="R"
+            yChannelSelector="B"
+          />
+        </filter>
+      </defs>
+    </svg>
 
     <button
       v-show="coarsePointer"
@@ -235,6 +271,13 @@ onBeforeUnmount(() => {
   text-shadow: 0 2px 18px rgb(23 31 29 / 0.28);
 }
 
+.discovery-reveal__eyebrow {
+  position: absolute;
+  bottom: calc(100% + 0.7rem);
+  left: 0;
+  margin: 0;
+}
+
 .discovery-reveal__lens {
   position: absolute;
   z-index: 2;
@@ -292,6 +335,37 @@ onBeforeUnmount(() => {
   filter: blur(0.2px);
 }
 
+.discovery-reveal__wave {
+  position: absolute;
+  inset: -0.45rem;
+  border: 1px solid rgb(194 220 216 / 0.13);
+  border-radius: 50%;
+  opacity: 0;
+  filter: url('#discovery-liquid-edge');
+  transform-origin: 49% 51%;
+  will-change: transform, border-radius, opacity;
+}
+
+.discovery-reveal__wave--outer {
+  border-color: rgb(184 216 214 / 0.19);
+  box-shadow:
+    0 0 12px rgb(137 185 185 / 0.1),
+    0 0 28px rgb(137 185 185 / 0.055),
+    inset 0 0 18px rgb(211 229 221 / 0.035);
+}
+
+.discovery-reveal__wave--inner {
+  inset: 0.15rem;
+  border-color: rgb(232 207 155 / 0.09);
+  transform-origin: 52% 48%;
+}
+
+.discovery-reveal__filters {
+  position: absolute;
+  overflow: hidden;
+  pointer-events: none;
+}
+
 .discovery-reveal__lens-core {
   position: absolute;
   top: 50%;
@@ -330,13 +404,17 @@ onBeforeUnmount(() => {
   border-radius: 50%;
   opacity: 0;
   background: rgb(205 226 220 / 0.68);
-  box-shadow: 0 0 9px rgb(157 197 190 / 0.22);
+  box-shadow:
+    0 0 7px rgb(157 197 190 / 0.28),
+    0 0 14px rgb(157 197 190 / 0.11);
   pointer-events: none;
 }
 
 .discovery-reveal__particle.is-gold {
   background: rgb(232 205 153 / 0.58);
-  box-shadow: 0 0 8px rgb(222 190 128 / 0.18);
+  box-shadow:
+    0 0 7px rgb(222 190 128 / 0.24),
+    0 0 13px rgb(222 190 128 / 0.09);
 }
 
 .discovery-reveal__touch-target {
@@ -408,6 +486,11 @@ onBeforeUnmount(() => {
     --reveal-radius-y: calc(var(--lens-height) / 2);
   }
 
+  .discovery-reveal:hover .discovery-reveal__original,
+  .discovery-reveal:focus-visible .discovery-reveal__original {
+    opacity: 0;
+  }
+
   .discovery-reveal:hover .discovery-reveal__lens,
   .discovery-reveal:focus-visible .discovery-reveal__lens {
     opacity: 0.64;
@@ -419,6 +502,16 @@ onBeforeUnmount(() => {
   .discovery-reveal:focus-visible .discovery-reveal__particle {
     animation: discovery-particle-drift var(--particle-duration) ease-in-out var(--particle-delay)
       infinite alternate;
+  }
+
+  .discovery-reveal:hover .discovery-reveal__wave--outer,
+  .discovery-reveal:focus-visible .discovery-reveal__wave--outer {
+    animation: discovery-edge-flow-a 7.8s ease-in-out -2.1s infinite alternate;
+  }
+
+  .discovery-reveal:hover .discovery-reveal__wave--inner,
+  .discovery-reveal:focus-visible .discovery-reveal__wave--inner {
+    animation: discovery-edge-flow-b 10.6s ease-in-out -6.4s infinite alternate;
   }
 }
 
@@ -435,7 +528,7 @@ onBeforeUnmount(() => {
   }
 
   .discovery-reveal.is-touch-revealed .discovery-reveal__original {
-    opacity: 0.08;
+    opacity: 0;
   }
 
   .discovery-reveal.is-touch-revealed .discovery-reveal__lens {
@@ -449,6 +542,14 @@ onBeforeUnmount(() => {
       infinite alternate;
   }
 
+  .discovery-reveal.is-touch-revealed .discovery-reveal__wave--outer {
+    animation: discovery-edge-flow-a 7.8s ease-in-out -2.1s infinite alternate;
+  }
+
+  .discovery-reveal.is-touch-revealed .discovery-reveal__wave--inner {
+    animation: discovery-edge-flow-b 10.6s ease-in-out -6.4s infinite alternate;
+  }
+
   .discovery-reveal__touch-prompt {
     bottom: 4.75rem;
   }
@@ -460,7 +561,7 @@ onBeforeUnmount(() => {
     transform: translate3d(0, 3px, 0) scale(0.72);
   }
   55% {
-    opacity: 0.68;
+    opacity: 0.82;
   }
   100% {
     opacity: 0.2;
@@ -480,6 +581,52 @@ onBeforeUnmount(() => {
   }
 }
 
+@keyframes discovery-edge-flow-a {
+  0% {
+    border-radius: 46% 54% 48% 52% / 52% 47% 53% 48%;
+    opacity: 0.2;
+    transform: rotate(-1.5deg) scale(0.99, 1.012);
+  }
+  29% {
+    border-radius: 53% 47% 55% 45% / 46% 56% 44% 54%;
+    opacity: 0.62;
+    transform: rotate(0.8deg) scale(1.018, 0.994);
+  }
+  67% {
+    border-radius: 49% 51% 44% 56% / 57% 45% 55% 43%;
+    opacity: 0.38;
+    transform: rotate(2deg) scale(0.996, 1.02);
+  }
+  100% {
+    border-radius: 55% 45% 51% 49% / 48% 53% 47% 52%;
+    opacity: 0.56;
+    transform: rotate(-0.5deg) scale(1.014, 0.986);
+  }
+}
+
+@keyframes discovery-edge-flow-b {
+  0% {
+    border-radius: 54% 46% 51% 49% / 47% 56% 44% 53%;
+    opacity: 0.1;
+    transform: rotate(2deg) scale(1.012, 0.988);
+  }
+  38% {
+    border-radius: 47% 53% 44% 56% / 55% 46% 54% 45%;
+    opacity: 0.4;
+    transform: rotate(-1deg) scale(0.992, 1.018);
+  }
+  73% {
+    border-radius: 51% 49% 57% 43% / 44% 54% 46% 56%;
+    opacity: 0.18;
+    transform: rotate(-2.3deg) scale(1.016, 1.002);
+  }
+  100% {
+    border-radius: 45% 55% 49% 51% / 53% 43% 57% 47%;
+    opacity: 0.46;
+    transform: rotate(0.4deg) scale(0.984, 1.012);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .discovery-reveal__xray,
   .discovery-reveal__original,
@@ -489,6 +636,10 @@ onBeforeUnmount(() => {
   }
 
   .discovery-reveal__particle {
+    display: none;
+  }
+
+  .discovery-reveal__wave {
     display: none;
   }
 

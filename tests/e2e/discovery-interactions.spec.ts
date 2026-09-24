@@ -24,7 +24,7 @@ test('discovery thought follows the pointer and reveals as one composition', asy
   expect(bounds).not.toBeNull()
 
   await page.mouse.move(bounds!.x + bounds!.width * 0.68, bounds!.y + bounds!.height * 0.42)
-  await expect(reveal.locator('.discovery-reveal__original')).toHaveCSS('opacity', '1')
+  await expect(reveal.locator('.discovery-reveal__original')).toHaveCSS('opacity', '0')
   await expect(reveal.locator('.discovery-reveal__lens')).toHaveCSS('opacity', '0.64')
   await expect(reveal.locator('.discovery-reveal__bloom')).toHaveCount(0)
   await expect(reveal.locator('.discovery-reveal__xray')).toHaveCSS(
@@ -34,8 +34,18 @@ test('discovery thought follows the pointer and reveals as one composition', asy
   await expect(reveal.locator('.discovery-reveal__xray')).not.toHaveCSS('background-image', 'none')
   await expect(reveal.locator('.discovery-reveal__xray')).not.toHaveCSS('mask-image', 'none')
   await expect(reveal.locator('.discovery-reveal__lens > .discovery-reveal__particle')).toHaveCount(
-    12,
+    16,
   )
+  await expect(reveal.locator('.discovery-reveal__wave')).toHaveCount(2)
+  await expect(reveal.locator('.discovery-reveal__wave--outer')).not.toHaveCSS('filter', 'none')
+
+  const [originalHeading, alternateHeading] = await Promise.all([
+    reveal.locator('.discovery-reveal__original h2').boundingBox(),
+    reveal.locator('.discovery-reveal__alternate h3').boundingBox(),
+  ])
+  expect(originalHeading).not.toBeNull()
+  expect(alternateHeading).not.toBeNull()
+  expect(Math.abs(originalHeading!.y - alternateHeading!.y)).toBeLessThanOrEqual(1)
 
   const clipPath = await reveal
     .locator('.discovery-reveal__xray')
@@ -95,7 +105,7 @@ test('touch layouts use an accessible tap toggle and preserve native scrolling',
   await expect(toggle).toHaveAttribute('aria-pressed', 'true')
   await expect(toggle).toHaveAccessibleName('Return to the original discovery note')
   await expect(reveal.locator('.discovery-reveal__lens')).toHaveCSS('opacity', '0.58')
-  await expect(reveal.locator('.discovery-reveal__original')).toHaveCSS('opacity', '0.08')
+  await expect(reveal.locator('.discovery-reveal__original')).toHaveCSS('opacity', '0')
 
   await toggle.click()
   await expect(toggle).toHaveAttribute('aria-pressed', 'false')

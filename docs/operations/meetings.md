@@ -59,7 +59,9 @@ workflow; use the calendar editor only for inclusion.
 
 ## Public behavior and fallback
 
-- `/meetings` remains canonical, prerendered, and crawlable without client JavaScript.
+- `/meetings` remains canonical, dynamically SSR-rendered, and crawlable without client JavaScript.
+  It is intentionally not prerendered because monitored opportunity dates and organizer selections
+  must update independently of a frontend deployment.
 - Calendar and detail transitions respect reduced-motion preferences.
 - Meeting-date dialogs trap and restore focus, make the background inert, and close with Escape.
 - Meetings use the strongest gold signal. Submission deadlines use violet diamonds; actual

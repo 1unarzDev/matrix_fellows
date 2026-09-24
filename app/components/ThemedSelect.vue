@@ -16,8 +16,10 @@ const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 const id = useId()
 const root = ref<HTMLElement>()
 const trigger = ref<HTMLButtonElement>()
+const menu = ref<HTMLElement>()
 const open = ref(false)
 const active = ref(0)
+const placement = ref<'up' | 'down'>('down')
 let search = ''
 let lastTyped = 0
 
@@ -44,11 +46,36 @@ function close(returnFocus = false) {
   open.value = false
   if (returnFocus) trigger.value?.focus()
 }
-function show(direction: 1 | -1 = 1) {
+function positionMenu() {
+  if (!root.value || !trigger.value || !menu.value) return
+  const triggerBounds = trigger.value.getBoundingClientRect()
+  const menuHeight = menu.value.getBoundingClientRect().height
+  let topBoundary = 8
+  let bottomBoundary = window.innerHeight - 8
+
+  for (let ancestor = root.value.parentElement; ancestor; ancestor = ancestor.parentElement) {
+    const style = getComputedStyle(ancestor)
+    if (!/(auto|scroll|hidden|clip)/.test(`${style.overflow} ${style.overflowY}`)) continue
+    const bounds = ancestor.getBoundingClientRect()
+    topBoundary = Math.max(topBoundary, bounds.top)
+    bottomBoundary = Math.min(bottomBoundary, bounds.bottom)
+  }
+
+  const spaceAbove = triggerBounds.top - topBoundary - 8
+  const spaceBelow = bottomBoundary - triggerBounds.bottom - 8
+  placement.value = spaceBelow < menuHeight && spaceAbove > spaceBelow ? 'up' : 'down'
+}
+async function show(direction: 1 | -1 = 1) {
   open.value = true
   const selected = normalized.value.findIndex((option) => option.value === props.modelValue)
   const fallback = direction > 0 ? 0 : normalized.value.length - 1
-  void focusOption(selected >= 0 ? selected : fallback)
+  active.value = selected >= 0 ? selected : fallback
+  await nextTick()
+  positionMenu()
+  await nextTick()
+  menu.value?.querySelectorAll<HTMLButtonElement>('[role="option"]')[active.value]?.focus({
+    preventScroll: true,
+  })
 }
 function choose(value: string) {
   emit('update:modelValue', value)
@@ -120,11 +147,17 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', outside))
     <Transition name="select-pop">
       <div
         v-if="open"
+        ref="menu"
         :id="id"
         role="listbox"
         :aria-label="label"
-        class="themed-select__menu absolute top-full mt-2 min-w-full origin-top overflow-hidden rounded-2xl p-2.5"
-        :class="align === 'right' ? 'right-0' : 'left-0'"
+        class="themed-select__menu absolute min-w-full overflow-hidden rounded-2xl p-2.5"
+        :class="[
+          align === 'right' ? 'right-0' : 'left-0',
+          placement === 'up'
+            ? 'themed-select__menu--up bottom-full mb-2 origin-bottom'
+            : 'top-full mt-2 origin-top',
+        ]"
         @keydown="keyboard"
       >
         <button
@@ -252,6 +285,10 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', outside))
   opacity: 0;
   clip-path: inset(0 0 100% 0 round 1rem);
   transform: translate3d(0, -7px, 0) scale(0.98);
+}
+.themed-select__menu--up.select-pop-enter-from,
+.themed-select__menu--up.select-pop-leave-to {
+  transform: translate3d(0, 7px, 0) scale(0.98);
 }
 .select-pop-enter-to,
 .select-pop-leave-from {

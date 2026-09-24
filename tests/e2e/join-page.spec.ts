@@ -56,3 +56,33 @@ test('dedicated join page stays fluid and contained on narrow and reduced-motion
     ),
   ).toBe(true)
 })
+
+test('dedicated join grade options remain clickable beyond the form body', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/join')
+  await expect(page.locator('[data-join-form-ready="true"]')).toBeVisible()
+  await page.getByRole('button', { name: 'Grade level: Choose your grade' }).click()
+
+  await expect(page.getByRole('listbox', { name: 'Grade level' })).toHaveClass(
+    /themed-select__menu--up/,
+  )
+  const lastOption = page.getByRole('option', { name: 'Other / not in high school' })
+  await expect(lastOption).toBeVisible()
+  await expect
+    .poll(() =>
+      lastOption.evaluate((option) => {
+        const bounds = option.getBoundingClientRect()
+        const target = document.elementFromPoint(
+          bounds.left + bounds.width / 2,
+          bounds.top + bounds.height / 2,
+        )
+        return target === option || option.contains(target)
+      }),
+    )
+    .toBe(true)
+
+  await lastOption.click()
+  await expect(
+    page.getByRole('button', { name: 'Grade level: Other / not in high school' }),
+  ).toBeVisible()
+})

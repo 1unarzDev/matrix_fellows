@@ -108,7 +108,7 @@ test('join form animates in, traps keyboard focus and retains an unfinished draf
   }
 })
 
-test('join form stays neutral while opportunity cards retain their atmospheric surface', async ({
+test('join surfaces use a transparent glass treatment on the page and in the modal', async ({
   page,
 }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
@@ -123,7 +123,7 @@ test('join form stays neutral while opportunity cards retain their atmospheric s
   const panel = page.locator('.join-panel')
   await expect(panel).toBeVisible()
 
-  const surface = await page.evaluate(() => {
+  const modalSurface = await page.evaluate(() => {
     const rgba = (element: Element) => {
       const context = document
         .createElement('canvas')
@@ -139,12 +139,24 @@ test('join form stays neutral while opportunity cards retain their atmospheric s
       filter: getComputedStyle(document.querySelector('.join-panel')!).backdropFilter,
     }
   })
-  // The chapter cards deliberately allow the cinematic atmosphere to remain
-  // visible. The modal needs a denser version of the same neutral family so
-  // form controls remain legible over every chapter, without the old blue cast.
-  expect(surface.card[3]).toBeLessThanOrEqual(5)
-  expect(surface.panel[3]).toBeGreaterThanOrEqual(225)
-  expect(Math.abs(surface.panel[1]! - surface.panel[2]!)).toBeLessThanOrEqual(3)
-  expect(surface.backdrop[3]).toBeLessThanOrEqual(66)
-  expect(surface.filter).toContain('blur(36px)')
+  expect(modalSurface.card[3]).toBeLessThanOrEqual(5)
+  expect(modalSurface.panel[3]).toBeGreaterThanOrEqual(80)
+  expect(modalSurface.panel[3]).toBeLessThanOrEqual(190)
+  expect(Math.abs(modalSurface.panel[1]! - modalSurface.panel[2]!)).toBeLessThanOrEqual(3)
+  expect(modalSurface.backdrop[3]).toBeLessThanOrEqual(66)
+  expect(modalSurface.filter).toContain('blur(36px)')
+
+  await page.goto('/join')
+  const embeddedSurface = await page.locator('.join-panel').evaluate((panel) => {
+    const context = document.createElement('canvas').getContext('2d', { willReadFrequently: true })!
+    context.fillStyle = getComputedStyle(panel).backgroundColor
+    context.fillRect(0, 0, 1, 1)
+    return {
+      rgba: [...context.getImageData(0, 0, 1, 1).data],
+      filter: getComputedStyle(panel).backdropFilter,
+    }
+  })
+  expect(embeddedSurface.rgba[3]).toBeGreaterThanOrEqual(80)
+  expect(embeddedSurface.rgba[3]).toBeLessThanOrEqual(190)
+  expect(embeddedSurface.filter).toContain('blur(36px)')
 })

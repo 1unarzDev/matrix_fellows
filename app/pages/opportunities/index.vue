@@ -222,7 +222,9 @@ useHead({
     <main class="relative z-[1] mx-auto max-w-[90rem] px-5 pb-24 pt-14 sm:px-8 lg:px-12 lg:pt-20">
       <div class="catalog-intro max-w-4xl">
         <p class="text-[10px] uppercase tracking-[.2em] text-acid">Research discovery</p>
-        <h1 class="mt-5 font-display text-4xl tracking-[-.055em] sm:text-6xl">
+        <h1
+          class="mt-5 max-w-[18ch] text-balance font-display text-4xl tracking-[-.055em] sm:text-6xl"
+        >
           Find a route for the work you want to do.
         </h1>
         <p class="mt-5 max-w-2xl text-sm leading-7 text-paper/58">

@@ -81,6 +81,36 @@ test('catalog replaces legacy hidden filters and obsolete sorting', async ({ pag
   await expect(page).not.toHaveURL(/highSchool/)
 })
 
+test('opportunity heading keeps a balanced final line across supported widths', async ({
+  page,
+}) => {
+  await page.goto('/opportunities')
+  const heading = page.getByRole('heading', {
+    level: 1,
+    name: 'Find a route for the work you want to do.',
+  })
+  for (const width of [320, 360, 390, 430, 810, 1024, 1440]) {
+    await page.setViewportSize({ width, height: 900 })
+    const lines = await heading.evaluate((element) => {
+      const text = element.firstChild!
+      const words = text.textContent!.trim().split(/\s+/)
+      let offset = 0
+      const rows = new Map<number, string[]>()
+      for (const word of words) {
+        const start = text.textContent!.indexOf(word, offset)
+        const range = document.createRange()
+        range.setStart(text, start)
+        range.setEnd(text, start + word.length)
+        const top = Math.round(range.getBoundingClientRect().top)
+        rows.set(top, [...(rows.get(top) || []), word])
+        offset = start + word.length
+      }
+      return [...rows.values()]
+    })
+    expect(lines.at(-1)!.length).toBeGreaterThanOrEqual(3)
+  }
+})
+
 test('project panels animate and closed content cannot receive focus', async ({ page }) => {
   await page.goto('/#research')
   await page.locator('[data-ready="true"]').waitFor()

@@ -126,6 +126,15 @@ transitions. Distant water filters micro-detail while retaining broad swell
 normals. Fog, darkness, haze, and silhouettes control visibility instead of
 requiring dense geometry.
 
+Deep-sea caustics are an analytic, domain-warped light field evaluated inside
+the existing world fragment pass. They replace the former powered-sine streak
+band without adding a texture, render target, or light pass. The Depths copy
+uses one compositor-scale buoyancy animation of less than two CSS pixels plus a
+small SVG current accent. Both CSS animations pause when the chapter is not
+active and are removed under reduced motion. The large moving panel surface is
+also omitted on narrow layouts; mobile retains the shader caustics and small
+current accent without continuously compositing the text block.
+
 Nebula ambience uses the same clock and programs: slow shader-time offsets,
 vertex-time coherent group drift, and one bounded analytic streak add no render
 target, pass, particle simulation, or animation loop. Cosmic elapsed time pauses

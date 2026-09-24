@@ -574,7 +574,12 @@ onBeforeUnmount(() => {
         aria-labelledby="frontiers-title"
         class="relative flex min-h-[120svh] items-center justify-end px-6 py-36 outline-none sm:px-10 lg:px-36"
       >
-        <div class="max-w-xl">
+        <div
+          data-depths-panel
+          class="depths-panel relative isolate max-w-xl overflow-hidden rounded-[2rem] border border-paper/[.07] px-7 py-8 max-sm:overflow-visible max-sm:border-transparent max-sm:px-0 max-sm:py-0 sm:px-10 sm:py-10"
+          :class="{ 'depths-panel--active': active === 3 }"
+        >
+          <div aria-hidden="true" class="depths-panel__light absolute inset-0 -z-10" />
           <p class="mb-8 text-[10px] uppercase tracking-[.25em] text-acid">
             04 — Beneath the surface
           </p>
@@ -595,7 +600,27 @@ onBeforeUnmount(() => {
             You don’t need to have it all figured out. You need curiosity, a little courage, and
             people willing to go deeper with you.
           </p>
-          <div class="mt-12 h-px w-20 bg-acid/60" />
+          <svg
+            aria-hidden="true"
+            class="depths-current mt-11 h-5 w-24 overflow-visible text-acid/60"
+            viewBox="0 0 96 20"
+            fill="none"
+          >
+            <path
+              class="depths-current__line depths-current__line--near"
+              d="M1 9.5C17 4.5 29 14.5 46 9.5S76 4.5 95 9.5"
+              stroke="currentColor"
+              stroke-width="1"
+              stroke-linecap="round"
+            />
+            <path
+              class="depths-current__line depths-current__line--far"
+              d="M7 14C22 10.5 34 17 50 13.5S76 10.5 89 13"
+              stroke="currentColor"
+              stroke-width="0.65"
+              stroke-linecap="round"
+            />
+          </svg>
         </div>
       </section>
 
@@ -833,6 +858,75 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+.depths-panel {
+  --depths-drift: 1.4px;
+  animation: depths-buoyancy 14s cubic-bezier(0.45, 0.05, 0.3, 1) infinite both paused;
+  background: linear-gradient(132deg, rgb(7 31 43 / 0.34), rgb(6 22 37 / 0.13) 62%, transparent);
+  box-shadow:
+    inset 0 1px rgb(214 244 246 / 0.025),
+    0 24px 70px rgb(1 12 24 / 0.08);
+  transform-origin: 72% 58%;
+}
+.depths-panel--active {
+  animation-play-state: running;
+}
+.depths-panel__light {
+  background:
+    radial-gradient(26rem 12rem at 12% 0%, rgb(116 225 225 / 0.055), transparent 70%),
+    linear-gradient(112deg, transparent 18%, rgb(129 220 224 / 0.025) 42%, transparent 64%);
+  opacity: 0.85;
+  transform: translate3d(-1.5%, 0, 0);
+  transition: opacity 800ms ease;
+}
+.depths-current__line {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: depths-current 9s ease-in-out infinite both paused;
+}
+.depths-current__line--far {
+  opacity: 0.35;
+  animation-duration: 12s;
+  animation-direction: reverse;
+}
+.depths-panel--active .depths-current__line {
+  animation-play-state: running;
+}
+@keyframes depths-buoyancy {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  36% {
+    transform: translate3d(-0.45px, calc(var(--depths-drift) * -1), 0) rotate(-0.025deg);
+  }
+  68% {
+    transform: translate3d(0.35px, calc(var(--depths-drift) * 0.38), 0) rotate(0.018deg);
+  }
+}
+@keyframes depths-current {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scaleY(1);
+    opacity: 0.42;
+  }
+  45% {
+    transform: translate3d(1.5px, -0.7px, 0) scaleY(0.72);
+    opacity: 0.72;
+  }
+  74% {
+    transform: translate3d(-0.6px, 0.45px, 0) scaleY(1.08);
+  }
+}
+@media (max-width: 639px) {
+  .depths-panel {
+    animation: none;
+    background: none;
+    box-shadow: none;
+  }
+  .depths-panel__light {
+    display: none;
+  }
+}
 .site-footer {
   overflow: hidden;
   background: linear-gradient(
@@ -944,6 +1038,11 @@ onBeforeUnmount(() => {
   line-height: 1;
 }
 @media (prefers-reduced-motion: reduce) {
+  .depths-panel,
+  .depths-current__line {
+    animation: none;
+    transform: none;
+  }
   .footer-action,
   .footer-action__icon,
   .footer-utility {

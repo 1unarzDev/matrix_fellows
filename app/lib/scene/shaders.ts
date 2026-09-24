@@ -468,7 +468,17 @@ void main() {
 
   if(submerged>0.0 && cosmos<.999) {
   vec2 warp=uv+vec2(sin(uv.y*9.0+uTime*.24),cos(uv.x*7.0-uTime*.19))*.022;
-  float shaft=pow(max(0.0,sin((warp.x+warp.y*.3)*24.0+atmosphericFbm(warp*3.0)*3.0)),8.0);
+  // A slowly advected caustic web replaces the old repeating sine streaks.
+  // Two warped wave families form irregular cells with a soft falloff; this
+  // stays analytic inside the existing world pass and needs no light texture.
+  vec2 causticUv=vec2((warp.x-.5)*uAspect,warp.y)*vec2(8.2,6.4);
+  float causticWarp=atmosphericFbm(causticUv*.31+vec2(uTime*.018,-uTime*.013));
+  causticUv+=vec2(causticWarp-.5,noise(causticUv*.19+vec2(7.3,-uTime*.011))-.5)*1.15;
+  float causticA=abs(sin(causticUv.x+sin(causticUv.y*.83+uTime*.105)*1.18));
+  float causticB=abs(sin(causticUv.y*1.14-uTime*.078+sin(causticUv.x*.69-uTime*.052)));
+  float causticWeb=1.0-smoothstep(.055,.36,min(causticA,causticB));
+  float causticBreak=.34+.66*smoothstep(.22,.78,noise(causticUv*.47+uTime*.009));
+  causticWeb*=causticWeb*causticBreak;
   // Refraction can move UVs below the frame. Fractional powers of negative
   // height produce NaNs on hardware GPUs and contaminate HDR bloom buffers.
   float lightHeight=clamp(uv.y,0.0,1.0);
@@ -491,9 +501,10 @@ void main() {
     float mineralGlow=pow(noise(vec2(x*18.0+fi*9.0,2.0)),5.0);
     deep+=vec3(.055,.28,.30)*rim*mineralGlow*(1.0-fi*.25);
   }
-  deep+=vec3(.045,.30,.35)*shaft*overhead*1.35;
-  float beam1=exp(-pow((uv.x-.16-uv.y*.19)*14.0,2.0));
-  float beam2=exp(-pow((uv.x-.45+uv.y*.04)*25.0,2.0));
+  float causticReach=mix(.18,1.0,pow(lightHeight,1.35))*exp(-abs(uv.x-.36)*.72);
+  deep+=vec3(.035,.19,.21)*causticWeb*causticReach*.72;
+  float beam1=exp(-pow((uv.x-.16-uv.y*.19+sin(uTime*.071)*.012)*14.0,2.0));
+  float beam2=exp(-pow((uv.x-.45+uv.y*.04+sin(uTime*.053+1.7)*.009)*25.0,2.0));
   deep+=vec3(.035,.15,.18)*(beam1+beam2*.55)*pow(lightHeight,1.4);
   deep+=vec3(.015,.035,.058)*atmosphericFbm(warp*7.0+uTime*.015);
   // A restrained violet-blue distant glow bridges the sea and later nebula.

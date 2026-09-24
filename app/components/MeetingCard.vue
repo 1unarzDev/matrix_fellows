@@ -13,7 +13,11 @@ watch(
 </script>
 
 <template>
-  <section id="meeting-details" class="scroll-mt-24 py-16" aria-labelledby="next-gathering-title">
+  <section
+    id="meeting-details"
+    class="scroll-mt-[clamp(10rem,22vh,13rem)] py-16"
+    aria-labelledby="next-gathering-title"
+  >
     <div class="mb-6 flex items-center justify-between gap-5">
       <div class="flex items-center gap-2 text-[10px] uppercase tracking-[.2em] text-acid">
         <span class="h-1.5 w-1.5 rounded-full bg-acid shadow-[0_0_8px_currentColor]" />

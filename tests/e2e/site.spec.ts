@@ -113,7 +113,11 @@ test('meeting summary is prominent before the journey and links to full details'
   await expect(hero.getByText('Martin HS · Room 186C', { exact: true })).toBeVisible()
   await hero.getByRole('link', { name: 'Meeting details' }).click()
   await expect(page).toHaveURL(/#meeting-details$/)
-  await expect(page.locator('#meeting-details')).toBeInViewport({ timeout: 10000 })
+  const meetingDetails = page.locator('#meeting-details')
+  await expect(meetingDetails).toBeInViewport({ timeout: 10000 })
+  const meetingTop = await meetingDetails.evaluate((element) => element.getBoundingClientRect().top)
+  expect(meetingTop).toBeGreaterThanOrEqual(150)
+  expect(meetingTop).toBeLessThanOrEqual(260)
 })
 
 test('explains the Matrix Fellows and Martin Research Society relationship', async ({ page }) => {

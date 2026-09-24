@@ -7,6 +7,7 @@ import {
   selectNextMeeting,
 } from '../../shared/data/meetings'
 import { contentSchema } from '../../shared/utils/validation'
+import { meetingEventSchema } from '../../shared/utils/validation'
 
 it('provides the first meeting and three real research projects', () => {
   expect(contentSchema.safeParse(defaultContent).success).toBe(true)
@@ -36,6 +37,7 @@ it('provides the first meeting and three real research projects', () => {
 
 it('builds a dated meeting schedule with honest confirmed and projected states', () => {
   const schedule = buildMeetingSchedule(defaultContent.meeting)
+  expect(schedule.every((meeting) => meetingEventSchema.safeParse(meeting).success)).toBe(true)
   expect(schedule.map(({ date, state }) => ({ date, state }))).toEqual([
     { date: '2026-09-25', state: 'confirmed' },
     { date: '2026-10-09', state: 'tentative' },

@@ -58,7 +58,11 @@ export const contentSchema = z.object({
 })
 export const meetingResourceSchema = z.object({
   title: z.string().trim().min(1).max(160),
-  url: z.union([z.literal(''), httpsUrl]),
+  url: z.union([
+    z.literal(''),
+    httpsUrl,
+    z.string().regex(/^\/[a-z0-9][a-z0-9/_-]*$/i, 'Use a site path or https:// URL'),
+  ]),
   note: z.string().trim().max(500),
 })
 export const meetingEventSchema = z.object({

@@ -67,7 +67,9 @@ test('meeting PIN unlock and meeting editing remain fluid and focused', async ({
   const pin = dialog.getByLabel('Eight-digit meeting organizer PIN')
   await expect(pin).toBeFocused()
   await pin.pressSequentially('13572468', { delay: 35 })
+  await expect(dialog.getByText('Editor section')).toBeVisible()
   await expect(dialog.getByRole('heading', { name: 'The gathering schedule.' })).toBeVisible()
+  await expect(dialog.getByRole('button', { name: 'Full editor' })).toHaveCount(0)
 
   await dialog.getByRole('button', { name: /From an ISEF interest/ }).click()
   await dialog.getByLabel('Date').fill('2026-10-16')
@@ -82,11 +84,9 @@ test('meeting PIN unlock and meeting editing remain fluid and focused', async ({
     state: 'confirmed',
   })
 
-  await dialog.getByRole('button', { name: 'Full editor' }).click()
-  await expect(dialog.getByText('Editor section')).toBeVisible()
   await expect(dialog.getByLabel('Owner email')).toHaveCount(0)
-  await dialog.locator('footer').getByRole('button', { name: 'Lock' }).click()
-  await expect(dialog.getByLabel('Eight-digit meeting organizer PIN')).toBeFocused()
+  await dialog.getByRole('button', { name: 'Lock editor' }).click()
+  await expect(page.locator('[data-admin-pin]')).toBeFocused()
 })
 
 test('successful PIN entry bursts into a spring transition', async ({ page }) => {
@@ -106,7 +106,21 @@ test('successful PIN entry bursts into a spring transition', async ({ page }) =>
       )
       return
     }
+    if (path.endsWith('/logout')) unlocked = false
     await route.fulfill({ json: { ok: true } })
+  })
+  await page.route('**/api/admin', async (route) => {
+    await route.fulfill({
+      json: {
+        site: null,
+        opportunities: [],
+        sources: [],
+        candidates: [],
+        monitors: [],
+        discoveryCount: 0,
+        queueHealth: [],
+      },
+    })
   })
 
   await page.goto('/#community')
@@ -128,5 +142,28 @@ test('successful PIN entry bursts into a spring transition', async ({ page }) =>
         .evaluate((element) => getComputedStyle(element).animationName),
     )
     .toContain('pin-particle-burst')
+  await expect(dialog.getByText('Editor section')).toBeVisible()
   await expect(dialog.getByRole('heading', { name: 'The gathering schedule.' })).toBeVisible()
+  await expect(dialog.getByRole('button', { name: 'Full editor' })).toHaveCount(0)
+
+  const lock = dialog.getByRole('button', { name: 'Lock editor' })
+  await lock.evaluate((element) => {
+    const panel = element.closest('.admin-panel')
+    if (!panel) return
+    const observer = new MutationObserver(() => {
+      if (!panel.classList.contains('admin-panel--locking')) return
+      const shackle = element.querySelector('path')
+      panel.setAttribute('data-lock-animation-observed', 'true')
+      panel.setAttribute(
+        'data-lock-shackle-animation',
+        shackle ? getComputedStyle(shackle).animationName : '',
+      )
+      observer.disconnect()
+    })
+    observer.observe(panel, { attributes: true, attributeFilter: ['class'] })
+  })
+  await lock.click()
+  await expect(dialog).toHaveAttribute('data-lock-animation-observed', 'true')
+  await expect(dialog).toHaveAttribute('data-lock-shackle-animation', /admin-lock-shackle/)
+  await expect(page.locator('[data-admin-pin]')).toBeFocused()
 })

@@ -17,7 +17,7 @@ const message = ref(''),
 const checking = ref(false),
   authenticated = ref(false),
   busy = ref(false)
-const meetingMode = ref(true)
+const locking = ref(false)
 const tab = ref('Meeting')
 const errorMessage = (cause: unknown) =>
   (cause as { data?: { statusMessage?: string }; statusMessage?: string })?.data?.statusMessage ||
@@ -144,7 +144,6 @@ async function authorize() {
     })
   } catch (cause) {
     authenticated.value = false
-    meetingMode.value = true
     error.value = errorMessage(cause)
   } finally {
     checking.value = false
@@ -152,18 +151,21 @@ async function authorize() {
 }
 
 const handleAuthorized = () => {
-  authenticated.value = true
-}
-const openFullEditor = async () => {
-  meetingMode.value = false
-  await authorize()
+  if (!authenticated.value) void authorize()
 }
 const lockEditor = async () => {
-  await $fetch('/api/meeting-admin/logout', { method: 'POST' }).catch(() => {})
+  if (locking.value) return
+  locking.value = true
+  const reduced = import.meta.client && matchMedia('(prefers-reduced-motion: reduce)').matches
+  await Promise.all([
+    $fetch('/api/meeting-admin/logout', { method: 'POST' }).catch(() => {}),
+    new Promise((resolve) => setTimeout(resolve, reduced ? 40 : 560)),
+  ])
   authenticated.value = false
-  meetingMode.value = true
   error.value = ''
   message.value = ''
+  await nextTick()
+  locking.value = false
 }
 
 async function save(publish: boolean) {
@@ -323,7 +325,8 @@ onBeforeUnmount(() => {
           aria-modal="true"
           aria-labelledby="admin-title"
           tabindex="-1"
-          class="flex h-dvh w-full max-w-xl flex-col border-l border-paper/10 bg-ink bg-[radial-gradient(ellipse_at_top_right,#a9a0ed12,transparent_55%)] shadow-2xl outline-none [--color-acid:#c5c0eb] [&_button]:transition-[color,background-color,border-color,box-shadow] [&_button]:duration-700 [&_button]:ease-[cubic-bezier(.45,0,.25,1)] [&_button]:focus-visible:outline-2 [&_button]:focus-visible:outline-offset-4 [&_button]:focus-visible:outline-acid motion-reduce:[&_button]:transition-none"
+          class="admin-panel flex h-dvh w-full max-w-xl flex-col border-l border-paper/10 bg-ink bg-[radial-gradient(ellipse_at_top_right,#a9a0ed12,transparent_55%)] shadow-2xl outline-none [--color-acid:#c5c0eb] [&_button]:transition-[color,background-color,border-color,box-shadow] [&_button]:duration-700 [&_button]:ease-[cubic-bezier(.45,0,.25,1)] [&_button]:focus-visible:outline-2 [&_button]:focus-visible:outline-offset-4 [&_button]:focus-visible:outline-acid motion-reduce:[&_button]:transition-none"
+          :class="{ 'admin-panel--locking': locking }"
           @keydown="handleKeys"
         >
           <header
@@ -343,7 +346,7 @@ onBeforeUnmount(() => {
           </header>
           <div
             data-lenis-prevent
-            class="min-h-0 flex-1 overflow-y-auto overscroll-contain p-6 [scrollbar-width:thin] [scrollbar-color:#c5c0eb40_transparent] sm:p-8"
+            class="admin-editor-body min-h-0 flex-1 overflow-y-auto overscroll-contain p-6 [scrollbar-width:thin] [scrollbar-color:#c5c0eb40_transparent] sm:p-8"
           >
             <div v-if="!configured" class="rounded-xl border border-paper/15 p-6">
               <MatrixMark :size="32" class="text-acid" />
@@ -357,13 +360,6 @@ onBeforeUnmount(() => {
                 while setup is pending.
               </p>
             </div>
-            <MeetingAdmin
-              v-else-if="meetingMode"
-              @saved="emit('saved')"
-              @authorized="handleAuthorized"
-              @locked="authenticated = false"
-              @full-editor="openFullEditor"
-            />
             <p v-else-if="checking" role="status" class="text-sm text-paper/60">
               Checking your access…
             </p>
@@ -371,7 +367,6 @@ onBeforeUnmount(() => {
               v-else-if="!authenticated"
               @saved="emit('saved')"
               @authorized="handleAuthorized"
-              @full-editor="openFullEditor"
             />
             <template v-else>
               <div class="relative z-20 mb-8">
@@ -409,8 +404,6 @@ onBeforeUnmount(() => {
                     v-if="tab === 'Meeting'"
                     @saved="emit('saved')"
                     @authorized="handleAuthorized"
-                    @locked="lockEditor"
-                    @full-editor="tab = 'Research'"
                   />
                   <div v-if="tab === 'Research'" class="space-y-8">
                     <fieldset
@@ -799,8 +792,8 @@ onBeforeUnmount(() => {
             </p>
           </div>
           <footer
-            v-if="authenticated && !meetingMode"
-            class="flex shrink-0 flex-wrap items-center gap-3 border-t border-paper/10 bg-paper/[.02] px-6 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:px-8"
+            v-if="authenticated"
+            class="admin-editor-footer flex shrink-0 flex-wrap items-center gap-3 border-t border-paper/10 bg-paper/[.02] px-6 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:px-8"
           >
             <template v-if="!['Meeting', 'Listings', 'Sources', 'Responses'].includes(tab)"
               ><button
@@ -816,10 +809,172 @@ onBeforeUnmount(() => {
               >
                 {{ busy ? 'Saving…' : 'Publish content' }}
               </button></template
-            ><button class="ml-auto text-xs text-paper/45" @click="lockEditor">Lock</button>
+            ><button
+              type="button"
+              class="admin-lock-button ml-auto"
+              :disabled="locking"
+              aria-label="Lock editor"
+              title="Lock editor"
+              @click="lockEditor"
+            >
+              <SiteIcon name="lock" :size="17" />
+            </button>
           </footer>
         </section>
       </div>
     </Transition>
   </Teleport>
 </template>
+
+<style scoped>
+.admin-editor-body,
+.admin-editor-footer {
+  transform-origin: 50% 100%;
+}
+
+.admin-lock-button {
+  position: relative;
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: 0 0 2.75rem;
+  place-items: center;
+  border: 1px solid rgb(244 241 233 / 11%);
+  border-radius: 999px;
+  color: rgb(244 241 233 / 50%);
+  background: rgb(244 241 233 / 2.5%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 4%);
+  transition:
+    color 260ms ease,
+    border-color 260ms ease,
+    background-color 260ms ease,
+    box-shadow 420ms ease,
+    transform 520ms cubic-bezier(0.16, 1.28, 0.3, 1) !important;
+}
+
+.admin-lock-button::after {
+  content: '';
+  position: absolute;
+  inset: 0.34rem;
+  border-radius: inherit;
+  opacity: 0;
+  background: radial-gradient(circle, rgb(197 192 235 / 17%), transparent 70%);
+  transform: scale(0.45);
+  transition:
+    opacity 320ms ease,
+    transform 560ms cubic-bezier(0.16, 1.2, 0.3, 1);
+}
+
+.admin-lock-button:hover,
+.admin-lock-button:focus-visible {
+  color: rgb(228 187 114 / 95%);
+  border-color: rgb(228 187 114 / 30%);
+  background: rgb(228 187 114 / 6%);
+  box-shadow:
+    0 8px 28px rgb(100 73 28 / 16%),
+    inset 0 1px 0 rgb(255 255 255 / 7%);
+  transform: translateY(-2px) rotate(-2deg);
+}
+
+.admin-lock-button:hover::after,
+.admin-lock-button:focus-visible::after {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.admin-lock-button :deep(svg) {
+  position: relative;
+  z-index: 1;
+  overflow: visible;
+}
+
+.admin-lock-button :deep(path) {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  transition: transform 480ms cubic-bezier(0.16, 1.25, 0.3, 1);
+}
+
+.admin-lock-button:hover :deep(path),
+.admin-lock-button:focus-visible :deep(path) {
+  transform: translateY(-1.35px);
+}
+
+.admin-panel--locking .admin-lock-button {
+  color: #e4bb72;
+  border-color: rgb(228 187 114 / 38%);
+  animation: admin-lock-confirm 560ms cubic-bezier(0.16, 1.16, 0.3, 1) both;
+}
+
+.admin-panel--locking .admin-lock-button :deep(path) {
+  animation: admin-lock-shackle 500ms cubic-bezier(0.16, 1.2, 0.3, 1) both;
+}
+
+.admin-panel--locking .admin-editor-body,
+.admin-panel--locking .admin-editor-footer {
+  pointer-events: none;
+  animation: admin-editor-lock-away 560ms cubic-bezier(0.5, 0, 0.4, 1) both;
+}
+
+@keyframes admin-lock-confirm {
+  0% {
+    transform: translateY(-2px) rotate(-2deg) scale(1);
+  }
+  38% {
+    transform: translateY(-1px) rotate(2deg) scale(1.12);
+    box-shadow: 0 0 30px rgb(228 187 114 / 23%);
+  }
+  68% {
+    transform: translateY(0) rotate(0) scale(0.94);
+  }
+  100% {
+    transform: translateY(0) rotate(0) scale(1);
+  }
+}
+
+@keyframes admin-lock-shackle {
+  0% {
+    transform: translateY(-1.35px);
+  }
+  46% {
+    transform: translateY(1px) scaleY(0.92);
+  }
+  72% {
+    transform: translateY(-0.35px) scaleY(1.02);
+  }
+  100% {
+    transform: translateY(0) scaleY(1);
+  }
+}
+
+@keyframes admin-editor-lock-away {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+  28% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.002);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(16px) scale(0.985);
+    filter: blur(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-lock-button,
+  .admin-lock-button::after,
+  .admin-lock-button :deep(path) {
+    transition: none !important;
+  }
+
+  .admin-panel--locking .admin-lock-button,
+  .admin-panel--locking .admin-lock-button :deep(path),
+  .admin-panel--locking .admin-editor-body,
+  .admin-panel--locking .admin-editor-footer {
+    animation: none;
+  }
+}
+</style>

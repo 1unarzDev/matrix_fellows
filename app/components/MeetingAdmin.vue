@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { MeetingEvent, MeetingResource } from '#shared/types/content'
 
-const emit = defineEmits<{ saved: []; 'full-editor': []; authorized: []; locked: [] }>()
+const emit = defineEmits<{ saved: []; authorized: [] }>()
 const unlocked = ref(false)
 const loading = ref(true)
 const busy = ref(false)
@@ -14,8 +14,6 @@ const confirmingDelete = ref(false)
 const topicsText = ref('')
 const resourcesText = ref('')
 const celebrating = ref(false)
-const gate = ref<{ focus: () => void }>()
-const gateKey = ref(0)
 
 const errorMessage = (cause: unknown) =>
   (cause as { data?: { statusMessage?: string }; statusMessage?: string })?.data?.statusMessage ||
@@ -151,17 +149,6 @@ const remove = async () => {
   }
 }
 
-const lock = async () => {
-  await $fetch('/api/meeting-admin/logout', { method: 'POST' }).catch(() => {})
-  unlocked.value = false
-  meetings.value = []
-  editing.value = null
-  gateKey.value++
-  emit('locked')
-  await nextTick()
-  gate.value?.focus()
-}
-
 onMounted(() => load(true))
 </script>
 
@@ -173,25 +160,15 @@ onMounted(() => load(true))
       </p>
       <MeetingPinGate
         v-else-if="!unlocked"
-        :key="`gate-${gateKey}`"
-        ref="gate"
         :busy="busy"
         :error="error"
         :success="celebrating"
         @unlock="unlock"
       />
       <div v-else key="editor" class="meeting-admin-editor">
-        <div class="mb-7 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p class="text-[9px] uppercase tracking-[.2em] text-acid">Meeting studio</p>
-            <h3 class="mt-2 font-display text-2xl tracking-[-.04em]">The gathering schedule.</h3>
-          </div>
-          <div class="flex gap-2">
-            <button class="meeting-admin-chip" type="button" @click="emit('full-editor')">
-              Full editor
-            </button>
-            <button class="meeting-admin-chip" type="button" @click="lock">Lock</button>
-          </div>
+        <div class="mb-7">
+          <p class="text-[9px] uppercase tracking-[.2em] text-acid">Meeting studio</p>
+          <h3 class="mt-2 font-display text-2xl tracking-[-.04em]">The gathering schedule.</h3>
         </div>
 
         <p
@@ -368,19 +345,6 @@ onMounted(() => load(true))
 }
 .meeting-admin-editor {
   transform-origin: 50% 0;
-}
-.meeting-admin-chip {
-  min-height: 2.5rem;
-  border: 1px solid rgb(244 241 233 / 12%);
-  border-radius: 999px;
-  padding: 0.55rem 0.9rem;
-  color: rgb(244 241 233 / 48%);
-  font-size: 0.68rem;
-}
-.meeting-admin-chip:hover {
-  border-color: rgb(197 192 235 / 35%);
-  color: var(--color-paper);
-  transform: translateY(-1px);
 }
 .meeting-admin-row {
   display: flex;

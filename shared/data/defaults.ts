@@ -7,7 +7,14 @@ export const defaultContent: SiteContent = {
     time: 'During lunch',
     timezone: 'America/Chicago',
     location: 'Martin HS · Room 186C',
-    topics: ['Meeting topics will be announced here.'],
+    topics: [
+      'Research, made approachable: what it is, how it grows from your interests, and how to begin with a manageable question.',
+      'Research as applied passion: why it can become standout evidence of initiative for jobs, internships, college applications, and your resume.',
+      'Paths to pursue: science fairs, competitions, workshops, and other student research opportunities.',
+      'From idea to results: finding a direction, narrowing the question, planning the work, and following through.',
+      'Choose a first step: start an ISEF project, plan a workshop submission, build a personal project, or follow a research guide.',
+      'Questions, next steps, and how to join Matrix Fellows.',
+    ],
     url: '',
   },
   projects: [

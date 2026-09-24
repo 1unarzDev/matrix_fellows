@@ -59,10 +59,9 @@ useHead({
       <div class="join-atmosphere__field" />
       <div class="join-atmosphere__aurora join-atmosphere__aurora--one" />
       <div class="join-atmosphere__aurora join-atmosphere__aurora--two" />
-      <div class="join-atmosphere__orbit join-atmosphere__orbit--wide"><i /></div>
-      <div class="join-atmosphere__orbit join-atmosphere__orbit--small"><i /></div>
       <div class="join-atmosphere__stars" />
     </div>
+    <ScienceAccent theme="mechanics" />
 
     <main
       class="relative z-[1] mx-auto grid max-w-[90rem] gap-12 px-5 pb-24 pt-12 sm:px-8 lg:grid-cols-[minmax(17rem,.78fr)_minmax(34rem,1.22fr)] lg:items-start lg:gap-16 lg:px-12 lg:pt-20 xl:gap-24"
@@ -184,37 +183,6 @@ useHead({
   background: radial-gradient(ellipse, rgb(67 153 139 / 0.11), transparent 72%);
   animation: join-drift-two 22s ease-in-out infinite alternate;
 }
-.join-atmosphere__orbit {
-  position: absolute;
-  border: 1px solid rgb(197 192 235 / 0.09);
-  border-radius: 50%;
-  transform: rotate(-24deg) scaleY(0.48);
-}
-.join-atmosphere__orbit i {
-  position: absolute;
-  top: 50%;
-  left: -2px;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: #c5c0eb;
-  box-shadow: 0 0 18px rgb(197 192 235 / 65%);
-}
-.join-atmosphere__orbit--wide {
-  width: 34rem;
-  height: 34rem;
-  right: -11rem;
-  top: 16%;
-  animation: join-orbit-breathe 13s ease-in-out infinite alternate;
-}
-.join-atmosphere__orbit--small {
-  width: 15rem;
-  height: 15rem;
-  bottom: 5%;
-  left: 4%;
-  border-color: rgb(114 195 183 / 0.08);
-  animation: join-orbit-breathe 17s ease-in-out -5s infinite alternate-reverse;
-}
 .join-atmosphere__stars {
   position: absolute;
   inset: 0;
@@ -313,12 +281,6 @@ useHead({
     transform: translate3d(6%, -4%, 0) scale(1.08);
   }
 }
-@keyframes join-orbit-breathe {
-  to {
-    transform: rotate(-18deg) scaleY(0.52) scale(1.035);
-    opacity: 0.7;
-  }
-}
 @keyframes join-stars {
   to {
     transform: translate3d(0.8rem, -0.5rem, 0);
@@ -347,9 +309,6 @@ useHead({
   }
 }
 @media (max-width: 639px) {
-  .join-atmosphere__orbit--wide {
-    right: -23rem;
-  }
   .join-promises {
     grid-template-columns: 1fr;
   }
@@ -360,7 +319,6 @@ useHead({
 }
 @media (prefers-reduced-motion: reduce) {
   .join-atmosphere__aurora,
-  .join-atmosphere__orbit,
   .join-atmosphere__stars,
   .join-kicker__pulse {
     animation: none;

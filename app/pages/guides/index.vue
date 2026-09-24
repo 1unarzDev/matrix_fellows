@@ -32,6 +32,7 @@ useSeoMeta({
   ogDescription: 'Move from curiosity to a careful project with practical student research guides.',
 })
 useHead({
+  htmlAttrs: { class: 'guide-scroll' },
   link: [{ rel: 'canonical', href: canonical }],
   script: [
     {
@@ -56,7 +57,7 @@ useHead({
 
 <template>
   <div class="guide-page min-h-screen bg-ink text-paper">
-    <GuideAtmosphere />
+    <ScienceAccent theme="astronomy" />
     <main class="relative z-[1] mx-auto max-w-[86rem] px-5 pb-24 pt-14 sm:px-8 lg:px-12 lg:pt-20">
       <div
         class="grid gap-8 border-b border-paper/14 pb-14 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-end"

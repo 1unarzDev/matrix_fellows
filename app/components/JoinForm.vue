@@ -229,26 +229,22 @@ onBeforeUnmount(() => {
     >
       <Transition
         appear
-        enter-active-class="transition-opacity duration-700 ease-out [&>section]:transition-[transform,opacity] [&>section]:duration-700 [&>section]:ease-[cubic-bezier(.22,1,.36,1)] motion-reduce:transition-none motion-reduce:[&>section]:transition-none"
-        enter-from-class="opacity-0 [&>section]:translate-y-10 [&>section]:scale-95 motion-reduce:[&>section]:transform-none"
-        enter-to-class="opacity-100 [&>section]:translate-y-0 [&>section]:scale-100"
-        leave-active-class="transition-opacity duration-500 ease-in-out motion-reduce:transition-none"
-        leave-to-class="opacity-0"
+        :name="embedded ? 'join-embedded-dialog' : 'join-dialog'"
         @after-leave="finishClose"
       >
         <div
           v-if="visible"
           class="join-backdrop flex items-center justify-center"
-          :class="embedded ? 'w-full' : 'h-full p-3 sm:p-8'"
+          :class="embedded ? 'w-full' : 'join-backdrop--modal h-full p-3 sm:p-8'"
           @click.self="!embedded && close()"
         >
           <section
             data-lenis-prevent
-            class="join-panel relative isolate flex w-full max-w-2xl flex-col overflow-hidden rounded-[1.75rem] border border-paper/20 shadow-[0_30px_120px_#00000080,inset_0_1px_0_#ffffff12] sm:rounded-[2rem]"
+            class="join-panel relative isolate flex w-full max-w-2xl flex-col overflow-hidden rounded-[1.75rem] sm:rounded-[2rem]"
             :class="
               embedded
                 ? 'join-panel--embedded min-h-[38rem]'
-                : 'max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-4rem)]'
+                : 'join-panel--modal max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-4rem)]'
             "
           >
             <div
@@ -278,7 +274,7 @@ onBeforeUnmount(() => {
                 type="button"
                 aria-label="Close join form"
                 :disabled="busy"
-                class="grid h-11 w-11 place-items-center rounded-full border border-paper/10 text-paper/60 transition-[background-color,transform,color] duration-700 ease-[cubic-bezier(.45,0,.25,1)] hover:scale-105 hover:bg-acid/10 hover:text-paper focus-visible:outline-acid disabled:opacity-30 motion-reduce:transform-none motion-reduce:transition-none"
+                class="join-close grid h-11 w-11 place-items-center rounded-full focus-visible:outline-acid disabled:opacity-30"
                 @click="close"
               >
                 <SiteIcon name="close" :size="16" />
@@ -574,6 +570,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .join-panel {
+  border: 1px solid color-mix(in srgb, var(--color-paper) 20%, transparent);
   background:
     radial-gradient(
       38rem 24rem at 100% 0%,
@@ -587,11 +584,37 @@ onBeforeUnmount(() => {
       transparent 78%
     ),
     color-mix(in srgb, var(--color-ink) 58%, transparent);
+  box-shadow:
+    0 30px 120px rgb(0 0 0 / 50%),
+    inset 0 1px 0 rgb(255 255 255 / 7%);
   -webkit-backdrop-filter: blur(36px) saturate(118%);
   backdrop-filter: blur(36px) saturate(118%);
 }
 .join-backdrop {
   background: color-mix(in srgb, var(--color-ink) 25%, transparent);
+}
+.join-backdrop--modal {
+  background: rgb(5 8 8 / 76%);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+.join-panel--modal {
+  --color-acid: #e4bb72;
+  border-color: color-mix(in srgb, #e4bb72 18%, transparent);
+  border-radius: 1.5rem;
+  background:
+    radial-gradient(28rem 18rem at 100% 0%, rgb(228 187 114 / 9%), transparent 70%),
+    color-mix(in srgb, var(--color-paper) 3.6%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 5%),
+    0 18px 55px rgb(0 0 0 / 12%);
+  -webkit-backdrop-filter: blur(18px) saturate(118%);
+  backdrop-filter: blur(18px) saturate(118%);
+  filter: drop-shadow(0 30px 70px rgb(0 0 0 / 45%));
+  transition:
+    opacity 260ms ease,
+    translate 420ms cubic-bezier(0.16, 1, 0.3, 1),
+    scale 420ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 .join-embedded .join-backdrop {
   background: transparent;
@@ -601,6 +624,62 @@ onBeforeUnmount(() => {
     0 32px 110px rgb(0 0 0 / 32%),
     0 0 72px color-mix(in srgb, var(--color-acid) 5%, transparent),
     inset 0 1px 0 rgb(255 255 255 / 8%);
+}
+.join-close {
+  border: 1px solid rgb(244 241 233 / 15%);
+  color: rgb(244 241 233 / 68%);
+  background: rgb(15 20 19 / 72%);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  transition:
+    color 180ms ease,
+    background-color 220ms ease,
+    transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.join-close:hover,
+.join-close:focus-visible {
+  color: #e4bb72;
+  background: rgb(228 187 114 / 8%);
+  transform: rotate(5deg) scale(1.04);
+}
+.join-dialog-enter-active,
+.join-dialog-leave-active {
+  transition: opacity 260ms ease;
+}
+.join-dialog-enter-from,
+.join-dialog-leave-to,
+.join-dialog-enter-from .join-panel,
+.join-dialog-leave-to .join-panel {
+  opacity: 0;
+}
+.join-dialog-enter-from .join-panel {
+  translate: 0 10px;
+  scale: 0.985;
+}
+.join-dialog-leave-to .join-panel {
+  translate: 0 5px;
+  scale: 0.992;
+}
+.join-embedded-dialog-enter-active,
+.join-embedded-dialog-leave-active {
+  transition: opacity 700ms ease-out;
+}
+.join-embedded-dialog-enter-active .join-panel,
+.join-embedded-dialog-leave-active .join-panel {
+  transition:
+    opacity 700ms ease,
+    translate 700ms cubic-bezier(0.22, 1, 0.36, 1),
+    scale 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.join-embedded-dialog-enter-from,
+.join-embedded-dialog-leave-to,
+.join-embedded-dialog-enter-from .join-panel,
+.join-embedded-dialog-leave-to .join-panel {
+  opacity: 0;
+}
+.join-embedded-dialog-enter-from .join-panel {
+  translate: 0 40px;
+  scale: 0.95;
 }
 .join-step-stage {
   display: grid;
@@ -652,6 +731,14 @@ onBeforeUnmount(() => {
   max-height: 7rem;
 }
 @media (prefers-reduced-motion: reduce) {
+  .join-dialog-enter-active,
+  .join-dialog-leave-active,
+  .join-panel--modal,
+  .join-embedded-dialog-enter-active,
+  .join-embedded-dialog-leave-active,
+  .join-embedded-dialog-enter-active .join-panel,
+  .join-embedded-dialog-leave-active .join-panel,
+  .join-close,
   .join-step-forward-enter-active,
   .join-step-forward-leave-active,
   .join-step-back-enter-active,
@@ -659,6 +746,9 @@ onBeforeUnmount(() => {
   .join-reveal-enter-active,
   .join-reveal-leave-active {
     transition: none;
+    transform: none;
+    translate: none;
+    scale: 1;
   }
 }
 </style>

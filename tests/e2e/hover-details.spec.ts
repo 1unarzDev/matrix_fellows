@@ -162,7 +162,7 @@ test('hero meeting panel gives a restrained lift on hover and keyboard focus', a
   await expect(panel).toBeVisible()
   const resting = await panel.boundingBox()
   expect(resting).not.toBeNull()
-  await expect(panel).toHaveCSS('transition-timing-function', 'cubic-bezier(0.16, 1.28, 0.3, 1)')
+  await expect(panel).toHaveCSS('transition-timing-function', 'cubic-bezier(0.22, 1, 0.36, 1)')
 
   await panel.hover()
   await expect.poll(async () => (await panel.boundingBox())!.y).toBeLessThan(resting!.y - 2)

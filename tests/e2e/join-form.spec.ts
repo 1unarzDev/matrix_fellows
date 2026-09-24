@@ -140,11 +140,11 @@ test('join surfaces use a transparent glass treatment on the page and in the mod
     }
   })
   expect(modalSurface.card[3]).toBeLessThanOrEqual(5)
-  expect(modalSurface.panel[3]).toBeGreaterThanOrEqual(80)
-  expect(modalSurface.panel[3]).toBeLessThanOrEqual(190)
-  expect(Math.abs(modalSurface.panel[1]! - modalSurface.panel[2]!)).toBeLessThanOrEqual(3)
-  expect(modalSurface.backdrop[3]).toBeLessThanOrEqual(66)
-  expect(modalSurface.filter).toContain('blur(36px)')
+  expect(modalSurface.panel[3]).toBeGreaterThanOrEqual(5)
+  expect(modalSurface.panel[3]).toBeLessThanOrEqual(15)
+  expect(modalSurface.backdrop[3]).toBeGreaterThanOrEqual(190)
+  expect(modalSurface.backdrop[3]).toBeLessThanOrEqual(198)
+  expect(modalSurface.filter).toContain('blur(18px)')
 
   await page.goto('/join')
   const embeddedSurface = await page.locator('.join-panel').evaluate((panel) => {

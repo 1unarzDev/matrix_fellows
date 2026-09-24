@@ -12,6 +12,7 @@ const { data } = await useFetch<PublicContent>('/api/content', {
     content: defaultContent,
     opportunities: defaultOpportunities,
     meetings: buildMeetingSchedule(defaultContent.meeting),
+    calendarEntries: [],
     configured: false,
   }),
 })
@@ -20,6 +21,7 @@ const meetings = computed(() =>
     ? data.value.meetings
     : buildMeetingSchedule(data.value?.content.meeting || defaultContent.meeting),
 )
+const calendarEntries = computed(() => data.value?.calendarEntries || [])
 const selected = ref<MeetingEvent>(meetings.value[0]!)
 watch(meetings, (next) => {
   selected.value = next.find((meeting) => meeting.id === selected.value.id) || next[0]!
@@ -97,11 +99,13 @@ useHead({
             Explore the calendar
           </h2>
           <p class="mt-4 max-w-md text-sm leading-6 text-paper/48">
-            Gold marks the next confirmed gathering. Violet diamonds mark projected dates that may
-            still move. Muted markers preserve past sessions and their resources.
+            Gold marks club gatherings and remains the strongest signal. Violet diamonds mark
+            submission deadlines; blue points mark competition, presentation, and program dates.
+            Projected source dates use a quieter dashed treatment until confirmed.
           </p>
           <MeetingCalendar
             :meetings="meetings"
+            :calendar-entries="calendarEntries"
             :initial-meeting-id="selected.id"
             :show-archive-link="false"
             class="mt-8"

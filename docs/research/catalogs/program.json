@@ -252,25 +252,25 @@
     "eligibility": "Domestic students currently in junior year of high school; residential and commuter options. Tuition not verified in this source.",
     "discipline": "Multidisciplinary STEM",
     "kind": "Program",
-    "edition": 2026,
-    "location": "Boston, Massachusetts, USA",
+    "edition": 2027,
+    "location": "Boston, Massachusetts, USA · residential or commuter",
     "priority": "high",
-    "lifecycle": "awaiting-announcement",
-    "lifecycleEvidence": "The 2026 session of RISE was a great success. Please check back on December 17 for details about next summer’s program and to submit an application. December 17 lacks explicit year; not emitted as exact opening.",
+    "lifecycle": "announced",
+    "lifecycleEvidence": "The official RISE calendar publishes the 2027 residential and commuter program dates. The December 17 application opening remains yearless and is not emitted as an exact milestone.",
     "milestones": [
       {
-        "label": "Residential program begins (2026 cycle)",
-        "date": "2026-06-28",
+        "label": "Residential program begins",
+        "date": "2027-06-27",
         "kind": "event",
-        "evidence": "2026 RISE calendar: Residential begins June 28",
+        "evidence": "The official 2027 RISE calendar lists residential arrival on June 27, 2027.",
         "timezone": null,
         "url": "https://www.bu.edu/summer/high-school-programs/rise-internship-practicum/"
       },
       {
-        "label": "Program ends (2026 cycle)",
-        "date": "2026-08-07",
+        "label": "Residential and commuter programs end",
+        "date": "2027-08-06",
         "kind": "event",
-        "evidence": "2026 RISE calendar: Residential ends August 7; Commuter ends August 7",
+        "evidence": "The official 2027 RISE calendar lists the final event and departure on August 6, 2027.",
         "timezone": null,
         "url": "https://www.bu.edu/summer/high-school-programs/rise-internship-practicum/"
       }

@@ -168,6 +168,7 @@ const researchPrograms: Opportunity[] = [
     cost: 'Paid stipend; application/program fees and participant logistics were not stated.',
     effort: 'Eight-week full-time research commitment, with a possible site-specific extension.',
     url: 'https://navalsteminterns.us/internships/seap/',
+    submissionUrl: 'https://navalsteminterns.us/internships/connect/students/',
     lifecycle: 'announced',
     lifecycleEvidence:
       'The official page lists a September 15–November 30 application period for 2027.',
@@ -723,6 +724,7 @@ const researchPrograms: Opportunity[] = [
     cost: 'Income-based 2027 program fee; in-person housing is not included.',
     effort: 'Online prerequisite followed by a four-week, full-day July course if admitted.',
     url: 'https://bwsi.mit.edu/apply-now/',
+    submissionUrl: 'https://mit-bwsi.formstack.com/forms/bwsi_student_registration_onlinecourse_2027',
     lifecycle: 'announced',
     lifecycleEvidence:
       'The official application and FAQ pages publish 2027 eligibility, fees, prerequisites, and a July 5–August 1 schedule.',
@@ -1174,6 +1176,39 @@ export const catalogExpansion: Opportunity[] = [
     timezone: null,
     milestones: [
       {
+        label: 'Texas state registration and digital upload deadline',
+        date: '2027-03-10',
+        kind: 'deadline',
+        role: 'submission',
+        precision: 'date-only',
+        timezone: null,
+        evidence:
+          'The official Texas HOSA 2026–27 calendar lists March 10 as the State Leadership Conference registration and digital upload deadline.',
+        url: 'https://texashosa.org/wp-content/uploads/Calendar-of-Events-26-27.pdf',
+      },
+      {
+        label: 'Texas State Leadership Conference begins',
+        date: '2027-03-31',
+        kind: 'event',
+        role: 'event',
+        precision: 'date-only',
+        timezone: null,
+        evidence:
+          'The official Texas HOSA 2026–27 calendar lists the State Leadership Conference for March 31–April 2 in Irving.',
+        url: 'https://texashosa.org/wp-content/uploads/Calendar-of-Events-26-27.pdf',
+      },
+      {
+        label: 'ILC registration and digital upload deadline',
+        date: '2027-05-15',
+        kind: 'deadline',
+        role: 'submission',
+        precision: 'date-only',
+        timezone: null,
+        evidence:
+          'The official Texas HOSA 2026–27 calendar lists May 15 as the ILC registration and digital upload deadline for qualified competitors.',
+        url: 'https://texashosa.org/wp-content/uploads/Calendar-of-Events-26-27.pdf',
+      },
+      {
         label: '2027 HOSA ILC begins',
         date: '2027-06-22',
         kind: 'event',
@@ -1183,8 +1218,25 @@ export const catalogExpansion: Opportunity[] = [
         evidence: 'The official ILC page lists June 22–25, 2027 in Philadelphia, Pennsylvania.',
         url: 'https://hosa.org/ilc/',
       },
+      {
+        label: '2027 HOSA ILC concludes',
+        date: '2027-06-25',
+        kind: 'event',
+        role: 'event',
+        precision: 'date-only',
+        timezone: null,
+        evidence: 'The official ILC page lists June 22–25, 2027 in Philadelphia, Pennsylvania.',
+        url: 'https://hosa.org/ilc/',
+      },
     ],
     fieldEvidence: [
+      {
+        field: 'milestones.texasHosa',
+        url: 'https://texashosa.org/wp-content/uploads/Calendar-of-Events-26-27.pdf',
+        quote: 'State Leadership Conference registration and digital upload deadline March 10, 2027; conference March 31–April 2, 2027.',
+        observedAt,
+        confirmedAt: observedAt,
+      },
       {
         field: 'highSchoolPolicy',
         url: medicalInnovationPdf,

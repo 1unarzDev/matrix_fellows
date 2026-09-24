@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import type { MeetingEvent } from '#shared/types/content'
+import type { CalendarOpportunityEntry, MeetingEvent } from '#shared/types/content'
 import { meetingDisplayStatus } from '#shared/data/meetings'
 
 const props = withDefaults(
   defineProps<{
     meetings: MeetingEvent[]
+    calendarEntries?: CalendarOpportunityEntry[]
     initialMeetingId?: string
     showArchiveLink?: boolean
   }>(),
-  { showArchiveLink: true },
+  { showArchiveLink: true, calendarEntries: () => [] },
 )
 const emit = defineEmits<{ select: [meeting: MeetingEvent] }>()
 
@@ -18,7 +19,9 @@ const initial = computed(
 )
 const cursor = ref(new Date(`${initial.value?.date || '2026-09-01'}T12:00:00Z`))
 const direction = ref<'forward' | 'backward'>('forward')
-const dialogMeeting = ref<MeetingEvent | null>(null)
+type CalendarDialogItem = { type: 'meeting'; meeting: MeetingEvent } | { type: 'opportunity'; entry: CalendarOpportunityEntry }
+const dialogItem = ref<CalendarDialogItem | null>(null)
+const dialogDateItems = ref<CalendarDialogItem[]>([])
 const closeButton = ref<HTMLButtonElement | null>(null)
 const mounted = ref(false)
 let returnTarget: HTMLElement | null = null
@@ -38,6 +41,11 @@ const monthKey = computed(
 const meetingsByDate = computed(
   () => new Map(props.meetings.map((meeting) => [meeting.date, meeting])),
 )
+const entriesByDate = computed(() => {
+  const result = new Map<string, CalendarOpportunityEntry[]>()
+  for (const entry of props.calendarEntries) result.set(entry.date, [...(result.get(entry.date) || []), entry])
+  return result
+})
 const nextMeetingId = computed(
   () => sorted.value.find((meeting) => meetingDisplayStatus(meeting) !== 'past')?.id,
 )
@@ -46,13 +54,13 @@ const days = computed(() => {
   const month = cursor.value.getUTCMonth()
   const firstWeekday = new Date(Date.UTC(year, month, 1)).getUTCDay()
   const count = new Date(Date.UTC(year, month + 1, 0)).getUTCDate()
-  const cells: Array<{ date: string; day: number; meeting?: MeetingEvent } | null> = Array.from(
+  const cells: Array<{ date: string; day: number; meeting?: MeetingEvent; entries: CalendarOpportunityEntry[] } | null> = Array.from(
     { length: firstWeekday },
     () => null,
   )
   for (let day = 1; day <= count; day += 1) {
     const date = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-    cells.push({ date, day, meeting: meetingsByDate.value.get(date) })
+    cells.push({ date, day, meeting: meetingsByDate.value.get(date), entries: entriesByDate.value.get(date) || [] })
   }
   while (cells.length % 7) cells.push(null)
   return cells
@@ -67,7 +75,27 @@ const moveMonth = (amount: number) => {
 const selectMeeting = (meeting: MeetingEvent, event?: Event) => {
   returnTarget = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null
   emit('select', meeting)
-  dialogMeeting.value = meeting
+  const sameDate: CalendarDialogItem[] = [
+    { type: 'meeting', meeting },
+    ...(entriesByDate.value.get(meeting.date) || []).map((entry) => ({ type: 'opportunity' as const, entry })),
+  ]
+  dialogDateItems.value = sameDate
+  dialogItem.value = sameDate[0]!
+  if (import.meta.client) {
+    const app = document.getElementById('__nuxt')
+    previousBodyOverflow = document.body.style.overflow
+    appWasInert = app?.hasAttribute('inert') || false
+    modalActive = true
+    app?.setAttribute('inert', '')
+    document.body.style.overflow = 'hidden'
+    nextTick(() => closeButton.value?.focus())
+  }
+}
+const selectEntries = (entries: CalendarOpportunityEntry[], event?: Event) => {
+  if (!entries.length) return
+  returnTarget = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null
+  dialogDateItems.value = entries.map((entry) => ({ type: 'opportunity', entry }))
+  dialogItem.value = dialogDateItems.value[0]!
   if (import.meta.client) {
     const app = document.getElementById('__nuxt')
     previousBodyOverflow = document.body.style.overflow
@@ -79,7 +107,8 @@ const selectMeeting = (meeting: MeetingEvent, event?: Event) => {
   }
 }
 const closeDialog = () => {
-  dialogMeeting.value = null
+  dialogItem.value = null
+  dialogDateItems.value = []
   if (import.meta.client) {
     const app = document.getElementById('__nuxt')
     if (!appWasInert) app?.removeAttribute('inert')
@@ -169,18 +198,24 @@ onMounted(() => {
               role="gridcell"
             >
               <button
-                v-if="cell?.meeting"
+                v-if="cell?.meeting || cell?.entries.length"
                 type="button"
                 class="meeting-day meeting-day--event"
                 :class="[
-                  `meeting-day--${meetingDisplayStatus(cell.meeting)}`,
-                  { 'meeting-day--next': cell.meeting.id === nextMeetingId },
+                  cell.meeting ? `meeting-day--${meetingDisplayStatus(cell.meeting)}` : 'meeting-day--opportunity',
+                  { 'meeting-day--next': cell.meeting?.id === nextMeetingId },
                 ]"
-                :aria-label="`${cell.meeting.title}, ${cell.date}, ${meetingDisplayStatus(cell.meeting)}`"
-                @click="selectMeeting(cell.meeting, $event)"
+                :aria-label="cell.meeting
+                  ? `${cell.meeting.title}, ${cell.date}, ${meetingDisplayStatus(cell.meeting)}${cell.entries.length ? `, plus ${cell.entries.length} opportunity date${cell.entries.length === 1 ? '' : 's'}` : ''}`
+                  : `${cell.entries.map((entry) => `${entry.opportunityTitle}: ${entry.milestoneTitle}`).join(', ')}, ${cell.date}`"
+                @click="cell.meeting ? selectMeeting(cell.meeting, $event) : selectEntries(cell.entries, $event)"
               >
-                <span>{{ cell.day }}</span
-                ><span class="meeting-day__signal" aria-hidden="true" />
+                <span>{{ cell.day }}</span>
+                <span v-if="cell.meeting" class="meeting-day__signal" aria-hidden="true" />
+                <span v-if="cell.entries.length" class="meeting-day__opportunity-signals" aria-hidden="true">
+                  <span v-if="cell.entries.some((entry) => entry.kind === 'deadline')" class="meeting-day__opportunity meeting-day__opportunity--deadline" />
+                  <span v-if="cell.entries.some((entry) => entry.kind === 'event')" class="meeting-day__opportunity meeting-day__opportunity--event" />
+                </span>
               </button>
               <span v-else-if="cell" class="meeting-day"
                 ><span>{{ cell.day }}</span></span
@@ -200,6 +235,8 @@ onMounted(() => {
         <span class="inline-flex items-center gap-1.5"
           ><span class="legend legend--past" />Past</span
         >
+        <span class="inline-flex items-center gap-1.5"><span class="legend legend--deadline" />Deadline</span>
+        <span class="inline-flex items-center gap-1.5"><span class="legend legend--opportunity-event" />Competition / program</span>
       </div>
       <NuxtLink v-if="showArchiveLink" to="/meetings" class="meeting-calendar__archive"
         >Browse every gathering <SiteIcon name="right" :size="13"
@@ -209,11 +246,11 @@ onMounted(() => {
     <Teleport to="body">
       <Transition name="meeting-dialog">
         <div
-          v-if="dialogMeeting"
+          v-if="dialogItem"
           class="meeting-dialog"
           role="dialog"
           aria-modal="true"
-          :aria-label="dialogMeeting.title"
+          :aria-label="dialogItem.type === 'meeting' ? dialogItem.meeting.title : `${dialogItem.entry.opportunityTitle}: ${dialogItem.entry.milestoneTitle}`"
           @keydown.esc.prevent="closeDialog"
           @keydown="trapDialogFocus"
         >
@@ -233,10 +270,25 @@ onMounted(() => {
             >
               <SiteIcon name="close" :size="17" />
             </button>
+            <div v-if="dialogDateItems.length > 1" class="meeting-dialog__switcher" aria-label="Items on this date">
+              <button
+                v-for="item in dialogDateItems"
+                :key="item.type === 'meeting' ? item.meeting.id : item.entry.id"
+                type="button"
+                class="meeting-dialog__choice"
+                :class="{ 'meeting-dialog__choice--active': item === dialogItem }"
+                @click="dialogItem = item"
+              >
+                <span :class="item.type === 'meeting' ? 'choice-signal--meeting' : `choice-signal--${item.entry.kind}`" class="choice-signal" />
+                {{ item.type === 'meeting' ? 'Meeting' : item.entry.opportunityTitle }}
+              </button>
+            </div>
             <MeetingDetailPanel
-              :meeting="dialogMeeting"
-              :status="meetingDisplayStatus(dialogMeeting)"
+              v-if="dialogItem.type === 'meeting'"
+              :meeting="dialogItem.meeting"
+              :status="meetingDisplayStatus(dialogItem.meeting)"
             />
+            <CalendarEntryDetailPanel v-else :entry="dialogItem.entry" />
           </div>
         </div>
       </Transition>
@@ -327,6 +379,33 @@ onMounted(() => {
   background: #e4bb72;
   box-shadow: 0 0 8px rgb(228 187 114 / 70%);
 }
+.meeting-day__opportunity-signals {
+  position: absolute;
+  left: 12%;
+  bottom: 12%;
+  display: flex;
+  align-items: center;
+  gap: 0.18rem;
+}
+.meeting-day__opportunity {
+  display: block;
+  width: 0.28rem;
+  height: 0.28rem;
+}
+.meeting-day__opportunity--deadline {
+  border: 1px solid #c4b2ee;
+  transform: rotate(45deg);
+  box-shadow: 0 0 7px rgb(196 178 238 / 32%);
+}
+.meeting-day__opportunity--event {
+  border-radius: 999px;
+  background: #91b9d9;
+  box-shadow: 0 0 7px rgb(145 185 217 / 44%);
+}
+.meeting-day--opportunity {
+  color: rgb(244 241 233 / 64%);
+  background: rgb(196 178 238 / 2.5%);
+}
 .meeting-day--tentative .meeting-day__signal {
   border: 1px solid #b7a2e2;
   border-radius: 0.06rem;
@@ -365,6 +444,17 @@ onMounted(() => {
   height: 0.22rem;
   background: #89938f;
   box-shadow: none;
+}
+.legend--deadline {
+  border: 1px solid #c4b2ee;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: rotate(45deg);
+}
+.legend--opportunity-event {
+  background: #91b9d9;
+  box-shadow: 0 0 7px rgb(145 185 217 / 45%);
 }
 .meeting-calendar__archive {
   display: inline-flex;
@@ -428,6 +518,44 @@ onMounted(() => {
 .meeting-dialog__panel :deep(.meeting-detail__header) {
   padding-right: 3.25rem;
 }
+.meeting-dialog__switcher {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  gap: 0.35rem;
+  margin: 0 3.9rem -0.8rem 0.8rem;
+  padding-top: 0.8rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.meeting-dialog__switcher::-webkit-scrollbar { display: none; }
+.meeting-dialog__choice {
+  display: inline-flex;
+  min-height: 2.25rem;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid rgb(244 241 233 / 9%);
+  border-radius: 999px;
+  padding: 0.5rem 0.75rem;
+  color: rgb(244 241 233 / 45%);
+  background: rgb(10 14 14 / 58%);
+  backdrop-filter: blur(12px);
+  font-size: 0.6rem;
+  transition: color 180ms ease, border-color 220ms ease, background-color 220ms ease, transform 420ms cubic-bezier(.16,1,.3,1);
+}
+.meeting-dialog__choice:hover,
+.meeting-dialog__choice:focus-visible,
+.meeting-dialog__choice--active {
+  color: rgb(244 241 233 / 85%);
+  border-color: rgb(228 187 114 / 24%);
+  background: rgb(228 187 114 / 7%);
+  transform: translateY(-1px);
+}
+.choice-signal { width: .32rem; height: .32rem; border: 1px solid currentColor; }
+.choice-signal--meeting { border-radius: 999px; color: #e4bb72; background: currentColor; box-shadow: 0 0 7px currentColor; }
+.choice-signal--deadline { color: #c4b2ee; transform: rotate(45deg); }
+.choice-signal--event { color: #91b9d9; border-radius: 999px; background: currentColor; }
 .meeting-dialog__close {
   position: sticky;
   z-index: 2;
@@ -494,6 +622,7 @@ onMounted(() => {
   .meeting-dialog {
     padding: 0.55rem;
   }
+  .meeting-dialog__switcher { margin-left: .55rem; }
 }
 @media (prefers-reduced-motion: reduce) {
   .meeting-calendar__nav,
@@ -513,5 +642,6 @@ onMounted(() => {
     translate: none;
     scale: 1;
   }
+  .meeting-dialog__choice { transition: none; transform: none; }
 }
 </style>

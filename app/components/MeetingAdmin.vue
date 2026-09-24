@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { MeetingEvent, MeetingResource } from '#shared/types/content'
+import type { CalendarOpportunitySelection, MeetingEvent, MeetingResource, Opportunity } from '#shared/types/content'
 
 const emit = defineEmits<{ saved: []; authorized: [] }>()
 const unlocked = ref(false)
@@ -14,6 +14,14 @@ const confirmingDelete = ref(false)
 const topicsText = ref('')
 const resourcesText = ref('')
 const celebrating = ref(false)
+const adminView = ref<'meetings' | 'calendar'>('meetings')
+const calendarSearch = ref('')
+const calendarItems = ref<Array<{ opportunity: Opportunity; selection: CalendarOpportunitySelection }>>([])
+const savingCalendarId = ref('')
+const visibleCalendarItems = computed(() => {
+  const query = calendarSearch.value.trim().toLowerCase()
+  return calendarItems.value.filter(({ opportunity }) => !query || [opportunity.title, opportunity.kind, opportunity.discipline, ...(opportunity.aliases || [])].join(' ').toLowerCase().includes(query))
+})
 
 const errorMessage = (cause: unknown) =>
   (cause as { data?: { statusMessage?: string }; statusMessage?: string })?.data?.statusMessage ||
@@ -24,8 +32,12 @@ const load = async (showLoading = false) => {
   if (showLoading) loading.value = true
   error.value = ''
   try {
-    const response = await $fetch<{ meetings: MeetingEvent[] }>('/api/meeting-admin/meetings')
+    const [response, calendar] = await Promise.all([
+      $fetch<{ meetings: MeetingEvent[] }>('/api/meeting-admin/meetings'),
+      $fetch<{ opportunities: Array<{ opportunity: Opportunity; selection: CalendarOpportunitySelection }> }>('/api/meeting-admin/calendar-opportunities'),
+    ])
     meetings.value = response.meetings
+    calendarItems.value = calendar.opportunities || []
     unlocked.value = true
     emit('authorized')
   } catch (cause) {
@@ -149,6 +161,37 @@ const remove = async () => {
   }
 }
 
+const saveCalendarSelection = async (
+  item: { opportunity: Opportunity; selection: CalendarOpportunitySelection },
+  changes: Partial<CalendarOpportunitySelection>,
+) => {
+  const previous = { ...item.selection }
+  const next = { ...item.selection, ...changes }
+  if (!next.includeDeadlines && !next.includeEvents) {
+    if (changes.includeDeadlines === false) next.includeEvents = true
+    else next.includeDeadlines = true
+  }
+  item.selection = next
+  savingCalendarId.value = item.opportunity.id
+  error.value = ''
+  try {
+    const response = await $fetch<{ selection: CalendarOpportunitySelection }>(
+      `/api/meeting-admin/calendar-opportunities/${encodeURIComponent(item.opportunity.id)}`,
+      { method: 'PATCH', body: next },
+    )
+    item.selection = response.selection
+    message.value = next.enabled
+      ? `${item.opportunity.title} is shown on the calendar when verified dates are available.`
+      : `${item.opportunity.title} is hidden from the calendar.`
+    emit('saved')
+  } catch (cause) {
+    item.selection = previous
+    error.value = errorMessage(cause)
+  } finally {
+    savingCalendarId.value = ''
+  }
+}
+
 onMounted(() => load(true))
 </script>
 
@@ -171,6 +214,12 @@ onMounted(() => load(true))
           <h3 class="mt-2 font-display text-2xl tracking-[-.04em]">The gathering schedule.</h3>
         </div>
 
+        <div v-if="!editing" class="meeting-admin-tabs" aria-label="Meeting editor section">
+          <button type="button" :class="{ 'meeting-admin-tab--active': adminView === 'meetings' }" class="meeting-admin-tab" @click="adminView = 'meetings'">Meetings</button>
+          <button type="button" :class="{ 'meeting-admin-tab--active': adminView === 'calendar' }" class="meeting-admin-tab" @click="adminView = 'calendar'">Calendar opportunities</button>
+          <span class="meeting-admin-tabs__glide" :class="{ 'meeting-admin-tabs__glide--calendar': adminView === 'calendar' }" aria-hidden="true" />
+        </div>
+
         <p
           v-if="message"
           role="status"
@@ -186,7 +235,7 @@ onMounted(() => load(true))
           {{ error }}
         </p>
 
-        <Transition name="meeting-editor" mode="out-in">
+        <Transition v-if="adminView === 'meetings' || editing" name="meeting-editor" mode="out-in">
           <form v-if="editing" key="editor" class="space-y-5" @submit.prevent="save">
             <button type="button" class="text-xs text-acid" @click="editing = null">
               ← All meetings
@@ -312,6 +361,42 @@ onMounted(() => load(true))
             </p>
           </div>
         </Transition>
+        <Transition v-else name="meeting-editor" mode="out-in">
+          <section key="calendar" aria-labelledby="calendar-opportunity-editor-title">
+            <div class="mb-5">
+              <h4 id="calendar-opportunity-editor-title" class="font-display text-xl tracking-[-.03em]">Club calendar routes</h4>
+              <p class="mt-2 text-xs leading-5 text-paper/45">Choose catalog routes and whether their verified deadlines, presentation dates, or both appear. The opportunity monitor owns the dates.</p>
+            </div>
+            <label class="meeting-admin-search">
+              <SiteIcon name="search" :size="14" />
+              <span class="sr-only">Search calendar opportunities</span>
+              <input v-model="calendarSearch" type="search" placeholder="Search competitions, internships, programs…" />
+            </label>
+            <div class="mt-4 grid gap-3">
+              <article v-for="item in visibleCalendarItems" :key="item.opportunity.id" class="calendar-admin-row" :class="{ 'calendar-admin-row--enabled': item.selection.enabled }">
+                <div class="min-w-0 flex-1">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <h5 class="text-sm text-paper/85">{{ item.opportunity.title }}</h5>
+                    <span v-if="!(item.opportunity.milestones || []).some((milestone) => !milestone.superseded && (milestone.kind === 'deadline' || milestone.kind === 'event'))" class="calendar-admin-awaiting">Awaiting official date</span>
+                  </div>
+                  <p class="mt-1 text-[10px] uppercase tracking-[.11em] text-paper/35">{{ item.opportunity.kind }} · {{ item.opportunity.edition || item.opportunity.lifecycle || 'current route' }}</p>
+                  <div class="mt-3 flex flex-wrap gap-2">
+                    <button type="button" class="calendar-admin-chip" :class="{ 'calendar-admin-chip--active': item.selection.enabled }" :disabled="savingCalendarId === item.opportunity.id" @click="saveCalendarSelection(item, { enabled: !item.selection.enabled })">
+                      <span class="calendar-admin-switch"><span /></span>{{ item.selection.enabled ? 'On calendar' : 'Hidden' }}
+                    </button>
+                    <button type="button" class="calendar-admin-chip" :class="{ 'calendar-admin-chip--active': item.selection.includeDeadlines }" :disabled="savingCalendarId === item.opportunity.id" @click="saveCalendarSelection(item, { includeDeadlines: !item.selection.includeDeadlines })">
+                      <span class="choice-signal choice-signal--deadline" />Deadlines
+                    </button>
+                    <button type="button" class="calendar-admin-chip" :class="{ 'calendar-admin-chip--active': item.selection.includeEvents }" :disabled="savingCalendarId === item.opportunity.id" @click="saveCalendarSelection(item, { includeEvents: !item.selection.includeEvents })">
+                      <span class="choice-signal choice-signal--event" />Event dates
+                    </button>
+                  </div>
+                </div>
+              </article>
+              <p v-if="!visibleCalendarItems.length" class="py-10 text-center text-sm text-paper/40">No catalog routes match that search.</p>
+            </div>
+          </section>
+        </Transition>
       </div>
     </Transition>
   </div>
@@ -346,6 +431,29 @@ onMounted(() => load(true))
 .meeting-admin-editor {
   transform-origin: 50% 0;
 }
+.meeting-admin-tabs { position:relative; display:grid; grid-template-columns:1fr 1.35fr; gap:.2rem; margin-bottom:1.5rem; padding:.25rem; border:1px solid rgb(244 241 233 / 8%); border-radius:999px; background:rgb(244 241 233 / 2.5%); }
+.meeting-admin-tab { position:relative; z-index:1; min-height:2.75rem; border-radius:999px; padding:.6rem .9rem; color:rgb(244 241 233 / 42%); font-size:.7rem; transition:color 220ms ease,transform 420ms cubic-bezier(.16,1,.3,1); }
+.meeting-admin-tab:hover,.meeting-admin-tab:focus-visible,.meeting-admin-tab--active { color:rgb(244 241 233 / 88%); transform:translateY(-1px); }
+.meeting-admin-tabs__glide { position:absolute; top:.25rem; bottom:.25rem; left:.25rem; width:calc((100% - .7rem) / 2.35); border-radius:999px; background:linear-gradient(120deg,rgb(228 187 114 / 10%),rgb(196 178 238 / 7%)); box-shadow:inset 0 0 0 1px rgb(228 187 114 / 16%),0 5px 18px rgb(0 0 0 / 10%); transition:translate 560ms cubic-bezier(.16,1.15,.3,1),width 560ms cubic-bezier(.16,1.15,.3,1); }
+.meeting-admin-tabs__glide--calendar { width:calc((100% - .7rem) * 1.35 / 2.35); translate:calc((100% / 1.35) + .2rem) 0; }
+.meeting-admin-search { display:flex; min-height:3rem; align-items:center; gap:.7rem; border:1px solid rgb(244 241 233 / 9%); border-radius:1rem; padding:0 1rem; color:rgb(196 178 238 / 65%); background:rgb(244 241 233 / 2.5%); transition:border-color 260ms ease,background-color 260ms ease,box-shadow 340ms ease; }
+.meeting-admin-search:focus-within { border-color:rgb(196 178 238 / 28%); background:rgb(196 178 238 / 4%); box-shadow:0 0 24px rgb(196 178 238 / 5%); }
+.meeting-admin-search input { min-width:0; flex:1; outline:0; color:rgb(244 241 233 / 85%); background:transparent; font-size:.75rem; }
+.meeting-admin-search input::placeholder { color:rgb(244 241 233 / 30%); }
+.calendar-admin-row { display:flex; min-width:0; border:1px solid rgb(244 241 233 / 7%); border-radius:1.25rem; padding:1rem; background:rgb(244 241 233 / 2%); transition:transform 480ms cubic-bezier(.16,1,.3,1),border-color 280ms ease,background-color 280ms ease; }
+.calendar-admin-row:hover { transform:translateY(-1px); border-color:rgb(196 178 238 / 18%); }
+.calendar-admin-row--enabled { background:linear-gradient(120deg,rgb(228 187 114 / 3%),rgb(196 178 238 / 3%)); }
+.calendar-admin-awaiting { border:1px dashed rgb(244 241 233 / 13%); border-radius:999px; padding:.25rem .45rem; color:rgb(244 241 233 / 38%); font-size:.55rem; letter-spacing:.08em; text-transform:uppercase; }
+.calendar-admin-chip { display:inline-flex; min-height:2.2rem; align-items:center; gap:.45rem; border:1px solid rgb(244 241 233 / 8%); border-radius:999px; padding:.45rem .65rem; color:rgb(244 241 233 / 38%); background:rgb(244 241 233 / 1.5%); font-size:.62rem; transition:color 180ms ease,border-color 220ms ease,background-color 220ms ease,transform 420ms cubic-bezier(.16,1,.3,1); }
+.calendar-admin-chip:hover,.calendar-admin-chip:focus-visible { transform:translateY(-1px); color:rgb(244 241 233 / 70%); }
+.calendar-admin-chip--active { border-color:rgb(196 178 238 / 20%); color:rgb(244 241 233 / 78%); background:rgb(196 178 238 / 5%); }
+.calendar-admin-switch { display:flex; width:1.35rem; height:.72rem; align-items:center; border-radius:999px; padding:.12rem; background:rgb(244 241 233 / 9%); transition:background-color 260ms ease; }
+.calendar-admin-switch span { width:.48rem; height:.48rem; border-radius:999px; background:rgb(244 241 233 / 35%); transition:translate 420ms cubic-bezier(.16,1.25,.3,1),background-color 260ms ease,box-shadow 260ms ease; }
+.calendar-admin-chip--active .calendar-admin-switch { background:rgb(228 187 114 / 20%); }
+.calendar-admin-chip--active .calendar-admin-switch span { translate:.62rem 0; background:#e4bb72; box-shadow:0 0 7px rgb(228 187 114 / 50%); }
+.choice-signal { width:.32rem;height:.32rem;border:1px solid currentColor; }
+.choice-signal--deadline { color:#c4b2ee;transform:rotate(45deg); }
+.choice-signal--event { color:#91b9d9;border-radius:999px;background:currentColor; }
 .meeting-admin-row {
   display: flex;
   min-height: 4.75rem;
@@ -393,6 +501,12 @@ onMounted(() => load(true))
 }
 @media (prefers-reduced-motion: reduce) {
   .meeting-admin-row,
+  .meeting-admin-tab,
+  .meeting-admin-tabs__glide,
+  .calendar-admin-row,
+  .calendar-admin-chip,
+  .calendar-admin-switch,
+  .calendar-admin-switch span,
   .meeting-access-enter-active,
   .meeting-access-leave-active,
   .meeting-editor-enter-active,

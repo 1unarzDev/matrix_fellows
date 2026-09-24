@@ -82,6 +82,15 @@ export const meetingEventSchema = z.object({
   url: optionalUrl,
   published: z.boolean().default(true),
 })
+export const calendarOpportunitySelectionSchema = z.object({
+  opportunityId: z.string().trim().min(1).max(650),
+  enabled: z.boolean(),
+  includeDeadlines: z.boolean(),
+  includeEvents: z.boolean(),
+  priority: z.number().int().min(0).max(100),
+}).refine((value) => value.includeDeadlines || value.includeEvents, {
+  message: 'Show deadlines, event dates, or both.',
+})
 export const opportunitySchema = z.object({
   id: z.string().min(1).max(650),
   sourceId: shortText.min(1),
@@ -104,6 +113,7 @@ export const opportunitySchema = z.object({
   location: shortText,
   eligibility: z.string().max(1000),
   url: httpsUrl,
+  submissionUrl: httpsUrl.optional(),
   verifiedAt: date,
   priority: z.number().min(0).max(100),
   published: z.boolean(),

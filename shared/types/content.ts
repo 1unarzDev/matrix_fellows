@@ -21,6 +21,39 @@ export interface MeetingEvent extends Meeting {
   resources: MeetingResource[]
   published?: boolean
 }
+export type CalendarOpportunityKind = 'deadline' | 'event'
+export type CalendarOpportunityState = 'confirmed' | 'tentative'
+export interface CalendarOpportunitySelection {
+  opportunityId: string
+  enabled: boolean
+  includeDeadlines: boolean
+  includeEvents: boolean
+  priority: number
+}
+export interface CalendarOpportunityEntry {
+  id: string
+  opportunityId: string
+  opportunitySlug?: string
+  opportunityTitle: string
+  milestoneTitle: string
+  summary: string
+  date: string
+  timezone: string | null
+  originalTimezone?: string | null
+  precision: 'exact' | 'date-only'
+  location: string
+  kind: CalendarOpportunityKind
+  state: CalendarOpportunityState
+  requirements: string[]
+  contributionFormat?: string
+  officialUrl: string
+  submissionUrl?: string
+  detailUrl?: string
+  evidence: string
+  conflict?: string | null
+  verifiedAt: string
+  priority: number
+}
 export interface Project {
   id: string
   title: string
@@ -112,6 +145,7 @@ export interface Opportunity {
   location: string
   eligibility: string
   url: string
+  submissionUrl?: string
   verifiedAt: string
   priority: number
   published: boolean
@@ -203,6 +237,7 @@ export interface PublicContent {
   content: SiteContent
   opportunities: Opportunity[]
   meetings: MeetingEvent[]
+  calendarEntries: CalendarOpportunityEntry[]
   configured: boolean
   unavailable?: boolean
 }

@@ -6,6 +6,8 @@ import { buildMeetingSchedule, sortMeetings } from '../../shared/data/meetings'
 import type { PublicContent } from '../../shared/types/content'
 import type { H3Event } from 'h3'
 import { rowToMeeting } from '../utils/meeting-admin'
+import { projectOpportunityCalendar } from '../../shared/utils/calendar'
+import type { CalendarOpportunitySelection, Opportunity } from '../../shared/types/content'
 
 const loadPublicContent = defineCachedFunction(
   async (event: H3Event): Promise<PublicContent> => {
@@ -18,7 +20,7 @@ const loadPublicContent = defineCachedFunction(
         fetch: (input, init) => fetch(input, { ...init, signal: AbortSignal.timeout(6000) }),
       },
     })
-    const [site, listings, health, meetingRows] = await Promise.all([
+    const [site, listings, health, meetingRows, calendarSelections, calendarOpportunities] = await Promise.all([
       client
         .from('site_content')
         .select('data')
@@ -50,6 +52,16 @@ const loadPublicContent = defineCachedFunction(
         )
         .eq('published', true)
         .order('meeting_date'),
+      client
+        .from('calendar_opportunity_selections')
+        .select('opportunity_id,enabled,include_deadlines,include_events,priority')
+        .order('priority', { ascending: false }),
+      client
+        .from('opportunities')
+        .select('id,data,overrides,published,suppressed')
+        .eq('published', true)
+        .eq('suppressed', false)
+        .limit(1000),
     ])
     if (site.error || listings.error) throw new Error('Content query failed')
     const parsed = contentSchema.safeParse(site.data?.data)
@@ -80,6 +92,26 @@ const loadPublicContent = defineCachedFunction(
       })
       return result.success ? [result.data] : []
     })
+    const calendarSource = calendarOpportunities.error
+      ? []
+      : (calendarOpportunities.data || []).flatMap((row: Record<string, any>) => {
+          const parsed = opportunitySchema.safeParse({
+            ...row.data,
+            ...row.overrides,
+            id: row.id,
+            published: row.published && !row.suppressed,
+          })
+          return parsed.success ? [parsed.data as Opportunity] : []
+        })
+    const selections: CalendarOpportunitySelection[] = calendarSelections.error
+      ? []
+      : (calendarSelections.data || []).map((row) => ({
+          opportunityId: row.opportunity_id,
+          enabled: row.enabled,
+          includeDeadlines: row.include_deadlines,
+          includeEvents: row.include_events,
+          priority: row.priority,
+        }))
     return {
       content: parsed.success ? parsed.data : defaultContent,
       opportunities: selectHomepageOpportunities(opportunities),
@@ -87,6 +119,7 @@ const loadPublicContent = defineCachedFunction(
         !meetingRows.error && meetingRows.data?.length
           ? sortMeetings(meetingRows.data.map(rowToMeeting))
           : buildMeetingSchedule(parsed.success ? parsed.data.meeting : defaultContent.meeting),
+      calendarEntries: projectOpportunityCalendar(calendarSource, selections),
       configured: true,
     }
   },
@@ -107,6 +140,7 @@ export default defineEventHandler(async (event): Promise<PublicContent> => {
       content: defaultContent,
       opportunities: defaultOpportunities,
       meetings: buildMeetingSchedule(defaultContent.meeting),
+      calendarEntries: [],
       configured: false,
     }
   }
@@ -120,6 +154,7 @@ export default defineEventHandler(async (event): Promise<PublicContent> => {
       content: defaultContent,
       opportunities: defaultOpportunities,
       meetings: buildMeetingSchedule(defaultContent.meeting),
+      calendarEntries: [],
       configured: true,
       unavailable: true,
     }

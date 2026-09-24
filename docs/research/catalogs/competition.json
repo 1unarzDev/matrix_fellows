@@ -134,6 +134,14 @@
         "url": "https://conrad.spacecenter.org/the-challenge/activation-stage/"
       },
       {
+        "label": "Financial-aid application deadline",
+        "date": "2026-12-03",
+        "kind": "deadline",
+        "timezone": null,
+        "evidence": "The official Conrad Challenge stage schedule lists December 3, 2026 as the close of the financial-aid application window.",
+        "url": "https://conrad.spacecenter.org/the-challenge/innovation-stage/"
+      },
+      {
         "label": "Innovation submission deadline",
         "date": "2027-01-07",
         "kind": "deadline",
@@ -152,6 +160,14 @@
       {
         "label": "Innovation Summit begins",
         "date": "2027-04-21",
+        "kind": "event",
+        "timezone": null,
+        "evidence": "Innovation Summit: April 21-24, 2027",
+        "url": "https://conrad.spacecenter.org/the-challenge/innovation-stage/"
+      },
+      {
+        "label": "Innovation Summit concludes",
+        "date": "2027-04-24",
         "kind": "event",
         "timezone": null,
         "evidence": "Innovation Summit: April 21-24, 2027",

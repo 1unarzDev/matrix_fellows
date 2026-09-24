@@ -78,6 +78,7 @@ const { data, refresh } = await useFetch<PublicContent>('/api/content', {
     content: defaultContent,
     opportunities: defaultOpportunities,
     meetings: buildMeetingSchedule(defaultContent.meeting),
+    calendarEntries: [],
     configured: false,
   }),
 })
@@ -726,7 +727,7 @@ onBeforeUnmount(() => {
             Bring an idea, a question, or simply yourself.<br />Let’s find out what comes next.
           </p>
         </div>
-        <MeetingCard :meetings="meetings" />
+        <MeetingCard :meetings="meetings" :calendar-entries="data?.calendarEntries || []" />
         <div class="grid gap-12 border-t border-paper/15 py-16 lg:grid-cols-[1fr_2fr]">
           <div>
             <p class="text-[10px] uppercase tracking-[.2em] text-paper/45">Room to grow</p>

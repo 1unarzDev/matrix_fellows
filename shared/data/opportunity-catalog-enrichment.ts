@@ -1,6 +1,6 @@
 import type { Opportunity } from '../types/content'
 
-export const CATALOG_ENRICHMENT_VERSION = 7
+export const CATALOG_ENRICHMENT_VERSION = 9
 
 type CatalogPatch = Partial<Opportunity> & { kind?: Opportunity['kind'] }
 
@@ -89,6 +89,11 @@ export const catalogEnrichment: Record<string, CatalogPatch> = {
       'Environmental science': 88,
     },
     aliases: ['Regeneron ISEF', 'ISEF', 'International Science and Engineering Fair'],
+    contributionFormat: 'Qualification through an ISEF-affiliated regional fair',
+    prerequisites: [
+      'Qualify through an ISEF-affiliated fair; Martin High School students begin with FWRSEF.',
+      'Complete all project-specific ISEF forms and required approvals before experimentation begins.',
+    ],
     searchVersion: CATALOG_ENRICHMENT_VERSION,
   },
   'regeneron-sts-2027:main': {
@@ -123,6 +128,10 @@ export const catalogEnrichment: Record<string, CatalogPatch> = {
     searchVersion: CATALOG_ENRICHMENT_VERSION,
   },
   'davidson-fellows-2027:main': {
+    milestones: [],
+    lifecycle: 'awaiting-announcement',
+    lifecycleEvidence:
+      'The organizer says the 2027 application will open in fall 2026 but has not announced an exact deadline. The February 18, 2026 deadline is historical and is not reused.',
     disciplines: [
       'Biomedical engineering',
       'Robotics',
@@ -183,6 +192,11 @@ export const catalogEnrichment: Record<string, CatalogPatch> = {
       'Environmental science': 92,
     },
     aliases: ['TXSEF', 'Texas Science and Engineering Fair'],
+    contributionFormat: 'State science fair reached through a Texas regional fair',
+    prerequisites: [
+      'Qualify through an affiliated Texas regional fair; there is no general direct student application.',
+      'Follow the regional fair handoff and current ISEF rules for project documentation and approvals.',
+    ],
     searchVersion: CATALOG_ENRICHMENT_VERSION,
   },
   'fort-worth-regional-science-fair': {
@@ -215,6 +229,13 @@ export const catalogEnrichment: Record<string, CatalogPatch> = {
       'Environmental science': 94,
     },
     aliases: ['FWRSEF', 'Fort Worth Regional Science and Engineering Fair'],
+    contributionFormat: 'Regional original-research fair and TXSEF qualification route',
+    submissionUrl: 'https://fwrsef.stemwizard.com/',
+    prerequisites: [
+      'Work with an adult sponsor or school representative to complete registration in STEM Wizard.',
+      'Obtain SRC, IRB, or other required approval before experimentation when the project rules require it.',
+      'Submit the required ISEF forms, project category, and digital project assets by their separate milestones.',
+    ],
     searchVersion: CATALOG_ENRICHMENT_VERSION,
   },
   jshs: {
@@ -290,6 +311,14 @@ export const catalogEnrichment: Record<string, CatalogPatch> = {
   'hosa-medical-innovation-2026-27': {
     disciplines: ['Biomedical engineering', 'Biology'],
     disciplineAffinity: { 'Biomedical engineering': 100, Biology: 68 },
+    milestones: [
+      { label: 'Texas state registration and digital upload deadline', date: '2027-03-10', kind: 'deadline', role: 'submission', precision: 'date-only', timezone: null, evidence: 'The official Texas HOSA 2026–27 calendar lists March 10 as the State Leadership Conference registration and digital upload deadline.', url: 'https://texashosa.org/wp-content/uploads/Calendar-of-Events-26-27.pdf' },
+      { label: 'Texas State Leadership Conference begins', date: '2027-03-31', kind: 'event', role: 'event', precision: 'date-only', timezone: null, evidence: 'The official Texas HOSA calendar lists the State Leadership Conference for March 31–April 2, 2027 in Irving.', url: 'https://texashosa.org/wp-content/uploads/Calendar-of-Events-26-27.pdf' },
+      { label: 'Texas State Leadership Conference concludes', date: '2027-04-02', kind: 'event', role: 'event', precision: 'date-only', timezone: null, evidence: 'The official Texas HOSA calendar lists the State Leadership Conference for March 31–April 2, 2027 in Irving.', url: 'https://texashosa.org/wp-content/uploads/Calendar-of-Events-26-27.pdf' },
+      { label: 'ILC registration and digital upload deadline', date: '2027-05-15', kind: 'deadline', role: 'submission', precision: 'date-only', timezone: null, evidence: 'The official Texas HOSA calendar lists May 15 as the ILC registration and digital upload deadline for qualified competitors.', url: 'https://texashosa.org/wp-content/uploads/Calendar-of-Events-26-27.pdf' },
+      { label: '2027 HOSA ILC begins', date: '2027-06-22', kind: 'event', role: 'event', precision: 'date-only', timezone: null, evidence: 'The official ILC page lists June 22–25, 2027 in Philadelphia.', url: 'https://hosa.org/ilc/' },
+      { label: '2027 HOSA ILC concludes', date: '2027-06-25', kind: 'event', role: 'event', precision: 'date-only', timezone: null, evidence: 'The official ILC page lists June 22–25, 2027 in Philadelphia.', url: 'https://hosa.org/ilc/' },
+    ],
     searchVersion: CATALOG_ENRICHMENT_VERSION,
   },
   exploravision: {
@@ -404,6 +433,21 @@ export const catalogEnrichment: Record<string, CatalogPatch> = {
       'Materials science': 66,
       'Environmental science': 72,
     },
+    contributionFormat: 'Team innovation brief, prototype video, and finalist presentation',
+    submissionUrl: 'https://conrad.spacecenter.org/the-challenge/innovation-stage/',
+    prerequisites: [
+      'Form a team of 2–5 students ages 13–18 with an adult coach and complete the Activation stage.',
+      'For the Innovation stage, submit the 10-question Innovation Brief and a 3–5 minute video demonstrating the model or prototype.',
+      'Finalists must attend and present at the Innovation Summit.',
+    ],
+    milestones: [
+      { label: 'Activation deadline', date: '2026-10-29', kind: 'deadline', timezone: null, precision: 'date-only', evidence: 'The official Activation Stage page lists October 29, 2026 as the stage end.', url: 'https://conrad.spacecenter.org/the-challenge/activation-stage/' },
+      { label: 'Financial-aid application deadline', date: '2026-12-03', kind: 'deadline', timezone: null, precision: 'date-only', evidence: 'The official stage schedule lists December 3, 2026 as the close of the financial-aid application window.', url: 'https://conrad.spacecenter.org/the-challenge/innovation-stage/' },
+      { label: 'Innovation submission deadline', date: '2027-01-07', kind: 'deadline', timezone: null, precision: 'date-only', evidence: 'The official Innovation Stage page states all Innovation Stage content is due January 7, 2027.', url: 'https://conrad.spacecenter.org/the-challenge/innovation-stage/' },
+      { label: 'Finalists announced', date: '2027-02-26', kind: 'results', timezone: null, precision: 'date-only', evidence: 'The official Innovation Stage schedule lists February 26, 2027.', url: 'https://conrad.spacecenter.org/the-challenge/innovation-stage/' },
+      { label: 'Innovation Summit begins', date: '2027-04-21', kind: 'event', timezone: null, precision: 'date-only', evidence: 'The official schedule lists the Innovation Summit for April 21–24, 2027.', url: 'https://conrad.spacecenter.org/the-challenge/innovation-stage/' },
+      { label: 'Innovation Summit concludes', date: '2027-04-24', kind: 'event', timezone: null, precision: 'date-only', evidence: 'The official schedule lists the Innovation Summit for April 21–24, 2027.', url: 'https://conrad.spacecenter.org/the-challenge/innovation-stage/' },
+    ],
     searchVersion: CATALOG_ENRICHMENT_VERSION,
   },
   'samsung-solve': {
@@ -531,6 +575,7 @@ export const catalogEnrichment: Record<string, CatalogPatch> = {
     searchVersion: CATALOG_ENRICHMENT_VERSION,
   },
   'navy-seap-2027': {
+    submissionUrl: 'https://navalsteminterns.us/internships/connect/students/',
     restrictions: {
       grades: 'Completed at least grade 9; graduating seniors may apply',
       ages: 'Generally age 16 by internship start; selected labs may state exceptions',
@@ -538,6 +583,11 @@ export const catalogEnrichment: Record<string, CatalogPatch> = {
         'No state-residency restriction is stated; Texas students may apply, but must attend a selected participating Navy laboratory and arrange site logistics',
       authorEligibility: 'Generally U.S. citizen; laboratory-specific rules control',
     },
+    searchVersion: CATALOG_ENRICHMENT_VERSION,
+  },
+  'mit-bwsi-2027': {
+    submissionUrl:
+      'https://mit-bwsi.formstack.com/forms/bwsi_student_registration_onlinecourse_2027',
     searchVersion: CATALOG_ENRICHMENT_VERSION,
   },
   'gmu-assip-2026': {
@@ -649,6 +699,15 @@ export const catalogEnrichment: Record<string, CatalogPatch> = {
     costs: { application: null, program: null, compensation: null, travel: null, aid: null },
     outcomes: ['Eight weeks of medically oriented research with Stanford faculty and researchers.'],
     participationModes: ['in-person'],
+    edition: '2027',
+    lifecycle: 'announced',
+    lifecycleEvidence:
+      'The official page labels June 7–July 29, 2027 tentative and gives only a late-February deadline without an exact day.',
+    milestones: [
+      { label: 'Applications available (source wording needs review)', date: '2026-12-18T17:00:00-08:00', kind: 'opens', timezone: 'America/Los_Angeles', originalTimezone: '5 p.m. PST', precision: 'exact', tentative: true, evidence: 'The official page says the application was available December 18, 2026 at 5 p.m. PST despite that date being future when reviewed.', url: 'https://simr.stanford.edu/' },
+      { label: 'Program begins (tentative)', date: '2027-06-07', kind: 'event', timezone: null, precision: 'date-only', tentative: true, evidence: 'The official page labels June 7–July 29, 2027 as tentative program dates.', url: 'https://simr.stanford.edu/' },
+      { label: 'Program ends (tentative)', date: '2027-07-29', kind: 'event', timezone: null, precision: 'date-only', tentative: true, evidence: 'The official page labels June 7–July 29, 2027 as tentative program dates.', url: 'https://simr.stanford.edu/' },
+    ],
     searchVersion: CATALOG_ENRICHMENT_VERSION,
   },
   'simons-summer-research': {
@@ -727,6 +786,15 @@ export const catalogEnrichment: Record<string, CatalogPatch> = {
     },
     outcomes: ['Six weeks in a mentored research internship or structured practicum.'],
     participationModes: ['in-person'],
+    edition: '2027',
+    lifecycle: 'announced',
+    lifecycleEvidence:
+      'The official RISE calendar publishes the 2027 residential and commuter program dates. The yearless December 17 opening is not emitted as an exact milestone.',
+    milestones: [
+      { label: 'Residential program begins', date: '2027-06-27', kind: 'event', timezone: null, precision: 'date-only', evidence: 'The official 2027 RISE calendar lists residential arrival on June 27, 2027.', url: 'https://www.bu.edu/summer/high-school-programs/rise-internship-practicum/' },
+      { label: 'Commuter program begins', date: '2027-06-28', kind: 'event', timezone: null, precision: 'date-only', evidence: 'The official 2027 RISE calendar lists the commuter program start on June 28, 2027.', url: 'https://www.bu.edu/summer/high-school-programs/rise-internship-practicum/' },
+      { label: 'Residential and commuter programs end', date: '2027-08-06', kind: 'event', timezone: null, precision: 'date-only', evidence: 'The official 2027 RISE calendar lists the final event and departure on August 6, 2027.', url: 'https://www.bu.edu/summer/high-school-programs/rise-internship-practicum/' },
+    ],
     searchVersion: CATALOG_ENRICHMENT_VERSION,
   },
   'garcia-research': {
@@ -817,6 +885,14 @@ export const catalogEnrichment: Record<string, CatalogPatch> = {
     },
     outcomes: ['Six weeks of intensive mathematics and proof-based exploration.'],
     participationModes: ['in-person'],
+    edition: '2027',
+    lifecycle: 'announced',
+    lifecycleEvidence:
+      'The official page confirms June 27–August 7, 2027. The application deadline is only described as end of February 2027 TBD, so no exact deadline is published.',
+    milestones: [
+      { label: 'Program begins', date: '2027-06-27', kind: 'event', precision: 'date-only', timezone: null, evidence: 'The official page lists PROMYS 2027 for June 27–August 7, 2027.', url: 'https://promys.org/programs/promys/for-students/' },
+      { label: 'Program ends', date: '2027-08-07', kind: 'event', precision: 'date-only', timezone: null, evidence: 'The official page lists PROMYS 2027 for June 27–August 7, 2027.', url: 'https://promys.org/programs/promys/for-students/' },
+    ],
     searchVersion: CATALOG_ENRICHMENT_VERSION,
   },
   'ross-mathematics': {

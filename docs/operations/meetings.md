@@ -10,6 +10,8 @@ overwritten by the meeting editor.
 1. Apply `supabase/migrations/019_meeting_management.sql` to the Matrix Fellows project
    (`xlnjzzbsxzadrvbrggau`). The migration is additive and idempotently backfills the two
    existing gatherings.
+   Apply `020_calendar_opportunity_selections.sql` as well. It adds the independent,
+   idempotently seeded inclusion registry for opportunity dates; it does not copy or own dates.
 2. Configure these frontend Worker secrets:
    - `NUXT_MEETING_ADMIN_PIN`: the eight-digit organizer PIN; never place it in client code.
    - `NUXT_MEETING_ADMIN_SESSION_SECRET`: at least 32 cryptographically random bytes.
@@ -42,11 +44,30 @@ recorded timezone. If every meeting is in the past, it shows the most recent pas
 without calling it upcoming. Confirmed meetings use a circular status signal; tentative meetings
 use a diamond and the text `Projected · not confirmed`.
 
+The **Calendar opportunities** editor view controls which published catalog routes appear and
+whether to include deadline milestones, event/presentation/program milestones, or both. Routes
+without a verified current-cycle milestone remain selectable and visibly say **Awaiting official
+date**, but create no calendar marker. This is intentional for Davidson Fellows, Texas JSHS, RSI,
+MITES, Clark Scholars, and other cycles that have not announced exact current dates.
+
+Do not type opportunity dates into the meeting editor or selection table. The scheduled
+opportunity Worker owns `Opportunity.milestones`, including source evidence, date precision,
+timezone wording, conflict/tentative flags, and the two-observation confirmation lifecycle. When
+the monitor confirms a changed date, the calendar projection moves automatically while the
+organizer's inclusion settings survive. Correct source facts through the opportunity review
+workflow; use the calendar editor only for inclusion.
+
 ## Public behavior and fallback
 
 - `/meetings` remains canonical, prerendered, and crawlable without client JavaScript.
 - Calendar and detail transitions respect reduced-motion preferences.
 - Meeting-date dialogs trap and restore focus, make the background inert, and close with Escape.
+- Meetings use the strongest gold signal. Submission deadlines use violet diamonds; actual
+  competition, presentation, and program dates use cool-blue points. Tentative source dates keep
+  the same semantic shape with reduced/dashed treatment.
+- Multiple items on one day share one accessible dialog with a compact item switcher. Opportunity
+  panels show requirements, official evidence, original timezone/precision, last verification,
+  catalog details, and a submission portal only when one is explicitly registered.
 - Database failures preserve the last checked-in schedule rather than returning an empty calendar.
 - The 30-second public-content cache means a saved meeting may take roughly 30 seconds to appear.
 

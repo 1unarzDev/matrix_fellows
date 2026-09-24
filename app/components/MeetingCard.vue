@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { MeetingEvent } from '#shared/types/content'
+import type { CalendarOpportunityEntry, MeetingEvent } from '#shared/types/content'
 import { meetingDisplayStatus, selectNextMeeting } from '#shared/data/meetings'
 
-const props = defineProps<{ meetings: MeetingEvent[] }>()
+const props = withDefaults(defineProps<{ meetings: MeetingEvent[]; calendarEntries?: CalendarOpportunityEntry[] }>(), { calendarEntries: () => [] })
 const selected = ref<MeetingEvent>(selectNextMeeting(props.meetings) || props.meetings[0]!)
 watch(
   () => props.meetings,
@@ -49,6 +49,7 @@ watch(
           </div>
           <MeetingCalendar
             :meetings="meetings"
+            :calendar-entries="calendarEntries"
             :initial-meeting-id="selected.id"
             @select="selected = $event"
           />

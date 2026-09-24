@@ -33,6 +33,11 @@ const { data: rows, error } = await client
   .from('opportunities')
   .select('id,data,updated_at,suppressed')
 if (error) throw new Error(error.message)
+const { data: monitorRows, error: monitorError } = await client
+  .from('opportunity_monitors')
+  .select('id,seed')
+if (monitorError) throw new Error(monitorError.message)
+const monitorById = new Map((monitorRows || []).map((row) => [row.id, row.seed]))
 
 const discipline = (text) => {
   const value = text.toLowerCase(),
@@ -173,12 +178,21 @@ for (const row of rows || []) {
   if (!Object.keys(patch).length) continue
   changed++
   if (apply) {
+    const nextData = opportunitySchema.parse({ ...item, ...patch })
     const result = await client
       .from('opportunities')
-      .update({ data: { ...item, ...patch } })
+      .update({ data: nextData })
       .eq('id', row.id)
       .eq('updated_at', row.updated_at)
     if (result.error) throw new Error(`${row.id}: ${result.error.message}`)
+    const monitorSeed = monitorById.get(row.id)
+    if (monitorSeed) {
+      const monitor = await client
+        .from('opportunity_monitors')
+        .update({ seed: { ...monitorSeed, ...nextData, sourceUrls: monitorSeed.sourceUrls || [] } })
+        .eq('id', row.id)
+      if (monitor.error) throw new Error(`${row.id} monitor: ${monitor.error.message}`)
+    }
   }
 }
 for (const id of texasIneligibleCatalogIds) {

@@ -81,9 +81,7 @@ test('unexplored marker label rests on its rule then lifts to reveal its action'
   expect(Math.abs(restingLabelY - restingRuleY)).toBeLessThan(2)
 
   await marker.hover()
-  await expect
-    .poll(async () => restingLabelY - (await centerY(label)))
-    .toBeGreaterThanOrEqual(5)
+  await expect.poll(async () => restingLabelY - (await centerY(label))).toBeGreaterThanOrEqual(5)
   await expect(marker.getByText('Find your question')).toHaveCSS('opacity', '1')
 })
 
@@ -113,9 +111,10 @@ test('hero meeting panel gives a restrained lift on hover and keyboard focus', a
   await expect(panel).toBeVisible()
   const resting = await panel.boundingBox()
   expect(resting).not.toBeNull()
+  await expect(panel).toHaveCSS('transition-timing-function', 'cubic-bezier(0.16, 1.28, 0.3, 1)')
 
   await panel.hover()
-  await expect.poll(async () => (await panel.boundingBox())!.y).toBeLessThan(resting!.y - 1)
+  await expect.poll(async () => (await panel.boundingBox())!.y).toBeLessThan(resting!.y - 2)
   await expect
     .poll(() =>
       panel.evaluate((element) => {
@@ -129,8 +128,8 @@ test('hero meeting panel gives a restrained lift on hover and keyboard focus', a
   await expect(panel).toHaveCSS('translate', 'none')
   await expect(panel).toHaveCSS('scale', 'none')
   await panel.getByRole('link', { name: 'Meeting details' }).focus()
-  await expect(panel).toHaveCSS('translate', '0px -2px')
-  await expect(panel).toHaveCSS('scale', '1.006')
+  await expect(panel).toHaveCSS('translate', '0px -3px')
+  await expect(panel).toHaveCSS('scale', '1.01')
 })
 
 test('timeline dots have room for their hover halo within the scrollport', async ({ page }) => {

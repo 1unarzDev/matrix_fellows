@@ -139,6 +139,14 @@ test('hero priorities remain clear of the journey navigation on narrow screens',
   expect(bounds[0]).not.toBeNull()
   expect(bounds[1]).not.toBeNull()
   expect(bounds[0]!.y + bounds[0]!.height).toBeLessThan(bounds[1]!.y)
+
+  await page.setViewportSize({ width: 810, height: 1080 })
+  const society = page.locator('[data-hero-society]')
+  await expect(society).toBeVisible()
+  const tabletBounds = await Promise.all([society.boundingBox(), navigation.boundingBox()])
+  expect(tabletBounds[0]).not.toBeNull()
+  expect(tabletBounds[1]).not.toBeNull()
+  expect(tabletBounds[0]!.y + tabletBounds[0]!.height).toBeLessThan(tabletBounds[1]!.y)
 })
 
 test('footer links to the official Instagram profile', async ({ page }) => {

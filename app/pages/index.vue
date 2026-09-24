@@ -425,7 +425,7 @@ onBeforeUnmount(() => {
         </div>
         <div
           data-hero-detail
-          class="absolute bottom-12 left-6 right-6 flex items-end justify-between border-t border-paper/20 pt-5 sm:left-10 sm:right-10 lg:bottom-9 lg:left-16 lg:right-16"
+          class="absolute bottom-24 left-6 right-6 flex items-end justify-between border-t border-paper/20 pt-5 sm:left-10 sm:right-10 lg:bottom-9 lg:left-16 lg:right-16"
         >
           <div class="flex items-center gap-4">
             <span class="font-mono text-[10px] text-paper/45">01 / 05</span>
@@ -434,6 +434,7 @@ onBeforeUnmount(() => {
             </p>
           </div>
           <span
+            data-hero-society
             class="hidden items-center gap-2 text-[9px] uppercase tracking-[.17em] text-paper/50 sm:flex"
             ><span class="h-1 w-1 rounded-full bg-acid" /> MHS Research Society · Martin</span
           >

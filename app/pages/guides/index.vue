@@ -201,13 +201,14 @@ useHead({
   position: relative;
   display: flex;
   min-width: 0;
+  padding-inline: 0.35rem;
 }
 .guide-stage-nav__indicator {
   position: absolute;
   top: 0.3rem;
   bottom: 0.3rem;
-  left: calc(var(--stage-index) * 25% + 0.3rem);
-  width: calc(25% - 0.15rem);
+  left: 0.35rem;
+  width: calc(25% - 0.175rem);
   border: 1px solid color-mix(in srgb, var(--color-acid) 30%, transparent);
   border-radius: 0.75rem;
   background:
@@ -221,10 +222,8 @@ useHead({
     inset 0 1px 0 color-mix(in srgb, var(--color-paper) 7%, transparent),
     0 7px 18px rgb(0 0 0 / 12%),
     0 0 24px color-mix(in srgb, var(--color-acid) 6%, transparent);
-  transform: none;
-  transition:
-    left 480ms cubic-bezier(0.22, 1, 0.36, 1),
-    transform 480ms cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translate3d(calc(var(--stage-index) * 100%), 0, 0);
+  transition: transform 480ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 .guide-stage-nav__indicator::before {
   content: '';
@@ -245,17 +244,23 @@ useHead({
   position: relative;
   z-index: 1;
   display: flex;
-  width: 25%;
+  min-width: 0;
+  flex: 1 1 25%;
   min-height: 3rem;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.55rem 0.75rem;
+  padding: 0.55rem 0.5rem;
   border-radius: 0.75rem;
   color: color-mix(in srgb, var(--color-paper) 46%, transparent);
   transition:
     color 200ms ease,
     transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.guide-stage-nav__link > span:last-child {
+  width: 100%;
+  min-width: 0;
+  text-align: center;
 }
 .guide-stage-nav__link:hover,
 .guide-stage-nav__link:focus-visible,
@@ -325,6 +330,7 @@ useHead({
   .guide-stage-nav__links {
     display: block;
     min-width: 0;
+    padding-inline: 0;
   }
   .guide-stage-nav__links::before {
     content: '';
@@ -363,6 +369,10 @@ useHead({
     min-height: 3.5rem;
     justify-content: flex-start;
     padding: 0.55rem 0.5rem 0.55rem 1.25rem;
+  }
+  .guide-stage-nav__link > span:last-child {
+    width: auto;
+    text-align: left;
   }
   .guide-stage-nav__node {
     display: block;

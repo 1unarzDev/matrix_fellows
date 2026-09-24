@@ -211,12 +211,14 @@ const activeResource = computed(() =>
   }
   .catalog-header__switcher {
     gap: 0;
-    padding: 0.125rem;
+    padding: 0.2rem;
   }
   .catalog-header__resource {
     min-height: 2.25rem;
     gap: 0;
-    padding-inline: 0.48rem;
+    justify-content: center;
+    padding-inline: 0.62rem;
+    text-align: center;
     font-size: 0.625rem;
   }
   .catalog-header__dot {

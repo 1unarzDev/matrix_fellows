@@ -102,6 +102,43 @@ test('guide section navigation is smooth, shareable, and synchronized with readi
   )
 })
 
+test('mobile guide navigation keeps padded, centered active pills', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'Mobile navigation geometry')
+
+  for (const width of [320, 390, 430]) {
+    await page.setViewportSize({ width, height: 844 })
+    await page.goto('/guides')
+
+    const stageNav = page.getByRole('navigation', { name: 'Guide stages' })
+    const activeStage = stageNav.locator('.guide-stage-nav__link--active')
+    const indicator = stageNav.locator('.guide-stage-nav__indicator')
+    const resourceNav = page.getByRole('navigation', { name: 'Resource library' })
+    const [navBounds, activeBounds, indicatorBounds, resourceBounds] = await Promise.all([
+      stageNav.boundingBox(),
+      activeStage.boundingBox(),
+      indicator.boundingBox(),
+      resourceNav.boundingBox(),
+    ])
+
+    expect(navBounds).not.toBeNull()
+    expect(activeBounds).not.toBeNull()
+    expect(indicatorBounds).not.toBeNull()
+    expect(resourceBounds).not.toBeNull()
+    expect(indicatorBounds!.x - navBounds!.x).toBeGreaterThanOrEqual(6)
+    expect(
+      Math.abs(
+        activeBounds!.x + activeBounds!.width / 2 -
+          (indicatorBounds!.x + indicatorBounds!.width / 2),
+      ),
+    ).toBeLessThanOrEqual(0.5)
+    await expect(activeStage.locator(':scope > span:last-child')).toHaveCSS('text-align', 'center')
+    expect(resourceBounds!.width).toBeGreaterThanOrEqual(210)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      width,
+    )
+  }
+})
+
 test('unknown guide slugs return a real 404', async ({ request }) => {
   const response = await request.get('/guides/not-a-real-guide')
   expect(response.status()).toBe(404)

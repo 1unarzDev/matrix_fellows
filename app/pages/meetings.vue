@@ -230,6 +230,7 @@ useHead({
   position: relative;
   display: grid;
   min-height: 4rem;
+  padding-block: 0.8rem;
   place-content: center;
   border-radius: 1.2rem;
   text-align: center;

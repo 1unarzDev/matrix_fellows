@@ -8,13 +8,16 @@ test('meetings route renders a crawlable confirmed and projected schedule', asyn
   ).toBeVisible()
   await expect(
     page.locator('#first-exchange-2026-09-25').getByRole('heading', {
-      name: 'Our first exchange of ideas.',
+      name: 'The first exchange of ideas.',
     }),
   ).toBeVisible()
   await expect(
     page.getByText('From an ISEF interest to a regional-fair entry.', { exact: true }),
   ).toBeVisible()
   await expect(page.getByText('Projected · not confirmed', { exact: true })).toBeVisible()
+  const datePanel = page.locator('.meeting-row__date').first()
+  await expect(datePanel).toHaveCSS('padding-top', '12.8px')
+  await expect(datePanel).toHaveCSS('padding-bottom', '12.8px')
 })
 
 test('calendar navigation and meeting dialogs preserve status and focus', async ({ page }) => {

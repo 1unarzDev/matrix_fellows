@@ -160,8 +160,10 @@ onBeforeUnmount(() => {
 .discovery-reveal {
   --reveal-x: min(15rem, 42%);
   --reveal-y: 42%;
-  --lens-size: clamp(13rem, 25vw, 22rem);
-  --reveal-radius: 0px;
+  --lens-size: clamp(14rem, 29vw, 25rem);
+  --lens-height: calc(var(--lens-size) * 0.88);
+  --reveal-radius-x: 0px;
+  --reveal-radius-y: 0px;
   --xray-overreach: calc(var(--lens-size) / 2 + 1rem);
   isolation: isolate;
 }
@@ -178,40 +180,59 @@ onBeforeUnmount(() => {
   overflow: visible;
   pointer-events: none;
   padding: var(--xray-overreach);
-  clip-path: circle(
-    var(--reveal-radius) at calc(var(--reveal-x) + var(--xray-overreach))
+  clip-path: ellipse(
+    var(--reveal-radius-x) var(--reveal-radius-y) at calc(var(--reveal-x) + var(--xray-overreach))
       calc(var(--reveal-y) + var(--xray-overreach))
   );
   -webkit-mask-image: radial-gradient(
-    circle calc(var(--lens-size) / 2) at calc(var(--reveal-x) + var(--xray-overreach))
-      calc(var(--reveal-y) + var(--xray-overreach)),
+    ellipse calc(var(--lens-size) / 2) calc(var(--lens-height) / 2) at
+      calc(var(--reveal-x) + var(--xray-overreach)) calc(var(--reveal-y) + var(--xray-overreach)),
     #000 0,
-    #000 calc(100% - 1rem),
+    #000 68%,
+    rgb(0 0 0 / 0.76) 82%,
     transparent 100%
   );
   mask-image: radial-gradient(
-    circle calc(var(--lens-size) / 2) at calc(var(--reveal-x) + var(--xray-overreach))
-      calc(var(--reveal-y) + var(--xray-overreach)),
+    ellipse calc(var(--lens-size) / 2) calc(var(--lens-height) / 2) at
+      calc(var(--reveal-x) + var(--xray-overreach)) calc(var(--reveal-y) + var(--xray-overreach)),
     #000 0,
-    #000 calc(100% - 1rem),
+    #000 68%,
+    rgb(0 0 0 / 0.76) 82%,
     transparent 100%
   );
   background:
     radial-gradient(
-      circle var(--lens-size) at calc(var(--reveal-x) + var(--xray-overreach))
-        calc(var(--reveal-y) + var(--xray-overreach)),
-      rgb(105 158 171 / 0.16),
-      rgb(36 82 93 / 0.08) 52%,
+      ellipse calc(var(--lens-size) * 0.54) calc(var(--lens-height) * 0.56) at
+        calc(var(--reveal-x) + var(--xray-overreach) - 1.4rem)
+        calc(var(--reveal-y) + var(--xray-overreach) - 1.8rem),
+      rgb(186 213 211 / 0.12),
+      transparent 66%
+    ),
+    radial-gradient(
+      ellipse calc(var(--lens-size) * 0.42) calc(var(--lens-height) * 0.38) at
+        calc(var(--reveal-x) + var(--xray-overreach) + 1.8rem)
+        calc(var(--reveal-y) + var(--xray-overreach) + 2rem),
+      rgb(226 190 123 / 0.1),
       transparent 72%
     ),
-    rgb(16 46 54 / 0.82);
-  transition: clip-path 620ms cubic-bezier(0.22, 1, 0.36, 1);
+    radial-gradient(
+      ellipse calc(var(--lens-size) / 2) calc(var(--lens-height) / 2) at
+        calc(var(--reveal-x) + var(--xray-overreach)) calc(var(--reveal-y) + var(--xray-overreach)),
+      rgb(27 38 36 / 0.26),
+      rgb(45 52 46 / 0.16) 54%,
+      rgb(53 66 58 / 0.08) 76%,
+      transparent 100%
+    );
+  -webkit-backdrop-filter: blur(9px) saturate(76%) brightness(84%);
+  backdrop-filter: blur(9px) saturate(76%) brightness(84%);
+  transition: clip-path 720ms cubic-bezier(0.22, 1, 0.36, 1);
   will-change: clip-path;
 }
 
 .discovery-reveal__alternate {
   position: relative;
   z-index: 1;
+  text-shadow: 0 2px 18px rgb(23 31 29 / 0.28);
 }
 
 .discovery-reveal__lens {
@@ -220,63 +241,69 @@ onBeforeUnmount(() => {
   top: var(--reveal-y);
   left: var(--reveal-x);
   width: var(--lens-size);
-  height: var(--lens-size);
-  border: 1px solid rgb(165 205 213 / 0.16);
-  border-radius: 50%;
+  height: var(--lens-height);
+  border: 1px solid rgb(207 226 220 / 0.1);
+  border-radius: 48% 52% 46% 54% / 52% 45% 55% 48%;
   pointer-events: none;
   opacity: 0;
   scale: 0.12;
   translate: -50% -50%;
   background:
-    radial-gradient(circle at 38% 32%, rgb(177 218 226 / 0.085), transparent 25%),
-    radial-gradient(circle, transparent 55%, rgb(151 199 209 / 0.055) 76%, transparent);
+    radial-gradient(ellipse at 33% 24%, rgb(210 228 221 / 0.07), transparent 27%),
+    radial-gradient(ellipse at 68% 76%, rgb(230 196 131 / 0.045), transparent 31%),
+    radial-gradient(ellipse, transparent 54%, rgb(183 214 207 / 0.035) 76%, transparent);
   box-shadow:
-    0 0 0 1px rgb(183 220 226 / 0.045),
-    0 0 42px rgb(116 172 185 / 0.12),
-    inset 0 0 48px rgb(8 34 42 / 0.1);
+    0 0 0 1px rgb(229 211 170 / 0.025),
+    0 0 54px rgb(147 187 183 / 0.075),
+    inset 0 0 56px rgb(27 48 47 / 0.055);
   transition:
-    opacity 180ms ease,
-    scale 620ms cubic-bezier(0.22, 1, 0.36, 1);
+    opacity 260ms ease,
+    scale 720ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .discovery-reveal__lens::before,
 .discovery-reveal__lens::after {
   content: '';
   position: absolute;
-  background: rgb(236 198 120 / 0.38);
 }
 
 .discovery-reveal__lens::before {
-  top: 50%;
-  right: -0.22rem;
-  left: -0.22rem;
-  height: 1px;
-  mask-image: linear-gradient(
-    90deg,
-    #000 0 0.45rem,
-    transparent 0.45rem calc(100% - 0.45rem),
-    #000 0
+  inset: -0.38rem;
+  border-radius: inherit;
+  background: conic-gradient(
+    from 28deg,
+    transparent 0 9%,
+    rgb(198 221 216 / 0.16) 13%,
+    transparent 18% 42%,
+    rgb(227 195 133 / 0.13) 47%,
+    transparent 54% 75%,
+    rgb(183 214 210 / 0.11) 80%,
+    transparent 86% 100%
   );
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 1.5px), #000 0);
+  mask: radial-gradient(farthest-side, transparent calc(100% - 1.5px), #000 0);
 }
 
 .discovery-reveal__lens::after {
-  top: -0.22rem;
-  bottom: -0.22rem;
-  left: 50%;
-  width: 1px;
-  mask-image: linear-gradient(#000 0 0.45rem, transparent 0.45rem calc(100% - 0.45rem), #000 0);
+  inset: 9% 7% 12% 11%;
+  border: 1px solid rgb(223 205 166 / 0.07);
+  border-radius: 53% 47% 51% 49% / 46% 55% 45% 54%;
+  rotate: -7deg;
+  filter: blur(0.2px);
 }
 
 .discovery-reveal__lens-core {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 0.3rem;
-  height: 0.3rem;
-  border: 1px solid rgb(182 218 224 / 0.48);
+  width: 1.45rem;
+  height: 0.45rem;
   border-radius: 50%;
   translate: -50% -50%;
-  box-shadow: 0 0 12px rgb(151 201 211 / 0.24);
+  rotate: -14deg;
+  opacity: 0.5;
+  background: radial-gradient(ellipse, rgb(220 231 218 / 0.34), transparent 72%);
+  box-shadow: 0 0 16px rgb(175 207 199 / 0.12);
 }
 
 .discovery-reveal__lens-core::before {
@@ -284,18 +311,13 @@ onBeforeUnmount(() => {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: calc(var(--lens-size) + 2.5rem);
-  height: calc(var(--lens-size) + 2.5rem);
+  width: calc(var(--lens-size) * 0.6);
+  height: calc(var(--lens-height) * 0.28);
+  border-top: 1px solid rgb(204 223 215 / 0.1);
   border-radius: 50%;
   translate: -50% -50%;
-  background: radial-gradient(
-    circle,
-    transparent 59%,
-    rgb(127 183 195 / 0.045) 65%,
-    rgb(108 164 178 / 0.075) 70%,
-    transparent 78%
-  );
-  filter: blur(7px);
+  rotate: 19deg;
+  filter: blur(0.3px);
 }
 
 .discovery-reveal__particle {
@@ -307,14 +329,14 @@ onBeforeUnmount(() => {
   height: var(--particle-size);
   border-radius: 50%;
   opacity: 0;
-  background: rgb(178 219 226 / 0.82);
-  box-shadow: 0 0 8px rgb(127 190 203 / 0.3);
+  background: rgb(205 226 220 / 0.68);
+  box-shadow: 0 0 9px rgb(157 197 190 / 0.22);
   pointer-events: none;
 }
 
 .discovery-reveal__particle.is-gold {
-  background: rgb(235 204 143 / 0.72);
-  box-shadow: 0 0 7px rgb(234 198 120 / 0.24);
+  background: rgb(232 205 153 / 0.58);
+  box-shadow: 0 0 8px rgb(222 190 128 / 0.18);
 }
 
 .discovery-reveal__touch-target {
@@ -382,13 +404,15 @@ onBeforeUnmount(() => {
 @media (hover: hover) and (pointer: fine) {
   .discovery-reveal:hover,
   .discovery-reveal:focus-visible {
-    --reveal-radius: calc(var(--lens-size) / 2);
+    --reveal-radius-x: calc(var(--lens-size) / 2);
+    --reveal-radius-y: calc(var(--lens-height) / 2);
   }
 
   .discovery-reveal:hover .discovery-reveal__lens,
   .discovery-reveal:focus-visible .discovery-reveal__lens {
-    opacity: 0.82;
+    opacity: 0.64;
     scale: 1;
+    animation: discovery-lens-morph 9s ease-in-out infinite alternate;
   }
 
   .discovery-reveal:hover .discovery-reveal__particle,
@@ -406,16 +430,18 @@ onBeforeUnmount(() => {
   }
 
   .discovery-reveal.is-touch-revealed {
-    --reveal-radius: calc(var(--lens-size) / 2);
+    --reveal-radius-x: calc(var(--lens-size) / 2);
+    --reveal-radius-y: calc(var(--lens-height) / 2);
   }
 
   .discovery-reveal.is-touch-revealed .discovery-reveal__original {
-    opacity: 0.16;
+    opacity: 0.08;
   }
 
   .discovery-reveal.is-touch-revealed .discovery-reveal__lens {
-    opacity: 0.72;
+    opacity: 0.58;
     scale: 1;
+    animation: discovery-lens-morph 9s ease-in-out infinite alternate;
   }
 
   .discovery-reveal.is-touch-revealed .discovery-reveal__particle {
@@ -442,6 +468,18 @@ onBeforeUnmount(() => {
   }
 }
 
+@keyframes discovery-lens-morph {
+  0% {
+    border-radius: 48% 52% 46% 54% / 52% 45% 55% 48%;
+  }
+  52% {
+    border-radius: 53% 47% 51% 49% / 47% 54% 46% 53%;
+  }
+  100% {
+    border-radius: 46% 54% 52% 48% / 55% 48% 52% 45%;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .discovery-reveal__xray,
   .discovery-reveal__original,
@@ -452,6 +490,10 @@ onBeforeUnmount(() => {
 
   .discovery-reveal__particle {
     display: none;
+  }
+
+  .discovery-reveal__lens {
+    animation: none !important;
   }
 }
 </style>

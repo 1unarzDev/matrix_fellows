@@ -25,12 +25,13 @@ test('discovery thought follows the pointer and reveals as one composition', asy
 
   await page.mouse.move(bounds!.x + bounds!.width * 0.68, bounds!.y + bounds!.height * 0.42)
   await expect(reveal.locator('.discovery-reveal__original')).toHaveCSS('opacity', '1')
-  await expect(reveal.locator('.discovery-reveal__lens')).toHaveCSS('opacity', '0.82')
+  await expect(reveal.locator('.discovery-reveal__lens')).toHaveCSS('opacity', '0.64')
   await expect(reveal.locator('.discovery-reveal__bloom')).toHaveCount(0)
   await expect(reveal.locator('.discovery-reveal__xray')).toHaveCSS(
     'background-color',
-    'rgba(16, 46, 54, 0.82)',
+    'rgba(0, 0, 0, 0)',
   )
+  await expect(reveal.locator('.discovery-reveal__xray')).not.toHaveCSS('background-image', 'none')
   await expect(reveal.locator('.discovery-reveal__xray')).not.toHaveCSS('mask-image', 'none')
   await expect(reveal.locator('.discovery-reveal__lens > .discovery-reveal__particle')).toHaveCount(
     12,
@@ -39,7 +40,7 @@ test('discovery thought follows the pointer and reveals as one composition', asy
   const clipPath = await reveal
     .locator('.discovery-reveal__xray')
     .evaluate((element) => getComputedStyle(element).clipPath)
-  expect(clipPath).not.toContain('circle(0px')
+  expect(clipPath).not.toContain('ellipse(0px')
 
   const point = await reveal.evaluate((element) => ({
     x: Number.parseFloat(getComputedStyle(element).getPropertyValue('--reveal-x')),
@@ -65,7 +66,7 @@ test('discovery interactions are keyboard reachable and respect reduced motion',
   await reveal.scrollIntoViewIfNeeded()
   await reveal.focus()
   await expect(reveal).toBeFocused()
-  await expect(reveal.locator('.discovery-reveal__lens')).toHaveCSS('opacity', '0.82')
+  await expect(reveal.locator('.discovery-reveal__lens')).toHaveCSS('opacity', '0.64')
   await expect(reveal.locator('.discovery-reveal__xray')).toHaveCSS('transition-duration', '0s')
   await expect(reveal.locator('.discovery-reveal__particle').first()).toHaveCSS('display', 'none')
 
@@ -93,8 +94,8 @@ test('touch layouts use an accessible tap toggle and preserve native scrolling',
   await expect(reveal).toHaveAttribute('data-touch-revealed', 'true')
   await expect(toggle).toHaveAttribute('aria-pressed', 'true')
   await expect(toggle).toHaveAccessibleName('Return to the original discovery note')
-  await expect(reveal.locator('.discovery-reveal__lens')).toHaveCSS('opacity', '0.72')
-  await expect(reveal.locator('.discovery-reveal__original')).toHaveCSS('opacity', '0.16')
+  await expect(reveal.locator('.discovery-reveal__lens')).toHaveCSS('opacity', '0.58')
+  await expect(reveal.locator('.discovery-reveal__original')).toHaveCSS('opacity', '0.08')
 
   await toggle.click()
   await expect(toggle).toHaveAttribute('aria-pressed', 'false')

@@ -17,8 +17,8 @@ test('homepage opportunities use neutral transparent glass', async ({ page }) =>
     }
   })
   expect(surface.image).toBe('none')
-  expect(surface.color[3]).toBeGreaterThanOrEqual(3)
-  expect(surface.color[3]).toBeLessThanOrEqual(5)
+  expect(surface.color[3]).toBeGreaterThanOrEqual(2)
+  expect(surface.color[3]).toBeLessThanOrEqual(4)
 })
 
 test('join popup follows the calendar popup surface and motion contract', async ({

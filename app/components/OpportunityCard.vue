@@ -65,7 +65,7 @@ onMounted(() => {
     class="opportunity-card flex min-w-0 flex-col overflow-hidden rounded-2xl border border-paper/15 transition-[transform,border-color,background-color,box-shadow] duration-700 ease-[cubic-bezier(.16,1,.3,1)] motion-reduce:transition-none"
     :class="
       compact
-        ? 'bg-paper/[.015] shadow-[0_22px_70px_rgba(0,7,15,.14),inset_0_1px_rgba(255,255,255,.05)] backdrop-blur-[18px] backdrop-saturate-[118%] hover:-translate-y-0.5 hover:border-paper/30 hover:bg-paper/[.025] hover:shadow-[0_28px_82px_rgba(0,7,15,.22),0_0_34px_rgba(221,188,119,.035),inset_0_1px_rgba(255,255,255,.07)]'
+        ? 'bg-paper/[.01] shadow-[0_22px_70px_rgba(0,7,15,.14),inset_0_1px_rgba(255,255,255,.05)] backdrop-blur-[18px] backdrop-saturate-[118%] hover:-translate-y-0.5 hover:border-paper/30 hover:bg-paper/[.018] hover:shadow-[0_28px_82px_rgba(0,7,15,.22),0_0_34px_rgba(221,188,119,.035),inset_0_1px_rgba(255,255,255,.07)]'
         : 'bg-paper/[.015] hover:border-paper/30 hover:bg-paper/[.025] hover:shadow-[0_16px_48px_#00000012]'
     "
   >

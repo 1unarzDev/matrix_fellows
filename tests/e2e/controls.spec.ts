@@ -74,6 +74,30 @@ test('mobile resource switcher remains anchored while changing sections', async 
   await expect(page).toHaveURL('/guides')
 })
 
+test('fixed resource atmosphere stays viewport-anchored through route transitions', async ({
+  page,
+}) => {
+  await page.goto('/guides')
+  await page.waitForTimeout(500)
+
+  const positions = await page.evaluate(async () => {
+    const atmosphere = document.querySelector<HTMLElement>('.guide-atmosphere')!
+    const destination = document.querySelector<HTMLAnchorElement>('a[href="/opportunities"]')!
+    const samples: number[] = []
+    destination.click()
+    const start = performance.now()
+    while (performance.now() - start < 900) {
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+      if (atmosphere.isConnected) samples.push(atmosphere.getBoundingClientRect().top)
+    }
+    return samples
+  })
+
+  expect(positions.length).toBeGreaterThan(5)
+  expect(Math.max(...positions) - Math.min(...positions)).toBeLessThan(2)
+  await expect(page).toHaveURL('/opportunities')
+})
+
 test('catalog replaces legacy hidden filters and obsolete sorting', async ({ page }) => {
   await page.goto('/opportunities?highSchool=supported&sort=verified')
   await page.locator('[data-catalog-ready="true"]').waitFor()

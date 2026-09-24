@@ -29,12 +29,12 @@ describe('cinematic boundary assistance', () => {
   it('keeps slow beginning and discovery travel free of assistance', () => {
     expect(assist(0, 0.55, 500).mode).toBe('none')
     expect(assist(0, 0.55, 1_000).mode).toBe('glide')
-    expect(assist(0, 0.55, 1_800)).toMatchObject({ mode: 'complete', destination: 1_000 })
+    expect(assist(0, 0.55, 1_425)).toMatchObject({ mode: 'complete', destination: 1_000 })
   })
 
-  it('completes a decisive discovery gesture but only glides a moderate one', () => {
+  it('completes a deliberate discovery gesture but only glides a moderate one', () => {
     expect(assist(1, 0.45, 1_000).mode).toBe('glide')
-    expect(assist(1, 0.45, 1_700)).toMatchObject({ mode: 'complete', destination: 1_000 })
+    expect(assist(1, 0.45, 1_300)).toMatchObject({ mode: 'complete', destination: 1_000 })
   })
 
   it('gently assists even slow travel through the research water phase', () => {
@@ -44,6 +44,7 @@ describe('cinematic boundary assistance', () => {
     expect(slow.destination).toBeGreaterThan(720)
     expect(fast.destination).toBeGreaterThan(slow.destination)
     expect(fast.destination).toBeLessThan(1_000)
+    expect(assist(2, 0.72, 1_400)).toMatchObject({ mode: 'complete', destination: 1_000 })
   })
 
   it('never reverses an upward gesture', () => {

@@ -98,9 +98,28 @@ test.describe('cinematic timeline settling', () => {
     expect(Math.abs((await page.evaluate(() => window.scrollY)) - restingPosition)).toBeLessThan(5)
   })
 
+  test('keeps native mobile flicks free of timeline settling', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'mobile', 'Native touch scrolling is mobile-specific')
+    await page.goto('/')
+    await page
+      .locator('[data-horizon-preview]:not([data-scene-state="pending"])')
+      .waitFor({ state: 'attached', timeout: 20_000 })
+    const discoveryTop = await page.locator('#discovery').evaluate((chapter) => chapter.offsetTop)
+    const releasedAt = discoveryTop * 0.55
+
+    await page.mouse.wheel(0, releasedAt)
+    await page.waitForTimeout(1_000)
+
+    expect(Math.abs((await page.evaluate(() => window.scrollY)) - releasedAt)).toBeLessThan(5)
+  })
+
   test('smooths the late research-to-depths transition without trapping project rows', async ({
     page,
-  }) => {
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name === 'mobile',
+      'Mobile keeps native touch inertia without settling',
+    )
     await page.goto('/#research')
     await page
       .locator('[data-horizon-preview]:not([data-scene-state="pending"])')

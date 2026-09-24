@@ -275,7 +275,8 @@ onMounted(() => {
       lastNativeY = window.scrollY
       lastNativeAt = now
     }
-    if (!smoothScroll) window.addEventListener('scroll', trackNativeIntent, { passive: true })
+    if (!smoothScroll && !touchLayout)
+      window.addEventListener('scroll', trackNativeIntent, { passive: true })
     let smoothSettleTimer: ReturnType<typeof setTimeout> | undefined
     let smoothSettleDirection = 0
     let smoothIntentVelocity = 0
@@ -323,7 +324,7 @@ onMounted(() => {
         // camera/text from the visible page and makes navigation feel delayed.
         scrub: true,
         snap:
-          media.matches || smoothScroll
+          media.matches || smoothScroll || touchLayout
             ? undefined
             : {
                 snapTo: (value, trigger) =>

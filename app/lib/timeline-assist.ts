@@ -61,13 +61,13 @@ export function getTimelineAssist(options: TimelineAssistOptions): TimelineAssis
       !inDirectionalWindow(options.position, options.direction, [0.3, 0.84], [0.16, 0.7])
     )
       return none
-    if (options.velocity >= 1_550)
+    if (options.velocity >= 1_400)
       return {
         destination: options.direction > 0 ? options.restEnd : options.restStart,
         mode: 'complete',
         duration: 0.5,
       }
-    return glide(options, 0.018, 0.055, (options.velocity - 800) / 750)
+    return glide(options, 0.022, 0.067, (options.velocity - 800) / 600)
   }
 
   // Discovery ↔ Research: recognize a full swipe/quick wheel burst, while
@@ -78,13 +78,13 @@ export function getTimelineAssist(options: TimelineAssistOptions): TimelineAssis
       !inDirectionalWindow(options.position, options.direction, [0.2, 0.9], [0.1, 0.8])
     )
       return none
-    if (options.velocity >= 1_400)
+    if (options.velocity >= 1_275)
       return {
         destination: options.direction > 0 ? options.restEnd : options.restStart,
         mode: 'complete',
         duration: 0.52,
       }
-    return glide(options, 0.025, 0.075, (options.velocity - 650) / 750)
+    return glide(options, 0.03, 0.09, (options.velocity - 650) / 625)
   }
 
   // Research ↔ Depths: this is the one persistent assist. A small directional
@@ -96,13 +96,13 @@ export function getTimelineAssist(options: TimelineAssistOptions): TimelineAssis
       !inDirectionalWindow(options.position, options.direction, [0.6, 0.94], [0.2, 0.6])
     )
       return none
-    if (options.velocity >= 1_500)
+    if (options.velocity >= 1_375)
       return {
         destination: options.direction > 0 ? options.restEnd : options.restStart,
         mode: 'complete',
         duration: 0.54,
       }
-    return glide(options, 0.022, 0.115, (options.velocity - 35) / 1_465)
+    return glide(options, 0.025, 0.128, (options.velocity - 35) / 1_340)
   }
 
   // Depths ↔ Connect: just enough motion to discourage resting in the visual

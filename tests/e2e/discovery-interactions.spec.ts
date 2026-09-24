@@ -104,7 +104,7 @@ test('touch layouts use an accessible tap toggle and preserve native scrolling',
   await expect(reveal).toHaveAttribute('data-touch-revealed', 'true')
   await expect(toggle).toHaveAttribute('aria-pressed', 'true')
   await expect(toggle).toHaveAccessibleName('Return to the original discovery note')
-  await expect(reveal.locator('.discovery-reveal__lens')).toHaveCSS('opacity', '0.58')
+  await expect(reveal.locator('.discovery-reveal__lens')).toHaveCSS('opacity', '0')
   await expect(reveal.locator('.discovery-reveal__original')).toHaveCSS('opacity', '0')
 
   await toggle.click()
@@ -115,6 +115,35 @@ test('touch layouts use an accessible tap toggle and preserve native scrolling',
   await page.touchscreen.tap(20, 700)
   await page.evaluate(() => window.scrollBy({ top: 120, behavior: 'instant' }))
   await expect.poll(async () => page.evaluate(() => window.scrollY)).toBeGreaterThan(before)
+})
+
+test('touch reveal expands to the full composition on a lightweight mobile path', async ({
+  page,
+}) => {
+  test.skip(test.info().project.name !== 'mobile', 'Mobile render path requires a coarse pointer')
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/#discovery')
+
+  const reveal = page.locator('[data-discovery-reveal]')
+  await reveal.scrollIntoViewIfNeeded()
+  const toggle = reveal.locator('.discovery-reveal__touch-target')
+  await toggle.click({ position: { x: 72, y: 190 } })
+
+  await expect(reveal).toHaveAttribute('data-touch-revealed', 'true')
+  await expect(reveal.locator('.discovery-reveal__xray')).toHaveCSS('clip-path', /circle\(.+ at/)
+  const origin = await reveal.evaluate((element) => {
+    const style = getComputedStyle(element)
+    return {
+      x: Number.parseFloat(style.getPropertyValue('--reveal-x')),
+      y: Number.parseFloat(style.getPropertyValue('--reveal-y')),
+    }
+  })
+  expect(origin.x).toBeCloseTo(72, 0)
+  expect(origin.y).toBeCloseTo(190, 0)
+  await expect(reveal.locator('.discovery-reveal__xray')).toHaveCSS('mask-image', 'none')
+  await expect(reveal.locator('.discovery-reveal__xray')).toHaveCSS('backdrop-filter', 'none')
+  await expect(reveal.locator('.discovery-reveal__particle').first()).toHaveCSS('display', 'none')
+  await expect(reveal.locator('.discovery-reveal__wave').first()).toHaveCSS('display', 'none')
 })
 
 test('touch reveal prompt clears the discovery copy on narrow screens', async ({ page }) => {

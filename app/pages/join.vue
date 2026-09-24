@@ -108,10 +108,10 @@ useHead({
         </div>
 
         <div class="join-privacy mt-7 flex items-start gap-3">
-          <span class="join-privacy__icon"><SiteIcon name="lock" :size="14" /></span>
+          <span class="join-privacy__icon"><SiteIcon name="check" :size="14" /></span>
           <p>
-            Your response stays with authorized organizers. We never publish individual answers or
-            use them for sponsor profiling.
+            Your response helps organizers understand the needs of society members and provides the
+            student and parent or guardian information needed for participation approval.
           </p>
         </div>
       </section>

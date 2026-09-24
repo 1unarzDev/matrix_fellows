@@ -147,6 +147,13 @@ test('join surfaces use a transparent glass treatment on the page and in the mod
   expect(modalSurface.filter).toContain('blur(18px)')
 
   await page.goto('/join')
+  await expect(
+    page.getByText(
+      'Your response helps organizers understand the needs of society members and provides the student and parent or guardian information needed for participation approval.',
+      { exact: true },
+    ),
+  ).toBeVisible()
+  await expect(page.getByText(/sponsor profiling/i)).toHaveCount(0)
   const embeddedSurface = await page.locator('.join-panel').evaluate((panel) => {
     const context = document.createElement('canvas').getContext('2d', { willReadFrequently: true })!
     context.fillStyle = getComputedStyle(panel).backgroundColor

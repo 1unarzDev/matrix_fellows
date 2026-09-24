@@ -402,7 +402,7 @@ onBeforeUnmount(() => {
   .discovery-reveal {
     --lens-size: min(112vw, 28rem);
     min-height: 28.5rem;
-    padding-bottom: 2.5rem;
+    padding-bottom: 7.5rem;
   }
 
   .discovery-reveal.is-touch-revealed {

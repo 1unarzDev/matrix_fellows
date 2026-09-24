@@ -106,6 +106,31 @@ test('touch layouts use an accessible tap toggle and preserve native scrolling',
   await expect.poll(async () => page.evaluate(() => window.scrollY)).toBeGreaterThan(before)
 })
 
+test('touch reveal prompt clears the discovery copy on narrow screens', async ({ page }) => {
+  test.skip(test.info().project.name !== 'mobile', 'Tap prompt requires a coarse-pointer context')
+
+  for (const width of [320, 390, 430]) {
+    await page.setViewportSize({ width, height: 844 })
+    await page.goto('/#discovery')
+
+    const reveal = page.locator('[data-discovery-reveal]')
+    await reveal.scrollIntoViewIfNeeded()
+    const lastParagraph = reveal.locator('.discovery-reveal__original p').last()
+    const prompt = reveal.locator('.discovery-reveal__touch-prompt')
+    await expect(prompt).toBeVisible()
+    const [paragraphBounds, promptBounds] = await Promise.all([
+      lastParagraph.boundingBox(),
+      prompt.boundingBox(),
+    ])
+
+    expect(paragraphBounds).not.toBeNull()
+    expect(promptBounds).not.toBeNull()
+    expect(promptBounds!.y - (paragraphBounds!.y + paragraphBounds!.height)).toBeGreaterThanOrEqual(
+      12,
+    )
+  }
+})
+
 for (const width of [320, 360, 390, 430]) {
   test(`discovery reveal does not overflow at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 })

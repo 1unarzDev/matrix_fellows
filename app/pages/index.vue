@@ -499,7 +499,7 @@ onBeforeUnmount(() => {
             <p class="max-w-xs text-sm leading-relaxed text-paper/65">
               Our research starts small and looks further.<br />Three projects. Many more
               questions.<br /><span class="mt-3 inline-block text-xs text-paper/70"
-                >Project details are being prepared.</span
+                >These projects are actively being iterated upon.</span
               >
             </p>
           </div>

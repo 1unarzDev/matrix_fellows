@@ -149,6 +149,51 @@ test('hero priorities remain clear of the journey navigation on narrow screens',
   expect(tabletBounds[0]!.y + tabletBounds[0]!.height).toBeLessThan(tabletBounds[1]!.y)
 })
 
+test('meeting facts stack on phones and featured opportunities traverse horizontally', async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/#beginning')
+  await page.locator('[data-ready="true"]').waitFor()
+
+  const date = await page.locator('[data-meeting-date]').boundingBox()
+  const time = await page.locator('[data-meeting-time]').boundingBox()
+  expect(date).not.toBeNull()
+  expect(time).not.toBeNull()
+  expect(time!.y).toBeGreaterThanOrEqual(date!.y + date!.height)
+
+  await page
+    .locator('#community')
+    .evaluate((element) => element.scrollIntoView({ behavior: 'instant' }))
+  const rail = page.locator('[data-home-opportunity-rail]')
+  await expect(rail).toBeVisible()
+  const dimensions = await rail.evaluate((element) => ({
+    clientWidth: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+    cards: element.children.length,
+  }))
+  expect(dimensions.cards).toBe(6)
+  expect(dimensions.scrollWidth).toBeGreaterThan(dimensions.clientWidth * 3)
+  await expect(rail.getByRole('tablist')).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Next featured opportunity' }).click()
+  await expect
+    .poll(() => rail.evaluate((element) => element.scrollLeft))
+    .toBeGreaterThan(dimensions.clientWidth * 0.6)
+  await expect(page.getByText('Featured route', { exact: false })).toContainText('2 / 6')
+
+  await page.setViewportSize({ width: 810, height: 1080 })
+  const meetingColumns = page.locator('#meeting-details > div')
+  const [meetingIntro, meetingPanel] = await Promise.all([
+    meetingColumns.nth(0).boundingBox(),
+    meetingColumns.nth(1).boundingBox(),
+  ])
+  expect(meetingIntro).not.toBeNull()
+  expect(meetingPanel).not.toBeNull()
+  expect(meetingPanel!.y).toBeGreaterThanOrEqual(meetingIntro!.y + meetingIntro!.height)
+})
+
 test('footer links to the official Instagram profile', async ({ page }) => {
   await page.goto('/')
   const instagram = page.getByRole('link', {

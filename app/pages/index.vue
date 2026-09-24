@@ -403,15 +403,23 @@ onBeforeUnmount(() => {
                   Meetings
                 </p>
                 <p class="mt-2 text-sm font-medium leading-snug text-paper">
-                  {{ meetingDate }} · {{ content.meeting.time || 'Time forthcoming' }}
+                  <span data-meeting-date class="block sm:inline">{{ meetingDate }}</span>
+                  <span aria-hidden="true" class="hidden sm:inline"> · </span>
+                  <span data-meeting-time class="mt-1 block sm:mt-0 sm:inline">{{
+                    content.meeting.time || 'Time forthcoming'
+                  }}</span>
                 </p>
-                <div class="mt-0.5 flex items-center justify-between gap-3">
-                  <p class="whitespace-nowrap text-[11px] text-paper/80 sm:text-xs">
+                <div
+                  class="mt-1 flex flex-col items-start gap-1 sm:mt-0.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+                >
+                  <p
+                    class="text-[11px] leading-relaxed text-paper/80 sm:whitespace-nowrap sm:text-xs"
+                  >
                     {{ content.meeting.location || 'Location forthcoming' }}
                   </p>
                   <a
                     href="#meeting-details"
-                    class="group inline-flex min-h-10 shrink-0 items-center gap-2 text-[11px] font-medium text-[#f4ce89]"
+                    class="group inline-flex min-h-11 shrink-0 items-center gap-2 text-[11px] font-medium text-[#f4ce89]"
                     @click="scrollTo($event, 'meeting-details')"
                     >Meeting details
                     <SiteIcon

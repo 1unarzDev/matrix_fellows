@@ -6,7 +6,9 @@ import {
   getTimeline,
   nextTimelineIndex,
 } from '#shared/utils/opportunity-lifecycle'
-const props = defineProps<{ item: Opportunity; now: number }>()
+const props = withDefaults(defineProps<{ item: Opportunity; now: number; compact?: boolean }>(), {
+  compact: false,
+})
 const id = useId()
 const state = computed(() => getOpportunityState(props.item, props.now))
 const timeline = computed(() => getTimeline(props.item))
@@ -60,7 +62,12 @@ onMounted(() => {
 <template>
   <article
     :aria-labelledby="`${id}-title`"
-    class="opportunity-card flex min-w-0 flex-col overflow-hidden rounded-2xl border border-paper/15 bg-paper/[.015] transition-[border-color,background-color,box-shadow] duration-1000 ease-[cubic-bezier(.22,1,.36,1)] hover:border-paper/30 hover:bg-paper/[.025] hover:shadow-[0_16px_48px_#00000012] motion-reduce:transition-none"
+    class="opportunity-card flex min-w-0 flex-col overflow-hidden rounded-2xl border border-paper/15 transition-[transform,border-color,background-color,box-shadow] duration-700 ease-[cubic-bezier(.16,1,.3,1)] motion-reduce:transition-none"
+    :class="
+      compact
+        ? 'bg-[linear-gradient(145deg,rgba(220,237,239,.07)_0%,rgba(17,34,43,.78)_38%,rgba(10,21,29,.9)_100%)] shadow-[0_22px_70px_rgba(0,7,15,.2),inset_0_1px_rgba(255,255,255,.05)] hover:-translate-y-0.5 hover:border-paper/30 hover:shadow-[0_28px_82px_rgba(0,7,15,.3),0_0_34px_rgba(221,188,119,.035),inset_0_1px_rgba(255,255,255,.07)]'
+        : 'bg-paper/[.015] hover:border-paper/30 hover:bg-paper/[.025] hover:shadow-[0_16px_48px_#00000012]'
+    "
   >
     <div class="flex-1 p-6 sm:p-7">
       <div class="flex flex-wrap items-center justify-between gap-3">
@@ -104,7 +111,34 @@ onMounted(() => {
         <p class="mt-2 leading-relaxed">{{ item.lifecycleEvidence }}</p>
       </details>
     </div>
-    <div class="border-t border-paper/10">
+    <div v-if="compact" class="border-t border-paper/10 px-6 py-5 sm:px-7">
+      <p class="text-[9px] uppercase tracking-[.16em] text-paper/40">
+        {{
+          checkpoint
+            ? isFuture(checkpoint.date)
+              ? 'Next useful checkpoint'
+              : 'Latest confirmed checkpoint'
+            : 'Current status'
+        }}
+      </p>
+      <div v-if="checkpoint" class="mt-3 rounded-xl border border-paper/10 bg-paper/[.025] p-4">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-sm leading-snug text-paper/85">{{ checkpoint.label }}</p>
+            <p class="mt-1 text-xs text-acid/85">
+              {{ displayDate(checkpoint.date, checkpoint.timezone || 'UTC') }}
+            </p>
+          </div>
+          <span class="shrink-0 text-[9px] uppercase tracking-wider text-paper/35">{{
+            checkpoint.kind
+          }}</span>
+        </div>
+      </div>
+      <p v-else class="mt-3 text-xs leading-relaxed text-paper/55">
+        {{ state.label }} · Check the detail page for verified dates and requirements.
+      </p>
+    </div>
+    <div v-else class="border-t border-paper/10">
       <div
         v-if="timeline.length"
         class="flex min-h-14 items-center justify-between gap-3 px-6 pt-5 sm:px-7"

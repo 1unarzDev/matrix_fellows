@@ -5,7 +5,7 @@ defineProps<{ meeting: Meeting }>()
 </script>
 
 <template>
-  <article id="meeting-details" class="scroll-mt-24 grid gap-10 py-16 md:grid-cols-[1.2fr_1fr]">
+  <article id="meeting-details" class="scroll-mt-24 grid gap-10 py-16 xl:grid-cols-[1.2fr_1fr]">
     <div>
       <div class="mb-6 flex items-center gap-2 text-[10px] uppercase tracking-[.2em] text-acid">
         <span class="h-1.5 w-1.5 rounded-full bg-acid" /> Next gathering
@@ -30,16 +30,22 @@ defineProps<{ meeting: Meeting }>()
       >
     </div>
     <div class="rounded-xl border border-paper/15 bg-paper/[.025] p-6 sm:p-8">
-      <dl class="grid grid-cols-[70px_1fr] gap-x-4 gap-y-5 text-sm">
-        <dt class="text-paper/40">When</dt>
-        <dd>
-          {{ meeting.date ? displayDate(meeting.date) : 'Date forthcoming'
-          }}<span v-if="meeting.time" class="mt-1 block text-xs text-paper/55">{{
-            meeting.time
-          }}</span>
-        </dd>
-        <dt class="text-paper/40">Where</dt>
-        <dd>{{ meeting.location || 'Location forthcoming' }}</dd>
+      <dl class="grid gap-5 text-sm sm:grid-cols-2 sm:gap-6">
+        <div>
+          <dt class="text-[10px] uppercase tracking-[.15em] text-paper/40">When</dt>
+          <dd class="mt-2">
+            {{ meeting.date ? displayDate(meeting.date) : 'Date forthcoming'
+            }}<span v-if="meeting.time" class="mt-1 block text-xs text-paper/55">{{
+              meeting.time
+            }}</span>
+          </dd>
+        </div>
+        <div>
+          <dt class="text-[10px] uppercase tracking-[.15em] text-paper/40">Where</dt>
+          <dd class="mt-2 leading-relaxed">
+            {{ meeting.location || 'Location forthcoming' }}
+          </dd>
+        </div>
       </dl>
       <div class="mt-6 border-t border-paper/10 pt-5">
         <p class="mb-3 text-[10px] uppercase tracking-[.17em] text-paper/40">On the table</p>

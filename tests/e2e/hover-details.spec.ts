@@ -1,30 +1,41 @@
 import { test, expect } from '@playwright/test'
 
-test('timeline hover keeps dates and checkpoint markers stationary', async ({ page }, info) => {
+test('featured opportunity hover moves the glass surface as one composition', async ({
+  page,
+}, info) => {
   test.skip(info.project.name !== 'desktop')
-  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await page.setViewportSize({ width: 1024, height: 900 })
   await page.goto('/#community')
   await expect(page.locator('[data-ready="true"]')).toBeVisible()
-  const tab = page.getByRole('tablist').first().getByRole('tab').first()
-  await tab.hover()
-  for (const selector of ['[data-timeline-date]', '[data-timeline-dot]']) {
-    const element = tab.locator(selector)
-    await expect(element).toHaveCSS('translate', 'none')
-    await expect(element).toHaveCSS('transform', 'none')
-    await expect(element).toHaveCSS('scale', 'none')
-  }
-  await tab.focus()
-  await expect(tab.locator('[data-timeline-date]')).toHaveCSS('translate', 'none')
+  const card = page.locator('.opportunity-card').first()
+  const checkpoint = card.getByText(/checkpoint/i).last()
+  await card.hover()
+  await expect(card).toHaveCSS('translate', '0px -2px')
+  await expect(checkpoint).toHaveCSS('translate', 'none')
+  await expect(checkpoint).toHaveCSS('scale', 'none')
 })
 
 test('hover gestures use slow easing without delaying interaction', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop')
   await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await page.setViewportSize({ width: 1024, height: 900 })
   await page.goto('/#community')
-  const dot = page.locator('[data-timeline-dot]').first()
-  await expect(dot).toHaveCSS('transition-duration', '2s')
-  await expect(dot).toHaveCSS('transition-timing-function', 'cubic-bezier(0.45, 0, 0.25, 1)')
-  await expect(dot).toHaveCSS('transition-delay', '0s')
+  const control = page.getByRole('button', { name: 'Next featured opportunity' })
+  expect(
+    await control.evaluate((element) =>
+      getComputedStyle(element)
+        .transitionDuration.split(', ')
+        .every((duration) => duration === '0.42s'),
+    ),
+  ).toBe(true)
+  expect(
+    await control.evaluate((element) =>
+      getComputedStyle(element)
+        .transitionDelay.split(', ')
+        .every((delay) => delay === '0s'),
+    ),
+  ).toBe(true)
   const orbit = page.locator('[data-hero-detail] ellipse')
   await expect(orbit).toHaveCSS('transition-duration', '2.4s')
   await expect(orbit).toHaveCSS('transition-timing-function', 'cubic-bezier(0.45, 0, 0.25, 1)')
@@ -132,15 +143,12 @@ test('hero meeting panel gives a restrained lift on hover and keyboard focus', a
   await expect(panel).toHaveCSS('scale', '1.01')
 })
 
-test('timeline dots have room for their hover halo within the scrollport', async ({ page }) => {
+test('featured opportunity controls retain the project touch target', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/#community')
-  const rail = page.getByRole('tablist').first()
-  await expect(rail).toBeVisible()
-  const clearance = await rail.evaluate((element) => {
-    const box = element.getBoundingClientRect()
-    const dot = element.querySelector('[data-timeline-dot]')!.getBoundingClientRect()
-    return dot.top - box.top
-  })
-  expect(clearance).toBeGreaterThanOrEqual(20)
+  const next = page.getByRole('button', { name: 'Next featured opportunity' })
+  await expect(next).toBeVisible()
+  await expect(next).toHaveCSS('width', '44px')
+  await expect(next).toHaveCSS('height', '44px')
 })

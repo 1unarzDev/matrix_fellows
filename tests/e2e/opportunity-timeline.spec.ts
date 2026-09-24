@@ -97,47 +97,15 @@ test('homepage keeps a bounded preview and hands search to the SSR catalog', asy
   await expect(page.getByRole('article').first()).toContainText('NeurIPS')
 })
 
-test('timeline selects the next date, exposes evidence, and supports buttons and keyboard', async ({
+test('homepage cards surface one actionable checkpoint and keep full timelines out of the preview', async ({
   page,
 }) => {
   await openBoard(page)
   const first = card(page)
-  const selected = first.getByRole('tab', { selected: true })
-  await expect(selected).toContainText('Checkpoint 4')
-  await expect(selected).toContainText('Up next')
-  const centers = await first.getByRole('tab').evaluateAll((tabs) =>
-    tabs.map((tab) => {
-      const dot = tab.querySelector('[data-timeline-dot]')!.getBoundingClientRect()
-      const line = tab.querySelector('[data-timeline-line]')!.getBoundingClientRect()
-      return Math.abs(dot.y + dot.height / 2 - line.y - line.height / 2)
-    }),
-  )
-  expect(Math.max(...centers)).toBeLessThan(1)
-  await expect(first.getByRole('tabpanel')).toContainText('Checkpoint 4')
-  await first.getByRole('button', { name: 'Previous checkpoint' }).click()
-  await expect(selected).toContainText('Checkpoint 3')
-  await first.getByRole('button', { name: 'Next checkpoint' }).click()
-  await expect(selected).toContainText('Checkpoint 4')
-  await selected.focus()
-  await page.keyboard.press('ArrowRight')
-  await expect(selected).toContainText('Checkpoint 5')
-  await expect(selected).toBeFocused()
-  await page.keyboard.press('Home')
-  await expect(selected).toContainText('Checkpoint 1')
-  await expect(first.getByRole('button', { name: 'Previous checkpoint' })).toBeDisabled()
-  await page.keyboard.press('End')
-  await expect(selected).toContainText('Checkpoint 8')
-  await expect(first.getByRole('button', { name: 'Next checkpoint' })).toBeDisabled()
-  await expect(first.getByRole('tabpanel').getByText('Checkpoint 8', { exact: true })).toBeVisible()
-  await first.getByText('Date evidence & source', { exact: true }).click()
-  await expect(
-    first.getByText('Official evidence for checkpoint 8.', { exact: true }),
-  ).toBeVisible()
-  await expect(first.getByRole('link', { name: 'View checkpoint source' })).toHaveAttribute(
-    'href',
-    'https://example.org/checkpoint-8',
-  )
-  await expect(first.getByRole('tabpanel')).toContainText('Date only')
+  await expect(first.getByText('Next useful checkpoint', { exact: true })).toBeVisible()
+  await expect(first.getByText('Checkpoint 4', { exact: true })).toBeVisible()
+  await expect(first.getByRole('tablist')).toHaveCount(0)
+  await expect(first.getByRole('link', { name: 'Official website' })).toBeVisible()
 })
 
 test('paired homepage preview cards remain aligned', async ({ page }, info) => {
@@ -156,44 +124,28 @@ test('paired homepage preview cards remain aligned', async ({ page }, info) => {
   await expect(board.getByRole('link', { name: 'Browse the full catalog' })).toBeVisible()
 })
 
-test('past-only and unannounced timelines remain readable', async ({ page }) => {
+test('past-only and unannounced routes have honest compact status summaries', async ({ page }) => {
   await openBoard(page)
   const archived = card(page, 'Archived research edition')
-  await expect(archived.getByRole('tab', { selected: true })).toContainText('Past checkpoint 3')
-  await expect(archived.getByText('Up next', { exact: true })).toHaveCount(0)
-  await archived.getByRole('button', { name: 'Previous checkpoint' }).click()
-  await expect(archived.getByRole('tabpanel')).toContainText('Past checkpoint 2')
+  await expect(archived.getByText('Latest confirmed checkpoint', { exact: true })).toBeVisible()
+  await expect(archived.getByText('Past checkpoint 3', { exact: true })).toBeVisible()
   const awaiting = card(page, 'Awaiting next announcement')
-  await expect(awaiting.getByRole('tab')).toHaveCount(0)
-  await expect(awaiting.getByRole('tabpanel')).toContainText('Awaiting announcement')
-  await expect(awaiting.getByRole('tabpanel')).toHaveCSS('min-height', '0px')
-  await expect(awaiting.getByText('The timeline', { exact: true })).toHaveCount(0)
+  await expect(awaiting.getByText('Current status', { exact: true })).toBeVisible()
+  await expect(awaiting).toContainText('Awaiting announcement')
+  await expect(awaiting.getByRole('tablist')).toHaveCount(0)
 })
 
-test('narrow viewport confines horizontal scrolling and honors reduced motion', async ({
-  page,
-}) => {
+test('narrow viewport confines carousel scrolling and honors reduced motion', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await openBoard(page)
-  const first = card(page)
-  // Read both in the same frame: hash restoration can scroll between two
-  // independent boundingBox calls without changing their relative alignment.
-  const rail = first.getByRole('tablist')
+  const rail = page.locator('[data-home-opportunity-rail]')
   expect(await rail.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true)
-  expect(await rail.evaluate((el) => el.scrollLeft)).toBeGreaterThan(0)
-  expect(
-    await first.getByRole('tab', { selected: true }).evaluate((el) => {
-      const tab = el.getBoundingClientRect()
-      const rail = el.parentElement!.getBoundingClientRect()
-      return tab.left >= rail.left - 1 && tab.right <= rail.right + 1
-    }),
-  ).toBe(true)
-  await rail.evaluate((el) => {
-    el.scrollLeft = 0
-  })
-  await first.getByRole('tab').first().click()
-  await expect(first.getByRole('tabpanel')).toContainText('Checkpoint 1')
-  await expect(first).toHaveCSS('transition-property', 'none')
+  await page.getByRole('button', { name: 'Next featured opportunity' }).click()
+  await expect.poll(() => rail.evaluate((el) => el.scrollLeft)).toBeGreaterThan(200)
+  await rail.focus()
+  await page.keyboard.press('End')
+  await expect(page.getByText('Featured route', { exact: false })).toContainText('6 / 6')
+  await expect(card(page)).toHaveCSS('transition-property', 'none')
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   )

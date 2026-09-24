@@ -44,6 +44,16 @@ this is not a physical-phone performance claim.
 
 ## Rendering tradeoffs
 
+### Static resource pages
+
+The opportunities and guide routes keep the ink base but use one restrained
+violet-and-warm-gold atmosphere rather than separate teal, purple and copper
+glows. Guide orbit lines remain faint editorial wayfinding. The opportunity
+header uses a small fused molecular lattice with straight bonds and sparse
+element nodes in place of the former generic constellation graph. These accents
+are decorative, pointer-transparent SVG/CSS, static on narrow screens, and do
+not initialize the cinematic renderer.
+
 - The full-screen shader traces an inexpensive heightfield for desert/oasis terrain and evaluates water from the same camera rays. Shared fog and water conceal the expanding basin. Full-ocean rendering skips terrain tracing.
 - Water reflects the analytic sky and sun, not all scene objects. The distant palm silhouettes do not require a costly planar reflection render.
 - Camera-aligned glare, grain, and depth haze are computed inside the shaders. Three.js UnrealBloomPass adds multiscale HDR bloom before the final exposure curve; only the WebGL world is processed, so DOM text stays sharp. Bloom uses the existing adaptive resolution and its render targets are disposed with the page.

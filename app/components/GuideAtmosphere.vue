@@ -71,7 +71,7 @@ useHead({ htmlAttrs: { class: 'guide-scroll' } })
   stroke-dasharray: 1 12;
 }
 .guide-atmosphere__path {
-  stroke: color-mix(in srgb, #8ed7cb 68%, transparent);
+  stroke: color-mix(in srgb, #e0b768 62%, transparent);
   stroke-width: 0.8;
 }
 .guide-atmosphere__node {
@@ -81,7 +81,7 @@ useHead({ htmlAttrs: { class: 'guide-scroll' } })
   fill: #b9a4ef;
 }
 .guide-atmosphere__node--copper {
-  fill: #d79a72;
+  fill: #e0b768;
 }
 .guide-atmosphere__core {
   fill: color-mix(in srgb, var(--color-acid) 8%, transparent);

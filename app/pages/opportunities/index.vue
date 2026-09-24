@@ -194,16 +194,29 @@ useHead({
   <div class="catalog-page min-h-screen bg-ink text-paper" :data-catalog-ready="hydrated">
     <div class="catalog-cosmos" aria-hidden="true">
       <svg viewBox="0 0 720 390" fill="none">
-        <path d="M88 278 194 192l116 34 92-132 118 65 109-91" />
-        <path d="m310 226 58 88 101-42 51-113" />
-        <circle cx="88" cy="278" r="3" />
-        <circle cx="194" cy="192" r="4" />
-        <circle cx="310" cy="226" r="2.5" />
-        <circle cx="402" cy="94" r="3.5" />
-        <circle cx="520" cy="159" r="4.5" />
-        <circle cx="629" cy="68" r="2.5" />
-        <circle cx="368" cy="314" r="2.5" />
-        <circle cx="469" cy="272" r="3" />
+        <g class="catalog-cosmos__molecule">
+          <path d="m170 155 58-33 58 33v66l-58 33-58-33Z" />
+          <path d="m286 155 58-33 58 33v66l-58 33-58-33" />
+          <path d="m170 155-56-32m56 98-55 33m287-99 56-32m-56 98 56 33m-114-132v-62" />
+          <path
+            class="catalog-cosmos__inner-bond"
+            d="m186 163 42-24 42 24m0 50-42 24-42-24m116-50 42-24 42 24m0 50-42 24-42-24"
+          />
+        </g>
+        <g class="catalog-cosmos__atoms">
+          <circle cx="114" cy="123" r="5" />
+          <circle cx="115" cy="254" r="4" />
+          <circle class="catalog-cosmos__atom--violet" cx="458" cy="123" r="6" />
+          <circle cx="458" cy="254" r="4" />
+          <circle class="catalog-cosmos__atom--violet" cx="344" cy="60" r="4" />
+          <circle cx="228" cy="122" r="2.5" />
+          <circle cx="344" cy="254" r="2.5" />
+        </g>
+        <g class="catalog-cosmos__labels">
+          <text x="96" y="113">O</text>
+          <text x="466" y="118">N</text>
+          <text x="463" y="270">H</text>
+        </g>
       </svg>
     </div>
     <main class="relative z-[1] mx-auto max-w-[90rem] px-5 pb-24 pt-14 sm:px-8 lg:px-12 lg:pt-20">
@@ -415,9 +428,9 @@ useHead({
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(65% 48% at 82% 2%, rgba(64, 117, 119, 0.2), transparent 70%),
-    radial-gradient(48% 42% at 7% 26%, rgba(102, 68, 128, 0.14), transparent 74%),
-    radial-gradient(42% 32% at 68% 72%, rgba(160, 91, 76, 0.065), transparent 76%);
+    radial-gradient(65% 48% at 82% 2%, rgba(108, 76, 139, 0.17), transparent 70%),
+    radial-gradient(48% 42% at 7% 26%, rgba(150, 109, 49, 0.105), transparent 74%),
+    radial-gradient(42% 32% at 68% 72%, rgba(123, 83, 148, 0.055), transparent 76%);
 }
 .catalog-page::after {
   content: '';
@@ -443,21 +456,33 @@ useHead({
   width: min(48rem, 68vw);
   pointer-events: none;
   color: var(--color-acid);
-  opacity: 0.22;
-  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--color-acid) 22%, transparent));
-  animation: cosmos-drift 24s ease-in-out infinite alternate;
+  opacity: 0.2;
+  filter: drop-shadow(0 0 12px color-mix(in srgb, #e0b768 16%, transparent));
 }
 .catalog-cosmos svg {
   width: 100%;
   height: auto;
 }
-.catalog-cosmos path {
-  stroke: currentColor;
-  stroke-width: 0.65;
-  stroke-dasharray: 2 8;
+.catalog-cosmos__molecule path {
+  stroke: color-mix(in srgb, #e0b768 72%, transparent);
+  stroke-width: 0.75;
 }
-.catalog-cosmos circle {
-  fill: currentColor;
+.catalog-cosmos__molecule .catalog-cosmos__inner-bond {
+  stroke: color-mix(in srgb, #b9a4ef 52%, transparent);
+  stroke-width: 0.55;
+  stroke-dasharray: 2 6;
+}
+.catalog-cosmos__atoms circle {
+  fill: #e0b768;
+}
+.catalog-cosmos__atoms .catalog-cosmos__atom--violet {
+  fill: #b9a4ef;
+}
+.catalog-cosmos__labels {
+  fill: color-mix(in srgb, var(--color-paper) 52%, transparent);
+  font-family: var(--font-sans);
+  font-size: 10px;
+  letter-spacing: 0.08em;
 }
 .catalog-intro,
 .catalog-search {
@@ -591,7 +616,7 @@ useHead({
       color-mix(in srgb, var(--color-acid) 4.5%, transparent),
       transparent 74%
     ),
-    radial-gradient(75% 55% at 0% 48%, rgb(74 113 125 / 5%), transparent 76%),
+    radial-gradient(75% 55% at 0% 48%, rgb(126 91 151 / 5%), transparent 76%),
     color-mix(in srgb, var(--color-paper) 2.5%, var(--color-ink));
   box-shadow:
     -24px 0 70px rgb(0 0 0 / 30%),
@@ -683,9 +708,14 @@ useHead({
 @media (max-width: 639px) {
   .catalog-cosmos {
     top: 5rem;
-    right: -12rem;
+    right: -15rem;
     width: 35rem;
-    opacity: 0.14;
+    opacity: 0.09;
+  }
+}
+@media (min-width: 640px) and (prefers-reduced-motion: no-preference) {
+  .catalog-cosmos {
+    animation: cosmos-drift 24s ease-in-out infinite alternate;
   }
 }
 </style>

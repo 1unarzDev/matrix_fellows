@@ -136,8 +136,8 @@ useHead({
   pointer-events: none;
   background:
     radial-gradient(62% 44% at 84% 3%, rgba(111, 91, 151, 0.17), transparent 72%),
-    radial-gradient(48% 42% at 2% 38%, rgba(64, 126, 116, 0.12), transparent 72%),
-    radial-gradient(38% 30% at 63% 76%, rgba(166, 104, 76, 0.065), transparent 76%);
+    radial-gradient(48% 42% at 2% 38%, rgba(142, 104, 49, 0.095), transparent 72%),
+    radial-gradient(38% 30% at 63% 76%, rgba(137, 101, 165, 0.065), transparent 76%);
 }
 .guide-page::after {
   content: '';
@@ -148,7 +148,7 @@ useHead({
   background-image:
     radial-gradient(circle at 17% 23%, rgb(255 255 255 / 34%) 0 0.65px, transparent 1px),
     radial-gradient(circle at 68% 16%, rgb(185 164 239 / 38%) 0 0.75px, transparent 1.1px),
-    radial-gradient(circle at 46% 77%, rgb(142 215 203 / 26%) 0 0.65px, transparent 1px);
+    radial-gradient(circle at 46% 77%, rgb(224 183 104 / 28%) 0 0.65px, transparent 1px);
   background-size:
     23rem 19rem,
     29rem 27rem,

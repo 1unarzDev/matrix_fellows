@@ -123,7 +123,7 @@ test('join form stays neutral while opportunity cards retain their atmospheric s
   const panel = page.locator('.join-panel')
   await expect(panel).toBeVisible()
 
-  const colors = await page.evaluate(() => {
+  const surface = await page.evaluate(() => {
     const rgba = (element: Element) => {
       const context = document
         .createElement('canvas')
@@ -136,13 +136,15 @@ test('join form stays neutral while opportunity cards retain their atmospheric s
       card: rgba(document.querySelector('.opportunity-card')!),
       panel: rgba(document.querySelector('.join-panel')!),
       backdrop: rgba(document.querySelector('.join-backdrop')!),
+      filter: getComputedStyle(document.querySelector('.join-panel')!).backdropFilter,
     }
   })
   // The chapter cards deliberately allow the cinematic atmosphere to remain
   // visible. The modal needs a denser version of the same neutral family so
   // form controls remain legible over every chapter, without the old blue cast.
-  expect(colors.card[3]).toBeLessThanOrEqual(5)
-  expect(colors.panel[3]).toBeGreaterThanOrEqual(200)
-  expect(Math.abs(colors.panel[1]! - colors.panel[2]!)).toBeLessThanOrEqual(3)
-  expect(colors.backdrop[3]).toBeLessThanOrEqual(66)
+  expect(surface.card[3]).toBeLessThanOrEqual(5)
+  expect(surface.panel[3]).toBeGreaterThanOrEqual(225)
+  expect(Math.abs(surface.panel[1]! - surface.panel[2]!)).toBeLessThanOrEqual(3)
+  expect(surface.backdrop[3]).toBeLessThanOrEqual(66)
+  expect(surface.filter).toContain('blur(36px)')
 })

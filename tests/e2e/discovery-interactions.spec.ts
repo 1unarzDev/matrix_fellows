@@ -146,6 +146,48 @@ test('touch reveal expands to the full composition on a lightweight mobile path'
   await expect(reveal.locator('.discovery-reveal__wave').first()).toHaveCSS('display', 'none')
 })
 
+test('touch reveal eases through its text swap without a rectangular mobile surface', async ({
+  page,
+}) => {
+  test.skip(test.info().project.name !== 'mobile', 'Tap transition requires a coarse pointer')
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/#discovery')
+
+  const reveal = page.locator('[data-discovery-reveal]')
+  await reveal.scrollIntoViewIfNeeded()
+  const original = reveal.locator('.discovery-reveal__original')
+  const xray = reveal.locator('.discovery-reveal__xray')
+  const promptLabels = reveal.locator('.discovery-reveal__touch-copy span')
+  const hiddenPhrase = reveal.getByText('don’t know.', { exact: true })
+
+  await expect(hiddenPhrase).toHaveCSS('font-style', 'italic')
+  await expect(promptLabels).toHaveCount(2)
+  await expect(xray).toHaveCSS('overflow', 'visible')
+  await expect(xray).toHaveCSS('background-image', 'none')
+
+  await reveal.locator('.discovery-reveal__touch-target').click({ position: { x: 72, y: 190 } })
+  await page.waitForTimeout(70)
+
+  const transitionFrame = await reveal.evaluate((element) => {
+    const originalOpacity = Number.parseFloat(
+      getComputedStyle(element.querySelector('.discovery-reveal__original')!).opacity,
+    )
+    const labels = Array.from(
+      element.querySelectorAll<HTMLElement>('.discovery-reveal__touch-copy span'),
+    ).map((label) => Number.parseFloat(getComputedStyle(label).opacity))
+    const clipPath = getComputedStyle(
+      element.querySelector('.discovery-reveal__xray')!,
+    ).clipPath
+    return { originalOpacity, labels, revealRadius: Number.parseFloat(clipPath.slice(7)) }
+  })
+  expect(transitionFrame.originalOpacity).toBeGreaterThan(0.2)
+  expect(transitionFrame.labels.every((opacity) => opacity > 0.05)).toBe(true)
+  expect(transitionFrame.revealRadius).toBeGreaterThan(0)
+  expect(transitionFrame.revealRadius).toBeLessThan(900)
+
+  await expect(original).toHaveCSS('opacity', '0')
+})
+
 test('touch reveal prompt clears the discovery copy on narrow screens', async ({ page }) => {
   test.skip(test.info().project.name !== 'mobile', 'Tap prompt requires a coarse-pointer context')
 

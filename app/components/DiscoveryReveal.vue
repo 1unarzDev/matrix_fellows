@@ -170,7 +170,10 @@ onBeforeUnmount(() => {
         <span class="discovery-reveal__touch-icon">
           <span />
         </span>
-        {{ touchRevealed ? 'Return to the surface' : 'Tap to look beneath' }}
+        <span class="discovery-reveal__touch-copy">
+          <span class="discovery-reveal__touch-copy-beneath">Tap to look beneath</span>
+          <span class="discovery-reveal__touch-copy-surface">Return to the surface</span>
+        </span>
       </span>
     </button>
 
@@ -278,8 +281,11 @@ onBeforeUnmount(() => {
   position: relative;
   width: fit-content;
   padding-right: 0.18em;
-  font-style: normal;
-  font-weight: 520;
+  font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'URW Palladio L', Georgia, serif;
+  font-size: 1.055em;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.045em;
   color: transparent;
   background: linear-gradient(104deg, #f0d49e 4%, #d8dcc9 54%, #add9df 100%);
   background-clip: text;
@@ -486,6 +492,44 @@ onBeforeUnmount(() => {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: rgb(255 255 255 / 0.58);
+  transition:
+    color 360ms ease,
+    transform 540ms cubic-bezier(0.22, 0.72, 0.2, 1);
+}
+
+.discovery-reveal__touch-copy {
+  display: grid;
+  min-width: 8.95rem;
+  align-items: center;
+  text-align: left;
+}
+
+.discovery-reveal__touch-copy > span {
+  grid-area: 1 / 1;
+  white-space: nowrap;
+  transition:
+    opacity 420ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    transform 520ms cubic-bezier(0.22, 0.72, 0.2, 1);
+}
+
+.discovery-reveal__touch-copy-beneath {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+.discovery-reveal__touch-copy-surface {
+  opacity: 0;
+  transform: translate3d(0, 0.35rem, 0);
+}
+
+.is-touch-revealed .discovery-reveal__touch-copy-beneath {
+  opacity: 0;
+  transform: translate3d(0, -0.3rem, 0);
+}
+
+.is-touch-revealed .discovery-reveal__touch-copy-surface {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
 }
 
 .discovery-reveal__touch-icon {
@@ -566,21 +610,32 @@ onBeforeUnmount(() => {
 
   .discovery-reveal__xray {
     inset: 0;
-    overflow: hidden;
+    overflow: visible;
     padding: 0;
     clip-path: circle(0 at var(--reveal-x) var(--reveal-y));
     -webkit-mask-image: none;
     mask-image: none;
-    background: radial-gradient(
-      circle at var(--reveal-x) var(--reveal-y),
-      rgb(183 220 227 / 0.105),
-      rgb(226 190 123 / 0.045) 34%,
-      transparent 72%
-    );
+    background: none;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
-    transition: clip-path 620ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition: clip-path 760ms cubic-bezier(0.22, 0.65, 0.28, 1);
     will-change: auto;
+  }
+
+  .discovery-reveal__original {
+    transform: translate3d(0, 0, 0);
+    transition:
+      opacity 520ms cubic-bezier(0.4, 0, 0.2, 1),
+      transform 650ms cubic-bezier(0.22, 0.72, 0.2, 1);
+    transition-delay: 120ms;
+  }
+
+  .discovery-reveal__alternate {
+    opacity: 0;
+    transform: translate3d(0, 0.5rem, 0);
+    transition:
+      opacity 480ms cubic-bezier(0.4, 0, 0.2, 1),
+      transform 680ms cubic-bezier(0.22, 0.72, 0.2, 1);
   }
 
   .discovery-reveal.is-touch-revealed .discovery-reveal__xray {
@@ -589,10 +644,18 @@ onBeforeUnmount(() => {
 
   .discovery-reveal.is-touch-revealed .discovery-reveal__original {
     opacity: 0;
+    transform: translate3d(0, -0.25rem, 0);
+    transition-delay: 0ms;
+  }
+
+  .discovery-reveal.is-touch-revealed .discovery-reveal__alternate {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    transition-delay: 140ms;
   }
 
   .discovery-reveal.is-touch-revealed .discovery-reveal__lens {
-    animation: discovery-touch-origin 680ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: discovery-touch-origin 760ms cubic-bezier(0.22, 0.65, 0.28, 1) both;
   }
 
   .discovery-reveal__particle,
@@ -603,6 +666,11 @@ onBeforeUnmount(() => {
 
   .discovery-reveal__touch-prompt {
     bottom: 4.75rem;
+  }
+
+  .discovery-reveal.is-touch-revealed .discovery-reveal__touch-prompt {
+    color: rgb(230 239 239 / 0.66);
+    transform: translate3d(0, -1px, 0);
   }
 }
 
@@ -696,7 +764,10 @@ onBeforeUnmount(() => {
   .discovery-reveal__xray,
   .discovery-reveal__original,
   .discovery-reveal__lens,
-  .discovery-reveal__touch-icon {
+  .discovery-reveal__touch-icon,
+  .discovery-reveal__touch-prompt,
+  .discovery-reveal__touch-copy > span,
+  .discovery-reveal__alternate {
     transition: none;
   }
 

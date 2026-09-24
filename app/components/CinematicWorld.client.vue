@@ -133,7 +133,12 @@ onMounted(() => {
               ? ':scope > div:first-child, article'
               : ':scope > div, :scope > article, :scope > section',
           ),
-        ).filter((el) => !el.hasAttribute('aria-hidden') && !el.classList.contains('absolute')),
+        ).filter(
+          (el) =>
+            !el.hasAttribute('aria-hidden') &&
+            !el.hasAttribute('data-depth-static') &&
+            !el.classList.contains('absolute'),
+        ),
       )
       .map((el) => ({
         el,

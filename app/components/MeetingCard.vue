@@ -15,6 +15,7 @@ watch(
 <template>
   <section
     id="meeting-details"
+    data-depth-static
     class="scroll-mt-[clamp(10rem,22vh,13rem)] py-16"
     aria-labelledby="next-gathering-title"
   >

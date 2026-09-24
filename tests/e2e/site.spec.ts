@@ -222,6 +222,25 @@ test('meeting calendar stacks on mobile while featured opportunities traverse ho
   expect(tabletDetailWrap!.height).toBeCloseTo(tabletLeft!.height, 0)
 })
 
+test('home meeting calendar remains stable while crossing the viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 960 })
+  await page.goto('/')
+  await page.locator('[data-ready="true"]').waitFor()
+
+  const meeting = page.locator('#meeting-details')
+  await expect(meeting).toBeAttached()
+  await expect.poll(() => page.locator('[data-depth-layer]').count()).toBeGreaterThan(0)
+
+  await meeting.evaluate((element) => {
+    const top = element.getBoundingClientRect().top + window.scrollY
+    window.scrollTo({ top: Math.max(0, top - window.innerHeight * 0.88), behavior: 'instant' })
+  })
+  await page.waitForTimeout(180)
+
+  await expect(meeting).toHaveCSS('opacity', '1')
+  await expect(meeting).toHaveCSS('transform', 'none')
+})
+
 test('footer links to the official Instagram profile', async ({ page }) => {
   await page.goto('/')
   const instagram = page.getByRole('link', {

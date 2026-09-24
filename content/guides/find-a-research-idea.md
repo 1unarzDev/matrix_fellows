@@ -4,8 +4,8 @@ description: Use literature, interests, everyday friction, potential impact, and
 slug: find-a-research-idea
 category: Start
 stage: Starting out
-readingMinutes: 9
-updated: 2026-09-22
+readingMinutes: 14
+updated: 2026-09-24
 featured: true
 order: 2
 related:
@@ -28,6 +28,8 @@ tags:
 
 “Find your passion” is not a research method. A useful idea comes from connecting a question that matters with evidence you can realistically gather.
 
+Before choosing a title, make a one-page problem map with four regions: **systems or populations**, **mechanisms**, **failures or unmet needs**, and **evidence you can access**. Connections across those regions produce candidates. “Robotics” becomes “navigation near moving people,” then “failures when a reactive planner cannot anticipate motion,” then a comparison that can actually be tested.
+
 ## Generate ideas through five doors
 
 ### 1. Start from literature
@@ -42,6 +44,17 @@ Find a recent review or survey paper in a field you can name. Use it as a map, n
 - Which dataset, method, or comparison has not been tested in a nearby context?
 
 Follow important references backward. Use “cited by” to find what happened afterward. Read several papers before deciding that a gap exists; one abstract cannot establish novelty.
+
+Build a literature matrix rather than a pile of bookmarks:
+
+| Source           | Question and setting           | Method / comparison     | Main evidence                 | Limitation relevant to me          |
+| ---------------- | ------------------------------ | ----------------------- | ----------------------------- | ---------------------------------- |
+| Review or survey | How is the field organized?    | Groups prior approaches | Agreements and disputes       | Which branch needs deeper reading? |
+| Recent study A   | Closest version of my question | Method and baseline     | Result under its conditions   | Population, scale, or assumption   |
+| Recent study B   | Competing explanation          | Different comparison    | Similar or conflicting result | What would distinguish the claims? |
+| Dataset or tool  | What evidence is available?    | Collection/measurement  | Coverage and validation       | Missing cases, bias, or license    |
+
+A future-work sentence is a lead, not proof that the work is needed or unattempted. Search the system, outcome, method, and failure in different combinations, then follow the names of datasets and baselines you discover.
 
 ### 2. Start from your interests
 
@@ -85,6 +98,18 @@ Give each idea 0, 1, or 2 points for each criterion. A low score is not a failur
 
 “Novel” does not have to mean no human has ever considered the subject. A careful replication under new conditions, a meaningful comparison, an open dataset for an overlooked population, or a simpler implementation can be a real contribution when the field values it.
 
+Name the contribution more precisely:
+
+- **replication:** test whether a published result survives a careful repeat;
+- **extension:** test a new population, environment, scale, or condition;
+- **comparison:** evaluate existing methods under a defined constraint;
+- **measurement:** improve how an important outcome is observed;
+- **dataset:** document a meaningful and overlooked set of cases;
+- **negative result:** locate where a promising approach fails;
+- **design:** meet explicit performance, cost, safety, or access requirements.
+
+“Nobody used this exact model on this exact dataset” may be technically new and scientifically uninformative. Explain what the difference would let someone know or do.
+
 ::guide-callout{title="A practical cutoff" tone="action"}
 Keep three candidates. Spend one hour on literature and one hour on a tiny feasibility test for each. Choose after learning something—not from the titles alone.
 ::
@@ -107,8 +132,25 @@ Keep three candidates. Spend one hour on literature and one hour on a tiny feasi
 
 Neither is automatically safe, novel, or competition-ready. Each is specific enough to investigate those questions next.
 
+## Work one candidate far enough to expose its weaknesses
+
+Imagine a student interested in classroom air quality:
+
+1. **Observation:** the room feels stuffy late in the period.
+2. **Reading:** ventilation research identifies occupancy, outdoor exchange, sensor placement, and weather as relevant.
+3. **Constraint:** the student can log carbon dioxide but cannot assign classmates or disrupt instruction.
+4. **Revised question:** how does a documented door/window configuration relate to the time for an unoccupied room’s CO₂ level to decline across repeated after-class observations, while outdoor conditions and sensor position are recorded?
+5. **Contribution boundary:** the result may improve this school’s measurement process; it is not a clinical claim or universal ventilation standard.
+6. **Fatal-risk pilot:** colocate two sensors and determine whether their disagreement is smaller than the expected condition difference.
+
+If sensor disagreement dominates, the project must improve calibration, lengthen observations, or change its question. That decision is more valuable than collecting months of uninterpretable data.
+
+Public data can create similar projects, but “public” does not mean analysis-ready. NOAA climate data, EPA AirData, and NASA’s Exoplanet Archive each require reading the data dictionary, provenance, units, missingness, coverage, and usage limits. A monitor is not every resident’s exposure; detected exoplanets are not an unbiased census of all planets.
+
 ## End with a one-week pilot
 
 Write the smallest experiment, dataset check, simulation, or prototype that could reveal a fatal problem. The pilot should test access, measurement quality, runtime, and interpretability—not prove the final claim.
 
 Afterward, decide: continue, narrow, change method, or stop. Ending a weak idea early is good research judgment.
+
+Record the reason. “Stopped because the needed variable is absent from the data” or “narrowed because the pilot cannot distinguish two mechanisms” turns a dead end into reusable knowledge.

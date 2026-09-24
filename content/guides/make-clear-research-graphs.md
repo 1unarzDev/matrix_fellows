@@ -4,8 +4,8 @@ description: Choose a display that matches the question, show observations hones
 slug: make-clear-research-graphs
 category: Communicate
 stage: Sharing the work
-readingMinutes: 7
-updated: 2026-09-22
+readingMinutes: 12
+updated: 2026-09-24
 featured: false
 order: 8
 related:
@@ -39,14 +39,38 @@ Choose a graph from the question, not from the chart menu.
 
 A pie chart is not the automatic choice for percentages. A bar chart is not the automatic choice for every comparison.
 
+Before opening graphing software, write a figure specification:
+
+| Decision              | Record it explicitly                                              |
+| --------------------- | ----------------------------------------------------------------- |
+| Intended claim        | The one comparison or pattern the figure supports                 |
+| Observation unit      | What one point, line, or image represents                         |
+| Variables             | Names, units, scales, and relevant range                          |
+| Encoding              | Position, color, symbol, line, interval, or panel                 |
+| Processing            | Aggregation, normalization, smoothing, exclusions, transformation |
+| Uncertainty           | What the interval or variation represents                         |
+| Accessible equivalent | Direct labels and a concise text description                      |
+
+If you cannot fill the observation-unit row, the graph may accidentally present repeated measurements as independent evidence.
+
 ::graph-comparison-diagram
 ::
+
+The right-hand version is better because it exposes the data, not simply because it uses dots. Dense time series, images, or very large datasets may require aggregation. Preserve a representative raw view, document processing, and choose a summary that matches the question.
+
+### Same summary, different structure
+
+Anscombe’s quartet is a classic teaching dataset: four sets have nearly identical means, variances, correlations, and fitted regression lines, yet their scatterplots show a roughly linear pattern, a curve, an influential outlier, and a nearly vertical cluster. The lesson is not “statistics are bad.” It is that a summary and a plot answer different diagnostic questions.
+
+For the sensor teaching data—baseline errors of 12, 15, 11, 18, 14, 16% and revised errors of 9, 8, 12, 7, 10, 14%—a two-bar chart hides overlap, sample size, and the high revised value. A jittered dot plot plus a clearly defined estimate and interval exposes those features. If measurements are paired by sample, connect each pair; an unpaired display would discard part of the design.
 
 ## Make the evidence inspectable
 
 Label axes, units, conditions, and sample size. Show actual observations when practical. Define every line, band, error bar, normalization, and transformation. Use the same scale across plots that invite direct comparison.
 
 Do not use 3D perspective, broken axes, cropped ranges, or area/volume effects to exaggerate differences. A nonzero axis can be appropriate for continuous measurements when the visible range is clearly labeled and interpretation is not distorted; explain important choices.
+
+Show transformations and sensitivity when they matter. If a logarithmic scale reveals multiplicative structure, label it and explain why. If an observation meets a prespecified exclusion rule, show or report whether including it changes the conclusion. Preserve the unfavorable view rather than selecting the display that looks most dramatic.
 
 ## Write a takeaway caption
 
@@ -55,6 +79,8 @@ Bad: “Figure 2. Results.”
 Better: “The motion-aware controller reduced median localization error by 24% versus the reactive baseline across 30 held-out simulations; points show runs and bars show 95% bootstrap confidence intervals.”
 
 The caption should let a reader understand the claim, comparison, sample, and uncertainty without searching the paragraph above it.
+
+Build it from five facts: comparison, sample or unit, result with units, definition of uncertainty, and one material boundary. For observational work, use “was associated with,” not “caused,” unless the design supports a causal conclusion.
 
 ## Use color as reinforcement
 

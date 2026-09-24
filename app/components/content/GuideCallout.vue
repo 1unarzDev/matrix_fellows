@@ -39,19 +39,49 @@ const treatment = computed(
 
 <style scoped>
 .callout {
+  transform: translate3d(0, 0, 0);
+  transition:
+    transform 520ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 380ms ease,
+    box-shadow 520ms cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 380ms ease;
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 3%),
     0 16px 42px rgb(0 0 0 / 8%);
 }
+.callout:hover {
+  transform: translate3d(0, -2px, 0);
+  border-color: color-mix(in srgb, var(--callout-accent) 34%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 5%),
+    0 19px 48px rgb(0 0 0 / 13%),
+    0 0 30px color-mix(in srgb, var(--callout-accent) 5%, transparent);
+}
 .callout__wash {
   opacity: 0.8;
   background: radial-gradient(26rem 12rem at 0% 0%, var(--callout-glow), transparent 72%);
+  transform: scale(1);
+  transform-origin: 0 0;
+  transition:
+    opacity 420ms ease,
+    transform 650ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.callout:hover .callout__wash {
+  opacity: 1;
+  transform: scale(1.06);
 }
 .callout__icon {
   color: var(--callout-accent);
   border-color: color-mix(in srgb, var(--callout-accent) 30%, transparent);
   background: color-mix(in srgb, var(--callout-accent) 7%, transparent);
   box-shadow: 0 0 22px color-mix(in srgb, var(--callout-accent) 9%, transparent);
+  transition:
+    transform 560ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 420ms ease;
+}
+.callout:hover .callout__icon {
+  transform: translate3d(0, -1px, 0) rotate(-4deg) scale(1.045);
+  box-shadow: 0 0 28px color-mix(in srgb, var(--callout-accent) 14%, transparent);
 }
 .callout--action {
   --callout-accent: var(--color-acid);
@@ -70,5 +100,17 @@ const treatment = computed(
   --callout-glow: rgb(112 131 185 / 10%);
   border-color: rgb(174 190 232 / 20%);
   background: rgb(112 131 185 / 3%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .callout,
+  .callout__wash,
+  .callout__icon {
+    transition: none;
+  }
+  .callout:hover,
+  .callout:hover .callout__wash,
+  .callout:hover .callout__icon {
+    transform: none;
+  }
 }
 </style>

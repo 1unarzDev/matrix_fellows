@@ -4,8 +4,8 @@ description: Prepare 20-second, 60-second, and three-minute explanations, then a
 slug: present-research-clearly
 category: Communicate
 stage: Sharing the work
-readingMinutes: 8
-updated: 2026-09-22
+readingMinutes: 13
+updated: 2026-09-24
 featured: true
 order: 11
 related:
@@ -47,6 +47,23 @@ Treat these as **rehearsal formats**, not official presentation limits. Always f
 
 Use your own real numbers and conditions. If results are preliminary, say so.
 
+Keep the same claim stable across all three lengths. Shortening should remove detail, not change “reduced error on this simulated test set” into “makes robots safer.” Record the three versions and underline the question, contribution, central evidence, and boundary in each.
+
+## Answer with claim, evidence, boundary, next test
+
+For an unexpected question:
+
+1. **Claim:** answer directly in one sentence.
+2. **Evidence:** point to the relevant figure, observation, calculation, or design choice.
+3. **Boundary:** name the condition or uncertainty that limits the answer.
+4. **Next test:** state what would resolve it.
+
+Question: “Why is that baseline fair?”
+
+> It uses the same controller, objects, seeds, and visibility conditions, with only the tactile signal removed. Figure 2 shows the paired drop rates. I did not compare against a more advanced multimodal controller, so the result establishes the value of tactile input relative to this baseline, not state-of-the-art performance. That stronger comparison is the next test.
+
+The second question may be “Could tuning have favored your method?” Be ready to explain which settings were fixed, which data were used for tuning, and whether the baseline received a comparable opportunity. Practicing follow-ups reveals shallow memorization quickly.
+
 ## Answer the question beneath the question
 
 Judges, professors, and reviewers are usually testing your reasoning and ownership.
@@ -62,6 +79,8 @@ Judges, professors, and reviewers are usually testing your reasoning and ownersh
 
 If you do not know, say what you do know and how you would find out. Inventing an answer damages credibility more than a bounded “I don’t know yet.”
 
+A useful unknown is specific: “I did not measure humidity independently, so I cannot separate it from the temperature effect. The logged metadata suggest the runs differ; blocking the next experiment by humidity range would test that.” This demonstrates control of the evidence without pretending the missing measurement exists.
+
 ## Make mentorship transparent
 
 Prepare a simple ownership statement:
@@ -70,11 +89,25 @@ Prepare a simple ownership statement:
 
 Adapt it to reality. Do not minimize legitimate help, and do not let group work make your contribution impossible to identify.
 
+Create a task ledger before the interview:
+
+| Project decision           | Student contribution         | Mentor or collaborator contribution             |
+| -------------------------- | ---------------------------- | ----------------------------------------------- |
+| Question and scope         | What you proposed or revised | Reading, constraint, or direction they supplied |
+| Protocol and training      | Steps you designed           | Safety or equipment training provided           |
+| Data and code              | What you collected or wrote  | Existing data, code, or infrastructure supplied |
+| Analysis                   | Choices and checks you made  | Statistical or domain review received           |
+| Interpretation and writing | Claims you drafted           | Feedback and edits received                     |
+
+Specific collaboration strengthens credibility. Vague claims of doing “everything” rarely do.
+
 ## Practice for conversation, not theater
 
 Record one attempt to identify unclear wording and filler. Then practice with interruptions. Ask a peer to point at any figure and say, “What am I looking at?” Ask a teacher to challenge the baseline and sample. Practice returning to the central question after a tangent.
 
 Maintain eye contact when culturally and personally appropriate, face the listener, and pause before answering. Accessibility and clear reasoning matter more than performance tricks.
+
+Practice a figure drill: orient the axes and groups in ten seconds, state the pattern in one sentence, define uncertainty in one, then state what follows. Repeat with the strongest result, a null result, and a failure. For remote calls, test screen sharing and keep a local copy; for a whiteboard discussion, practice sketching the evidence path without decorative detail.
 
 ::guide-callout{title="Last five-minute rehearsal" tone="action"}
 Say the question, contribution, baseline, main number, limitation, next experiment, and mentor/student split without looking at notes. Those seven answers carry most research conversations.

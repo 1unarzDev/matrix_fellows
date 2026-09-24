@@ -35,13 +35,23 @@ unbounded homepage preview, or registry/file drift.
 
 ## Content and visual rules
 
-- Prefer a concrete sequence, template, comparison, or example over motivation.
+- Prefer a consequential decision, worked example, reusable artifact, and repair
+  of a common failure over a list of motivational tips. The depth-expansion
+  source audit is in
+  [the September 2026 research note](../research/guides/depth-expansion-2026-09-24.md).
+- Keep at most one prominent admonition in a guide. Reserve it for a genuine
+  action boundary, safety issue, or final audit; ordinary advice belongs in the
+  body, a table, or a worked example.
+- Reuse the sensor and public-data cases when that continuity helps readers see
+  how evidence changes across planning, analysis, and communication. Clearly
+  label teaching data and never present invented values as published findings.
 - State what a student can do next. Do not invent credentials, acceptance odds,
   compliance conclusions, or universal rules for every discipline.
 - Keep source claims attributable and update the `updated` date only after a real
   review.
 - Use the existing typography, restrained palette, spacing, and prose components.
-  Guide pages do not initialize Three.js.
+  Let spacing and type create section rhythm; avoid stacking dividers, borders,
+  and framed callouts. Guide pages do not initialize Three.js.
 - Verify 320–430 CSS-pixel layouts, keyboard focus, reduced motion, external-link
   labeling, and SSR text. There should be no horizontal document overflow.
 

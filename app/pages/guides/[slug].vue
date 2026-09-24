@@ -59,7 +59,7 @@ useHead({
   <div class="guide-page min-h-screen bg-ink text-paper">
     <GuideAtmosphere />
     <main v-if="guide" class="relative z-[1] mx-auto max-w-[86rem] px-5 pb-24 sm:px-8 lg:px-12">
-      <header class="border-b border-paper/14 pb-14 pt-14 lg:pb-18 lg:pt-20">
+      <header class="pb-14 pt-14 lg:pb-18 lg:pt-20">
         <NuxtLink to="/guides" class="text-xs text-paper/45 hover:text-acid">← All guides</NuxtLink>
         <div class="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-end">
           <div>
@@ -73,7 +73,9 @@ useHead({
             </h1>
             <p class="mt-6 max-w-3xl text-base leading-7 text-paper/58">{{ guide.description }}</p>
           </div>
-          <dl class="grid grid-cols-2 gap-5 border-l border-paper/12 pl-6 text-xs lg:grid-cols-1">
+          <dl
+            class="grid grid-cols-2 gap-5 rounded-2xl bg-paper/[.025] p-5 text-xs shadow-[inset_0_1px_0_rgb(255_255_255_/_4%)] lg:grid-cols-1"
+          >
             <div>
               <dt class="text-[9px] uppercase tracking-[.16em] text-paper/30">Read</dt>
               <dd class="mt-2 text-paper/65">{{ guide.readingMinutes }} minutes</dd>
@@ -115,7 +117,7 @@ useHead({
       <section
         v-if="related.length"
         aria-labelledby="related-guides"
-        class="mt-20 border-t border-paper/14 pt-10"
+        class="mt-24 rounded-3xl bg-paper/[.018] px-5 py-9 shadow-[inset_0_1px_0_rgb(255_255_255_/_4%)] sm:px-8"
       >
         <h2 id="related-guides" class="font-display text-3xl tracking-[-.04em]">
           Continue from here
@@ -157,6 +159,19 @@ useHead({
 }
 .guide-article {
   text-wrap: pretty;
+}
+.guide-article :deep(figure) {
+  transform: translate3d(0, 0, 0);
+  transition:
+    transform 520ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 520ms cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 360ms ease;
+}
+.guide-article :deep(figure:hover) {
+  transform: translate3d(0, -1.5px, 0);
+  box-shadow:
+    0 18px 46px rgb(0 0 0 / 11%),
+    0 0 28px color-mix(in srgb, var(--color-acid) 3.5%, transparent);
 }
 .guide-toc {
   padding: 1rem 0.75rem 1rem 0;
@@ -236,9 +251,13 @@ useHead({
   transform: scale(1.25);
 }
 @media (prefers-reduced-motion: reduce) {
+  .guide-article :deep(figure),
   .guide-toc__link,
   .guide-toc__node {
     transition: none;
+  }
+  .guide-article :deep(figure:hover) {
+    transform: none;
   }
 }
 </style>

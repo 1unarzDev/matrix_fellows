@@ -1,11 +1,11 @@
 ---
 title: Contact a research mentor
-description: Find a real point of connection, write a credible first message, and turn a reply into a useful working relationship.
+description: Find genuine research fit, show credible preparation, write a useful first message, and turn a reply into a working relationship.
 slug: contact-a-research-mentor
 category: Start
 stage: Starting out
-readingMinutes: 8
-updated: 2026-09-22
+readingMinutes: 14
+updated: 2026-09-24
 featured: true
 order: 1
 related:
@@ -26,72 +26,103 @@ tags:
   - labs
 ---
 
-A good first message does not prove that you are already a researcher. It proves that you paid attention, can communicate clearly, and know what small next step you are asking for.
+A good first message does not prove that you are already a researcher. It proves that you can notice a real connection, communicate honestly, and propose a small next step. Those are useful research skills in themselves.
 
-## Find fit before contact information
+## Build a shortlist from the work, not the name
 
-Do not begin with a list of famous professors. Begin with a question or area you genuinely want to understand, then look for people doing adjacent work.
+Start with a question narrow enough to search: _low-cost tactile sensing for robot hands_, _air-quality measurement in classrooms_, or _image analysis for plant disease_. Search department and lab pages, recent papers, conference programs, and university research directories. A famous professor with little overlap is a worse contact than a graduate student whose current project closely matches yours.
 
-1. Open the lab or faculty page and identify its current themes—not only an old biography.
-2. Choose one or two recent papers, project pages, talks, or datasets.
-3. Read the abstract, introduction, figures, and conclusion. You do not need to understand every method.
-4. Write one sentence explaining the overlap: “I am exploring **low-cost tactile sensing**, and your group’s **slip-detection study** changed how I am thinking about a **simulation-first test**.”
-5. Check whether the lab lists preferred contact procedures. Follow them.
+For each possible mentor, make a four-column fit note:
 
-If you cannot write the overlap sentence truthfully, keep looking. A mass email with the lab name swapped in is visible immediately.
+| Evidence to find          | What to record                                                                     | Why it matters                                        |
+| ------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| Current work              | One project or paper from roughly the last two years                               | An old biography may not describe today’s lab         |
+| Real overlap              | A method, system, population, or problem connected to your interest                | “We both like AI” is not research fit                 |
+| An accessible entry point | Public code/data, a review paper, a simple replication, or a small design question | Gives you something concrete to try                   |
+| Contact path              | Lab instructions and the person closest to the work                                | Some labs route inquiries to a coordinator or student |
 
-::guide-callout{title="Ten-minute preparation test" tone="action"}
-Before writing, be able to name the group’s question, one recent project, the part you found interesting, and the specific guidance you want. If you cannot, spend ten more minutes reading.
-::
+Check the lab’s people and publications pages together. A professor may lead the program while a graduate student or postdoc owns the project you care about. Avoid writing to someone solely because a search result contains the right keyword.
 
-## Build the message in five parts
+### Turn reading into a connection sentence
 
-Keep the first email short enough to read on a phone.
+Suppose your broad interest is robot grasping. A lab paper reports that a tactile sensor detects slip, but its tests use a single object surface. Your first note might be:
+
+> I am exploring low-cost slip detection for a school-built gripper. Your group’s comparison of tactile and vision signals made me wonder whether the advantage persists across different surface textures.
+
+That sentence identifies the work, states what you understood, and opens a bounded question. It does **not** pretend you found a publishable gap after one abstract.
+
+Before contacting anyone, verify that you can explain the group’s question, one result or method, what you have tried, and what judgment you want from them. If not, read a little more.
+
+## Create a small proof of work
+
+You do not need a polished paper. You do need evidence that your interest survives beyond sending email. Depending on the field, spend several focused hours on one artifact:
+
+- reproduce one graph from public data;
+- run the authors’ example code and record what you changed;
+- annotate two related papers in a one-page comparison;
+- sketch a testable question and a realistic pilot;
+- build a crude sensor or simulation and document the failure;
+- make a one-page feasibility memo listing data, equipment, safety, and unknowns.
+
+The artifact helps you ask better questions. It also gives the mentor a low-cost way to assess how you think. Do not upload confidential, copyrighted, or personally identifying material, and do not call a tutorial reproduction original research.
+
+## Write one readable request
+
+Keep the first email short enough to understand on a phone:
 
 1. **Identity:** name, school year, and school.
-2. **Connection:** one specific piece of their work and what you learned from it.
-3. **Current direction:** the question, skill, or small project you are exploring.
-4. **Honest preparation:** skills you can demonstrate, plus what you still need to learn.
-5. **One request:** a short conversation, a feasibility opinion, a paper recommendation, or the right person to contact.
+2. **Connection:** the specific work you read and what you took from it.
+3. **Direction:** the question or small project you are exploring.
+4. **Preparation:** one verifiable skill or artifact, plus what you still need to learn.
+5. **Request:** one action that can be answered or declined.
 
-Use a descriptive subject such as “Question about tactile sensing for robot grasping,” not “Urgent,” “Research,” or “Internship request.” Address the person correctly. Proofread names, attachments, and links.
+Use a descriptive subject such as “Question about tactile sensing for robot grasping.” Address the person correctly and check every name and link.
 
 ::mentor-email-comparison
 ::
 
-Mention a résumé, GitHub repository, poster, or prior work only when it helps answer “What has this student actually tried?” One clean link is better than five attachments. Never exaggerate fluency, publication, or lab experience.
+The stronger email is still only a template. Replace its logic with your real preparation; do not copy its wording into dozens of messages. One relevant link is usually more useful than several attachments.
 
-Because you are a minor, use official school or lab contact channels. Keep a teacher, counselor, or guardian aware of meetings and lab visits, and follow school/family rules for transportation, supervision, and online calls.
+### Match the request to what you have done
 
-## Make the request fit the relationship
+| Your current position             | Credible request                                                       |
+| --------------------------------- | ---------------------------------------------------------------------- |
+| You are mapping the field         | “Could you recommend the next paper I should read?”                    |
+| You have a proposed question      | “Is this comparison meaningful, or am I missing a necessary baseline?” |
+| You reproduced a method           | “May I send a one-page result and ask why my outcome differs?”         |
+| You need a safer/smaller project  | “Would a simulation-first version still answer something useful?”      |
+| The person is not the closest fit | “Is someone else in the group more appropriate to contact?”            |
 
-Asking a stranger for a long-term position can be premature. Smaller requests are easier to answer and often lead somewhere useful:
+“May I have an internship?” asks a stranger to invent a role, assess you, arrange supervision, and handle a minor’s logistics at once. A 15-minute conversation or a response to one technical question is often a better first step. It can still lead to deeper involvement if the fit is real.
 
-- “Could you recommend one paper that would help me understand this question?”
-- “Does this simulation-first version seem scientifically meaningful?”
-- “Would someone else in your group be a better person to ask?”
-- “Could I ask two or three questions in a 15-minute call?”
-- “I tried the baseline in this repository. May I send a one-page result for feedback?”
-- “Could I speak with a graduate student or postdoc who works closest to this topic?”
+## Handle replies like a researcher
 
-A professor is not the only possible mentor. Graduate students, postdocs, engineers, clinicians, librarians, teachers, and community researchers may have more direct time and closer methodological expertise.
+**No response:** wait about one week unless the lab states otherwise. Follow up once in the same thread with two or three sentences, then move on. Nonresponse usually reflects limited attention, not your potential.
 
-## Follow up once, then move on
+**A referral:** thank the person and contact the referral in a new message. Explain who referred you without implying endorsement they did not give.
 
-If there is no reply, wait about one week unless the page gives another expectation. Reply in the same thread with two or three sentences: restate the request, acknowledge their schedule, and make it easy to decline. Do not send repeated reminders.
+**A vague “send more information”:** send a one-page note with the question, why it matters, what you tried, the evidence or artifact, constraints, and two precise questions.
 
-Nonresponse usually means limited time, not a verdict on your potential. Contact a small, well-researched set of people sequentially and keep advancing the work independently.
+**A paper recommendation:** read it and reply only after doing the work. State one thing you learned and one question it changed.
 
-## Prepare for the first meeting
+**An invitation to meet:** confirm time zone, format, expected length, and whether a parent, teacher, or school procedure must be involved.
 
-Bring a one-page note with:
+Because you are a minor, use official channels, keep a trusted adult aware of meetings and lab visits, and follow school/family rules for transportation, supervision, and online calls. Be cautious if someone asks you to hide contact, use private spaces without appropriate supervision, provide unnecessary personal information, pay for access to a “position,” or begin regulated work without training and approval.
 
-- the question you are considering;
-- what you read or built so far;
-- two or three questions that require their judgment;
-- your real time, transportation, equipment, and schedule constraints;
-- a notebook and a way to confirm the next action.
+## Make the first meeting produce a decision
 
-Begin by asking how much time they have. Listen more than you pitch. If they suggest reading, experiments, or another contact, repeat the action back in your own words.
+Bring a one-page brief:
 
-Within 24 hours, send a short thank-you: one useful thing you learned, the action you will take, and any agreed deadline. Then do the action before asking for more.
+- your question in one sentence;
+- what you read, built, or tested;
+- one figure, result, or failure worth discussing;
+- two questions requiring the mentor’s judgment;
+- your actual time, equipment, transportation, and schedule constraints.
+
+Open by asking how much time they have. Before leaving, repeat the next action, owner, and timing: “I will compare the two baselines and send a one-page plot by Friday; you will tell me whether the comparison is fair.” That is far clearer than “I’ll keep researching.”
+
+Within 24 hours, send a short thank-you and the agreed next step. Then do it before asking for more. A mentorship becomes real through a series of completed commitments, not through the title _mentor_.
+
+## Decide whether the relationship is working
+
+After two or three interactions, ask whether you receive useful methodological feedback, expectations are understandable, your contribution is identifiable, safety and authorship are discussed honestly, and the workload fits your life. A prestigious connection with no feedback is less useful than a nearby teacher, engineer, librarian, clinician, graduate student, or community researcher who helps you reason carefully.

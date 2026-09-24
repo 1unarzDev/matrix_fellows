@@ -13,7 +13,10 @@ export default defineEventHandler((event) => {
     setHeader(event, 'X-Robots-Tag', 'noindex')
     return
   }
-  if (/^\/(?:guides|opportunities)(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)?\/_payload\.json$/.test(path)) {
+  if (
+    /^\/(?:guides|opportunities)(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)?\/_payload\.json$/.test(path) ||
+    path === '/join/_payload.json'
+  ) {
     setHeader(event, 'X-Robots-Tag', 'noindex')
     return
   }
@@ -22,6 +25,7 @@ export default defineEventHandler((event) => {
     path === '/opportunities' ||
     /^\/opportunities\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(path) ||
     path === '/guides' ||
+    path === '/join' ||
     /^\/guides\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(path) ||
     path === '/robots.txt' ||
     path === '/sitemap.xml' ||
@@ -29,6 +33,7 @@ export default defineEventHandler((event) => {
     path.startsWith('/__nuxt') ||
     path.startsWith('/models/') ||
     path.startsWith('/textures/') ||
+    path.startsWith('/og/') ||
     ['/favicon.svg', '/social-card.png', '/social-card.svg', '/constellation-license.txt'].includes(
       path,
     )

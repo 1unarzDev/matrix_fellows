@@ -12,7 +12,14 @@ There is no animated arrival canvas, procedural loading particle system, or perc
 
 Scene readiness remains tied to `createWorld` completing its first valid composer frame at the restored scroll/hash position. The WebGL canvas and top-of-page preview then use one 300 ms opacity handoff. There is no minimum duration, scroll reset, or restart during chapter navigation. Deep links keep their chapter copy visible throughout initialization.
 
-Navigation to the static resource routes uses a separately bounded route handoff. After a 110 ms anti-flash delay, a pointer-transparent ink veil adopts the guide library's existing violet/teal atmosphere and reuses the same orbital accent. It leaves on Nuxt's actual `page:finish` event while destination content enters by opacity and at most six CSS pixels of vertical movement. It does not delay a completed route, run WebGL, or impose a minimum display time.
+Navigation to the static resource routes, including `/join`, uses a separately
+bounded route handoff. After a 110 ms anti-flash delay, a pointer-transparent ink
+veil adopts the resource pages' violet/teal atmosphere and reuses the same orbital
+accent. The label follows the destination while its palette stays continuous with
+the next first paint. It leaves on Nuxt's actual `page:finish` event while
+destination content enters by opacity and at most six CSS pixels of vertical
+movement. It does not delay a completed route, run WebGL, or impose a minimum
+display time.
 
 Reduced motion skips WebGL and retains the static treatment. Initialization/context failure does the same. A 12-second watchdog bounds a stalled initialization, while teardown safely ignores late completion and disposes the existing renderer lifecycle.
 

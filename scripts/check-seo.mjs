@@ -48,6 +48,7 @@ assert.deepEqual(sitemapUrls.slice(0, 3), [
 ])
 assert.ok(sitemapUrls.some((url) => url.startsWith(`${canonical}opportunities/`)))
 assert.ok(sitemapUrls.includes(`${canonical}guides/find-a-research-idea`))
+assert.ok(sitemapUrls.includes(`${canonical}join`))
 const catalogResponse = await fetch(`${base}/opportunities`)
 assert.equal(catalogResponse.status, 200)
 const catalog = parse(await catalogResponse.text())
@@ -64,6 +65,18 @@ assert.equal(
   `${canonical}guides`,
 )
 assert.match(guides.querySelector('main').text, /Research becomes real/)
+const joinResponse = await fetch(`${base}/join`)
+assert.equal(joinResponse.status, 200)
+const join = parse(await joinResponse.text())
+assert.equal(join.querySelector('link[rel="canonical"]').getAttribute('href'), `${canonical}join`)
+assert.match(join.querySelector('main').text, /Bring your question/)
+assert.match(join.querySelector('main').text, /Student full name/)
+const joinImage = join.querySelector('meta[property="og:image"]').getAttribute('content')
+assert.equal(new URL(joinImage).pathname, '/og/join.png')
+assert.match(
+  (await fetch(new URL(new URL(joinImage).pathname, base))).headers.get('content-type'),
+  /^image\/png/,
+)
 const guideResponse = await fetch(`${base}/guides/find-a-research-idea`)
 assert.equal(guideResponse.status, 200)
 const guide = parse(await guideResponse.text())

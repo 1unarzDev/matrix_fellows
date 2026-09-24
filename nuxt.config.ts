@@ -27,7 +27,7 @@ export default defineNuxtConfig({
   vite: { plugins: [tailwindcss()] },
   nitro: {
     preset: 'cloudflare-module',
-    prerender: { routes: ['/guides', ...guideRoutes] },
+    prerender: { routes: ['/guides', '/join', ...guideRoutes] },
   },
   runtimeConfig: {
     supabaseServiceRoleKey: '',

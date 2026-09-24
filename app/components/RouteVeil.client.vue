@@ -39,7 +39,11 @@ onBeforeUnmount(() => {
 })
 
 const label = computed(() =>
-  destination.value.startsWith('/guides') ? 'Opening field notes' : 'Following the horizon',
+  destination.value === '/join'
+    ? 'Making a connection'
+    : destination.value.startsWith('/guides')
+      ? 'Opening field notes'
+      : 'Following the horizon',
 )
 </script>
 

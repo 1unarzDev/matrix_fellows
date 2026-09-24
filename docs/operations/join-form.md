@@ -2,12 +2,21 @@
 
 ## Architecture
 
-The floating form submits to `POST /api/join`. The server validates the payload,
-checks the site origin, limits request bodies to 8 KB, applies a honeypot and a
+The homepage's lazy dialog and the dedicated, server-rendered `/join` route use
+the same `JoinForm.vue` flow, draft state, field controls and validation. The
+route adds a lightweight CSS atmosphere but does not initialize the cinematic
+renderer; the dialog remains lazy so the route does not add code to homepage
+startup. Both presentations submit to `POST /api/join`. The server validates the
+payload, checks the site origin, limits request bodies to 8 KB, applies a honeypot and a
 database-backed IP rate limit, then stores the response in Supabase. Raw IPs are
 never stored; short-lived HMAC keys expire from the rate-limit table on subsequent
 submissions. The service key stays server-side. This is basic abuse protection,
 not a CAPTCHA; add Turnstile if targeted spam becomes a problem.
+
+The `/join` page has its own canonical metadata and a 1200 × 630 social image at
+`public/og/join.png`. Regenerate the image from the running route with
+`node scripts/capture-join-og.mjs`, then inspect the result rather than assuming
+that correct dimensions imply a legible social crop.
 
 Responses are unique by normalized email and request ID. Retrying after an
 interrupted response cannot create duplicates. Duplicate emails get the same

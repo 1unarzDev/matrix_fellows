@@ -1,11 +1,13 @@
 <script setup lang="ts">
 const route = useRoute()
 const activeResource = computed(() =>
-  route.path.startsWith('/guides')
-    ? 'guides'
-    : route.path.startsWith('/opportunities')
-      ? 'opportunities'
-      : '',
+  route.path === '/join'
+    ? 'join'
+    : route.path.startsWith('/guides')
+      ? 'guides'
+      : route.path.startsWith('/opportunities')
+        ? 'opportunities'
+        : '',
 )
 </script>
 
@@ -47,6 +49,14 @@ const activeResource = computed(() =>
             :aria-current="activeResource === 'guides' ? 'page' : undefined"
           >
             <span class="catalog-header__dot" aria-hidden="true" /> Guides
+          </NuxtLink>
+          <NuxtLink
+            to="/join"
+            class="catalog-header__resource"
+            :class="{ 'catalog-header__resource--active': activeResource === 'join' }"
+            :aria-current="activeResource === 'join' ? 'page' : undefined"
+          >
+            <span class="catalog-header__dot" aria-hidden="true" /> Join
           </NuxtLink>
         </nav>
         <NuxtLink

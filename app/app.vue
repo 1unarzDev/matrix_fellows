@@ -1,7 +1,10 @@
 <script setup lang="ts">
 const route = useRoute()
 const showCatalogHeader = computed(
-  () => route.path.startsWith('/opportunities') || route.path.startsWith('/guides'),
+  () =>
+    route.path.startsWith('/opportunities') ||
+    route.path.startsWith('/guides') ||
+    route.path === '/join',
 )
 const pageTransition = {
   name: 'matrix-page',

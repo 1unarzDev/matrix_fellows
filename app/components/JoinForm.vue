@@ -12,10 +12,12 @@ import {
 } from '#shared/utils/join'
 
 const emit = defineEmits<{ close: [] }>()
+const props = withDefaults(defineProps<{ embedded?: boolean }>(), { embedded: false })
 const dialog = ref<HTMLDialogElement>()
 const heading = ref<HTMLElement>()
 const contentScroller = ref<HTMLElement>()
-const visible = ref(false)
+const visible = ref(props.embedded)
+const hydrated = ref(false)
 const step = ref(0)
 const busy = ref(false)
 const sent = ref(false)
@@ -152,9 +154,15 @@ watch(hasOtherInterest, (selected) => {
   if (!selected) draft.value.interestOther = ''
 })
 function close() {
-  if (!busy.value) visible.value = false
+  if (busy.value) return
+  if (props.embedded) {
+    void navigateTo('/')
+    return
+  }
+  visible.value = false
 }
 function trapFocus(event: KeyboardEvent) {
+  if (props.embedded) return
   if (event.key !== 'Tab') return
   const elements = Array.from(
     dialog.value?.querySelectorAll<HTMLElement>(
@@ -183,28 +191,39 @@ function finishClose() {
   emit('close')
 }
 onMounted(async () => {
+  hydrated.value = true
+  if (!draft.value.requestId) draft.value.requestId = crypto.randomUUID()
+  if (props.embedded) return
   previousFocus = document.activeElement as HTMLElement
   wasLocked = document.body.classList.contains('overflow-hidden')
   document.body.classList.add('overflow-hidden')
-  if (!draft.value.requestId) draft.value.requestId = crypto.randomUUID()
   dialog.value?.showModal()
   visible.value = true
   await focusHeading()
 })
 onBeforeUnmount(() => {
   clearTimeout(typingTimer)
-  if (!wasLocked) document.body.classList.remove('overflow-hidden')
-  previousFocus?.focus({ preventScroll: true })
+  if (!props.embedded) {
+    if (!wasLocked) document.body.classList.remove('overflow-hidden')
+    previousFocus?.focus({ preventScroll: true })
+  }
   if (sent.value) clearNuxtState('join-draft')
 })
 </script>
 
 <template>
-  <Teleport to="body">
-    <dialog
+  <Teleport to="body" :disabled="embedded">
+    <component
+      :is="embedded ? 'div' : 'dialog'"
       ref="dialog"
       aria-labelledby="join-title"
-      class="fixed inset-0 m-0 h-dvh max-h-none w-screen max-w-none bg-transparent p-0 font-sans text-paper outline-none backdrop:bg-transparent [--color-acid:#c5c0eb]"
+      :data-join-form-ready="hydrated"
+      class="font-sans text-paper outline-none [--color-acid:#c5c0eb]"
+      :class="
+        embedded
+          ? 'join-embedded w-full'
+          : 'fixed inset-0 m-0 h-dvh max-h-none w-screen max-w-none bg-transparent p-0 backdrop:bg-transparent'
+      "
       @cancel.prevent="close"
       @keydown="trapFocus"
     >
@@ -219,12 +238,18 @@ onBeforeUnmount(() => {
       >
         <div
           v-if="visible"
-          class="join-backdrop flex h-full items-center justify-center p-3 sm:p-8"
-          @click.self="close"
+          class="join-backdrop flex items-center justify-center"
+          :class="embedded ? 'w-full' : 'h-full p-3 sm:p-8'"
+          @click.self="!embedded && close()"
         >
           <section
             data-lenis-prevent
-            class="join-panel relative isolate flex max-h-[calc(100dvh-1.5rem)] w-full max-w-2xl flex-col overflow-hidden rounded-[1.75rem] border border-paper/20 shadow-[0_30px_120px_#00000080,inset_0_1px_0_#ffffff12] sm:max-h-[calc(100dvh-4rem)] sm:rounded-[2rem]"
+            class="join-panel relative isolate flex w-full max-w-2xl flex-col overflow-hidden rounded-[1.75rem] border border-paper/20 shadow-[0_30px_120px_#00000080,inset_0_1px_0_#ffffff12] sm:rounded-[2rem]"
+            :class="
+              embedded
+                ? 'join-panel--embedded min-h-[38rem]'
+                : 'max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-4rem)]'
+            "
           >
             <div
               aria-hidden="true"
@@ -249,6 +274,7 @@ onBeforeUnmount(() => {
                 >
               </div>
               <button
+                v-if="!embedded"
                 type="button"
                 aria-label="Close join form"
                 :disabled="busy"
@@ -276,7 +302,8 @@ onBeforeUnmount(() => {
             </div>
             <div
               ref="contentScroller"
-              class="relative overflow-y-auto overscroll-contain px-6 pb-7 [scrollbar-width:thin] sm:px-9 sm:pb-9"
+              class="relative px-6 pb-7 sm:px-9 sm:pb-9"
+              :class="embedded ? '' : 'overflow-y-auto overscroll-contain [scrollbar-width:thin]'"
             >
               <div class="join-step-stage">
                 <Transition
@@ -314,7 +341,8 @@ onBeforeUnmount(() => {
                         class="tactile mt-8 rounded-full bg-acid px-6 py-3 text-sm text-ink"
                         @click="close"
                       >
-                        Back to exploring <span aria-hidden="true">↗</span>
+                        {{ embedded ? 'Return to the journey' : 'Back to exploring' }}
+                        <span aria-hidden="true">↗</span>
                       </button>
                     </template>
                     <form
@@ -540,7 +568,7 @@ onBeforeUnmount(() => {
           </section>
         </div>
       </Transition>
-    </dialog>
+    </component>
   </Teleport>
 </template>
 
@@ -560,6 +588,15 @@ onBeforeUnmount(() => {
 }
 .join-backdrop {
   background: color-mix(in srgb, var(--color-ink) 25%, transparent);
+}
+.join-embedded .join-backdrop {
+  background: transparent;
+}
+.join-panel--embedded {
+  box-shadow:
+    0 32px 110px rgb(0 0 0 / 32%),
+    0 0 72px color-mix(in srgb, var(--color-acid) 5%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 8%);
 }
 .join-step-stage {
   display: grid;

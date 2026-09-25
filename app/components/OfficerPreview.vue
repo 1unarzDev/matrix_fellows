@@ -198,7 +198,10 @@ const officers = [
         :key="officer.name"
         class="officer-card"
         :class="{ 'officer-card--active': activeOfficer === index }"
-        :style="{ '--officer-delay': `${index * 75}ms` }"
+        :style="{
+          '--officer-delay': `${index * 75}ms`,
+          '--officer-focus': Math.max(0, 1 - Math.abs(indicatorProgress - index)),
+        }"
         :aria-label="`${officer.name}, ${officer.role}`"
       >
         <div class="officer-card__portrait">
@@ -488,30 +491,34 @@ const officers = [
     flex: 0 0 var(--officer-card-width);
     scroll-snap-align: center;
     scroll-snap-stop: normal;
-    transform: scale(0.955);
+    transform:
+      translate3d(0, calc(var(--officer-focus) * -4px), 0)
+      scale(calc(0.955 + var(--officer-focus) * 0.045));
     transform-origin: 50% 55%;
     transition:
       opacity 520ms ease var(--officer-delay),
-      transform 680ms cubic-bezier(0.16, 1, 0.3, 1) var(--officer-delay);
+      transform 300ms cubic-bezier(0.22, 0.72, 0.2, 1);
   }
   .officer-card:last-child {
     margin-right: calc(100% - var(--officer-card-width) - 0.75rem);
   }
   .officer-card__portrait img {
-    filter: grayscale(0.95) saturate(0.22) contrast(1.045) brightness(0.85);
-    transform: scale(1.035);
+    filter:
+      grayscale(calc(0.95 - var(--officer-focus) * 0.9))
+      saturate(calc(0.22 + var(--officer-focus) * 0.68))
+      contrast(calc(1.045 - var(--officer-focus) * 0.03))
+      brightness(calc(0.85 + var(--officer-focus) * 0.13))
+      sepia(calc(var(--officer-focus) * 0.035));
+    transform: scale(calc(1.035 - var(--officer-focus) * 0.02));
   }
   .officer-card__portrait {
     -webkit-mask-image: -webkit-radial-gradient(white, black);
   }
   .officer-card__portrait::after {
-    opacity: 0.78;
+    opacity: calc(0.78 - var(--officer-focus) * 0.34);
   }
   .officer-card__wash {
-    opacity: 0.22;
-  }
-  .officer-card--active {
-    transform: translate3d(0, -4px, 0) scale(1);
+    opacity: calc(0.22 + var(--officer-focus) * 0.26);
   }
   .officer-card--active .officer-card__portrait {
     border-color: rgb(228 199 151 / 28%);
@@ -520,22 +527,14 @@ const officers = [
       0 22px 48px rgb(3 5 9 / 22%),
       0 0 26px rgb(196 178 238 / 7%);
   }
-  .officer-card--active .officer-card__portrait img {
-    filter: grayscale(0.05) saturate(0.9) contrast(1.015) brightness(0.98) sepia(0.035);
-    transform: scale(1.015);
-  }
-  .officer-card--active .officer-card__portrait::after {
-    opacity: 0.44;
-  }
-  .officer-card--active .officer-card__wash {
-    opacity: 0.48;
+  .officer-card__index {
+    transform: scale(calc(1 + var(--officer-focus) * 0.07));
   }
   .officer-card--active .officer-card__index {
     color: rgb(255 235 199 / 86%);
     border-color: rgb(228 199 151 / 32%);
     background: rgb(92 62 44 / 22%);
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 10%), 0 0 14px rgb(228 199 151 / 9%);
-    transform: scale(1.07);
   }
   .officer-card__caption {
     padding-top: 0.8rem;

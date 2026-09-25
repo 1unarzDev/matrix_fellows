@@ -160,6 +160,20 @@ test('Connect introduces all four officers with responsive portraits and restrai
       officerCards.forEach((card) =>
         observer.observe(card, { attributes: true, attributeFilter: ['class'] }),
       )
+      const incomingCard = officerCards[1] as HTMLElement | undefined
+      if (incomingCard) {
+        root.setAttribute('data-growth-sequence', '0')
+        const growthObserver = new MutationObserver(() => {
+          const focus = Number(
+            getComputedStyle(incomingCard).getPropertyValue('--officer-focus'),
+          )
+          const sequence = root.getAttribute('data-growth-sequence')?.split(',').map(Number) ?? []
+          if (Number.isFinite(focus) && Math.abs((sequence.at(-1) ?? -1) - focus) > 0.001) {
+            root.setAttribute('data-growth-sequence', [...sequence, focus].join(','))
+          }
+        })
+        growthObserver.observe(incomingCard, { attributes: true, attributeFilter: ['style'] })
+      }
       if (track) {
         let animationStarted = false
         const trackObserver = new MutationObserver(() => {
@@ -181,6 +195,19 @@ test('Connect introduces all four officers with responsive portraits and restrai
     await expect(preview.locator('.officer-carousel__count span')).toHaveText('02')
     await page.waitForTimeout(900)
     await expect(preview).toHaveAttribute('data-active-sequence', '0,1')
+    const growthSequence = (await preview.getAttribute('data-growth-sequence'))
+      ?.split(',')
+      .map(Number) ?? []
+    expect(growthSequence.some((focus) => focus > 0.15 && focus < 0.98)).toBe(true)
+    expect(growthSequence.every((focus, index) => !index || focus >= growthSequence[index - 1]!)).toBe(
+      true,
+    )
+    const settledGrowth = await cards.nth(1).evaluate((element) => ({
+      focus: Number(getComputedStyle(element).getPropertyValue('--officer-focus')),
+      scale: new DOMMatrixReadOnly(getComputedStyle(element).transform).a,
+    }))
+    expect(settledGrowth.focus).toBeCloseTo(1, 2)
+    expect(settledGrowth.scale).toBeCloseTo(1, 2)
     const settlingDelta = await preview.evaluate((root) => {
       const track = root.querySelector<HTMLElement>('.officer-preview__grid')
       const releasedAt = Number(root.getAttribute('data-carousel-release-x'))

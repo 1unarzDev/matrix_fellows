@@ -591,21 +591,26 @@ onMounted(() => {
 .meeting-period__bar::after {
   position: absolute;
   top: 50%;
-  width: 1px;
-  height: 34%;
+  width: 1.15rem;
+  height: 72%;
   border-radius: 999px;
   opacity: 0;
   content: '';
-  background: rgb(var(--period-primary) / 72%);
-  box-shadow: 0 0 6px rgb(var(--period-primary) / 42%);
-  transform: translateY(-50%) scaleY(0.72);
+  background: radial-gradient(
+    ellipse at center,
+    rgb(var(--period-primary) / 28%) 0%,
+    rgb(var(--period-primary) / 12%) 34%,
+    transparent 74%
+  );
+  filter: blur(0.4px);
+  transform: translateY(-50%) scale(0.78);
 }
-.meeting-period__bar::before { left: 0.38rem; }
-.meeting-period__bar::after { right: 0.38rem; }
+.meeting-period__bar::before { left: -0.08rem; }
+.meeting-period__bar::after { right: -0.08rem; }
 .meeting-period__bar--start::before,
 .meeting-period__bar--end::after {
-  opacity: 0.78;
-  transform: translateY(-50%) scaleY(1);
+  opacity: 0.9;
+  transform: translateY(-50%) scale(1);
 }
 .meeting-period__bar--saved {
   --period-primary: 228 187 114;

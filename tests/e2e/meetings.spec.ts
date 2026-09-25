@@ -159,6 +159,14 @@ test('saved opportunity periods glow, overlap in separate lanes, and keep middle
   await expect(instituteSlider).toHaveCSS('background-image', /linear-gradient/)
   await expect(instituteSlider).toHaveClass(/meeting-period__bar--start/)
   await expect(instituteSlider).toHaveClass(/meeting-period__bar--end/)
+  const endpointAccent = await instituteSlider.evaluate((element) => ({
+    start: getComputedStyle(element, '::before').backgroundImage,
+    end: getComputedStyle(element, '::after').backgroundImage,
+    width: getComputedStyle(element, '::before').width,
+  }))
+  expect(endpointAccent.start).toContain('radial-gradient')
+  expect(endpointAccent.end).toContain('radial-gradient')
+  expect(Number.parseFloat(endpointAccent.width)).toBeGreaterThan(10)
   const rangeStart = periodStart
   const rangeEnd = periodEnd
   const [startBounds, endBounds, sliderBounds, competitionBounds] = await Promise.all([

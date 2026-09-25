@@ -3,43 +3,97 @@ const preview = useTemplateRef<HTMLElement>('preview')
 const carousel = useTemplateRef<HTMLElement>('carousel')
 const revealed = ref(false)
 const activeOfficer = ref(0)
+const indicatorProgress = ref(0)
 let revealObserver: IntersectionObserver | undefined
 let carouselFrame: number | undefined
+let carouselAnimation: number | undefined
+let programmaticScroll = false
 
-const syncActiveOfficer = () => {
+const officerScrollStops = (track: HTMLElement, cards: HTMLElement[]) => {
+  const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth)
+  return cards.map((card) =>
+    Math.min(
+      maxScroll,
+      Math.max(0, card.offsetLeft - (track.clientWidth - card.offsetWidth) / 2),
+    ),
+  )
+}
+
+const syncActiveOfficer = (updateActive = !programmaticScroll) => {
   carouselFrame = undefined
   const track = carousel.value
   if (!track || window.innerWidth >= 640) return
-  const trackCenter = track.getBoundingClientRect().left + track.clientWidth / 2
   const cards = [...track.querySelectorAll<HTMLElement>('.officer-card')]
-  let closest = 0
-  let distance = Number.POSITIVE_INFINITY
-  cards.forEach((card, index) => {
-    const bounds = card.getBoundingClientRect()
-    const nextDistance = Math.abs(bounds.left + bounds.width / 2 - trackCenter)
-    if (nextDistance < distance) {
-      closest = index
-      distance = nextDistance
+  const stops = officerScrollStops(track, cards)
+  const position = track.scrollLeft
+  let progress = stops.length - 1
+
+  for (let index = 0; index < stops.length - 1; index += 1) {
+    const start = stops[index] ?? 0
+    const end = stops[index + 1] ?? start
+    if (position <= end) {
+      const span = Math.max(1, end - start)
+      progress = index + Math.min(1, Math.max(0, (position - start) / span))
+      break
     }
-  })
-  activeOfficer.value = closest
+  }
+
+  indicatorProgress.value = progress
+  if (updateActive) activeOfficer.value = Math.round(progress)
 }
 
 const onCarouselScroll = () => {
   if (carouselFrame) return
-  carouselFrame = requestAnimationFrame(syncActiveOfficer)
+  carouselFrame = requestAnimationFrame(() => syncActiveOfficer())
 }
 
 const selectOfficer = (index: number) => {
   const track = carousel.value
-  const card = track?.querySelectorAll<HTMLElement>('.officer-card')[index]
+  const cards = track ? [...track.querySelectorAll<HTMLElement>('.officer-card')] : []
+  const card = cards[index]
   if (!track || !card) return
+  if (carouselAnimation) cancelAnimationFrame(carouselAnimation)
+
+  const [target = 0] = officerScrollStops(track, [card])
+  const start = track.scrollLeft
+  const distance = target - start
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   activeOfficer.value = index
-  const target = card.offsetLeft - (track.clientWidth - card.offsetWidth) / 2
-  track.scrollTo({
-    left: Math.max(0, target),
-    behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-  })
+  if (reduceMotion || Math.abs(distance) < 1) {
+    track.scrollLeft = target
+    indicatorProgress.value = index
+    return
+  }
+
+  programmaticScroll = true
+  track.classList.add('officer-preview__grid--programmatic')
+  const startedAt = performance.now()
+  const duration = Math.min(760, Math.max(580, 540 + Math.abs(distance) * 0.42))
+  const animate = (now: number) => {
+    const elapsed = Math.min(1, (now - startedAt) / duration)
+    const eased = 1 - Math.pow(1 - elapsed, 5)
+    track.scrollLeft = start + distance * eased
+    syncActiveOfficer(false)
+    if (elapsed < 1) {
+      carouselAnimation = requestAnimationFrame(animate)
+      return
+    }
+    track.scrollLeft = target
+    indicatorProgress.value = index
+    programmaticScroll = false
+    track.classList.remove('officer-preview__grid--programmatic')
+    carouselAnimation = undefined
+  }
+  carouselAnimation = requestAnimationFrame(animate)
+}
+
+const interruptCarouselAnimation = () => {
+  if (!carouselAnimation) return
+  cancelAnimationFrame(carouselAnimation)
+  carouselAnimation = undefined
+  programmaticScroll = false
+  carousel.value?.classList.remove('officer-preview__grid--programmatic')
+  syncActiveOfficer(true)
 }
 
 onMounted(() => {
@@ -61,6 +115,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   revealObserver?.disconnect()
   if (carouselFrame) cancelAnimationFrame(carouselFrame)
+  if (carouselAnimation) cancelAnimationFrame(carouselAnimation)
 })
 
 const officers = [
@@ -123,6 +178,7 @@ const officers = [
       aria-label="Officer carousel"
       tabindex="0"
       @scroll.passive="onCarouselScroll"
+      @pointerdown.passive="interruptCarouselAnimation"
       @keydown.left.prevent="selectOfficer(Math.max(0, activeOfficer - 1))"
       @keydown.right.prevent="selectOfficer(Math.min(officers.length - 1, activeOfficer + 1))"
     >
@@ -154,7 +210,12 @@ const officers = [
       </article>
     </div>
     <div class="officer-carousel__controls">
-      <div class="officer-carousel__rail" aria-label="Choose an officer">
+      <div
+        class="officer-carousel__rail"
+        aria-label="Choose an officer"
+        :style="{ '--officer-progress': indicatorProgress }"
+      >
+        <span class="officer-carousel__indicator" aria-hidden="true" />
         <button
           v-for="(officer, index) in officers"
           :key="`control-${officer.name}`"
@@ -373,7 +434,7 @@ const officers = [
 @media (max-width: 639px) {
   .officer-preview {
     width: min(100%, 31rem);
-    margin-top: 5rem;
+    margin-top: 7rem;
   }
   .officer-preview__header {
     display: block;
@@ -398,13 +459,17 @@ const officers = [
     scrollbar-width: none;
     touch-action: pan-x pan-y;
   }
+  .officer-preview__grid--programmatic {
+    scroll-behavior: auto;
+    scroll-snap-type: none;
+  }
   .officer-preview__grid::-webkit-scrollbar {
     display: none;
   }
   .officer-card {
     flex: 0 0 var(--officer-card-width);
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
+    scroll-snap-align: center;
+    scroll-snap-stop: normal;
     transform: scale(0.955);
     transform-origin: 50% 55%;
     transition:
@@ -470,29 +535,61 @@ const officers = [
     padding-inline: 0.1rem;
   }
   .officer-carousel__rail {
+    --rail-step: 1.35rem;
     display: flex;
+    position: relative;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.15rem;
+    height: 2.75rem;
+  }
+  .officer-carousel__indicator {
+    position: absolute;
+    z-index: 0;
+    left: -0.2rem;
+    top: 50%;
+    width: 1.6rem;
+    height: 0.42rem;
+    border: 1px solid rgb(228 199 151 / 34%);
+    border-radius: 999px;
+    pointer-events: none;
+    background: linear-gradient(90deg, rgb(145 185 217 / 84%), rgb(196 178 238 / 90%));
+    box-shadow:
+      0 0 13px rgb(183 162 226 / 20%),
+      inset 0 1px 0 rgb(255 255 255 / 24%);
+    transform: translate3d(calc(var(--officer-progress) * var(--rail-step)), -50%, 0);
+    will-change: transform;
   }
   .officer-carousel__dot {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    width: 1.2rem;
+    height: 2.75rem;
+    flex: 0 0 1.2rem;
+    place-items: center;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    transition:
+      transform 480ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .officer-carousel__dot::before {
     width: 0.42rem;
     height: 0.42rem;
     border: 1px solid rgb(244 241 233 / 24%);
     border-radius: 999px;
+    content: '';
     background: rgb(244 241 233 / 8%);
     transition:
-      width 560ms cubic-bezier(0.16, 1, 0.3, 1),
-      border-color 320ms ease,
-      background-color 420ms ease,
-      box-shadow 520ms ease,
+      opacity 260ms ease,
       transform 480ms cubic-bezier(0.16, 1, 0.3, 1);
   }
   .officer-carousel__dot--active {
-    width: 1.6rem;
-    border-color: rgb(228 199 151 / 34%);
-    background: linear-gradient(90deg, rgb(145 185 217 / 82%), rgb(196 178 238 / 88%));
-    box-shadow: 0 0 13px rgb(183 162 226 / 20%);
-    transform: scaleY(1.08);
+    transform: scale(1.04);
+  }
+  .officer-carousel__dot--active::before {
+    opacity: 0.18;
+    transform: scale(0.65);
   }
   .officer-carousel__count {
     display: flex;
@@ -559,6 +656,7 @@ const officers = [
     scroll-behavior: auto;
   }
   .officer-carousel__dot,
+  .officer-carousel__indicator,
   .officer-carousel__arrows button {
     transition: none !important;
   }

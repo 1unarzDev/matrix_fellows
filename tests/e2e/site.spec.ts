@@ -122,6 +122,11 @@ test('Connect introduces all four officers with responsive portraits and restrai
   await expect(cards).toHaveCount(4)
   if (testInfo.project.name === 'mobile') {
     const carousel = preview.getByRole('region', { name: 'Officer carousel' })
+    const cta = page.getByRole('link', { name: /There’s a place for you here/ })
+    const [ctaBounds, previewBounds] = await Promise.all([cta.boundingBox(), preview.boundingBox()])
+    expect(ctaBounds).not.toBeNull()
+    expect(previewBounds).not.toBeNull()
+    expect(previewBounds!.y - (ctaBounds!.y + ctaBounds!.height)).toBeGreaterThanOrEqual(120)
     await expect(carousel).toHaveCSS('scroll-snap-type', /x mandatory/)
     await expect(cards.first()).toHaveClass(/officer-card--active/)
     await expect(cards.first().locator('img')).toHaveJSProperty('complete', true)
@@ -132,6 +137,28 @@ test('Connect introduces all four officers with responsive portraits and restrai
       getComputedStyle(element).filter,
     )
     expect(firstFilter).not.toBe(secondRestingFilter)
+    const controls = preview.getByRole('button', { name: /^Show / })
+    const controlWidths = await controls.evaluateAll((elements) =>
+      elements.map((element) => (element as HTMLElement).offsetWidth),
+    )
+    expect(Math.max(...controlWidths) - Math.min(...controlWidths)).toBeLessThan(0.5)
+    await preview.evaluate((root) => {
+      const officerCards = [...root.querySelectorAll('.officer-card')]
+      const readActive = () =>
+        officerCards.findIndex((card) => card.classList.contains('officer-card--active'))
+      root.setAttribute('data-active-sequence', String(readActive()))
+      const observer = new MutationObserver(() => {
+        const active = readActive()
+        if (active < 0) return
+        const sequence = root.getAttribute('data-active-sequence')?.split(',').map(Number) ?? []
+        if (sequence.at(-1) !== active) {
+          root.setAttribute('data-active-sequence', [...sequence, active].join(','))
+        }
+      })
+      officerCards.forEach((card) =>
+        observer.observe(card, { attributes: true, attributeFilter: ['class'] }),
+      )
+    })
     await preview.getByRole('button', { name: 'Next officer' }).click()
     await expect(cards.nth(1)).toHaveClass(/officer-card--active/)
     await expect(cards.nth(1).locator('img')).toHaveJSProperty('complete', true)
@@ -139,6 +166,8 @@ test('Connect introduces all four officers with responsive portraits and restrai
       getComputedStyle(element).filter,
     )).not.toBe(secondRestingFilter)
     await expect(preview.locator('.officer-carousel__count span')).toHaveText('02')
+    await page.waitForTimeout(900)
+    await expect(preview).toHaveAttribute('data-active-sequence', '0,1')
   } else {
     const portrait = cards.first().locator('.officer-card__portrait')
     const image = portrait.locator('img')

@@ -166,19 +166,32 @@ test('touch reveal eases through its text swap without a rectangular mobile surf
   await expect(xray).toHaveCSS('background-image', 'none')
 
   await reveal.locator('.discovery-reveal__touch-target').click({ position: { x: 72, y: 190 } })
-  await page.waitForTimeout(70)
+  await expect(reveal).toHaveAttribute('data-touch-revealed', 'true')
 
-  const transitionFrame = await reveal.evaluate((element) => {
+  const transitionFrame = await reveal.evaluate(async (element) => {
+    const animatedElements = [
+      element.querySelector<HTMLElement>('.discovery-reveal__original')!,
+      element.querySelector<HTMLElement>('.discovery-reveal__xray')!,
+      ...element.querySelectorAll<HTMLElement>('.discovery-reveal__touch-copy span'),
+    ]
+    const animations = animatedElements.flatMap((animated) => animated.getAnimations())
+    for (const animation of animations) {
+      const duration = animation.effect?.getComputedTiming().duration
+      if (typeof duration !== 'number' || !Number.isFinite(duration)) continue
+      animation.pause()
+      animation.currentTime = duration * 0.14
+    }
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
     const originalOpacity = Number.parseFloat(
       getComputedStyle(element.querySelector('.discovery-reveal__original')!).opacity,
     )
     const labels = Array.from(
       element.querySelectorAll<HTMLElement>('.discovery-reveal__touch-copy span'),
     ).map((label) => Number.parseFloat(getComputedStyle(label).opacity))
-    const clipPath = getComputedStyle(
-      element.querySelector('.discovery-reveal__xray')!,
-    ).clipPath
-    return { originalOpacity, labels, revealRadius: Number.parseFloat(clipPath.slice(7)) }
+    const clipPath = getComputedStyle(element.querySelector('.discovery-reveal__xray')!).clipPath
+    const frame = { originalOpacity, labels, revealRadius: Number.parseFloat(clipPath.slice(7)) }
+    animations.forEach((animation) => animation.play())
+    return frame
   })
   expect(transitionFrame.originalOpacity).toBeGreaterThan(0.2)
   expect(transitionFrame.labels.every((opacity) => opacity > 0.05)).toBe(true)
@@ -186,6 +199,44 @@ test('touch reveal eases through its text swap without a rectangular mobile surf
   expect(transitionFrame.revealRadius).toBeLessThan(900)
 
   await expect(original).toHaveCSS('opacity', '0')
+})
+
+test('mobile discovery tap sends an unbounded pulse without decorating the final period', async ({
+  page,
+}) => {
+  test.skip(test.info().project.name !== 'mobile', 'Tap pulse requires a coarse pointer')
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/#discovery')
+
+  const reveal = page.locator('[data-discovery-reveal]')
+  await reveal.scrollIntoViewIfNeeded()
+  const hiddenPhrase = reveal.getByText('don’t know.', { exact: true })
+  expect(
+    await hiddenPhrase.evaluate((element) => getComputedStyle(element, '::after').content),
+  ).toBe('none')
+
+  const toggle = reveal.locator('.discovery-reveal__touch-target')
+  await toggle.click({ position: { x: 72, y: 190 } })
+  const firstPulse = reveal.locator('.discovery-reveal__touch-pulse')
+  await expect(firstPulse).toHaveCount(1)
+  await page.waitForTimeout(140)
+  expect(
+    Number.parseFloat(await firstPulse.evaluate((element) => getComputedStyle(element).opacity)),
+  ).toBeGreaterThan(0.08)
+
+  await page.waitForTimeout(500)
+  const expanded = await firstPulse.boundingBox()
+  expect(expanded).not.toBeNull()
+  expect(expanded!.width).toBeGreaterThan(585)
+  expect(expanded!.height).toBeGreaterThan(585)
+
+  await expect(firstPulse).toHaveCSS('opacity', '0')
+  await toggle.click()
+  const returnPulse = reveal.locator('.discovery-reveal__touch-pulse')
+  await page.waitForTimeout(140)
+  expect(
+    Number.parseFloat(await returnPulse.evaluate((element) => getComputedStyle(element).opacity)),
+  ).toBeGreaterThan(0.08)
 })
 
 test('touch reveal prompt clears the discovery copy on narrow screens', async ({ page }) => {

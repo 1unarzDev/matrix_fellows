@@ -2,6 +2,7 @@
 const surface = ref<HTMLElement>()
 const coarsePointer = ref(false)
 const touchRevealed = ref(false)
+const touchPulseKey = ref(0)
 let pointerQuery: MediaQueryList | undefined
 let syncPointer: (() => void) | undefined
 
@@ -46,6 +47,7 @@ function positionTouchReveal(event: PointerEvent) {
 function toggleTouchReveal() {
   if (!coarsePointer.value) return
   touchRevealed.value = !touchRevealed.value
+  touchPulseKey.value += 1
 }
 
 onMounted(() => {
@@ -125,6 +127,13 @@ onBeforeUnmount(() => {
       />
       <span class="discovery-reveal__lens-core" />
     </span>
+
+    <span
+      v-if="coarsePointer && touchPulseKey"
+      :key="touchPulseKey"
+      aria-hidden="true"
+      class="discovery-reveal__touch-pulse"
+    />
 
     <svg aria-hidden="true" class="discovery-reveal__filters" width="0" height="0">
       <defs>
@@ -294,18 +303,6 @@ onBeforeUnmount(() => {
   text-shadow: 0 8px 32px rgb(205 184 133 / 0.08);
 }
 
-.discovery-reveal__heading > em::after {
-  position: absolute;
-  top: 0.16em;
-  right: 0;
-  width: 0.09em;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  content: '';
-  background: #b7dce3;
-  box-shadow: 0 0 0.18em rgb(183 220 227 / 0.48);
-}
-
 .discovery-reveal__eyebrow {
   position: absolute;
   bottom: calc(100% + 0.7rem);
@@ -462,6 +459,30 @@ onBeforeUnmount(() => {
   box-shadow:
     0 0 7px rgb(222 190 128 / 0.24),
     0 0 13px rgb(222 190 128 / 0.09);
+}
+
+.discovery-reveal__touch-pulse {
+  position: absolute;
+  z-index: 3;
+  top: var(--reveal-y);
+  left: var(--reveal-x);
+  width: 12rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  scale: 0.04;
+  translate: -50% -50%;
+  background: radial-gradient(
+    circle,
+    transparent 0 72%,
+    rgb(232 205 153 / 0.16) 78%,
+    rgb(183 220 227 / 0.52) 84%,
+    rgb(244 241 233 / 0.14) 88%,
+    transparent 100%
+  );
+  animation: discovery-touch-pulse 1080ms linear both;
+  will-change: scale, opacity;
 }
 
 .discovery-reveal__touch-target {
@@ -625,8 +646,8 @@ onBeforeUnmount(() => {
   .discovery-reveal__original {
     transform: translate3d(0, 0, 0);
     transition:
-      opacity 520ms cubic-bezier(0.4, 0, 0.2, 1),
-      transform 650ms cubic-bezier(0.22, 0.72, 0.2, 1);
+      opacity 680ms cubic-bezier(0.4, 0, 0.2, 1),
+      transform 760ms cubic-bezier(0.22, 0.72, 0.2, 1);
     transition-delay: 120ms;
   }
 
@@ -654,10 +675,6 @@ onBeforeUnmount(() => {
     transition-delay: 140ms;
   }
 
-  .discovery-reveal.is-touch-revealed .discovery-reveal__lens {
-    animation: discovery-touch-origin 760ms cubic-bezier(0.22, 0.65, 0.28, 1) both;
-  }
-
   .discovery-reveal__particle,
   .discovery-reveal__wave,
   .discovery-reveal__lens-core {
@@ -674,17 +691,29 @@ onBeforeUnmount(() => {
   }
 }
 
-@keyframes discovery-touch-origin {
+@keyframes discovery-touch-pulse {
   0% {
     opacity: 0;
-    scale: 0.15;
+    scale: 0.04;
   }
-  32% {
+  8% {
     opacity: 0.34;
+  }
+  18% {
+    opacity: 0.58;
+    scale: 1.9;
+  }
+  45% {
+    opacity: 0.2;
+    scale: 5.8;
+  }
+  72% {
+    opacity: 0.07;
+    scale: 8.5;
   }
   100% {
     opacity: 0;
-    scale: 1.55;
+    scale: 10.5;
   }
 }
 
@@ -773,6 +802,11 @@ onBeforeUnmount(() => {
 
   .discovery-reveal__particle {
     display: none;
+  }
+
+  .discovery-reveal__touch-pulse {
+    display: none;
+    animation: none;
   }
 
   .discovery-reveal__wave {

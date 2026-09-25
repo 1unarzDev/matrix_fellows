@@ -1,5 +1,25 @@
 <script setup lang="ts">
-defineProps<{ active: boolean }>()
+const preview = useTemplateRef<HTMLElement>('preview')
+const revealed = ref(false)
+let revealObserver: IntersectionObserver | undefined
+
+onMounted(() => {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    revealed.value = true
+    return
+  }
+  revealObserver = new IntersectionObserver(
+    ([entry]) => {
+      if (!entry?.isIntersecting) return
+      revealed.value = true
+      revealObserver?.disconnect()
+    },
+    { threshold: 0.14, rootMargin: '0px 0px -8% 0px' },
+  )
+  if (preview.value) revealObserver.observe(preview.value)
+})
+
+onBeforeUnmount(() => revealObserver?.disconnect())
 
 const officers = [
   {
@@ -39,8 +59,9 @@ const officers = [
 
 <template>
   <section
+    ref="preview"
     class="officer-preview"
-    :class="{ 'officer-preview--active': active }"
+    :class="{ 'officer-preview--active': revealed }"
     aria-labelledby="officer-preview-title"
   >
     <header class="officer-preview__header">
@@ -85,7 +106,7 @@ const officers = [
 <style scoped>
 .officer-preview {
   width: min(68rem, calc(100vw - 3rem));
-  margin: clamp(4rem, 8vh, 6.5rem) auto 0;
+  margin: clamp(5rem, 10vh, 8rem) auto 0;
   text-align: left;
 }
 .officer-preview__header {
@@ -133,6 +154,7 @@ const officers = [
 [data-ready='true'] .officer-preview:not(.officer-preview--active) .officer-card {
   opacity: 0;
   transform: translate3d(0, 18px, 0) scale(0.985);
+  transition: none;
 }
 .officer-card__portrait {
   position: relative;
@@ -256,7 +278,7 @@ const officers = [
 @media (max-width: 639px) {
   .officer-preview {
     width: min(100%, 31rem);
-    margin-top: 4rem;
+    margin-top: 5rem;
   }
   .officer-preview__header {
     display: block;

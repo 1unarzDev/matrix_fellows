@@ -95,7 +95,17 @@ test('Connect introduces all four officers with responsive portraits and restrai
   await page.locator('[data-ready="true"]').waitFor()
 
   const preview = page.getByRole('region', { name: 'Meet the officers.' })
-  await expect(preview).toBeVisible()
+  const cards = preview.locator('.officer-card')
+  await expect(preview).not.toBeInViewport()
+  const initialPreviewBounds = await preview.boundingBox()
+  expect(initialPreviewBounds).not.toBeNull()
+  expect(initialPreviewBounds!.y).toBeGreaterThanOrEqual(
+    await page.evaluate(() => window.innerHeight),
+  )
+  await expect(cards.first()).toHaveCSS('opacity', '0')
+  await preview.scrollIntoViewIfNeeded()
+  await expect(cards.first()).toHaveCSS('opacity', '1')
+  await expect(preview).toBeInViewport()
   for (const [name, role] of [
     ['Liam Bray', 'Founder'],
     ['Nicholas Cheng', 'Co-Founder / VP'],
@@ -110,9 +120,7 @@ test('Connect introduces all four officers with responsive portraits and restrai
     )
   }
 
-  const cards = preview.locator('.officer-card')
   await expect(cards).toHaveCount(4)
-  await expect(cards.first()).toHaveCSS('opacity', '1')
   if (testInfo.project.name === 'desktop') {
     const portrait = cards.first().locator('.officer-card__portrait')
     const image = portrait.locator('img')

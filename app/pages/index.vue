@@ -675,29 +675,33 @@ onBeforeUnmount(() => {
         class="flex min-h-[115svh] items-center justify-center px-6 py-36 text-center outline-none sm:px-10"
       >
         <div class="w-full max-w-6xl">
-          <p class="mb-9 text-[10px] uppercase tracking-[.25em] text-acid">
-            05 — No discovery exists alone
-          </p>
-          <h2
-            id="connection-title"
-            class="font-display text-5xl font-medium leading-[1.07] tracking-[-.055em] sm:text-7xl lg:text-8xl"
+          <div
+            class="mx-auto flex min-h-[calc(100svh-9rem)] max-w-4xl flex-col items-center justify-center"
           >
-            One curious mind.<br /><span
-              class="bg-linear-to-r from-[#ddd6f2] via-[#e7dff7] to-[#d2c4ee] bg-clip-text text-transparent drop-shadow-[0_0_22px_#b79de83d] sm:from-[#b6e4ee] sm:via-[#e2d4f7] sm:to-[#c7b5ed]"
-              >Infinite connections.</span
+            <p class="mb-9 text-[10px] uppercase tracking-[.25em] text-acid">
+              05 — No discovery exists alone
+            </p>
+            <h2
+              id="connection-title"
+              class="font-display text-5xl font-medium leading-[1.07] tracking-[-.055em] sm:text-7xl lg:text-8xl"
             >
-          </h2>
-          <p class="mx-auto mt-9 max-w-lg text-base leading-relaxed text-paper/70">
-            Ideas connect. Disciplines overlap. One person’s question becomes another person’s
-            breakthrough. That is how knowledge moves forward. Together.
-          </p>
-          <a
-            href="#community"
-            class="tactile mt-10 inline-flex items-center gap-8 rounded-full bg-acid px-7 py-4 text-sm font-medium text-ink [transition-duration:1s,1s,1s,200ms,200ms,200ms,1s] hover:bg-acid/90 hover:shadow-[0_6px_24px_color-mix(in_srgb,var(--color-acid)_18%,transparent)]"
-            @click="scrollTo($event, 'community')"
-            >There’s a place for you here <SiteIcon :size="17"
-          /></a>
-          <OfficerPreview :active="active === 4" />
+              One curious mind.<br /><span
+                class="bg-linear-to-r from-[#ddd6f2] via-[#e7dff7] to-[#d2c4ee] bg-clip-text text-transparent drop-shadow-[0_0_22px_#b79de83d] sm:from-[#b6e4ee] sm:via-[#e2d4f7] sm:to-[#c7b5ed]"
+                >Infinite connections.</span
+              >
+            </h2>
+            <p class="mx-auto mt-9 max-w-lg text-base leading-relaxed text-paper/70">
+              Ideas connect. Disciplines overlap. One person’s question becomes another person’s
+              breakthrough. That is how knowledge moves forward. Together.
+            </p>
+            <a
+              href="#community"
+              class="tactile mt-10 inline-flex items-center gap-8 rounded-full bg-acid px-7 py-4 text-sm font-medium text-ink [transition-duration:1s,1s,1s,200ms,200ms,200ms,1s] hover:bg-acid/90 hover:shadow-[0_6px_24px_color-mix(in_srgb,var(--color-acid)_18%,transparent)]"
+              @click="scrollTo($event, 'community')"
+              >There’s a place for you here <SiteIcon :size="17"
+            /></a>
+          </div>
+          <OfficerPreview />
         </div>
       </section>
 

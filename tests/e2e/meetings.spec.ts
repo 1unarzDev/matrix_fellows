@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import sharp from 'sharp'
 
 test('meetings route renders a crawlable confirmed and projected schedule', async ({ page }, testInfo) => {
   const response = await page.goto('/meetings')
@@ -77,7 +78,7 @@ test('meetings page and its shared navigation do not overflow narrow screens', a
   }
 })
 
-test('saved opportunity periods glow, overlap in separate lanes, and keep middle days actionable', async ({ page }) => {
+test('saved opportunity periods glow, overlap in separate lanes, and keep middle days actionable', async ({ page }, testInfo) => {
   await page.addInitScript(() =>
     localStorage.setItem(
       'matrix-fellows:saved-opportunities:v1',
@@ -189,6 +190,38 @@ test('saved opportunity periods glow, overlap in separate lanes, and keep middle
   const toolbar = dialog.locator('.meeting-dialog__toolbar')
   const switcher = dialog.locator('.meeting-dialog__switcher')
   const detail = dialog.locator('.calendar-detail')
+  const detailGlow = detail.locator('.calendar-detail__glow')
+  await expect(detailGlow).toHaveCSS('mask-image', /linear-gradient/)
+  if (testInfo.project.name === 'mobile') {
+    const [panelBox, toolbarBox, panelImage] = await Promise.all([
+      panel.boundingBox(),
+      toolbar.boundingBox(),
+      panel.screenshot(),
+    ])
+    expect(panelBox).not.toBeNull()
+    expect(toolbarBox).not.toBeNull()
+    const { data: pixels, info } = await sharp(panelImage).raw().toBuffer({ resolveWithObject: true })
+    const scale = info.width / panelBox!.width
+    const seamY = Math.round((toolbarBox!.y + toolbarBox!.height - panelBox!.y) * scale)
+    const rowLuminance = (y: number) => {
+      let total = 0
+      let samples = 0
+      // Sample the quiet center band so text and controls cannot masquerade as a full-width seam.
+      for (let x = Math.round(info.width * 0.4); x < Math.round(info.width * 0.6); x += 1) {
+        const index = (y * info.width + x) * info.channels
+        total += (pixels[index]! + pixels[index + 1]! + pixels[index + 2]!) / 3
+        samples += 1
+      }
+      return total / samples
+    }
+    const seamJump = Math.max(
+      ...Array.from({ length: 7 }, (_, index) => {
+        const y = seamY - 2 + index
+        return Math.abs(rowLuminance(y + 1) - rowLuminance(y))
+      }),
+    )
+    expect(seamJump).toBeLessThan(3)
+  }
   await expect(panel).toHaveCSS('border-top-width', '1px')
   await expect(panel).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
   await expect(detail).toHaveCSS('border-top-width', '0px')

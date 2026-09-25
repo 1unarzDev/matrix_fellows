@@ -105,22 +105,6 @@ const periodLanes = computed(() => {
   }
   return result
 })
-const rangeSegments = (date: string) =>
-  (entriesByDate.value.get(date) || [])
-    .filter((entry) => entry.period?.display === 'span')
-    .map((entry) => {
-      const day = new Date(`${date}T12:00:00Z`).getUTCDay()
-      const monthDay = Number(date.slice(8, 10))
-      const next = new Date(`${date}T12:00:00Z`)
-      next.setUTCDate(next.getUTCDate() + 1)
-      const monthEnd = next.getUTCMonth() !== Number(date.slice(5, 7)) - 1
-      return {
-        entry,
-        lane: periodLanes.value.get(entry.period!.id) || 0,
-        starts: date === entry.period!.startDate || day === 0 || monthDay === 1,
-        ends: date === entry.period!.endDate || day === 6 || monthEnd,
-      }
-    })
 const nextMeetingId = computed(
   () => sorted.value.find((meeting) => meetingDisplayStatus(meeting) !== 'past')?.id,
 )
@@ -139,6 +123,53 @@ const days = computed(() => {
   }
   while (cells.length % 7) cells.push(null)
   return cells
+})
+const periodBars = computed(() => {
+  const bars: Array<{
+    key: string
+    entry: CalendarOpportunityEntry
+    row: number
+    startColumn: number
+    endColumn: number
+    lane: number
+  }> = []
+  const periods = [...new Map(
+    allCalendarEntries.value
+      .filter((entry) => entry.period?.display === 'span')
+      .map((entry) => [entry.period!.id, entry]),
+  ).values()]
+
+  for (const entry of periods) {
+    const indexes = days.value.flatMap((cell, index) =>
+      cell && cell.date >= entry.period!.startDate && cell.date <= entry.period!.endDate
+        ? [index]
+        : [],
+    )
+    let groupStart = -1
+    let previous = -1
+    const pushGroup = (end: number) => {
+      if (groupStart < 0) return
+      const row = Math.floor(groupStart / 7) + 1
+      bars.push({
+        key: `${entry.period!.id}-${row}`,
+        entry,
+        row,
+        startColumn: (groupStart % 7) + 1,
+        endColumn: (end % 7) + 2,
+        lane: Math.min(periodLanes.value.get(entry.period!.id) || 0, 2),
+      })
+    }
+    for (const index of indexes) {
+      if (groupStart < 0) groupStart = index
+      else if (index !== previous + 1 || Math.floor(index / 7) !== Math.floor(previous / 7)) {
+        pushGroup(previous)
+        groupStart = index
+      }
+      previous = index
+    }
+    if (previous >= 0) pushGroup(previous)
+  }
+  return bars
 })
 
 const moveMonth = (amount: number) => {
@@ -273,14 +304,37 @@ onMounted(() => {
         <Transition :name="`meeting-month-${direction}`" mode="out-in">
           <div
             :key="monthKey"
-            class="grid grid-cols-7 gap-1.5"
+            class="relative grid grid-cols-7 gap-1.5"
             role="grid"
             :aria-label="monthLabel"
           >
             <div
+              class="meeting-period-layer"
+              :style="{ gridTemplateRows: `repeat(${days.length / 7}, minmax(0, 1fr))` }"
+              aria-hidden="true"
+            >
+              <span
+                v-for="bar in periodBars"
+                :key="bar.key"
+                class="meeting-period__bar"
+                :class="{
+                  'meeting-period__bar--saved': bar.entry.saved,
+                  'meeting-period__bar--tentative': bar.entry.state === 'tentative',
+                }"
+                :data-period-id="bar.entry.period!.id"
+                :data-period-lane="bar.lane"
+                :style="{
+                  gridColumn: `${bar.startColumn} / ${bar.endColumn}`,
+                  gridRow: `${bar.row}`,
+                  zIndex: bar.lane + 1,
+                  '--period-shrink': `${bar.lane * 4}px`,
+                }"
+              />
+            </div>
+            <div
               v-for="(cell, index) in days"
               :key="cell?.date || `blank-${index}`"
-              class="aspect-square min-w-0"
+              class="meeting-calendar__cell aspect-square min-w-0"
               role="gridcell"
             >
               <button
@@ -292,7 +346,7 @@ onMounted(() => {
                   {
                     'meeting-day--next': cell.meeting?.id === nextMeetingId,
                     'meeting-day--saved': cell.entries.some((entry) => entry.saved),
-                    'meeting-day--period': rangeSegments(cell.date).length,
+                    'meeting-day--period': cell.entries.some((entry) => entry.period?.display === 'span'),
                     'meeting-day--period-only': !cell.meeting
                       && cell.entries.length > 0
                       && cell.entries.every((entry) => entry.period?.display === 'span'),
@@ -303,28 +357,6 @@ onMounted(() => {
                   : `${cell.entries.map((entry) => `${entry.opportunityTitle}: ${entry.milestoneTitle}${entry.period?.display === 'span' ? `, ${entry.period.startDate} through ${entry.period.endDate}` : ''}${entry.saved ? ', saved on this device' : ''}`).join(', ')}, ${cell.date}`"
                 @click="cell.meeting ? selectMeeting(cell.meeting, $event) : selectEntries(cell.entries, $event)"
               >
-                <span
-                  v-for="segment in rangeSegments(cell.date)"
-                  :key="segment.entry.period!.id"
-                  class="meeting-day__period"
-                  :data-period-id="segment.entry.period!.id"
-                  :data-saved="segment.entry.saved || undefined"
-                  :data-period-position="segment.starts && segment.ends
-                    ? 'single'
-                    : segment.starts
-                      ? 'start'
-                      : segment.ends
-                        ? 'end'
-                        : 'middle'"
-                  :class="{
-                    'meeting-day__period--start': segment.starts,
-                    'meeting-day__period--end': segment.ends,
-                    'meeting-day__period--saved': segment.entry.saved,
-                    'meeting-day__period--tentative': segment.entry.state === 'tentative',
-                  }"
-                  :style="`--period-offset:${Math.min(segment.lane, 2) * 7}px`"
-                  aria-hidden="true"
-                />
                 <span class="meeting-day__number">{{ cell.day }}</span>
                 <span v-if="cell.meeting" class="meeting-day__signal" aria-hidden="true" />
                 <span v-if="cell.entries.some((entry) => entry.period?.display !== 'span')" class="meeting-day__opportunity-signals" aria-hidden="true">
@@ -505,53 +537,47 @@ onMounted(() => {
   z-index: 3;
   text-shadow: 0 1px 5px rgb(5 8 8 / 72%);
 }
-.meeting-day__period {
+.meeting-calendar__cell {
+  position: relative;
+  z-index: 2;
+}
+.meeting-period-layer {
   position: absolute;
   z-index: 1;
-  top: calc(14% + var(--period-offset));
-  right: -0.3rem;
-  left: -0.3rem;
-  height: 0.48rem;
-  border-block: 1px solid rgb(145 185 217 / 22%);
-  background: linear-gradient(90deg, rgb(145 185 217 / 10%), rgb(145 185 217 / 19%));
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 3%),
-    0 0 9px rgb(145 185 217 / 10%);
-  transition:
-    background-color 220ms ease,
-    border-color 220ms ease,
-    box-shadow 320ms ease;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.375rem;
   pointer-events: none;
 }
-.meeting-day__period--start {
-  left: 11%;
-  border-left: 1px solid rgb(145 185 217 / 22%);
-  border-radius: 999px 0 0 999px;
-}
-.meeting-day__period--end {
-  right: 11%;
-  border-right: 1px solid rgb(145 185 217 / 22%);
-  border-radius: 0 999px 999px 0;
-}
-.meeting-day__period--start.meeting-day__period--end {
+.meeting-period__bar {
+  align-self: center;
+  height: calc(92% - var(--period-shrink));
+  margin-inline: 0.12rem;
+  border: 1px solid rgb(145 185 217 / 21%);
   border-radius: 999px;
+  background: linear-gradient(100deg, rgb(145 185 217 / 8%), rgb(145 185 217 / 16%));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 3%),
+    0 0 14px rgb(145 185 217 / 9%);
 }
-.meeting-day__period--saved {
+.meeting-period__bar--saved {
   border-color: rgb(228 187 114 / 28%);
-  background: linear-gradient(90deg, rgb(228 187 114 / 13%), rgb(196 178 238 / 20%));
+  background: linear-gradient(100deg, rgb(228 187 114 / 12%), rgb(196 178 238 / 18%));
   box-shadow:
     inset 0 1px 0 rgb(255 250 240 / 5%),
-    0 0 7px rgb(228 187 114 / 18%),
-    0 0 12px rgb(196 178 238 / 12%);
+    0 0 11px rgb(228 187 114 / 14%),
+    0 0 18px rgb(196 178 238 / 9%);
 }
-.meeting-day__period--tentative {
+.meeting-period__bar--tentative {
+  border-style: dashed;
+  border-color: rgb(183 162 226 / 22%);
   background: repeating-linear-gradient(
     90deg,
-    rgb(145 185 217 / 13%) 0 0.28rem,
-    rgb(145 185 217 / 4%) 0.28rem 0.46rem
+    rgb(145 185 217 / 10%) 0 0.36rem,
+    rgb(145 185 217 / 3%) 0.36rem 0.58rem
   );
-  border-color: rgb(183 162 226 / 18%);
-  box-shadow: 0 0 8px rgb(183 162 226 / 7%);
+  box-shadow: 0 0 12px rgb(183 162 226 / 7%);
 }
 .meeting-day--period-only,
 .meeting-day--period-only.meeting-day--saved,
@@ -561,17 +587,11 @@ onMounted(() => {
 }
 .meeting-day--period-only:hover,
 .meeting-day--period-only:focus-visible {
+  color: #fffaf0;
   background: transparent;
+  text-shadow: 0 0 12px rgb(228 187 114 / 22%);
   box-shadow: none;
   transform: none;
-}
-.meeting-day--period-only:hover .meeting-day__period,
-.meeting-day--period-only:focus-visible .meeting-day__period {
-  border-color: rgb(228 187 114 / 38%);
-  background-color: rgb(228 187 114 / 5%);
-  box-shadow:
-    inset 0 1px 0 rgb(255 250 240 / 7%),
-    0 0 11px rgb(228 187 114 / 16%);
 }
 .meeting-day--saved {
   background: rgb(228 187 114 / 4.5%);

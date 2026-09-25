@@ -105,6 +105,11 @@ test('saved opportunity periods glow, overlap in separate lanes, and keep middle
             period: { id: 'competition-period', startDate: '2026-10-13', endDate: '2026-10-15', display: 'span' },
           }),
           entry({
+            id: 'weekend-period', opportunityId: 'calendar:weekend', saved: false,
+            opportunityTitle: 'Weekend research program', milestoneTitle: 'Program session', date: '2026-10-09',
+            period: { id: 'weekend-period', startDate: '2026-10-09', endDate: '2026-10-12', display: 'span' },
+          }),
+          entry({
             id: 'saved-single-deadline', opportunityId: 'saved:deadline',
             opportunityTitle: 'Single-day deadline', milestoneTitle: 'Application due',
             date: '2026-10-20', kind: 'deadline', period: undefined,
@@ -130,36 +135,38 @@ test('saved opportunity periods glow, overlap in separate lanes, and keep middle
 
   const middle = calendar.getByRole('button', { name: /Saved Summer Institute.*Saved Research Competition.*2026-10-14/ })
   await expect(middle.locator('.meeting-day__saved-signal')).toHaveCount(0)
-  const segments = middle.locator('.meeting-day__period')
-  await expect(segments).toHaveCount(2)
-  await expect(segments.first()).toHaveCSS('box-shadow', /rgb/)
   await expect(middle).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
   await expect(middle).toHaveCSS('box-shadow', 'none')
-  const laneTops = await segments.evaluateAll((items) =>
-    items.map((item) => Number.parseFloat(getComputedStyle(item).top)),
-  )
-  expect(Math.abs(laneTops[0]! - laneTops[1]!)).toBeGreaterThanOrEqual(3.5)
-  const capsuleHeight = await segments.first().evaluate((item) =>
-    Number.parseFloat(getComputedStyle(item).height),
-  )
-  expect(capsuleHeight).toBeGreaterThanOrEqual(6)
-  await expect(segments.first()).toHaveCSS('border-radius', '0px')
-  const [middleBounds, capsuleBounds] = await Promise.all([
-    middle.boundingBox(),
-    segments.first().boundingBox(),
+  const instituteSlider = calendar.locator('[data-period-id="institute-period"]')
+  const competitionSlider = calendar.locator('[data-period-id="competition-period"]')
+  await expect(instituteSlider).toHaveCount(1)
+  await expect(competitionSlider).toHaveCount(1)
+  await expect(instituteSlider).toHaveCSS('border-radius', /999px/)
+  await expect(instituteSlider).toHaveCSS('background-image', /linear-gradient/)
+  const rangeStart = calendar.locator('button[aria-label$=", 2026-10-12"]')
+  const rangeEnd = calendar.locator('button[aria-label$=", 2026-10-16"]')
+  const [startBounds, endBounds, sliderBounds, competitionBounds] = await Promise.all([
+    rangeStart.boundingBox(),
+    rangeEnd.boundingBox(),
+    instituteSlider.boundingBox(),
+    competitionSlider.boundingBox(),
   ])
-  expect(middleBounds).not.toBeNull()
-  expect(capsuleBounds).not.toBeNull()
-  expect(capsuleBounds!.x).toBeLessThan(middleBounds!.x)
-  expect(capsuleBounds!.x + capsuleBounds!.width).toBeGreaterThan(
-    middleBounds!.x + middleBounds!.width,
+  expect(startBounds).not.toBeNull()
+  expect(endBounds).not.toBeNull()
+  expect(sliderBounds).not.toBeNull()
+  expect(competitionBounds).not.toBeNull()
+  expect(sliderBounds!.height / startBounds!.height).toBeGreaterThan(0.7)
+  expect(sliderBounds!.x).toBeLessThan(startBounds!.x + startBounds!.width * 0.15)
+  expect(sliderBounds!.x + sliderBounds!.width).toBeGreaterThan(
+    endBounds!.x + endBounds!.width * 0.85,
   )
+  expect(Math.abs(sliderBounds!.height - competitionBounds!.height)).toBeGreaterThanOrEqual(3)
   await expect(middle.locator('.meeting-day__number')).toHaveCSS('z-index', '3')
 
-  const rangeStart = calendar.locator('button[aria-label$=", 2026-10-12"]')
-  const startCapsule = rangeStart.locator('[data-period-id="institute-period"]')
-  await expect(startCapsule).toHaveAttribute('data-period-position', 'start')
-  await expect(startCapsule).not.toHaveCSS('border-radius', '0px')
+  const weekendSliders = calendar.locator('[data-period-id="weekend-period"]')
+  await expect(weekendSliders).toHaveCount(2)
+  await expect(weekendSliders.nth(0)).toHaveCSS('border-radius', /999px/)
+  await expect(weekendSliders.nth(1)).toHaveCSS('border-radius', /999px/)
   await middle.click()
   const dialog = page.getByRole('dialog')
   await expect(dialog).toContainText('Saved on this device')

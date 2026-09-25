@@ -137,6 +137,8 @@ const periodBars = computed(() => {
     lane: number
     startsPeriod: boolean
     endsPeriod: boolean
+    fillStart: string
+    fillEnd: string
   }> = []
   const periods = [...new Map(
     allCalendarEntries.value
@@ -155,15 +157,25 @@ const periodBars = computed(() => {
     const pushGroup = (end: number) => {
       if (groupStart < 0) return
       const row = Math.floor(groupStart / 7) + 1
+      const startColumn = (groupStart % 7) + 1
+      const endColumn = (end % 7) + 2
+      const spectrumColor = (gridLine: number) => {
+        const progress = Math.min(1, Math.max(0, (gridLine - 1) / 7))
+        const from = [112, 176, 218]
+        const to = [190, 151, 226]
+        return from.map((value, index) => Math.round(value + (to[index]! - value) * progress)).join(' ')
+      }
       bars.push({
         key: `${entry.period!.id}-${row}`,
         entry,
         row,
-        startColumn: (groupStart % 7) + 1,
-        endColumn: (end % 7) + 2,
+        startColumn,
+        endColumn,
         lane: Math.min(periodLanes.value.get(entry.period!.id) || 0, 2),
         startsPeriod: days.value[groupStart]?.date === entry.period!.startDate,
         endsPeriod: days.value[end]?.date === entry.period!.endDate,
+        fillStart: spectrumColor(startColumn),
+        fillEnd: spectrumColor(endColumn),
       })
     }
     for (const index of indexes) {
@@ -335,6 +347,7 @@ onMounted(() => {
                   'meeting-period__bar--tentative': bar.entry.state === 'tentative',
                   'meeting-period__bar--start': bar.startsPeriod,
                   'meeting-period__bar--end': bar.endsPeriod,
+                  [`meeting-period__bar--lane-${bar.lane}`]: true,
                 }"
                 :data-period-id="bar.entry.period!.id"
                 :data-period-lane="bar.lane"
@@ -343,6 +356,8 @@ onMounted(() => {
                   gridRow: `${bar.row}`,
                   zIndex: bar.lane + 1,
                   '--period-shrink': `${bar.lane * 4}px`,
+                  '--period-fill-start': bar.fillStart,
+                  '--period-fill-end': bar.fillEnd,
                 }"
               />
             </div>
@@ -570,73 +585,38 @@ onMounted(() => {
   pointer-events: none;
 }
 .meeting-period__bar {
-  --period-primary: 145 185 217;
-  --period-secondary: 196 178 238;
+  --period-outline: 145 185 217;
   position: relative;
   align-self: center;
   height: calc(90% - var(--period-shrink));
   margin-inline: 0.1rem;
-  border: 1px solid rgb(var(--period-primary) / 24%);
+  border: 1px solid rgb(var(--period-outline) / 30%);
   border-radius: 999px;
   background:
     linear-gradient(180deg, rgb(255 255 255 / 3.8%), transparent 28%, rgb(4 8 9 / 4%) 100%),
-    linear-gradient(100deg, rgb(var(--period-primary) / 8%), rgb(var(--period-secondary) / 15%));
+    linear-gradient(90deg, rgb(var(--period-fill-start) / 10%), rgb(var(--period-fill-end) / 17%));
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 4.5%),
     inset 0 -1px 0 rgb(2 6 7 / 12%),
-    0 0 0 1px rgb(var(--period-primary) / 2.5%),
-    0 0 16px rgb(var(--period-primary) / 8%);
+    0 0 0 1px rgb(var(--period-outline) / 2.5%),
+    0 0 16px rgb(var(--period-outline) / 8%);
 }
-.meeting-period__bar::before,
-.meeting-period__bar::after {
-  position: absolute;
-  top: 50%;
-  width: 1.15rem;
-  height: 72%;
-  border-radius: 999px;
-  opacity: 0;
-  content: '';
-  background: radial-gradient(
-    ellipse at center,
-    rgb(var(--period-primary) / 28%) 0%,
-    rgb(var(--period-primary) / 12%) 34%,
-    transparent 74%
-  );
-  filter: blur(0.4px);
-  transform: translateY(-50%) scale(0.78);
-}
-.meeting-period__bar::before { left: -0.08rem; }
-.meeting-period__bar::after { right: -0.08rem; }
-.meeting-period__bar--start::before,
-.meeting-period__bar--end::after {
-  opacity: 0.9;
-  transform: translateY(-50%) scale(1);
-}
+.meeting-period__bar--lane-1 { --period-outline: 228 187 114; }
+.meeting-period__bar--lane-2 { --period-outline: 196 178 238; }
 .meeting-period__bar--saved {
-  --period-primary: 228 187 114;
-  --period-secondary: 196 178 238;
-  border-color: rgb(var(--period-primary) / 31%);
-  background:
-    linear-gradient(180deg, rgb(255 250 240 / 5%), transparent 30%, rgb(8 6 4 / 5%) 100%),
-    linear-gradient(100deg, rgb(var(--period-primary) / 11%), rgb(var(--period-secondary) / 17%));
   box-shadow:
     inset 0 1px 0 rgb(255 250 240 / 6%),
     inset 0 -1px 0 rgb(8 5 2 / 13%),
-    0 0 0 1px rgb(var(--period-primary) / 3%),
-    0 0 12px rgb(var(--period-primary) / 12%),
-    0 0 20px rgb(var(--period-secondary) / 7%);
+    0 0 0 1px rgb(var(--period-outline) / 4%),
+    0 0 12px rgb(228 187 114 / 10%),
+    0 0 20px rgb(196 178 238 / 6%);
 }
 .meeting-period__bar--tentative {
   border-style: dashed;
-  border-color: rgb(183 162 226 / 26%);
-  background: repeating-linear-gradient(
-    90deg,
-    rgb(145 185 217 / 9%) 0 0.42rem,
-    rgb(145 185 217 / 2.5%) 0.42rem 0.7rem
-  );
+  border-color: rgb(var(--period-outline) / 30%);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 2.5%),
-    0 0 12px rgb(183 162 226 / 6%);
+    0 0 12px rgb(var(--period-outline) / 6%);
 }
 .meeting-day--period-only,
 .meeting-day--period-only.meeting-day--saved,

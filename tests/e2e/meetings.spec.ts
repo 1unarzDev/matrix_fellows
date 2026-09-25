@@ -159,14 +159,15 @@ test('saved opportunity periods glow, overlap in separate lanes, and keep middle
   await expect(instituteSlider).toHaveCSS('background-image', /linear-gradient/)
   await expect(instituteSlider).toHaveClass(/meeting-period__bar--start/)
   await expect(instituteSlider).toHaveClass(/meeting-period__bar--end/)
-  const endpointAccent = await instituteSlider.evaluate((element) => ({
-    start: getComputedStyle(element, '::before').backgroundImage,
-    end: getComputedStyle(element, '::after').backgroundImage,
-    width: getComputedStyle(element, '::before').width,
+  const spatialGradient = await instituteSlider.evaluate((element) => ({
+    background: getComputedStyle(element).backgroundImage,
+    start: getComputedStyle(element).getPropertyValue('--period-fill-start').trim(),
+    end: getComputedStyle(element).getPropertyValue('--period-fill-end').trim(),
   }))
-  expect(endpointAccent.start).toContain('radial-gradient')
-  expect(endpointAccent.end).toContain('radial-gradient')
-  expect(Number.parseFloat(endpointAccent.width)).toBeGreaterThan(10)
+  expect(spatialGradient.background).toContain('linear-gradient')
+  expect(spatialGradient.start).not.toBe(spatialGradient.end)
+  await expect(instituteSlider).toHaveClass(/meeting-period__bar--lane-1/)
+  await expect(competitionSlider).toHaveClass(/meeting-period__bar--lane-0/)
   const rangeStart = periodStart
   const rangeEnd = periodEnd
   const [startBounds, endBounds, sliderBounds, competitionBounds] = await Promise.all([

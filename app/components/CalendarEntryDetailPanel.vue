@@ -93,10 +93,10 @@ const dateContext = computed(() => {
 .calendar-detail--tentative .calendar-detail__signal { background:transparent; border-style:dashed; }
 .calendar-detail__label { font-size:.5625rem; letter-spacing:.16em; text-transform:uppercase; color:color-mix(in srgb,var(--color-paper) 38%,transparent); }
 .calendar-detail__section { margin-top:1.5rem; padding-top:1.35rem; background:linear-gradient(90deg,color-mix(in srgb,var(--entry-accent) 18%,transparent),transparent) top/100% 1px no-repeat; }
-.calendar-detail__action,.calendar-detail__secondary { display:inline-flex; min-height:2.75rem; align-items:center; gap:.65rem; border-radius:999px; padding:.72rem 1rem; font-size:.7rem; transition:transform 420ms cubic-bezier(.16,1,.3,1),background-color 220ms ease,color 180ms ease,gap 420ms cubic-bezier(.16,1,.3,1); }
-.calendar-detail__action { color:#f5f0ff; background:color-mix(in srgb,var(--entry-accent) 14%,transparent); box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--entry-accent) 24%,transparent); }
+.calendar-detail__action,.calendar-detail__secondary { display:inline-flex; min-height:2.75rem; align-items:center; gap:.65rem; border-radius:999px; padding:.72rem 1rem; font-size:.7rem; transition:transform 420ms cubic-bezier(.16,1,.3,1),background-color 220ms ease,background-position 420ms cubic-bezier(.16,1,.3,1),border-color 220ms ease,box-shadow 320ms ease,color 180ms ease,gap 420ms cubic-bezier(.16,1,.3,1); }
+.calendar-detail__action { color:rgb(250 245 235/88%); border:1px solid rgb(228 187 114/20%); background:linear-gradient(112deg,rgb(228 187 114/11%),rgb(196 178 238/10%) 58%,rgb(145 185 217/8%)); background-size:160% 100%; box-shadow:inset 0 1px 0 rgb(255 250 240/5%),0 0 18px rgb(196 178 238/4%); }
 .calendar-detail__secondary { color:rgb(244 241 233/55%); }
-.calendar-detail__action:hover,.calendar-detail__action:focus-visible { transform:translateY(-1px); gap:.85rem; background:color-mix(in srgb,var(--entry-accent) 20%,transparent); }
+.calendar-detail__action:hover,.calendar-detail__action:focus-visible { color:#fffaf0; border-color:rgb(228 187 114/34%); transform:translateY(-1px) scale(1.015); gap:.85rem; background-position:100% 0; box-shadow:inset 0 1px 0 rgb(255 250 240/8%),0 7px 24px rgb(0 0 0/12%),0 0 18px rgb(228 187 114/7%); }
 .calendar-detail__secondary:hover,.calendar-detail__secondary:focus-visible { color:var(--color-paper); }
 @media (prefers-reduced-motion:reduce){.calendar-detail__action,.calendar-detail__secondary{transition:none;transform:none}}
 </style>

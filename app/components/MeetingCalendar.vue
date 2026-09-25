@@ -54,6 +54,7 @@ const direction = ref<'forward' | 'backward'>('forward')
 type CalendarDialogItem = { type: 'meeting'; meeting: MeetingEvent } | { type: 'opportunity'; entry: CalendarOpportunityEntry }
 const dialogItem = ref<CalendarDialogItem | null>(null)
 const dialogDateItems = ref<CalendarDialogItem[]>([])
+const dialogDirection = ref<'forward' | 'backward'>('forward')
 const closeButton = ref<HTMLButtonElement | null>(null)
 const mounted = ref(false)
 let returnTarget: HTMLElement | null = null
@@ -179,6 +180,17 @@ const selectEntries = (entries: CalendarOpportunityEntry[], event?: Event) => {
     document.body.style.overflow = 'hidden'
     nextTick(() => closeButton.value?.focus())
   }
+}
+const dialogItemKey = computed(() => {
+  const item = dialogItem.value
+  if (!item) return 'empty'
+  return item.type === 'meeting' ? `meeting-${item.meeting.id}` : `opportunity-${item.entry.id}`
+})
+const selectDialogItem = (item: CalendarDialogItem) => {
+  const currentIndex = dialogItem.value ? dialogDateItems.value.indexOf(dialogItem.value) : 0
+  const nextIndex = dialogDateItems.value.indexOf(item)
+  dialogDirection.value = nextIndex >= currentIndex ? 'forward' : 'backward'
+  dialogItem.value = item
 }
 const closeDialog = () => {
   dialogItem.value = null
@@ -371,34 +383,43 @@ onMounted(() => {
             @click="closeDialog"
           />
           <div data-meeting-dialog-panel class="meeting-dialog__panel">
-            <button
-              ref="closeButton"
-              type="button"
-              class="meeting-dialog__close"
-              aria-label="Close meeting details"
-              @click="closeDialog"
-            >
-              <SiteIcon name="close" :size="17" />
-            </button>
-            <div v-if="dialogDateItems.length > 1" class="meeting-dialog__switcher" aria-label="Items on this date">
+            <div class="meeting-dialog__toolbar">
+              <div v-if="dialogDateItems.length > 1" class="meeting-dialog__switcher" aria-label="Items on this date">
+                <button
+                  v-for="item in dialogDateItems"
+                  :key="item.type === 'meeting' ? item.meeting.id : item.entry.id"
+                  type="button"
+                  class="meeting-dialog__choice"
+                  :class="{ 'meeting-dialog__choice--active': item === dialogItem }"
+                  @click="selectDialogItem(item)"
+                >
+                  <span :class="item.type === 'meeting' ? 'choice-signal--meeting' : `choice-signal--${item.entry.kind}`" class="choice-signal" />
+                  {{ item.type === 'meeting' ? 'Meeting' : item.entry.opportunityTitle }}
+                </button>
+              </div>
+              <span v-else class="meeting-dialog__toolbar-space" aria-hidden="true" />
               <button
-                v-for="item in dialogDateItems"
-                :key="item.type === 'meeting' ? item.meeting.id : item.entry.id"
+                ref="closeButton"
                 type="button"
-                class="meeting-dialog__choice"
-                :class="{ 'meeting-dialog__choice--active': item === dialogItem }"
-                @click="dialogItem = item"
+                class="meeting-dialog__close"
+                aria-label="Close meeting details"
+                @click="closeDialog"
               >
-                <span :class="item.type === 'meeting' ? 'choice-signal--meeting' : `choice-signal--${item.entry.kind}`" class="choice-signal" />
-                {{ item.type === 'meeting' ? 'Meeting' : item.entry.opportunityTitle }}
+                <SiteIcon name="close" :size="17" />
               </button>
             </div>
-            <MeetingDetailPanel
-              v-if="dialogItem.type === 'meeting'"
-              :meeting="dialogItem.meeting"
-              :status="meetingDisplayStatus(dialogItem.meeting)"
-            />
-            <CalendarEntryDetailPanel v-else :entry="dialogItem.entry" />
+            <div class="meeting-dialog__content-shell">
+              <Transition :name="`meeting-detail-${dialogDirection}`" mode="out-in">
+                <div :key="dialogItemKey" class="meeting-dialog__content-swap">
+                  <MeetingDetailPanel
+                    v-if="dialogItem.type === 'meeting'"
+                    :meeting="dialogItem.meeting"
+                    :status="meetingDisplayStatus(dialogItem.meeting)"
+                  />
+                  <CalendarEntryDetailPanel v-else :entry="dialogItem.entry" />
+                </div>
+              </Transition>
+            </div>
           </div>
         </div>
       </Transition>
@@ -770,16 +791,32 @@ onMounted(() => {
   box-shadow: none;
   backdrop-filter: none;
 }
-.meeting-dialog__panel :deep(.meeting-detail__header) {
-  padding-right: 3.25rem;
+.meeting-dialog__panel :deep(.meeting-detail__header),
+.meeting-dialog__panel :deep(.calendar-detail__header) {
+  padding-right: 0;
+}
+.meeting-dialog__toolbar {
+  position: sticky;
+  z-index: 5;
+  top: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.75rem 0.75rem 0.55rem;
+  border-bottom: 0;
+  background: linear-gradient(180deg, rgb(15 20 19 / 96%) 0%, rgb(15 20 19 / 82%) 72%, transparent 100%);
+}
+.meeting-dialog__toolbar-space {
+  min-width: 0;
+  flex: 1;
 }
 .meeting-dialog__switcher {
   position: relative;
-  z-index: 3;
   display: flex;
+  min-width: 0;
+  flex: 1;
   gap: 0.35rem;
-  margin-right: 3.9rem;
-  padding: 0.8rem 0.8rem 0.45rem;
+  padding: 0.05rem;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -805,21 +842,18 @@ onMounted(() => {
   color: rgb(244 241 233 / 85%);
   border-color: rgb(228 187 114 / 24%);
   background: rgb(228 187 114 / 7%);
-  transform: translateY(-1px);
+  box-shadow: inset 0 1px 0 rgb(255 250 240 / 4%), 0 0 14px rgb(228 187 114 / 5%);
+  transform: translateY(-1px) scale(1.012);
 }
 .choice-signal { width: .32rem; height: .32rem; border: 1px solid currentColor; }
 .choice-signal--meeting { border-radius: 999px; color: #e4bb72; background: currentColor; box-shadow: 0 0 7px currentColor; }
 .choice-signal--deadline { color: #c4b2ee; transform: rotate(45deg); }
 .choice-signal--event { color: #91b9d9; border-radius: 999px; background: currentColor; }
 .meeting-dialog__close {
-  position: sticky;
-  z-index: 2;
-  top: 0.8rem;
-  float: right;
   display: grid;
   width: 2.75rem;
   height: 2.75rem;
-  margin: 0.8rem 0.8rem -3.55rem 0;
+  flex: 0 0 auto;
   place-items: center;
   border-radius: 999px;
   border: 1px solid rgb(244 241 233 / 15%);
@@ -862,6 +896,32 @@ onMounted(() => {
   translate: 0 5px;
   scale: 0.992;
 }
+.meeting-dialog__content-shell {
+  position: relative;
+  overflow: hidden;
+}
+.meeting-detail-forward-enter-active,
+.meeting-detail-backward-enter-active {
+  transition:
+    opacity 220ms ease,
+    transform 360ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.meeting-detail-forward-leave-active,
+.meeting-detail-backward-leave-active {
+  transition:
+    opacity 130ms ease,
+    transform 180ms ease;
+}
+.meeting-detail-forward-enter-from,
+.meeting-detail-backward-leave-to {
+  opacity: 0;
+  transform: translate3d(7px, 0, 0) scale(0.995);
+}
+.meeting-detail-forward-leave-to,
+.meeting-detail-backward-enter-from {
+  opacity: 0;
+  transform: translate3d(-5px, 0, 0) scale(0.995);
+}
 @media (max-width: 639px) {
   .meeting-calendar {
     border-radius: 1.25rem;
@@ -878,9 +938,7 @@ onMounted(() => {
     padding: 0.55rem;
   }
   .meeting-dialog__switcher {
-    margin-right: 3.45rem;
-    padding-left: 0.65rem;
-    padding-right: 0.15rem;
+    padding-right: 0.1rem;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -895,7 +953,11 @@ onMounted(() => {
   .meeting-dialog-leave-active,
   .meeting-dialog-enter-active .meeting-dialog__panel,
   .meeting-dialog-leave-active .meeting-dialog__panel,
-  .meeting-dialog__close {
+  .meeting-dialog__close,
+  .meeting-detail-forward-enter-active,
+  .meeting-detail-forward-leave-active,
+  .meeting-detail-backward-enter-active,
+  .meeting-detail-backward-leave-active {
     transition: none;
     transform: none;
     translate: none;

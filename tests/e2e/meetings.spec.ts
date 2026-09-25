@@ -164,12 +164,17 @@ test('saved opportunity periods glow, overlap in separate lanes, and keep middle
   const dialog = page.getByRole('dialog')
   await expect(dialog).toContainText('Saved on this device')
   const panel = dialog.locator('[data-meeting-dialog-panel]')
+  const toolbar = dialog.locator('.meeting-dialog__toolbar')
   const switcher = dialog.locator('.meeting-dialog__switcher')
   const detail = dialog.locator('.calendar-detail')
   await expect(panel).toHaveCSS('border-top-width', '1px')
   await expect(panel).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
   await expect(detail).toHaveCSS('border-top-width', '0px')
   await expect(detail).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
+  await expect(toolbar).toHaveCSS('border-bottom-width', '0px')
+  await expect(toolbar.locator('.meeting-dialog__close')).toHaveCount(1)
+  const officialSource = dialog.getByRole('link', { name: 'Open official source' })
+  await expect(officialSource).toHaveCSS('background-image', /linear-gradient/)
   await expect.poll(async () => {
     const [outer, tabs] = await Promise.all([panel.boundingBox(), switcher.boundingBox()])
     return outer && tabs ? tabs.y - outer.y : -1
@@ -185,7 +190,19 @@ test('saved opportunity periods glow, overlap in separate lanes, and keep middle
     panelBounds!.x + panelBounds!.width,
   )
   await expect(switcher.getByRole('button')).toHaveCount(2)
+  await panel.evaluate((element) => {
+    const observer = new MutationObserver((records) => {
+      if (records.some((record) =>
+        (record.target as HTMLElement).classList.contains('meeting-detail-forward-leave-active'),
+      )) {
+        element.setAttribute('data-detail-transition-observed', 'forward')
+        observer.disconnect()
+      }
+    })
+    observer.observe(element, { subtree: true, attributes: true, attributeFilter: ['class'] })
+  })
   await switcher.getByRole('button', { name: /Saved Research Competition/ }).click()
+  await expect(panel).toHaveAttribute('data-detail-transition-observed', 'forward')
   await expect(dialog.getByRole('heading', { name: 'Competition showcase' })).toBeVisible()
 
   await dialog.locator('.meeting-dialog__close').click()
@@ -199,6 +216,19 @@ test('saved opportunity periods glow, overlap in separate lanes, and keep middle
   await expect(singleDateSwitcher.getByRole('button')).toHaveCount(2)
   await singleDateSwitcher.getByRole('button', { name: 'Single-day workshop' }).click()
   await expect(singleDateDialog.getByRole('heading', { name: 'Workshop presentation' })).toBeVisible()
+  const singleDatePanel = singleDateDialog.locator('[data-meeting-dialog-panel]')
+  await singleDatePanel.evaluate((element) => {
+    const observer = new MutationObserver((records) => {
+      if (records.some((record) =>
+        (record.target as HTMLElement).classList.contains('meeting-detail-backward-leave-active'),
+      )) {
+        element.setAttribute('data-detail-transition-observed', 'backward')
+        observer.disconnect()
+      }
+    })
+    observer.observe(element, { subtree: true, attributes: true, attributeFilter: ['class'] })
+  })
   await singleDateSwitcher.getByRole('button', { name: 'Single-day deadline' }).click()
+  await expect(singleDatePanel).toHaveAttribute('data-detail-transition-observed', 'backward')
   await expect(singleDateDialog.getByRole('heading', { name: 'Application due' })).toBeVisible()
 })

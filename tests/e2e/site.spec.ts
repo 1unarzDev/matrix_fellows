@@ -87,6 +87,46 @@ test('reduced motion keeps all content available without initializing WebGL', as
   await page.keyboard.press('Escape')
 })
 
+test('Connect introduces all four officers with responsive portraits and restrained color motion', async ({
+  page,
+}, testInfo) => {
+  test.setTimeout(60_000)
+  await page.goto('/#connection')
+  await page.locator('[data-ready="true"]').waitFor()
+
+  const preview = page.getByRole('region', { name: 'Meet the officers.' })
+  await expect(preview).toBeVisible()
+  for (const [name, role] of [
+    ['Liam Bray', 'Founder'],
+    ['Nicholas Cheng', 'Co-Founder / VP'],
+    ['Alysia Bui', 'Secretary'],
+    ['Nu Nu', 'Treasurer'],
+  ]) {
+    await expect(preview.getByRole('heading', { name, exact: true })).toBeVisible()
+    await expect(preview.getByText(role, { exact: true })).toBeVisible()
+    await expect(preview.getByRole('img', { name: `Portrait of ${name}` })).toHaveJSProperty(
+      'complete',
+      true,
+    )
+  }
+
+  const cards = preview.locator('.officer-card')
+  await expect(cards).toHaveCount(4)
+  await expect(cards.first()).toHaveCSS('opacity', '1')
+  if (testInfo.project.name === 'desktop') {
+    const portrait = cards.first().locator('.officer-card__portrait')
+    const image = portrait.locator('img')
+    await portrait.scrollIntoViewIfNeeded()
+    const restingFilter = await image.evaluate((element) => getComputedStyle(element).filter)
+    const restingY = (await portrait.boundingBox())!.y
+    await cards.first().hover()
+    await expect.poll(() => image.evaluate((element) => getComputedStyle(element).filter)).not.toBe(
+      restingFilter,
+    )
+    await expect.poll(async () => (await portrait.boundingBox())!.y).toBeLessThan(restingY - 2)
+  }
+})
+
 test('WebGL failure preserves the HTML and section navigation', async ({ page }) => {
   await page.addInitScript(() => {
     const original = HTMLCanvasElement.prototype.getContext

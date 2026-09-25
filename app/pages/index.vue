@@ -674,7 +674,7 @@ onBeforeUnmount(() => {
         aria-labelledby="connection-title"
         class="flex min-h-[115svh] items-center justify-center px-6 py-36 text-center outline-none sm:px-10"
       >
-        <div class="max-w-4xl">
+        <div class="w-full max-w-6xl">
           <p class="mb-9 text-[10px] uppercase tracking-[.25em] text-acid">
             05 — No discovery exists alone
           </p>
@@ -697,6 +697,7 @@ onBeforeUnmount(() => {
             @click="scrollTo($event, 'community')"
             >There’s a place for you here <SiteIcon :size="17"
           /></a>
+          <OfficerPreview :active="active === 4" />
         </div>
       </section>
 

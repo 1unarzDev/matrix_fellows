@@ -157,6 +157,8 @@ test('saved opportunity periods glow, overlap in separate lanes, and keep middle
   await expect(competitionSlider).toHaveCount(1)
   await expect(instituteSlider).toHaveCSS('border-radius', /999px/)
   await expect(instituteSlider).toHaveCSS('background-image', /linear-gradient/)
+  await expect(instituteSlider).toHaveClass(/meeting-period__bar--start/)
+  await expect(instituteSlider).toHaveClass(/meeting-period__bar--end/)
   const rangeStart = periodStart
   const rangeEnd = periodEnd
   const [startBounds, endBounds, sliderBounds, competitionBounds] = await Promise.all([
@@ -181,6 +183,10 @@ test('saved opportunity periods glow, overlap in separate lanes, and keep middle
   await expect(weekendSliders).toHaveCount(2)
   await expect(weekendSliders.nth(0)).toHaveCSS('border-radius', /999px/)
   await expect(weekendSliders.nth(1)).toHaveCSS('border-radius', /999px/)
+  await expect(weekendSliders.nth(0)).toHaveClass(/meeting-period__bar--start/)
+  await expect(weekendSliders.nth(0)).not.toHaveClass(/meeting-period__bar--end/)
+  await expect(weekendSliders.nth(1)).not.toHaveClass(/meeting-period__bar--start/)
+  await expect(weekendSliders.nth(1)).toHaveClass(/meeting-period__bar--end/)
   await middle.click()
   const dialog = page.getByRole('dialog')
   await expect(dialog).toContainText('Saved on this device')

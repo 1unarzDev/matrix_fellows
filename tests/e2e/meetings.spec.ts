@@ -101,8 +101,18 @@ test('saved opportunity periods glow, overlap in separate lanes, and keep middle
           entry({}),
           entry({
             id: 'saved-competition-period', opportunityId: 'saved:competition',
-            opportunityTitle: 'Saved Research Competition', date: '2026-10-13',
+            opportunityTitle: 'Saved Research Competition', milestoneTitle: 'Competition showcase', date: '2026-10-13',
             period: { id: 'competition-period', startDate: '2026-10-13', endDate: '2026-10-15', display: 'span' },
+          }),
+          entry({
+            id: 'saved-single-deadline', opportunityId: 'saved:deadline',
+            opportunityTitle: 'Single-day deadline', milestoneTitle: 'Application due',
+            date: '2026-10-20', kind: 'deadline', period: undefined,
+          }),
+          entry({
+            id: 'saved-single-workshop', opportunityId: 'saved:workshop',
+            opportunityTitle: 'Single-day workshop', milestoneTitle: 'Workshop presentation',
+            date: '2026-10-20', kind: 'event', period: undefined,
           }),
         ],
       },
@@ -128,5 +138,43 @@ test('saved opportunity periods glow, overlap in separate lanes, and keep middle
   expect(Math.abs(laneTops[0]! - laneTops[1]!)).toBeGreaterThanOrEqual(3.5)
   await expect(segments.first()).toHaveCSS('border-radius', '0px')
   await middle.click()
-  await expect(page.getByRole('dialog')).toContainText('Saved on this device')
+  const dialog = page.getByRole('dialog')
+  await expect(dialog).toContainText('Saved on this device')
+  const panel = dialog.locator('[data-meeting-dialog-panel]')
+  const switcher = dialog.locator('.meeting-dialog__switcher')
+  const detail = dialog.locator('.calendar-detail')
+  await expect(panel).toHaveCSS('border-top-width', '1px')
+  await expect(panel).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
+  await expect(detail).toHaveCSS('border-top-width', '0px')
+  await expect(detail).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
+  await expect.poll(async () => {
+    const [outer, tabs] = await Promise.all([panel.boundingBox(), switcher.boundingBox()])
+    return outer && tabs ? tabs.y - outer.y : -1
+  }).toBeGreaterThan(0.5)
+  const [panelBounds, switcherBounds] = await Promise.all([
+    panel.boundingBox(),
+    switcher.boundingBox(),
+  ])
+  expect(panelBounds).not.toBeNull()
+  expect(switcherBounds).not.toBeNull()
+  expect(switcherBounds!.x).toBeGreaterThan(panelBounds!.x)
+  expect(switcherBounds!.x + switcherBounds!.width).toBeLessThan(
+    panelBounds!.x + panelBounds!.width,
+  )
+  await expect(switcher.getByRole('button')).toHaveCount(2)
+  await switcher.getByRole('button', { name: /Saved Research Competition/ }).click()
+  await expect(dialog.getByRole('heading', { name: 'Competition showcase' })).toBeVisible()
+
+  await dialog.locator('.meeting-dialog__close').click()
+  const sharedSingleDate = calendar.getByRole('button', {
+    name: /Single-day deadline.*Single-day workshop.*2026-10-20/,
+  })
+  await sharedSingleDate.click()
+  const singleDateDialog = page.getByRole('dialog')
+  const singleDateSwitcher = singleDateDialog.locator('.meeting-dialog__switcher')
+  await expect(singleDateSwitcher.getByRole('button')).toHaveCount(2)
+  await singleDateSwitcher.getByRole('button', { name: 'Single-day workshop' }).click()
+  await expect(singleDateDialog.getByRole('heading', { name: 'Workshop presentation' })).toBeVisible()
+  await singleDateSwitcher.getByRole('button', { name: 'Single-day deadline' }).click()
+  await expect(singleDateDialog.getByRole('heading', { name: 'Application due' })).toBeVisible()
 })

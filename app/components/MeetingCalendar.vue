@@ -708,7 +708,24 @@ onMounted(() => {
   max-height: min(88dvh, 52rem);
   overflow: auto;
   overscroll-behavior: contain;
-  filter: drop-shadow(0 30px 70px rgb(0 0 0 / 45%));
+  border: 1px solid rgb(244 241 233 / 12%);
+  border-radius: 1.5rem;
+  background:
+    radial-gradient(34rem 18rem at 8% 0%, rgb(228 187 114 / 4.5%), transparent 68%),
+    radial-gradient(30rem 20rem at 100% 8%, rgb(196 178 238 / 4%), transparent 72%),
+    rgb(15 20 19 / 76%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 5%),
+    0 30px 70px rgb(0 0 0 / 45%);
+  backdrop-filter: blur(22px) saturate(118%);
+}
+.meeting-dialog__panel :deep(.meeting-detail),
+.meeting-dialog__panel :deep(.calendar-detail) {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 .meeting-dialog__panel :deep(.meeting-detail__header) {
   padding-right: 3.25rem;
@@ -718,8 +735,8 @@ onMounted(() => {
   z-index: 3;
   display: flex;
   gap: 0.35rem;
-  margin: 0 3.9rem -0.8rem 0.8rem;
-  padding-top: 0.8rem;
+  margin-right: 3.9rem;
+  padding: 0.8rem 0.8rem 0.45rem;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -817,7 +834,11 @@ onMounted(() => {
   .meeting-dialog {
     padding: 0.55rem;
   }
-  .meeting-dialog__switcher { margin-left: .55rem; }
+  .meeting-dialog__switcher {
+    margin-right: 3.45rem;
+    padding-left: 0.65rem;
+    padding-right: 0.15rem;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .meeting-calendar__nav,

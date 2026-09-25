@@ -86,7 +86,7 @@ test('saved opportunity periods glow, overlap in separate lanes, and keep middle
   )
   const entry = (overrides: Record<string, unknown>) => ({
     id: 'saved-institute-period', opportunityId: 'saved:institute',
-    opportunityTitle: 'Saved Summer Institute', milestoneTitle: 'Research institute',
+    opportunityTitle: 'Saved Summer Institute', milestoneTitle: 'Program start',
     summary: 'A saved multi-day research experience.', date: '2026-10-12', timezone: null,
     precision: 'date-only', location: 'Texas', kind: 'event', state: 'confirmed',
     requirements: [], officialUrl: 'https://example.edu/institute', evidence: 'Verified schedule.',
@@ -133,6 +133,19 @@ test('saved opportunity periods glow, overlap in separate lanes, and keep middle
   await calendar.getByRole('button', { name: /Next month from September 2026/ }).click()
   await expect(calendar.getByText('October 2026', { exact: true })).toBeVisible()
 
+  const periodStart = calendar.getByRole('button', {
+    name: /Saved Summer Institute, Program starts.*2026-10-12/,
+  })
+  const periodMiddle = calendar.getByRole('button', {
+    name: /Saved Summer Institute, Program continues.*2026-10-14/,
+  })
+  const periodEnd = calendar.getByRole('button', {
+    name: /Saved Summer Institute, Program ends.*2026-10-16/,
+  })
+  await expect(periodStart).toBeVisible()
+  await expect(periodMiddle).toBeVisible()
+  await expect(periodEnd).toBeVisible()
+
   const middle = calendar.getByRole('button', { name: /Saved Summer Institute.*Saved Research Competition.*2026-10-14/ })
   await expect(middle.locator('.meeting-day__saved-signal')).toHaveCount(0)
   await expect(middle).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
@@ -143,8 +156,8 @@ test('saved opportunity periods glow, overlap in separate lanes, and keep middle
   await expect(competitionSlider).toHaveCount(1)
   await expect(instituteSlider).toHaveCSS('border-radius', /999px/)
   await expect(instituteSlider).toHaveCSS('background-image', /linear-gradient/)
-  const rangeStart = calendar.locator('button[aria-label$=", 2026-10-12"]')
-  const rangeEnd = calendar.locator('button[aria-label$=", 2026-10-16"]')
+  const rangeStart = periodStart
+  const rangeEnd = periodEnd
   const [startBounds, endBounds, sliderBounds, competitionBounds] = await Promise.all([
     rangeStart.boundingBox(),
     rangeEnd.boundingBox(),
@@ -170,6 +183,8 @@ test('saved opportunity periods glow, overlap in separate lanes, and keep middle
   await middle.click()
   const dialog = page.getByRole('dialog')
   await expect(dialog).toContainText('Saved on this device')
+  await expect(dialog.getByRole('heading', { name: 'Program continues' })).toBeVisible()
+  await expect(dialog).toContainText('Official milestone: Program start')
   const panel = dialog.locator('[data-meeting-dialog-panel]')
   const toolbar = dialog.locator('.meeting-dialog__toolbar')
   const switcher = dialog.locator('.meeting-dialog__switcher')

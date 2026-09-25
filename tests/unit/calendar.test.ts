@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { projectOpportunityCalendar, qualifyOpportunityPeriods } from '../../shared/utils/calendar'
+import {
+  calendarEntryOccurrenceTitle,
+  projectOpportunityCalendar,
+  qualifyOpportunityPeriods,
+} from '../../shared/utils/calendar'
 import type { CalendarOpportunitySelection, Opportunity } from '../../shared/types/content'
 
 const opportunity: Opportunity = {
@@ -98,5 +102,23 @@ describe('opportunity calendar projection', () => {
       { date: '2027-05-01', period: expect.objectContaining({ display: 'endpoints' }) },
       { date: '2027-06-01', period: undefined },
     ])
+  })
+
+  it('labels each occurrence within a continuous period without rewriting its source milestone', () => {
+    const entry = {
+      ...projectOpportunityCalendar([{
+        ...opportunity,
+        milestones: [{
+          label: 'Program start', date: '2027-06-20', endDate: '2027-06-22',
+          rangeDisplay: 'span' as const, kind: 'event' as const, timezone: null,
+          evidence: 'The program runs June 20–22.', url: 'https://example.edu/program',
+        }],
+      }], [selection])[0]!,
+    }
+
+    expect(calendarEntryOccurrenceTitle(entry, '2027-06-20')).toBe('Program starts')
+    expect(calendarEntryOccurrenceTitle(entry, '2027-06-21')).toBe('Program continues')
+    expect(calendarEntryOccurrenceTitle(entry, '2027-06-22')).toBe('Program ends')
+    expect(entry.milestoneTitle).toBe('Program start')
   })
 })

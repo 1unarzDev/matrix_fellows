@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { CalendarOpportunityEntry, MeetingEvent } from '#shared/types/content'
 import { meetingDisplayStatus } from '#shared/data/meetings'
+import { calendarEntryOccurrenceTitle } from '#shared/utils/calendar'
 
 const props = withDefaults(
   defineProps<{
@@ -51,7 +52,9 @@ const initial = computed(
 )
 const cursor = ref(new Date(`${initial.value?.date || '2026-09-01'}T12:00:00Z`))
 const direction = ref<'forward' | 'backward'>('forward')
-type CalendarDialogItem = { type: 'meeting'; meeting: MeetingEvent } | { type: 'opportunity'; entry: CalendarOpportunityEntry }
+type CalendarDialogItem =
+  | { type: 'meeting'; meeting: MeetingEvent }
+  | { type: 'opportunity'; entry: CalendarOpportunityEntry; occurrenceDate: string }
 const dialogItem = ref<CalendarDialogItem | null>(null)
 const dialogDateItems = ref<CalendarDialogItem[]>([])
 const dialogDirection = ref<'forward' | 'backward'>('forward')
@@ -183,7 +186,11 @@ const selectMeeting = (meeting: MeetingEvent, event?: Event) => {
   emit('select', meeting)
   const sameDate: CalendarDialogItem[] = [
     { type: 'meeting', meeting },
-    ...(entriesByDate.value.get(meeting.date) || []).map((entry) => ({ type: 'opportunity' as const, entry })),
+    ...(entriesByDate.value.get(meeting.date) || []).map((entry) => ({
+      type: 'opportunity' as const,
+      entry,
+      occurrenceDate: meeting.date,
+    })),
   ]
   dialogDateItems.value = sameDate
   dialogItem.value = sameDate[0]!
@@ -197,10 +204,10 @@ const selectMeeting = (meeting: MeetingEvent, event?: Event) => {
     nextTick(() => closeButton.value?.focus())
   }
 }
-const selectEntries = (entries: CalendarOpportunityEntry[], event?: Event) => {
+const selectEntries = (entries: CalendarOpportunityEntry[], occurrenceDate: string, event?: Event) => {
   if (!entries.length) return
   returnTarget = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null
-  dialogDateItems.value = entries.map((entry) => ({ type: 'opportunity', entry }))
+  dialogDateItems.value = entries.map((entry) => ({ type: 'opportunity', entry, occurrenceDate }))
   dialogItem.value = dialogDateItems.value[0]!
   if (import.meta.client) {
     const app = document.getElementById('__nuxt')
@@ -215,7 +222,9 @@ const selectEntries = (entries: CalendarOpportunityEntry[], event?: Event) => {
 const dialogItemKey = computed(() => {
   const item = dialogItem.value
   if (!item) return 'empty'
-  return item.type === 'meeting' ? `meeting-${item.meeting.id}` : `opportunity-${item.entry.id}`
+  return item.type === 'meeting'
+    ? `meeting-${item.meeting.id}`
+    : `opportunity-${item.entry.id}-${item.occurrenceDate}`
 })
 const selectDialogItem = (item: CalendarDialogItem) => {
   const currentIndex = dialogItem.value ? dialogDateItems.value.indexOf(dialogItem.value) : 0
@@ -354,8 +363,8 @@ onMounted(() => {
                 ]"
                 :aria-label="cell.meeting
                   ? `${cell.meeting.title}, ${cell.date}, ${meetingDisplayStatus(cell.meeting)}${cell.entries.length ? `, plus ${cell.entries.length} opportunity date${cell.entries.length === 1 ? '' : 's'}` : ''}`
-                  : `${cell.entries.map((entry) => `${entry.opportunityTitle}: ${entry.milestoneTitle}${entry.period?.display === 'span' ? `, ${entry.period.startDate} through ${entry.period.endDate}` : ''}${entry.saved ? ', saved on this device' : ''}`).join(', ')}, ${cell.date}`"
-                @click="cell.meeting ? selectMeeting(cell.meeting, $event) : selectEntries(cell.entries, $event)"
+                  : `${cell.entries.map((entry) => `${entry.opportunityTitle}, ${calendarEntryOccurrenceTitle(entry, cell.date)}${entry.saved ? ', saved on this device' : ''}, ${cell.date}${entry.period?.display === 'span' ? `, period ${entry.period.startDate} through ${entry.period.endDate}` : ''}`).join('; ')}`"
+                @click="cell.meeting ? selectMeeting(cell.meeting, $event) : selectEntries(cell.entries, cell.date, $event)"
               >
                 <span class="meeting-day__number">{{ cell.day }}</span>
                 <span v-if="cell.meeting" class="meeting-day__signal" aria-hidden="true" />
@@ -404,7 +413,7 @@ onMounted(() => {
           class="meeting-dialog"
           role="dialog"
           aria-modal="true"
-          :aria-label="dialogItem.type === 'meeting' ? dialogItem.meeting.title : `${dialogItem.entry.opportunityTitle}: ${dialogItem.entry.milestoneTitle}`"
+          :aria-label="dialogItem.type === 'meeting' ? dialogItem.meeting.title : `${dialogItem.entry.opportunityTitle}: ${calendarEntryOccurrenceTitle(dialogItem.entry, dialogItem.occurrenceDate)}`"
           @keydown.esc.prevent="closeDialog"
           @keydown="trapDialogFocus"
         >
@@ -448,7 +457,11 @@ onMounted(() => {
                     :meeting="dialogItem.meeting"
                     :status="meetingDisplayStatus(dialogItem.meeting)"
                   />
-                  <CalendarEntryDetailPanel v-else :entry="dialogItem.entry" />
+                  <CalendarEntryDetailPanel
+                    v-else
+                    :entry="dialogItem.entry"
+                    :occurrence-date="dialogItem.occurrenceDate"
+                  />
                 </div>
               </Transition>
             </div>

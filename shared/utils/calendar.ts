@@ -35,6 +35,26 @@ export interface QualifiedOpportunityPeriod {
   display: 'span' | 'endpoints'
 }
 
+const periodPhaseSuffix = /\s+(?:starts?|begins?|commences?|opening day|ends?|concludes?|finishes?|final day|dates?)\s*$/i
+
+/**
+ * Gives one day within a rendered period an honest, date-relative label while
+ * preserving the source milestone on the entry itself for provenance.
+ */
+export function calendarEntryOccurrenceTitle(
+  entry: CalendarOpportunityEntry,
+  occurrenceDate: string,
+): string {
+  if (entry.period?.display !== 'span') return entry.milestoneTitle
+  const base = entry.milestoneTitle.replace(periodPhaseSuffix, '').trim()
+    || entry.opportunityTitle
+  if (occurrenceDate === entry.period.startDate) return `${base} starts`
+  if (occurrenceDate === entry.period.endDate) return `${base} ends`
+  if (occurrenceDate > entry.period.startDate && occurrenceDate < entry.period.endDate)
+    return `${base} continues`
+  return entry.milestoneTitle
+}
+
 /**
  * Qualifies only explicit continuous periods or unambiguous start/end event pairs.
  * Opening-to-deadline windows and unrelated milestones intentionally remain points.

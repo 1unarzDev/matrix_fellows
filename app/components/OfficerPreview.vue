@@ -11,10 +11,14 @@ let programmaticScroll = false
 
 const officerScrollStops = (track: HTMLElement, cards: HTMLElement[]) => {
   const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth)
+  const trackOffset = track.offsetLeft
   return cards.map((card) =>
     Math.min(
       maxScroll,
-      Math.max(0, card.offsetLeft - (track.clientWidth - card.offsetWidth) / 2),
+      Math.max(
+        0,
+        card.offsetLeft - trackOffset - (track.clientWidth - card.offsetWidth) / 2,
+      ),
     ),
   )
 }
@@ -71,7 +75,7 @@ const selectOfficer = (index: number) => {
   const duration = Math.min(760, Math.max(580, 540 + Math.abs(distance) * 0.42))
   const animate = (now: number) => {
     const elapsed = Math.min(1, (now - startedAt) / duration)
-    const eased = 1 - Math.pow(1 - elapsed, 5)
+    const eased = 1 - Math.pow(1 - elapsed, 3)
     track.scrollLeft = start + distance * eased
     syncActiveOfficer(false)
     if (elapsed < 1) {
@@ -81,7 +85,11 @@ const selectOfficer = (index: number) => {
     track.scrollLeft = target
     indicatorProgress.value = index
     programmaticScroll = false
+    track.classList.add('officer-preview__grid--releasing')
     track.classList.remove('officer-preview__grid--programmatic')
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => track.classList.remove('officer-preview__grid--releasing'))
+    })
     carouselAnimation = undefined
   }
   carouselAnimation = requestAnimationFrame(animate)
@@ -92,7 +100,10 @@ const interruptCarouselAnimation = () => {
   cancelAnimationFrame(carouselAnimation)
   carouselAnimation = undefined
   programmaticScroll = false
-  carousel.value?.classList.remove('officer-preview__grid--programmatic')
+  carousel.value?.classList.remove(
+    'officer-preview__grid--programmatic',
+    'officer-preview__grid--releasing',
+  )
   syncActiveOfficer(true)
 }
 
@@ -310,16 +321,20 @@ const officers = [
   transition: none;
 }
 .officer-card__portrait {
+  --officer-portrait-radius: clamp(1rem, 2vw, 1.45rem);
   position: relative;
   aspect-ratio: 4 / 5;
   overflow: hidden;
   border: 1px solid rgb(231 223 247 / 14%);
-  border-radius: clamp(1rem, 2vw, 1.45rem);
+  border-radius: var(--officer-portrait-radius);
+  clip-path: inset(0 round var(--officer-portrait-radius));
   background: rgb(235 229 246 / 4%);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 6%),
     0 18px 42px rgb(3 5 9 / 16%);
   isolation: isolate;
+  backface-visibility: hidden;
+  contain: paint;
   transition:
     transform 620ms cubic-bezier(0.16, 1, 0.3, 1),
     border-color 360ms ease,
@@ -459,8 +474,11 @@ const officers = [
     scrollbar-width: none;
     touch-action: pan-x pan-y;
   }
-  .officer-preview__grid--programmatic {
+  .officer-preview__grid--programmatic,
+  .officer-preview__grid--releasing {
     scroll-behavior: auto;
+  }
+  .officer-preview__grid--programmatic {
     scroll-snap-type: none;
   }
   .officer-preview__grid::-webkit-scrollbar {
@@ -482,6 +500,9 @@ const officers = [
   .officer-card__portrait img {
     filter: grayscale(0.95) saturate(0.22) contrast(1.045) brightness(0.85);
     transform: scale(1.035);
+  }
+  .officer-card__portrait {
+    -webkit-mask-image: -webkit-radial-gradient(white, black);
   }
   .officer-card__portrait::after {
     opacity: 0.78;

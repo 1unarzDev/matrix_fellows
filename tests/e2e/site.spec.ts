@@ -137,6 +137,7 @@ test('Connect introduces all four officers with responsive portraits and restrai
       getComputedStyle(element).filter,
     )
     expect(firstFilter).not.toBe(secondRestingFilter)
+    await expect(cards.first().locator('.officer-card__portrait')).toHaveCSS('clip-path', /inset/)
     const controls = preview.getByRole('button', { name: /^Show / })
     const controlWidths = await controls.evaluateAll((elements) =>
       elements.map((element) => (element as HTMLElement).offsetWidth),
@@ -144,6 +145,7 @@ test('Connect introduces all four officers with responsive portraits and restrai
     expect(Math.max(...controlWidths) - Math.min(...controlWidths)).toBeLessThan(0.5)
     await preview.evaluate((root) => {
       const officerCards = [...root.querySelectorAll('.officer-card')]
+      const track = root.querySelector<HTMLElement>('.officer-preview__grid')
       const readActive = () =>
         officerCards.findIndex((card) => card.classList.contains('officer-card--active'))
       root.setAttribute('data-active-sequence', String(readActive()))
@@ -158,6 +160,17 @@ test('Connect introduces all four officers with responsive portraits and restrai
       officerCards.forEach((card) =>
         observer.observe(card, { attributes: true, attributeFilter: ['class'] }),
       )
+      if (track) {
+        let animationStarted = false
+        const trackObserver = new MutationObserver(() => {
+          if (track.classList.contains('officer-preview__grid--programmatic')) {
+            animationStarted = true
+          } else if (animationStarted) {
+            root.setAttribute('data-carousel-release-x', String(track.scrollLeft))
+          }
+        })
+        trackObserver.observe(track, { attributes: true, attributeFilter: ['class'] })
+      }
     })
     await preview.getByRole('button', { name: 'Next officer' }).click()
     await expect(cards.nth(1)).toHaveClass(/officer-card--active/)
@@ -168,6 +181,14 @@ test('Connect introduces all four officers with responsive portraits and restrai
     await expect(preview.locator('.officer-carousel__count span')).toHaveText('02')
     await page.waitForTimeout(900)
     await expect(preview).toHaveAttribute('data-active-sequence', '0,1')
+    const settlingDelta = await preview.evaluate((root) => {
+      const track = root.querySelector<HTMLElement>('.officer-preview__grid')
+      const releasedAt = Number(root.getAttribute('data-carousel-release-x'))
+      return track && Number.isFinite(releasedAt)
+        ? Math.abs(track.scrollLeft - releasedAt)
+        : Number.POSITIVE_INFINITY
+    })
+    expect(settlingDelta).toBeLessThan(1.5)
   } else {
     const portrait = cards.first().locator('.officer-card__portrait')
     const image = portrait.locator('img')

@@ -508,7 +508,12 @@ void main() {
   // Refraction can move UVs below the frame. Fractional powers of negative
   // height produce NaNs on hardware GPUs and contaminate HDR bloom buffers.
   float lightHeight=clamp(uv.y,0.0,1.0);
-  float overhead=lightHeight*lightHeight*exp(-abs(uv.x-.30)*3.0);
+  // Concentrate surface light in the upper half of the water column. The
+  // eased double falloff keeps the crown radiant while letting the web and
+  // shafts largely dissolve by mid-frame instead of lingering near the floor.
+  float surfaceLightFade=smoothstep(.28,.92,lightHeight);
+  surfaceLightFade*=surfaceLightFade;
+  float overhead=lightHeight*surfaceLightFade*exp(-abs(uv.x-.30)*3.0);
   vec3 deep=mix(vec3(.016,.023,.055),vec3(.025,.12,.16),lightHeight);
   deep+=vec3(.025,.19,.23)*overhead;
   // Original canyon silhouettes: Alto's night-time value layering translated
@@ -527,7 +532,7 @@ void main() {
     float mineralGlow=pow(noise(vec2(x*18.0+fi*9.0,2.0)),5.0);
     deep+=vec3(.055,.28,.30)*rim*mineralGlow*(1.0-fi*.25);
   }
-  float causticReach=mix(.18,1.0,pow(lightHeight,1.35))*exp(-abs(uv.x-.36)*.72);
+  float causticReach=mix(.025,1.0,pow(surfaceLightFade,.72))*exp(-abs(uv.x-.36)*.72);
   deep+=vec3(.035,.19,.21)*causticWeb*causticReach;
   float beamAxis1=uv.x-.16-uv.y*.19+sin(uTime*.071)*.012;
   float beamAxis2=uv.x-.45+uv.y*.04+sin(uTime*.053+1.7)*.009;
@@ -539,13 +544,13 @@ void main() {
   // entire underwater scene.
   float beamAura1=exp(-pow(beamAxis1*4.2,2.0));
   float beamAura2=exp(-pow(beamAxis2*7.0,2.0));
-  float radiantFalloff=pow(lightHeight,2.55);
+  float radiantFalloff=pow(surfaceLightFade,.82);
   float surfaceCrown=exp(-pow((1.0-lightHeight)*2.9,2.0))
     *exp(-pow((uv.x-.34)*1.65,2.0));
   float radiantDrift=.9+.1*atmosphericFbm(vec2(uv.x*2.1-uTime*.009,uv.y*1.4+uTime*.004));
   float shaftBloom=(beamAura1*.34+beamAura2*.24)*radiantFalloff*radiantDrift
     +surfaceCrown*.12;
-  deep+=vec3(.07,.31,.35)*(beam1+beam2*.58)*pow(lightHeight,1.75);
+  deep+=vec3(.07,.31,.35)*(beam1+beam2*.58)*pow(surfaceLightFade,.68);
   deep+=vec3(.055,.25,.285)*shaftBloom;
   deep+=vec3(.015,.035,.058)*atmosphericFbm(warp*7.0+uTime*.015);
   // A restrained violet-blue distant glow bridges the sea and later nebula.

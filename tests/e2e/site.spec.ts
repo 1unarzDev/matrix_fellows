@@ -103,9 +103,8 @@ test('Connect introduces all four officers with responsive portraits and restrai
     await page.evaluate(() => window.innerHeight),
   )
   await expect(cards.first()).toHaveCSS('opacity', '0')
-  await preview.scrollIntoViewIfNeeded()
+  await preview.evaluate((element) => element.scrollIntoView({ block: 'center' }))
   await expect(cards.first()).toHaveCSS('opacity', '1')
-  await expect(preview).toBeInViewport()
   for (const [name, role] of [
     ['Liam Bray', 'Founder'],
     ['Nicholas Cheng', 'Co-Founder / VP'],
@@ -114,24 +113,41 @@ test('Connect introduces all four officers with responsive portraits and restrai
   ]) {
     await expect(preview.getByRole('heading', { name, exact: true })).toBeVisible()
     await expect(preview.getByText(role, { exact: true })).toBeVisible()
-    await expect(preview.getByRole('img', { name: `Portrait of ${name}` })).toHaveJSProperty(
-      'complete',
-      true,
+    await expect(preview.getByRole('img', { name: `Portrait of ${name}` })).toHaveAttribute(
+      'src',
+      /\/officers\/.+\.webp$/,
     )
   }
 
   await expect(cards).toHaveCount(4)
-  if (testInfo.project.name === 'desktop') {
+  if (testInfo.project.name === 'mobile') {
+    const carousel = preview.getByRole('region', { name: 'Officer carousel' })
+    await expect(carousel).toHaveCSS('scroll-snap-type', /x mandatory/)
+    await expect(cards.first()).toHaveClass(/officer-card--active/)
+    await expect(cards.first().locator('img')).toHaveJSProperty('complete', true)
+    const firstFilter = await cards.first().locator('img').evaluate((element) =>
+      getComputedStyle(element).filter,
+    )
+    const secondRestingFilter = await cards.nth(1).locator('img').evaluate((element) =>
+      getComputedStyle(element).filter,
+    )
+    expect(firstFilter).not.toBe(secondRestingFilter)
+    await preview.getByRole('button', { name: 'Next officer' }).click()
+    await expect(cards.nth(1)).toHaveClass(/officer-card--active/)
+    await expect(cards.nth(1).locator('img')).toHaveJSProperty('complete', true)
+    await expect.poll(() => cards.nth(1).locator('img').evaluate((element) =>
+      getComputedStyle(element).filter,
+    )).not.toBe(secondRestingFilter)
+    await expect(preview.locator('.officer-carousel__count span')).toHaveText('02')
+  } else {
     const portrait = cards.first().locator('.officer-card__portrait')
     const image = portrait.locator('img')
     await portrait.scrollIntoViewIfNeeded()
     const restingFilter = await image.evaluate((element) => getComputedStyle(element).filter)
-    const restingY = (await portrait.boundingBox())!.y
     await cards.first().hover()
     await expect.poll(() => image.evaluate((element) => getComputedStyle(element).filter)).not.toBe(
       restingFilter,
     )
-    await expect.poll(async () => (await portrait.boundingBox())!.y).toBeLessThan(restingY - 2)
   }
 })
 

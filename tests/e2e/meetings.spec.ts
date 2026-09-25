@@ -129,14 +129,37 @@ test('saved opportunity periods glow, overlap in separate lanes, and keep middle
   await expect(calendar.getByText('October 2026', { exact: true })).toBeVisible()
 
   const middle = calendar.getByRole('button', { name: /Saved Summer Institute.*Saved Research Competition.*2026-10-14/ })
-  await expect(middle.locator('.meeting-day__saved-signal')).toBeVisible()
+  await expect(middle.locator('.meeting-day__saved-signal')).toHaveCount(0)
   const segments = middle.locator('.meeting-day__period')
   await expect(segments).toHaveCount(2)
+  await expect(segments.first()).toHaveCSS('box-shadow', /rgb/)
+  await expect(middle).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
+  await expect(middle).toHaveCSS('box-shadow', 'none')
   const laneTops = await segments.evaluateAll((items) =>
     items.map((item) => Number.parseFloat(getComputedStyle(item).top)),
   )
   expect(Math.abs(laneTops[0]! - laneTops[1]!)).toBeGreaterThanOrEqual(3.5)
+  const capsuleHeight = await segments.first().evaluate((item) =>
+    Number.parseFloat(getComputedStyle(item).height),
+  )
+  expect(capsuleHeight).toBeGreaterThanOrEqual(6)
   await expect(segments.first()).toHaveCSS('border-radius', '0px')
+  const [middleBounds, capsuleBounds] = await Promise.all([
+    middle.boundingBox(),
+    segments.first().boundingBox(),
+  ])
+  expect(middleBounds).not.toBeNull()
+  expect(capsuleBounds).not.toBeNull()
+  expect(capsuleBounds!.x).toBeLessThan(middleBounds!.x)
+  expect(capsuleBounds!.x + capsuleBounds!.width).toBeGreaterThan(
+    middleBounds!.x + middleBounds!.width,
+  )
+  await expect(middle.locator('.meeting-day__number')).toHaveCSS('z-index', '3')
+
+  const rangeStart = calendar.locator('button[aria-label$=", 2026-10-12"]')
+  const startCapsule = rangeStart.locator('[data-period-id="institute-period"]')
+  await expect(startCapsule).toHaveAttribute('data-period-position', 'start')
+  await expect(startCapsule).not.toHaveCSS('border-radius', '0px')
   await middle.click()
   const dialog = page.getByRole('dialog')
   await expect(dialog).toContainText('Saved on this device')
@@ -169,6 +192,7 @@ test('saved opportunity periods glow, overlap in separate lanes, and keep middle
   const sharedSingleDate = calendar.getByRole('button', {
     name: /Single-day deadline.*Single-day workshop.*2026-10-20/,
   })
+  await expect(sharedSingleDate).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
   await sharedSingleDate.click()
   const singleDateDialog = page.getByRole('dialog')
   const singleDateSwitcher = singleDateDialog.locator('.meeting-dialog__switcher')

@@ -281,6 +281,9 @@ onMounted(() => {
                     'meeting-day--next': cell.meeting?.id === nextMeetingId,
                     'meeting-day--saved': cell.entries.some((entry) => entry.saved),
                     'meeting-day--period': rangeSegments(cell.date).length,
+                    'meeting-day--period-only': !cell.meeting
+                      && cell.entries.length > 0
+                      && cell.entries.every((entry) => entry.period?.display === 'span'),
                   },
                 ]"
                 :aria-label="cell.meeting
@@ -294,23 +297,30 @@ onMounted(() => {
                   class="meeting-day__period"
                   :data-period-id="segment.entry.period!.id"
                   :data-saved="segment.entry.saved || undefined"
+                  :data-period-position="segment.starts && segment.ends
+                    ? 'single'
+                    : segment.starts
+                      ? 'start'
+                      : segment.ends
+                        ? 'end'
+                        : 'middle'"
                   :class="{
                     'meeting-day__period--start': segment.starts,
                     'meeting-day__period--end': segment.ends,
                     'meeting-day__period--saved': segment.entry.saved,
                     'meeting-day__period--tentative': segment.entry.state === 'tentative',
                   }"
-                  :style="`--period-offset:${Math.min(segment.lane, 2) * 4}px`"
+                  :style="`--period-offset:${Math.min(segment.lane, 2) * 7}px`"
                   aria-hidden="true"
                 />
                 <span class="meeting-day__number">{{ cell.day }}</span>
                 <span v-if="cell.meeting" class="meeting-day__signal" aria-hidden="true" />
-                <span v-if="cell.entries.length" class="meeting-day__opportunity-signals" aria-hidden="true">
-                  <span v-if="cell.entries.some((entry) => entry.kind === 'deadline')" class="meeting-day__opportunity meeting-day__opportunity--deadline" />
-                  <span v-if="cell.entries.some((entry) => entry.kind === 'event')" class="meeting-day__opportunity meeting-day__opportunity--event" />
+                <span v-if="cell.entries.some((entry) => entry.period?.display !== 'span')" class="meeting-day__opportunity-signals" aria-hidden="true">
+                  <span v-if="cell.entries.some((entry) => entry.period?.display !== 'span' && entry.kind === 'deadline')" class="meeting-day__opportunity meeting-day__opportunity--deadline" />
+                  <span v-if="cell.entries.some((entry) => entry.period?.display !== 'span' && entry.kind === 'event')" class="meeting-day__opportunity meeting-day__opportunity--event" />
                 </span>
                 <span
-                  v-if="cell.entries.some((entry) => entry.saved)"
+                  v-if="cell.entries.some((entry) => entry.saved && entry.period?.display !== 'span')"
                   class="meeting-day__saved-signal"
                   aria-hidden="true"
                 />
@@ -472,43 +482,75 @@ onMounted(() => {
 .meeting-day__number {
   position: relative;
   z-index: 3;
+  text-shadow: 0 1px 5px rgb(5 8 8 / 72%);
 }
 .meeting-day__period {
   position: absolute;
   z-index: 1;
-  top: calc(10% + var(--period-offset));
-  right: -0.24rem;
-  left: -0.24rem;
-  height: 0.12rem;
-  background: linear-gradient(90deg, rgb(145 185 217 / 46%), rgb(145 185 217 / 72%));
-  box-shadow: 0 0 7px rgb(145 185 217 / 18%);
+  top: calc(14% + var(--period-offset));
+  right: -0.3rem;
+  left: -0.3rem;
+  height: 0.48rem;
+  border-block: 1px solid rgb(145 185 217 / 22%);
+  background: linear-gradient(90deg, rgb(145 185 217 / 10%), rgb(145 185 217 / 19%));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 3%),
+    0 0 9px rgb(145 185 217 / 10%);
+  transition:
+    background-color 220ms ease,
+    border-color 220ms ease,
+    box-shadow 320ms ease;
   pointer-events: none;
 }
 .meeting-day__period--start {
-  left: 13%;
+  left: 11%;
+  border-left: 1px solid rgb(145 185 217 / 22%);
   border-radius: 999px 0 0 999px;
 }
 .meeting-day__period--end {
-  right: 13%;
+  right: 11%;
+  border-right: 1px solid rgb(145 185 217 / 22%);
   border-radius: 0 999px 999px 0;
 }
 .meeting-day__period--start.meeting-day__period--end {
   border-radius: 999px;
 }
 .meeting-day__period--saved {
-  height: 0.14rem;
-  background: linear-gradient(90deg, rgb(228 187 114 / 82%), rgb(196 178 238 / 78%));
+  border-color: rgb(228 187 114 / 28%);
+  background: linear-gradient(90deg, rgb(228 187 114 / 13%), rgb(196 178 238 / 20%));
   box-shadow:
-    0 0 6px rgb(228 187 114 / 32%),
-    0 0 10px rgb(196 178 238 / 22%);
+    inset 0 1px 0 rgb(255 250 240 / 5%),
+    0 0 7px rgb(228 187 114 / 18%),
+    0 0 12px rgb(196 178 238 / 12%);
 }
 .meeting-day__period--tentative {
   background: repeating-linear-gradient(
     90deg,
-    rgb(145 185 217 / 62%) 0 0.2rem,
-    transparent 0.2rem 0.34rem
+    rgb(145 185 217 / 13%) 0 0.28rem,
+    rgb(145 185 217 / 4%) 0.28rem 0.46rem
   );
+  border-color: rgb(183 162 226 / 18%);
+  box-shadow: 0 0 8px rgb(183 162 226 / 7%);
+}
+.meeting-day--period-only,
+.meeting-day--period-only.meeting-day--saved,
+.meeting-day--period-only.meeting-day--opportunity {
+  background: transparent;
   box-shadow: none;
+}
+.meeting-day--period-only:hover,
+.meeting-day--period-only:focus-visible {
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+.meeting-day--period-only:hover .meeting-day__period,
+.meeting-day--period-only:focus-visible .meeting-day__period {
+  border-color: rgb(228 187 114 / 38%);
+  background-color: rgb(228 187 114 / 5%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 250 240 / 7%),
+    0 0 11px rgb(228 187 114 / 16%);
 }
 .meeting-day--saved {
   background: rgb(228 187 114 / 4.5%);
@@ -638,11 +680,12 @@ onMounted(() => {
   box-shadow: 0 0 7px rgb(145 185 217 / 45%);
 }
 .legend--period {
-  width: 0.75rem;
-  height: 0.12rem;
+  width: 0.9rem;
+  height: 0.32rem;
+  border: 1px solid rgb(145 185 217 / 28%);
   border-radius: 999px;
-  background: linear-gradient(90deg, #91b9d9, #c4b2ee);
-  box-shadow: 0 0 6px rgb(145 185 217 / 30%);
+  background: linear-gradient(90deg, rgb(145 185 217 / 16%), rgb(196 178 238 / 22%));
+  box-shadow: 0 0 7px rgb(145 185 217 / 16%);
 }
 .legend--saved {
   border: 1px solid rgb(228 187 114 / 72%);

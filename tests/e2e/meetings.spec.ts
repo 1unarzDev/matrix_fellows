@@ -302,3 +302,45 @@ test('saved opportunity periods glow, overlap in separate lanes, and keep middle
   await expect(singleDatePanel).toHaveAttribute('data-detail-transition-observed', 'backward')
   await expect(singleDateDialog.getByRole('heading', { name: 'Application due' })).toBeVisible()
 })
+
+test('meeting detail content blends beneath the close toolbar without a horizontal seam', async ({ page }) => {
+  await page.goto('/meetings')
+  const calendar = page.getByRole('region', { name: 'Meeting calendar' })
+  await page.locator('[data-calendar-ready="true"]').waitFor()
+  await calendar
+    .getByRole('button', { name: /The first exchange of ideas.*2026-09-25/ })
+    .dispatchEvent('click')
+
+  const dialog = page.getByRole('dialog')
+  const panel = dialog.locator('[data-meeting-dialog-panel]')
+  const toolbar = dialog.locator('.meeting-dialog__toolbar')
+  await expect(dialog.getByRole('heading', { name: 'The first exchange of ideas.' })).toBeVisible()
+
+  const [panelBox, toolbarBox, panelImage] = await Promise.all([
+    panel.boundingBox(),
+    toolbar.boundingBox(),
+    panel.screenshot(),
+  ])
+  expect(panelBox).not.toBeNull()
+  expect(toolbarBox).not.toBeNull()
+  const { data: pixels, info } = await sharp(panelImage).raw().toBuffer({ resolveWithObject: true })
+  const scale = info.width / panelBox!.width
+  const seamY = Math.round((toolbarBox!.y + toolbarBox!.height - panelBox!.y) * scale)
+  const rowLuminance = (y: number) => {
+    let total = 0
+    let samples = 0
+    for (let x = Math.round(info.width * 0.4); x < Math.round(info.width * 0.6); x += 1) {
+      const index = (y * info.width + x) * info.channels
+      total += (pixels[index]! + pixels[index + 1]! + pixels[index + 2]!) / 3
+      samples += 1
+    }
+    return total / samples
+  }
+  const seamJump = Math.max(
+    ...Array.from({ length: 7 }, (_, index) => {
+      const y = seamY - 2 + index
+      return Math.abs(rowLuminance(y + 1) - rowLuminance(y))
+    }),
+  )
+  expect(seamJump).toBeLessThan(3)
+})

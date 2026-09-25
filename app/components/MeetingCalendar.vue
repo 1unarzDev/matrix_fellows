@@ -856,6 +856,7 @@ onMounted(() => {
 .meeting-dialog__panel :deep(.calendar-detail__header) {
   padding-right: 0;
 }
+.meeting-dialog__panel :deep(.meeting-detail__glow),
 .meeting-dialog__panel :deep(.calendar-detail__glow) {
   -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 5rem);
   mask-image: linear-gradient(to bottom, transparent 0, #000 5rem);

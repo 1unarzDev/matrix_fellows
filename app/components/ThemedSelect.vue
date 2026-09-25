@@ -22,6 +22,8 @@ const active = ref(0)
 const placement = ref<'up' | 'down'>('down')
 let search = ''
 let lastTyped = 0
+let internalPointerSequence = false
+let internalPointerReset: ReturnType<typeof setTimeout> | undefined
 
 const normalized = computed(() =>
   props.options.map((option) =>
@@ -111,11 +113,25 @@ function keyboard(event: KeyboardEvent) {
 function outside(event: PointerEvent) {
   if (!root.value?.contains(event.target as Node)) close()
 }
+function markInternalPointerSequence() {
+  internalPointerSequence = true
+  clearTimeout(internalPointerReset)
+  internalPointerReset = setTimeout(() => {
+    internalPointerSequence = false
+  }, 0)
+}
 function focusOut(event: FocusEvent) {
+  // Mobile Safari can omit relatedTarget when a touch shifts focus from an
+  // option back to this control. Let the ensuing trigger click own the toggle;
+  // closing here first would make that same tap immediately reopen the menu.
+  if (!event.relatedTarget && internalPointerSequence) return
   if (!root.value?.contains(event.relatedTarget as Node | null)) close()
 }
 onMounted(() => document.addEventListener('pointerdown', outside))
-onBeforeUnmount(() => document.removeEventListener('pointerdown', outside))
+onBeforeUnmount(() => {
+  clearTimeout(internalPointerReset)
+  document.removeEventListener('pointerdown', outside)
+})
 </script>
 
 <template>
@@ -123,6 +139,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', outside))
     ref="root"
     class="themed-select relative z-20 w-full"
     :class="compact ? 'w-auto' : fullWidth ? 'sm:w-full' : 'sm:w-56'"
+    @pointerdown.capture="markInternalPointerSequence"
     @focusout="focusOut"
   >
     <button

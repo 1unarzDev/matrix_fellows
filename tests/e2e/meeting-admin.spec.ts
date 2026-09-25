@@ -71,6 +71,25 @@ test('meeting PIN unlock and meeting editing remain fluid and focused', async ({
   await expect(dialog.getByRole('heading', { name: 'The gathering schedule.' })).toBeVisible()
   await expect(dialog.getByRole('button', { name: 'Full editor' })).toHaveCount(0)
 
+  const editorSection = dialog.getByRole('button', { name: /Editor section/ })
+  await expect(editorSection).toHaveAttribute('aria-expanded', 'false')
+  await editorSection.click()
+  await expect(editorSection).toHaveAttribute('aria-expanded', 'true')
+  // Mobile Safari can report a null relatedTarget when a touch leaves the
+  // focused option. Reproduce its focusout-before-click sequence exactly: the
+  // focusout must not close early and let the following trigger click reopen.
+  await editorSection.evaluate((trigger) => {
+    const focused = document.activeElement
+    trigger.dispatchEvent(
+      new PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch' }),
+    )
+    focused?.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: null }))
+    trigger.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  })
+  await expect(editorSection).toHaveAttribute('aria-expanded', 'false')
+  await page.waitForTimeout(450)
+  await expect(editorSection).toHaveAttribute('aria-expanded', 'false')
+
   await dialog.getByRole('button', { name: /From an ISEF interest/ }).click()
   await dialog.getByLabel('Date').fill('2026-10-16')
   await dialog.getByLabel('Location').fill('Martin HS · Room 186C')

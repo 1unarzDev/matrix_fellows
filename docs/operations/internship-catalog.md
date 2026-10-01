@@ -41,7 +41,7 @@ not continuous attendance. STARS' schedule is subject to change and tentative.
 Three new monitors use the existing scheduled Worker, bounded document fetching,
 exact quote validation, last-good preservation, source-health errors, two matching
 observations at least six hours apart and owner overrides. No independent scheduler
-or secret is introduced. The extraction/cache version is `evidence-agent-v8`.
+or secret is introduced. The extraction/cache version is `evidence-agent-v9`.
 New employer hosts are confined to the reviewed specific route paths. Unsupported
 costs/checklists are rejected; geography changes require editor review rather
 than silently extending Texas eligibility. A successful date observation is not
@@ -75,3 +75,27 @@ editor-disabled selection. Saved routes continue using the same calendar project
 
 Physical iPhone/iPad verification and the six-hour live confirmation require
 observed testing; Chromium emulation does not establish either.
+
+## Industry expansion, October 1
+
+See the [industry recheck](../research/opportunities/industry-internship-recheck-2026-09-30.md).
+The shared reviewed set now adds Sandia job 698908, historical UT ARL 2026, and
+Amazon’s scholarship/college-internship pipeline. Amazon stays Program, with
+no high-school wages or internship-detail object; the validator rejects downstream
+college compensation. Microsoft/Lockheed local-only routes are not published to
+Texas results; MITRE and other employers await specific eligible requisitions.
+
+Three additional monitors use the existing capacity/confirmation gates. Sandia
+public browser evidence is curated, but direct Worker fetching currently encounters
+PeopleSoft shells: reject these, surface failure and retain last-good. Do not
+claim automatic job updates work until observed. UT ARL’s HTML is fetchable but
+application/pay/dates are PDF-only; annual PDF changes need manual verification
+and source-path updates. No PDF parser or browser-rendering service was added.
+New monitor registration does not fabricate a successful fetch timestamp.
+
+Roll out with the idempotent catalog backfill and separate Worker deployment;
+no new database migration or frontend deployment is required. No new default
+club calendar selections exist because no future precise dates were verified.
+Once next-cycle dates are verified, admin selection and device-local saves use
+the existing projector. Rollback: suppress only the three new route IDs and
+disable their monitors, preserving their evidence and all prior routes.

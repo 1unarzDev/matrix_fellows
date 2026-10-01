@@ -20,7 +20,7 @@ interface Monitor {
   seed: Opportunity & { sourceUrls?: string[] }
   discovered: boolean
 }
-const AGENT_VERSION = 'evidence-agent-v8'
+const AGENT_VERSION = 'evidence-agent-v9'
 const compact = (s: string) => s.replace(/\s+/g, ' ').trim()
 
 const evidenceClaimSchema = z.object({
@@ -61,9 +61,18 @@ async function document(url: string, redirects = 0): Promise<Document> {
   })
   root.querySelectorAll('script,style,nav,footer,noscript,svg').forEach((n) => n.remove())
   const text = compact(root.text)
-  if (text.length < 250 || /^(just a moment|access denied|verify you are human)/i.test(text))
-    throw new Error('Official page unavailable or blocked')
+  if (unavailableSourceText(text)) throw new Error('Official page unavailable or blocked')
   return { url, text: text.slice(0, 22000), links }
+}
+
+export function unavailableSourceText(text: string): boolean {
+  return (
+    text.length < 250 ||
+    /^(just a moment|access denied|verify you are human)/i.test(text) ||
+    /your browser is not supported|cookies (?:are )?required|enable cookies|browser.*does not support cookies|request rejected/i.test(
+      text,
+    )
+  )
 }
 
 const extractionSchema = z.object({
@@ -183,10 +192,14 @@ function validateCostClaim(
   const assertion = claim.value.toLowerCase()
   const source = evidence.toLowerCase()
   if (field === 'compensation') {
-    const excluded = /\bunpaid\b|not eligible|excludes|no (pay|paid|wage|stipend|compensation)|without (pay|compensation)/
+    const excluded =
+      /\bunpaid\b|not eligible|excludes|no (pay|paid|wage|stipend|compensation)|without (pay|compensation)/
     if (excluded.test(source) && !excluded.test(assertion))
       throw new Error('Compensation contradicts explicit unpaid/stipend exclusion evidence')
-    if (!/\b(paid|stipend|salary|wages?|compensation|hourly)\b/.test(source) && /\b(paid|stipend|salary|wages?)\b|\$\d/.test(assertion))
+    if (
+      !/\b(paid|stipend|salary|wages?|compensation|hourly)\b/.test(source) &&
+      /\b(paid|stipend|salary|wages?)\b|\$\d/.test(assertion)
+    )
       throw new Error('Compensation lacks explicit pay evidence')
   }
   if (/\b(?:free|no (?:submission |application |registration )?fee|no charge)\b/.test(assertion)) {
@@ -387,6 +400,10 @@ export function validateExtraction(
   for (const field of costFields) {
     const claim = value.costs?.[field]
     if (!claim) continue
+    // This route is a scholarship application in high school, not employment.
+    // Its downstream college wages must never enter the paid-placement filter.
+    if (field === 'compensation' && seed.canonicalId === 'amazon:future-engineer-scholarship')
+      throw new Error('College internship compensation is not high-school scholarship compensation')
     const checked = validateCostClaim(field, claim, docs)
     costs[field] = checked.value
     rememberEvidence(`costs.${field}`, claim.url, checked.evidence)
@@ -632,6 +649,15 @@ async function extract(
             JSON.stringify(context) +
             `\nExtraction constraints: Month-only dates (e.g. September 2027 or late February) MUST be omitted. Never choose day 1 or the last day to fill an unknown date. Do not invent an application deadline from an opening announcement. Each quote must explicitly describe the date's role (opening/deadline/results/event), not just a bare date. Quotes must match whitespace-normalized page text exactly, not be paraphrased. ${discovery ? 'For discovery, title and overview must ALSO be exact contiguous page excerpts, not generated claims. Extract one specific named opportunity, not a directory or general university overview.' : ''} Existing checkpoint labels to reuse when applicable: ${JSON.stringify(seed.milestones?.map((m) => m.label) || [])}. ${correction}`,
         },
+        ...(seed.canonicalId === 'amazon:future-engineer-scholarship'
+          ? [
+              {
+                role: 'system',
+                content:
+                  'This reviewed route is the high-school scholarship application, not the subsequent college internship. Set costs.compensation to null and internship to null. Keep later college internship benefits in outcomes, with timing explicit. Do not use college internship dates as high-school participation dates.',
+              },
+            ]
+          : []),
       ],
     })
     const text = result.response

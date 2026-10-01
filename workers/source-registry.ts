@@ -1,4 +1,4 @@
-import { internshipAdditions } from '../shared/data/internship-additions'
+import { reviewedIndustryRoutes as internshipAdditions } from '../shared/data/industry-internship-expansion'
 
 export interface ReviewedSource {
   id: string
@@ -27,8 +27,11 @@ export const reviewedSources: ReviewedSource[] = [
     permittedPathPrefix: new URL(item.url).pathname,
     sourceType: 'official-html' as const,
     discoveryMethod: 'First-party specific high-school route reviewed September 30, 2026',
-    parserVersion: 'evidence-agent-v8',
-    scope: 'Specific high-school placement; unrelated college jobs excluded',
+    parserVersion: 'evidence-agent-v9',
+    scope:
+      item.kind === 'Program'
+        ? 'High-school scholarship application; later college internship is not high-school employment'
+        : 'Specific high-school placement; unrelated college jobs excluded; portal/PDF acquisition limitations require review',
     publicationPolicy: 'monitor-confirmed' as const,
     reviewedAt: item.verifiedAt,
   })),

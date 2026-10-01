@@ -14,7 +14,7 @@ import {
 } from '../shared/data/opportunity-catalog-enrichment.ts'
 import { opportunitySchema } from '../shared/utils/validation.ts'
 import { reviewedSources } from '../workers/source-registry.ts'
-import { internshipAdditions } from '../shared/data/internship-additions.ts'
+import { reviewedIndustryRoutes as internshipAdditions } from '../shared/data/industry-internship-expansion.ts'
 import {
   enrichInternship,
   internshipPatches,
@@ -270,7 +270,6 @@ for (const item of curatedRoutes) {
               ...new Set([item.url, ...(item.fieldEvidence || []).map((entry) => entry.url)]),
             ],
           },
-          last_success_at: item.verifiedAt,
         },
         { onConflict: 'id', ignoreDuplicates: true },
       )
@@ -298,10 +297,12 @@ if (apply) {
       { onConflict: 'id', ignoreDuplicates: true },
     )
     if (result.error) throw new Error(`${source.id}: ${result.error.message}`)
-    if (internshipAdditions.some(item => item.sourceId === source.id)) {
-      const version = await client.from('opportunity_source_registry')
+    if (internshipAdditions.some((item) => item.sourceId === source.id)) {
+      const version = await client
+        .from('opportunity_source_registry')
         .update({ parser_version: source.parserVersion })
-        .eq('id', source.id).eq('authoritative_hub', source.authoritativeHub)
+        .eq('id', source.id)
+        .eq('authoritative_hub', source.authoritativeHub)
       if (version.error) throw new Error(`${source.id}: ${version.error.message}`)
     }
   }

@@ -1,5 +1,29 @@
 import { expect, test } from '@playwright/test'
 import { internshipAdditions } from '../../shared/data/internship-additions'
+import { industryInternshipExpansion } from '../../shared/data/industry-internship-expansion'
+
+for (const item of industryInternshipExpansion) {
+  test(`industry route ${item.slug} retains classification and readable details`, async ({
+    page,
+  }, testInfo) => {
+    await page.goto(`/opportunities/${item.slug}`, { waitUntil: 'networkidle' })
+    await expect(page.getByRole('heading', { name: item.title, exact: true })).toBeVisible()
+    if (item.kind === 'Internship') {
+      await expect(page.getByRole('heading', { name: 'Your internship plan' })).toBeVisible()
+      await expect(page.getByText('Texas access has conditions')).toBeVisible()
+    } else {
+      await expect(page.getByRole('heading', { name: 'Your internship plan' })).toHaveCount(0)
+      await expect(page.getByText(/This is not immediate high-school employment/)).toBeVisible()
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(
+      true,
+    )
+    await page.screenshot({
+      path: `test-results/${item.slug}-${testInfo.project.name}.png`,
+      fullPage: true,
+    })
+  })
+}
 
 test('internship detail renders useful logistics, materials and sources without overflow', async ({
   page,

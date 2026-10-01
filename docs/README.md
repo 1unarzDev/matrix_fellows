@@ -50,6 +50,7 @@ Owner and maintainer runbooks.
 - [Living opportunity catalog](operations/opportunity-monitoring.md)
 - [Internship catalog](operations/internship-catalog.md) — Texas access, application details, monitoring and rollout.
 - [Internship rollout verification](quality/internship-rollout-2026-09-30.md) — observed checks and remaining limitations.
+- [Industry internship verification](quality/industry-internship-rollout-2026-10-01.md) — new employer routes, deployed backend and monitoring boundaries.
 - [Catalog search and source review](operations/opportunity-catalog.md)
 - [Research-guide authoring](operations/research-guides.md)
 - [Meeting schedule and archive](operations/meetings.md)
@@ -83,6 +84,7 @@ scheduled Worker.
 - [Catalog implementation sources](research/opportunities/catalog-implementation-sources.md)
 - [Internship, summer-program, and HOSA expansion](research/opportunities/catalog-expansion-2026-09-23.md)
 - [Texas summer-program eligibility audit](research/opportunities/texas-summer-program-eligibility-2026-09-23.md)
+- [Industry internship recheck](research/opportunities/industry-internship-recheck-2026-09-30.md) — Amazon, Microsoft, employer eligibility and publication decisions.
 - [Guide implementation and content sources](research/guides/implementation-sources.md)
 - [Machine-readable catalogs](research/catalogs/) — runtime inputs; preserve their
   schemas and verify `workers/catalog.ts` when moving or editing them.

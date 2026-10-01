@@ -10,7 +10,7 @@ import { disciplineCatalogExpansion } from '../shared/data/opportunity-disciplin
 import { enrichCatalogOpportunity } from '../shared/data/opportunity-catalog-enrichment'
 import type { Opportunity } from '../shared/types/content'
 import { enrichInternship } from '../shared/data/internship-catalog'
-import { internshipAdditions } from '../shared/data/internship-additions'
+import { reviewedIndustryRoutes as internshipAdditions } from '../shared/data/industry-internship-expansion'
 
 const researchedSeeds = [...programs, ...competitions, ...publications, ...workshops].map((raw) => {
   const entry = enrichCatalogOpportunity(raw as Record<string, any>)
@@ -70,18 +70,35 @@ export const allowedHosts = new Set([
 export function approvedSource(url: string) {
   try {
     const parsed = new URL(url)
+    // PeopleSoft reuses one URL path for unrelated vacancies. Only this public
+    // job and its browser redirect alias are reviewed, never arbitrary jobs.
+    if (parsed.hostname === 'cg.sandia.gov') {
+      const job = new URL(internshipAdditions.find((item) => item.externalId === '698908')!.url)
+      if (
+        ![job.pathname, job.pathname.replace('/psp/', '/psc/')].includes(parsed.pathname) ||
+        parsed.searchParams.size !== job.searchParams.size ||
+        [...job.searchParams].some(([key, value]) => parsed.searchParams.get(key) !== value)
+      )
+        return false
+    }
     return (
       parsed.protocol === 'https:' &&
       !parsed.username &&
       !parsed.password &&
       !parsed.port &&
       allowedHosts.has(parsed.hostname) &&
-      (!internshipAdditions.some((item) => new URL(item.url).hostname === parsed.hostname) ||
+      (!internshipAdditions.some((item) =>
+        [item.url, ...(item.fieldEvidence || []).map((entry) => entry.url)].some(
+          (source) => new URL(source).hostname === parsed.hostname,
+        ),
+      ) ||
         internshipAdditions.some((item) =>
           [item.url, ...(item.fieldEvidence || []).map((entry) => entry.url)].some(
             (url) =>
               new URL(url).hostname === parsed.hostname &&
-              parsed.pathname === new URL(url).pathname,
+              (parsed.pathname === new URL(url).pathname ||
+                (parsed.hostname === 'cg.sandia.gov' &&
+                  parsed.pathname === new URL(url).pathname.replace('/psp/', '/psc/'))),
           ),
         ))
     )

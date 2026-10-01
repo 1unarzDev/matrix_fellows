@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dateSupported, validateExtraction } from '../../workers/monitoring'
+import { dateSupported, validateExtraction, unavailableSourceText } from '../../workers/monitoring'
 import type { Opportunity, OpportunityMilestone } from '../../shared/types/content'
 
 const url = 'https://math.mit.edu/research/highschool/primes/usa/apply-usa.html'
@@ -53,9 +53,61 @@ function extraction(overrides: Record<string, unknown> = {}) {
 }
 
 describe('monitoring date evidence', () => {
+  it('rejects long PeopleSoft access shells instead of treating them as opportunity evidence', () => {
+    for (const message of [
+      'Your browser is not supported',
+      'Cookies are required',
+      'Please enable cookies',
+      'Request rejected',
+    ])
+      expect(unavailableSourceText(`${message} ${'Help and navigation '.repeat(30)}`)).toBe(true)
+    expect(unavailableSourceText(sourceText.repeat(2))).toBe(false)
+  })
+  it('rejects downstream college wages on the Amazon scholarship route', () => {
+    const quote = 'Paid internship after your first year of college.'
+    expect(() =>
+      validateExtraction(
+        extraction({
+          costs: {
+            submission: null,
+            registration: null,
+            accompanyingAdult: null,
+            travel: null,
+            materials: null,
+            publication: null,
+            aid: null,
+            compensation: { value: 'Paid internship', evidence: quote, url },
+          },
+        }),
+        docs(`${sourceText} ${quote}`),
+        { ...seed(), canonicalId: 'amazon:future-engineer-scholarship' },
+        now,
+        false,
+      ),
+    ).toThrow('College internship compensation')
+  })
   it('rejects positive compensation when the organizer excludes high-school stipends', () => {
     const quote = 'High school students are not eligible to receive a stipend.'
-    expect(() => validateExtraction(extraction({ costs: { submission: null, registration: null, accompanyingAdult: null, travel: null, materials: null, publication: null, aid: null, compensation: { value: 'Paid stipend', evidence: quote, url } } }), docs(`${sourceText} ${quote}`), seed(), now, false)).toThrow('Compensation contradicts')
+    expect(() =>
+      validateExtraction(
+        extraction({
+          costs: {
+            submission: null,
+            registration: null,
+            accompanyingAdult: null,
+            travel: null,
+            materials: null,
+            publication: null,
+            aid: null,
+            compensation: { value: 'Paid stipend', evidence: quote, url },
+          },
+        }),
+        docs(`${sourceText} ${quote}`),
+        seed(),
+        now,
+        false,
+      ),
+    ).toThrow('Compensation contradicts')
   })
   it('retains reviewed internship facts when a page omits them', () => {
     const item = {

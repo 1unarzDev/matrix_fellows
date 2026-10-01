@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { internshipAdditions } from '../../shared/data/internship-additions'
+import { industryInternshipExpansion } from '../../shared/data/industry-internship-expansion'
 import { enrichInternship } from '../../shared/data/internship-catalog'
 import { catalogSeeds, approvedSource } from '../../workers/catalog'
 import { opportunitySchema } from '../../shared/utils/validation'
@@ -9,6 +10,30 @@ import {
 } from '../../shared/utils/calendar'
 
 describe('reviewed internship catalog', () => {
+  it('separates the Amazon college pipeline and keeps new dates conservative', () => {
+    industryInternshipExpansion.forEach((item) =>
+      expect(opportunitySchema.safeParse(item).success).toBe(true),
+    )
+    const amazon = industryInternshipExpansion.find((item) => item.organizer.startsWith('Amazon'))!
+    expect(amazon.kind).toBe('Program')
+    expect(amazon.routeType).toBe('program')
+    expect(amazon.internship).toBeUndefined()
+    expect(amazon.costs?.compensation).toBeNull()
+    expect(amazon.milestones).toEqual([])
+    const arl = industryInternshipExpansion.find((item) => item.canonicalId.startsWith('ut-arl:'))!
+    expect(arl.edition).toBe('2026')
+    expect(arl.restrictions?.schoolNomination).toBeUndefined()
+    expect(arl.milestones?.every((point) => point.date.startsWith('2026-'))).toBe(true)
+    const sandia = industryInternshipExpansion.find((item) => item.externalId === '698908')!
+    expect(sandia.internship?.texasEligibility).toBe('conditional')
+    expect(sandia.milestones).toEqual([])
+    expect(approvedSource(sandia.url)).toBe(true)
+    expect(approvedSource(sandia.url.replace('/psp/', '/psc/'))).toBe(true)
+    expect(approvedSource(sandia.url.replace('698908', '123456'))).toBe(false)
+    expect(approvedSource(sandia.url + '&OtherJob=123')).toBe(false)
+    expect(approvedSource('https://www.sandia.gov/unreviewed-job/')).toBe(false)
+    expect(approvedSource('https://scholarshipamerica.org/scholarship/unrelated/')).toBe(false)
+  })
   it('validates additions and preserves one identity per existing placement', () => {
     internshipAdditions.forEach((item) =>
       expect(opportunitySchema.safeParse(item).success).toBe(true),

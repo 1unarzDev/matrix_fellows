@@ -6,6 +6,14 @@ const router = useRouter()
 const hydrated = ref(false)
 onMounted(() => {
   hydrated.value = true
+  const list = filterChips.value?.firstElementChild
+  if (list) {
+    filterChipHeight.value = list.getBoundingClientRect().height
+    chipResizeObserver = new ResizeObserver(([entry]) => {
+      if (entry) filterChipHeight.value = entry.contentRect.height
+    })
+    chipResizeObserver.observe(list)
+  }
   if (route.query.highSchool || route.query.sort === 'verified') {
     const query = { ...route.query }
     delete query.highSchool
@@ -123,6 +131,30 @@ const activeCount = computed(() =>
     0,
   ),
 )
+const filterLabels: Record<string, Record<string, string>> = {
+  discipline: Object.fromEntries(disciplines.map(value => [value, value])),
+  kind: Object.fromEntries(kinds.map(value => [value, value])),
+  stage: Object.fromEntries(stages), status: Object.fromEntries(statuses),
+  funding: { paid: 'Paid / stipend', aid: 'Need-based aid', 'no-program-fee': 'No program fee' },
+  mode: { 'remote-participation': 'Remote program / internship', 'remote-presentation': 'Remote presentation', 'remote-submission': 'Remote submission', 'in-person': 'In person', hybrid: 'Hybrid' },
+  free: { true: 'No application / submission fee' },
+  archival: { true: 'Archival', false: 'Non-archival' },
+}
+const activeFilters = computed(() => Object.entries(filterLabels).flatMap(([key, labels]) =>
+  asArray(route.query[key]).filter(value => labels[value]).map(value => ({ key, value, label: labels[value]!, id: `${key}:${value}` })),
+))
+const filterChips = ref<HTMLElement>()
+const filterChipHeight = ref<number>()
+let chipResizeObserver: ResizeObserver | undefined
+async function removeFilter(key: string, value: string, event: Event) {
+  const buttons = [...(filterChips.value?.querySelectorAll('button') || [])]
+  const index = buttons.indexOf(event.currentTarget as HTMLButtonElement)
+  await replaceQuery({ [key]: asArray(route.query[key]).filter(item => item !== value) })
+  await nextTick()
+  const remaining = filterChips.value?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')
+  const target = remaining?.[Math.min(index, remaining.length - 1)] || document.getElementById('catalog-search')
+  target?.focus({ preventScroll: true })
+}
 const filterDialog = ref<HTMLDialogElement>()
 const filterSnapshot = ref<Record<string, unknown>>({})
 const filterVisible = ref(false)
@@ -167,6 +199,7 @@ watch(
   },
 )
 onBeforeUnmount(() => {
+  chipResizeObserver?.disconnect()
   clearTimeout(searchTimer)
   clearTimeout(filterCloseTimer)
 })
@@ -279,9 +312,14 @@ useHead({
         </div>
       </form>
 
-      <nav aria-label="Opportunity collections" class="mt-5 flex flex-wrap gap-2">
-        <NuxtLink v-for="collection in [{ label: 'All opportunities', kind: '' }, { label: 'Internships', kind: 'Internship' }, { label: 'Summer research programs', kind: 'Summer program' }]" :key="collection.label" :to="{ path: '/opportunities', query: { ...route.query, kind: collection.kind || undefined, page: undefined } }" :aria-current="(collection.kind ? asArray(route.query.kind).length === 1 && selected('kind', collection.kind) : !route.query.kind) ? 'page' : undefined" class="collection-link min-h-11 rounded-full border border-paper/15 px-4 py-3 text-xs text-paper/60 transition-[color,border-color,background-color,transform] duration-300 hover:-translate-y-0.5 hover:border-acid/35 hover:text-acid aria-[current=page]:border-acid/35 aria-[current=page]:bg-acid/[.06] aria-[current=page]:text-acid motion-reduce:transform-none motion-reduce:transition-none">{{ collection.label }}</NuxtLink>
-      </nav>
+      <div ref="filterChips" aria-label="Active opportunity filters" class="filter-summary mt-5" :style="filterChipHeight ? { height: `${filterChipHeight}px` } : undefined">
+        <TransitionGroup name="filter-chip" tag="div" class="filter-chip-list" @before-leave="(element: Element) => { (element as HTMLButtonElement).disabled = true }">
+          <button v-for="filter in activeFilters" :key="filter.id" type="button" class="filter-chip" :aria-label="`Remove ${filter.label} filter`" @click="removeFilter(filter.key, filter.value, $event)">
+            <span>{{ filter.label }}</span>
+            <span class="filter-chip__remove" aria-hidden="true"><SiteIcon name="close" :size="12" /></span>
+          </button>
+        </TransitionGroup>
+      </div>
 
       <div class="mt-12 grid gap-10 lg:grid-cols-[15rem_minmax(0,1fr)] xl:gap-16">
         <aside class="hidden lg:block" aria-label="Opportunity filters">
@@ -439,6 +477,18 @@ useHead({
 </template>
 
 <style scoped>
+.filter-summary { transition:height 480ms cubic-bezier(.22,1,.36,1); }
+.filter-chip-list { position:relative;display:flex;flex-wrap:wrap;gap:.5rem;min-height:2.75rem; }
+.filter-chip { display:inline-flex;align-items:center;gap:.45rem;max-width:100%;min-height:2.75rem;padding:.55rem .7rem .55rem 1rem;border:1px solid rgb(228 199 151 / 19%);border-radius:999px;background:linear-gradient(115deg,rgb(228 199 151 / 6%),rgb(196 178 238 / 4%));color:rgb(244 241 233 / 73%);font-size:.7rem;text-align:left;line-height:1.4;transition:background-color 320ms ease,border-color 320ms ease,box-shadow 420ms ease,color 240ms ease; }
+.filter-chip:hover,.filter-chip:focus-visible { color:var(--color-acid);border-color:rgb(228 199 151 / 38%);box-shadow:0 0 18px rgb(228 199 151 / 6%);outline-offset:3px; }
+.filter-chip__remove { display:grid;place-items:center;flex:0 0 1.4rem;height:1.4rem;border-radius:999px;opacity:.35;transform:scale(.8) rotate(-12deg);transition:opacity 300ms ease,transform 460ms cubic-bezier(.22,1,.36,1),background-color 300ms ease; }
+.filter-chip:hover .filter-chip__remove,.filter-chip:focus-visible .filter-chip__remove { opacity:1;transform:scale(1) rotate(0);background:rgb(228 199 151 / 9%); }
+.filter-chip-enter-active,.filter-chip-move { transition:opacity 440ms ease,transform 560ms cubic-bezier(.22,1,.36,1); }
+.filter-chip-leave-active { position:absolute;pointer-events:none;transition:opacity 240ms ease,transform 360ms cubic-bezier(.4,0,.2,1); }
+.filter-chip-enter-from { opacity:0;transform:translateY(7px) scale(.94); }
+.filter-chip-leave-to { opacity:0;transform:translateY(-4px) scale(.96); }
+@media (hover:none) { .filter-chip__remove { opacity:.75;transform:none; } }
+@media (prefers-reduced-motion:reduce) { .filter-summary,.filter-chip,.filter-chip__remove,.filter-chip-enter-active,.filter-chip-leave-active,.filter-chip-move { transition:none!important;transform:none!important; } }
 .catalog-page::before {
   content: '';
   position: fixed;

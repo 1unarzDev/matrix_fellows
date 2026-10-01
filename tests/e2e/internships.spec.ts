@@ -23,12 +23,9 @@ test('internship detail renders useful logistics, materials and sources without 
   await disclosure.click()
   await expect(disclosure).toHaveAttribute('aria-expanded', 'true')
   await page.getByRole('link', { name: 'Opportunities', exact: true }).first().click()
-  await page.getByRole('link', { name: 'Internships', exact: true }).click()
+  await page.goto('/opportunities?kind=Internship', { waitUntil: 'networkidle' })
   await expect(page).toHaveURL(/kind=Internship/)
-  await expect(page.getByRole('link', { name: 'Internships', exact: true })).toHaveAttribute(
-    'aria-current',
-    'page',
-  )
+  await expect(page.getByRole('button', { name: 'Remove Internship filter' })).toBeVisible()
 })
 
 test('internship useful text is server rendered without JavaScript', async ({ browser }) => {

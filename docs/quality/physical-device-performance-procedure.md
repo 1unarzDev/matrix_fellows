@@ -1,6 +1,7 @@
 # Physical-device performance procedure
 
-Use this protocol to resolve the owner's approximately 10 fps report. Desktop
+Use this protocol to resolve current smoothness/fidelity feedback and the historical,
+unresolved approximately 10 fps report. Desktop
 mobile emulation, CPU throttling, and SwiftShader are useful regression tools but
 cannot establish iOS/Android GPU, compositor, thermal, or battery behavior.
 
@@ -10,7 +11,9 @@ Test the deployed production build—not a dev server—on:
 
 - the owner's affected phone;
 - one recent iPhone and one older/midrange iPhone in Safari;
-- one budget or midrange Android phone in Chrome.
+- one budget or midrange Android phone in Chrome;
+- an iPad in Safari, an integrated-GPU laptop (normal and battery saving), and
+  a capable desktop nonregression control.
 
 For each iPhone, run once normally and once with Low Power Mode enabled. Begin
 from a stable room-temperature device with no screen recording, charging, or
@@ -41,8 +44,9 @@ level, orientation, viewport, network, and whether the device was already warm.
 ## Measurements
 
 Capture ten-second windows from `window.__matrixWorldProfile.frames`. For each
-window report rendered fps, rendered-frame p95, maximum interval, >100 ms stalls,
-CPU submission p95, quality step, atmosphere ratio, particle fraction, draw
+window report scene-submission fps, intervals p95/p99, maximum, >100 ms stalls,
+CPU update/submission p95, progress backlog/request age, actual buffer dimensions,
+quality step, atmosphere ratio, particle fraction, draw
 calls, triangles, and points. Report GPU timer-query data only when available and
 not disjoint. Keep browser RAF cadence separate from submitted/rendered frames.
 
@@ -53,9 +57,12 @@ thermal warning, and battery change over the test.
 
 ## Acceptance and interpretation
 
-- Each active ten-second journey window targets 28–30 rendered fps.
-- Rendered-frame interval p95 must be at or below 50 ms, with no recurring
-  intervals above 100 ms after warm-up.
+- Active windows target 58–60 new scene submissions with intervals concentrated
+  near 16.7 ms where hardware/browser support 60 Hz. For demonstrated 30 Hz
+  callback constraints, target 28–30 near 33.3 ms and label that condition honestly.
+  Record higher-refresh cadence separately, missed presentation opportunities,
+  p95/p99, and isolated spikes; no recurring >100 ms stalls after warm-up.
+  Use browser presentation evidence when available, not render calls alone.
 - Sampled tap-to-next-paint should be at or below 200 ms.
 - The foreground and DOM remain sharp; native touch scrolling, all six chapter
   compositions, reverse navigation, water continuity, and fallback content stay

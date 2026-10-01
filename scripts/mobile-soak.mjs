@@ -7,6 +7,7 @@ const duration = Number(process.env.PROFILE_DURATION_MS || 120_000)
 const software = process.env.PROFILE_GPU === 'software'
 const width = Number(process.env.PROFILE_WIDTH || 390)
 const height = Number(process.env.PROFILE_HEIGHT || 844)
+const targetFps = Number(process.env.PROFILE_TARGET_FPS || 60)
 const browser = await chromium.launch({
   args: software
     ? ['--no-sandbox', '--enable-unsafe-swiftshader']
@@ -82,7 +83,10 @@ try {
     const profile = window.__matrixWorldProfile
     if (!profile) throw new Error('World profile was not initialized')
     const main = document.querySelector('main')
-    const maxScroll = document.documentElement.scrollHeight - innerHeight
+    const maxScroll = Math.min(
+      document.documentElement.scrollHeight - innerHeight,
+      document.querySelector('#community').offsetTop,
+    )
     const journeyStart = performance.now() - profile.startedAt
     profile.events.push({ time: journeyStart, name: 'journey-start' })
     const start = performance.now()
@@ -126,6 +130,27 @@ try {
       duration: Math.round(end - start),
       fps: (windowFrames.length * 1000) / (end - start),
       renderedP95: percentile(intervals, 0.95),
+      submittedP99: percentile(intervals, 0.99),
+      updateP95: percentile(
+        windowFrames.map((frame) => frame.updateMs ?? 0),
+        0.95,
+      ),
+      submissionP95: percentile(
+        windowFrames.map((frame) => frame.cpuMs),
+        0.95,
+      ),
+      progressLagP95: percentile(
+        windowFrames.map((frame) => frame.progressLag ?? 0),
+        0.95,
+      ),
+      requestAgeP95: percentile(
+        windowFrames.flatMap((frame) =>
+          frame.requestAgeMs === null || frame.requestAgeMs === undefined
+            ? []
+            : [frame.requestAgeMs],
+        ),
+        0.95,
+      ),
       stallsOver100: intervals.filter((value) => value > 100).length,
       maxInterval: intervals.length ? Math.max(...intervals) : null,
     })
@@ -133,12 +158,22 @@ try {
   const gpu = frames.flatMap((frame) => (frame.gpuMs === null ? [] : [frame.gpuMs]))
   const intervals = frames.flatMap((frame) => (frame.interval === null ? [] : [frame.interval]))
   const worstFrame = frames.reduce(
-    (worst, frame) =>
-      (frame.interval || 0) > (worst?.interval || 0) ? frame : worst,
+    (worst, frame) => ((frame.interval || 0) > (worst?.interval || 0) ? frame : worst),
     null,
   )
   const report = {
-    environment: { software, width, height, duration, base },
+    environment: {
+      software,
+      width,
+      height,
+      duration,
+      base,
+      targetFps,
+      renderer: trace.profile.renderer,
+      powerMode: 'not available in browser emulation',
+      frameMeaning: 'new scene submissions, not independently verified screen presentations',
+      trace: 'beginning-to-community, 20s each direction',
+    },
     startup: {
       domReady,
       hydrated,
@@ -154,6 +189,21 @@ try {
       fps: (frames.length * 1000) / (trace.journeyEnd - trace.journeyStart),
       renderedMedian: percentile(intervals, 0.5),
       renderedP95: percentile(intervals, 0.95),
+      submittedP99: percentile(intervals, 0.99),
+      rawCallbackP95: percentile(
+        (trace.profile.callbacks || [])
+          .filter((frame) => frame.time >= trace.journeyStart && frame.time <= trace.journeyEnd)
+          .flatMap((frame) => (frame.interval === null ? [] : [frame.interval])),
+        0.95,
+      ),
+      updateP95: percentile(
+        frames.map((frame) => frame.updateMs ?? 0),
+        0.95,
+      ),
+      progressLagP95: percentile(
+        frames.map((frame) => frame.progressLag ?? 0),
+        0.95,
+      ),
       stallsOver100: intervals.filter((value) => value > 100).length,
       maxInterval: intervals.length ? Math.max(...intervals) : null,
       worstFrame,
@@ -169,14 +219,21 @@ try {
       maxTriangles: Math.max(...frames.map((frame) => frame.triangles)),
       maxPoints: Math.max(...frames.map((frame) => frame.points)),
       windows,
-      qualityEvents: trace.profile.events.filter((event) => event.name === 'quality-degraded'),
+      qualityEvents: trace.profile.events.filter((event) => event.name.startsWith('quality-')),
       finalCanvas: trace.canvas,
     },
     errors,
   }
   console.log(JSON.stringify(report, null, 2))
+  if (process.env.PROFILE_OUTPUT) {
+    const { writeFile } = await import('node:fs/promises')
+    await writeFile(process.env.PROFILE_OUTPUT, JSON.stringify({ report, trace }, null, 2))
+  }
   const windowsPass = windows.every(
-    (window) => window.fps >= 28 && window.fps <= 30.5 && window.renderedP95 <= 50,
+    (window) =>
+      window.fps >= targetFps - 2 &&
+      window.fps <= targetFps + 0.5 &&
+      window.renderedP95 <= (1000 / targetFps) * 1.1,
   )
   const noRecurringStalls = report.journey.stallsOver100 <= 1
   const interactionPass = tapToPaint !== null && tapToPaint <= 200

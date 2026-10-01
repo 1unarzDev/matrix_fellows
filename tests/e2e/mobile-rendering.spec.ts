@@ -17,15 +17,20 @@ test('browser chrome has a dark first-paint surface', async ({ page }) => {
   await expect(page.locator('html')).toHaveCSS('background-color', 'rgb(16, 20, 19)')
 })
 
-test('mobile toolbar resizing does not reallocate the WebGL surface', async ({ page }, info) => {
+test('mobile same-width viewport changes preserve canvas projection and buffer sizing', async ({
+  page,
+}, info) => {
   test.skip(info.project.name !== 'mobile')
   await page.goto('/#discovery')
   const canvas = page.locator('canvas[data-engine]')
   await expect(canvas).toHaveAttribute('data-progress', /^1\./, { timeout: 20000 })
-  const before = await canvas.getAttribute('height')
   await page.setViewportSize({ width: 390, height: 780 })
   await page.waitForTimeout(500)
-  expect(await canvas.getAttribute('height')).toBe(before)
+  const sizes = await canvas.evaluate((canvas) => {
+    const bounds = canvas.getBoundingClientRect()
+    return { bufferAspect: canvas.width / canvas.height, cssAspect: bounds.width / bounds.height }
+  })
+  expect(Math.abs(sizes.bufferAspect - sizes.cssAspect)).toBeLessThan(0.003)
 })
 
 test('landscape phones retain the efficient render path and sharp foreground', async ({
@@ -37,8 +42,8 @@ test('landscape phones retain the efficient render path and sharp foreground', a
   const canvas = page.locator('canvas[data-engine]')
   await expect(canvas).toHaveCSS('opacity', '1', { timeout: 20_000 })
   await expect(canvas).toHaveAttribute('data-render-profile', 'efficient')
-  await expect(canvas).toHaveAttribute('data-pixel-ratio', '1.70')
-  await expect(canvas).toHaveAttribute('data-atmosphere-ratio', '0.40')
+  await expect(canvas).toHaveAttribute('data-pixel-ratio', '3.00')
+  expect(Number(await canvas.getAttribute('data-atmosphere-ratio'))).toBeGreaterThanOrEqual(1)
   await expect(canvas).toHaveAttribute('data-progress', /^2\./)
 })
 
@@ -71,7 +76,7 @@ test('mobile camera settles after a touch-sized scroll step and keeps foreground
   const canvas = page.locator('canvas[data-progress]')
   await expect(canvas).toHaveAttribute('data-progress', /^2\./, { timeout: 20000 })
   await expect(canvas).toHaveCSS('opacity', '1', { timeout: 20000 })
-  await expect(canvas).toHaveAttribute('data-pixel-ratio', '1.70')
+  await expect(canvas).toHaveAttribute('data-pixel-ratio', '3.00')
   const before = Number(await canvas.getAttribute('data-progress'))
   // Move into the project's intentional free-reading band rather than the
   // cinematic edge that now settles back to the chapter frame.
@@ -83,7 +88,7 @@ test('mobile camera settles after a touch-sized scroll step and keeps foreground
   const settled = Number(await canvas.getAttribute('data-progress'))
   await page.waitForTimeout(300)
   expect(Math.abs(Number(await canvas.getAttribute('data-progress')) - settled)).toBeLessThan(0.003)
-  expect(Number(await canvas.getAttribute('data-atmosphere-ratio'))).toBeLessThan(1)
+  expect(Number(await canvas.getAttribute('data-atmosphere-ratio'))).toBeGreaterThanOrEqual(1)
   expect(errors).toEqual([])
 })
 

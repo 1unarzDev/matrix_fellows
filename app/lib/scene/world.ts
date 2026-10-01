@@ -4,10 +4,15 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js'
 import { createOasisDressing } from './oasis'
-import { nextFrameTime, settleProgress } from './frame-clock'
+import { nextFrameTime } from './frame-clock'
 import { constellationLayout, constellationStarCount } from './constellations'
 import { createFrameProfiler } from './frame-profiler'
-import { degradeQuality, initialQuality, initialRenderProfile } from './render-quality'
+import {
+  degradeQuality,
+  recoverQuality,
+  initialQuality,
+  initialRenderProfile,
+} from './render-quality'
 import {
   worldFragment,
   screenVertex,
@@ -67,6 +72,7 @@ export function createWorld(
   const screenCamera = new THREE.Camera()
   const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 150)
   const target = new THREE.Vector3()
+  const stormFog = new THREE.Color(0.095, 0.12, 0.125)
   const uniforms = {
     uTime: { value: 0 },
     uProgress: { value: 0 },
@@ -272,7 +278,7 @@ export function createWorld(
     seed = (seed * 16807) % 2147483647
     return (seed - 1) / 2147483646
   }
-  const count = efficient ? 2600 : 12000
+  const count = 12000
   const positions = new Float32Array(count * 3)
   const seeds = new Float32Array(count)
   for (let i = 0; i < count; i++) {
@@ -319,10 +325,32 @@ export function createWorld(
   scene.add(particles)
 
   // Explicit, source-backed star paths replace the random nearest-neighbor graph.
-  const lineGeometry = new THREE.BufferGeometry()
+  // Resolution-aware ribbons avoid WebGL's un-antialiased one-pixel native
+  // lines. They follow the same star endpoints and coherent drift.
+  const initialLines = constellationLayout(1)
+  const lineGeometry = new THREE.InstancedBufferGeometry()
   lineGeometry.setAttribute(
     'position',
-    new THREE.Float32BufferAttribute(constellationLayout(1).lines, 3),
+    new THREE.Float32BufferAttribute([0, -1, 0, 1, -1, 0, 0, 1, 0, 1, 1, 0], 3),
+  )
+  lineGeometry.setIndex([0, 1, 2, 2, 1, 3])
+  const lineCount = initialLines.lines.length / 6
+  lineGeometry.instanceCount = lineCount
+  lineGeometry.setAttribute(
+    'aStart',
+    new THREE.InstancedBufferAttribute(new Float32Array(lineCount * 3), 3),
+  )
+  lineGeometry.setAttribute(
+    'aEnd',
+    new THREE.InstancedBufferAttribute(new Float32Array(lineCount * 3), 3),
+  )
+  lineGeometry.setAttribute(
+    'color',
+    new THREE.InstancedBufferAttribute(new Float32Array(lineCount * 3), 3),
+  )
+  lineGeometry.setAttribute(
+    'aGroup',
+    new THREE.InstancedBufferAttribute(new Float32Array(lineCount), 1),
   )
   const lineMaterial = new THREE.ShaderMaterial({
     vertexShader: constellationLineVertex,
@@ -330,6 +358,8 @@ export function createWorld(
     uniforms: {
       uCosmicTime: uniforms.uCosmicTime,
       uOpacity: { value: 0 },
+      uResolution: { value: new THREE.Vector2() },
+      uLineWidth: { value: 1 },
     },
     transparent: true,
     depthWrite: false,
@@ -337,20 +367,14 @@ export function createWorld(
   })
   if (efficient)
     lineMaterial.fragmentShader = lineMaterial.fragmentShader.replace(
-      'gl_FragColor=vec4(vColor,uOpacity);',
-      `vec4 lineColor=vec4(vColor,uOpacity);
+      'gl_FragColor=vec4(vColor,uOpacity*coverage);',
+      `vec4 lineColor=vec4(vColor,uOpacity*coverage);
       lineColor.rgb=pow(vec3(1.0)-exp(-max(lineColor.rgb,vec3(0.0))*1.35),vec3(.92));
       gl_FragColor=lineColor;`,
     )
-  scene.add(new THREE.LineSegments(lineGeometry, lineMaterial))
-  lineGeometry.setAttribute(
-    'color',
-    new THREE.Float32BufferAttribute(constellationLayout(1).colors, 3),
-  )
-  lineGeometry.setAttribute(
-    'aGroup',
-    new THREE.Float32BufferAttribute(constellationLayout(1).lineGroups, 1),
-  )
+  const constellationLines = new THREE.Mesh(lineGeometry, lineMaterial)
+  constellationLines.frustumCulled = false
+  scene.add(constellationLines)
 
   const oasisDressing = createOasisDressing(scene, camera, efficient)
 
@@ -360,8 +384,7 @@ export function createWorld(
     frame = 0,
     last = 0,
     elapsed = 0,
-    cosmicElapsed = 0,
-    slow = 0
+    cosmicElapsed = 0
   let meteorIndex = 0,
     meteorStart = 3.8,
     meteorDuration = 1.1
@@ -370,9 +393,26 @@ export function createWorld(
     lastRender = sampleStart
   let progress = 0
   let requestedProgress = 0
-  let hasScrollPosition = false
+  let lastProgressRequest = 0
+  let previousCallback = 0
+  let rawInterval: number | null = null
+  let bufferWidth = 0,
+    bufferHeight = 0
+  const drawingSize = new THREE.Vector2()
+  let qualityWindow = performance.now(),
+    qualityFrames = 0,
+    healthyWindows = 0,
+    pressuredWindows = 0
+  let qualityCooldown = 0
+  const callbackIntervals: number[] = []
+  let windowUpdateCost = 0
+  let peakGpuPerScale = 0
   let surfaceWidth = 0,
     surfaceHeight = 0
+  let surfaceDpr = window.devicePixelRatio
+  let cameraUpdates = 0
+  let frozenProgress: number | undefined, frozenTime: number | undefined
+  let drawingPaused = false
   // Explicit crest, basin, waterline, and submerged control points keep the reveals spatial.
   const cameraKeys = [
     { at: 0, position: [0, 6.5, 30], target: [0, 3, -40] },
@@ -403,18 +443,19 @@ export function createWorld(
   )
 
   function resize() {
-    const width = window.innerWidth
+    const bounds = canvas.getBoundingClientRect()
+    const width = Math.round(bounds.width) || window.innerWidth
     // Safari toolbar movement changes innerHeight during a swipe. Keep the
     // large viewport surface stable, including its expensive bloom targets.
-    const height =
-      coarsePointer && width === surfaceWidth
-        ? surfaceHeight
-        : Math.round(canvas.getBoundingClientRect().height) || window.innerHeight
+    const height = Math.round(bounds.height) || window.innerHeight
     surfaceWidth = width
     surfaceHeight = height
     const foregroundRatio = quality.foregroundRatio
     renderer.setPixelRatio(foregroundRatio)
     renderer.setSize(width, height, false)
+    renderer.getDrawingBufferSize(drawingSize)
+    bufferWidth = drawingSize.x
+    bufferHeight = drawingSize.y
     if (!efficient) {
       composer.setPixelRatio(foregroundRatio)
       composer.setSize(width, height)
@@ -441,19 +482,40 @@ export function createWorld(
     }
     anchors.needsUpdate = true
     groupAttribute.needsUpdate = true
-    const lineVertices = lineGeometry.getAttribute('position') as THREE.BufferAttribute
-    lineVertices.array.set(layout.lines)
-    lineVertices.needsUpdate = true
-    const lineGroupAttribute = lineGeometry.getAttribute('aGroup') as THREE.BufferAttribute
-    lineGroupAttribute.array.set(layout.lineGroups)
-    lineGroupAttribute.needsUpdate = true
-    lineGeometry.computeBoundingSphere()
+    const starts = lineGeometry.getAttribute('aStart') as THREE.BufferAttribute
+    const ends = lineGeometry.getAttribute('aEnd') as THREE.BufferAttribute
+    const colors = lineGeometry.getAttribute('color') as THREE.BufferAttribute
+    const groups = lineGeometry.getAttribute('aGroup') as THREE.BufferAttribute
+    for (let i = 0; i < lineCount; i++) {
+      starts.setXYZ(i, layout.lines[i * 6]!, layout.lines[i * 6 + 1]!, layout.lines[i * 6 + 2]!)
+      ends.setXYZ(i, layout.lines[i * 6 + 3]!, layout.lines[i * 6 + 4]!, layout.lines[i * 6 + 5]!)
+      colors.setXYZ(i, layout.colors[i * 6]!, layout.colors[i * 6 + 1]!, layout.colors[i * 6 + 2]!)
+      groups.setX(i, layout.lineGroups[i * 2]!)
+    }
+    for (const attribute of [starts, ends, colors, groups]) attribute.needsUpdate = true
+    lineMaterial.uniforms.uResolution!.value.set(bufferWidth, bufferHeight)
+    lineMaterial.uniforms.uLineWidth!.value = foregroundRatio * 0.65
     particleUniforms.uPixelRatio.value = foregroundRatio
     canvas.dataset.pixelRatio = foregroundRatio.toFixed(2)
     canvas.dataset.atmosphereRatio = ratio.toFixed(2)
     canvas.dataset.qualityStep = String(quality.step)
+    canvas.dataset.bufferWidth = String(bufferWidth)
+    canvas.dataset.bufferHeight = String(bufferHeight)
+    canvas.dataset.atmosphereWidth = String(atmosphereTarget?.width || bufferWidth)
+    canvas.dataset.atmosphereHeight = String(atmosphereTarget?.height || bufferHeight)
+    canvas.dataset.msaaSamples = String(efficient ? 0 : renderTarget.samples)
+    canvas.dataset.bloomEnabled = String(bloom?.enabled || false)
+    frameProfiler?.event('buffers-resized', {
+      width,
+      height,
+      bufferWidth,
+      bufferHeight,
+      atmosphereWidth,
+      atmosphereHeight,
+    })
   }
   function updateCamera(value: number) {
+    cameraUpdates++
     progress = THREE.MathUtils.clamp(value, 0, 5)
     uniforms.uProgress.value = progress
     let index = cameraKeys.findIndex(
@@ -479,8 +541,8 @@ export function createWorld(
       pathIndex += (outgoing - incoming) * (softHinge - Math.max(0, x))
     }
     const t = pathIndex / (cameraKeys.length - 1)
-    camera.position.copy(positionsPath.getPoint(t))
-    target.copy(targetsPath.getPoint(t))
+    positionsPath.getPoint(t, camera.position)
+    targetsPath.getPoint(t, target)
     // Ride the flood at the surface, then keep the same relative-depth dive.
     const rise = cameraFloodRise(progress, camera.position.y)
     camera.position.y += rise
@@ -500,39 +562,61 @@ export function createWorld(
     const fog = scene.fog as THREE.Fog
     fog.near = THREE.MathUtils.lerp(THREE.MathUtils.lerp(35, 28, crestVeil), 12, curtain)
     fog.far = THREE.MathUtils.lerp(THREE.MathUtils.lerp(150, 112, crestVeil), 62, curtain)
-    scene.fog!.color.setRGB(0.6, 0.42, 0.25).lerp(new THREE.Color(0.095, 0.12, 0.125), weather)
+    scene.fog!.color.setRGB(0.6, 0.42, 0.25).lerp(stormFog, weather)
     camera.lookAt(target)
     lineMaterial.uniforms.uOpacity!.value = THREE.MathUtils.smoothstep(progress, 3.75, 4.15) * 0.25
+    constellationLines.visible = lineMaterial.uniforms.uOpacity!.value > 0.0001
     const meteorVisibility = meteorChapterVisibility(progress)
     uniforms.uMeteorVisibility.value = meteorVisibility
     grade.uniforms.meteorVisibility!.value = meteorVisibility
     oasisDressing.setProgress(progress)
   }
   function setProgress(value: number) {
-    requestedProgress = THREE.MathUtils.clamp(value, 0, 5)
-    if (!coarsePointer || !hasScrollPosition || document.hidden) updateCamera(requestedProgress)
-    hasScrollPosition = true
+    const next = THREE.MathUtils.clamp(frozenProgress ?? value, 0, 5)
+    if (next !== requestedProgress) lastProgressRequest = performance.now()
+    requestedProgress = next
   }
   function draw(now: number) {
     if (disposed) return
     frame = requestAnimationFrame(draw)
+    rawInterval = previousCallback ? now - previousCallback : null
+    previousCallback = now
+    if (
+      rawInterval !== null &&
+      rawInterval > 0 &&
+      rawInterval < 200 &&
+      callbackIntervals.length < 240
+    )
+      callbackIntervals.push(rawInterval)
     if (!visible || document.hidden) {
       last = now
       lastRender = now
       sampleStart = now
       sampleFrames = 0
+      qualityWindow = now
+      qualityFrames = 0
+      windowUpdateCost = 0
+      callbackIntervals.length = 0
+      healthyWindows = 0
+      pressuredWindows = 0
+      previousCallback = 0
+      frameProfiler?.pause()
       return
     }
-    const delta = now - last
+    frameProfiler?.callback(now)
+    const targetFps =
+      now - lastProgressRequest < 750 || elapsed < 1.8 || frozenProgress !== undefined ? 60 : 30
     // A 30 Hz callback can arrive a fraction early (notably low-power iOS).
     // Do not skip it and accidentally alternate 33/66 ms frames.
-    const frameTime = nextFrameTime(now, last)
+    const frameTime = nextFrameTime(now, last, targetFps)
     if (frameTime === null) return
+    const updateStart = performance.now()
     const seconds = Math.min(now - lastRender, 100) / 1000
     elapsed += seconds
     if (progress > 3.45) cosmicElapsed += seconds
-    if (coarsePointer && requestedProgress !== progress)
-      updateCamera(settleProgress(progress, requestedProgress, seconds))
+    // Consume only the freshest scroll position once per new scene frame.
+    // DOM scrolling stays independent; no second touch-only lag is added.
+    if (requestedProgress !== progress) updateCamera(requestedProgress)
     lastRender = now
     last = frameTime
     uniforms.uTime.value = elapsed
@@ -549,10 +633,15 @@ export function createWorld(
       }
     } else uniforms.uMeteor.value.x = -1
     const meteorUniform = grade.uniforms.meteor!.value as THREE.Vector4
+    if (frozenTime !== undefined) {
+      uniforms.uTime.value = frozenTime
+      uniforms.uCosmicTime.value = frozenTime
+      uniforms.uMeteor.value.set(progress > 3.45 ? 0.5 : -1, 0.371, 0, 0)
+    }
     meteorUniform.copy(uniforms.uMeteor.value)
-    const lightning = lightningState(elapsed)
+    const lightning = lightningState(frozenTime ?? elapsed)
     uniforms.uLightning.value.set(lightning.intensity, lightning.seed)
-    oasisDressing.setTime(elapsed)
+    oasisDressing.setTime(frozenTime ?? elapsed)
     // Only a top-of-page arrival gets a low-to-high reveal. A restored/deep-link
     // chapter uses its normal camera immediately, never a trip through the desert.
     const emergence =
@@ -563,6 +652,12 @@ export function createWorld(
     camera.position.y -= emergence * 1.8
     target.y -= emergence * 3.2
     camera.lookAt(target)
+    const updateMs = performance.now() - updateStart
+    if (drawingPaused) {
+      camera.position.y = cameraY
+      target.y = targetY
+      return
+    }
     const start = performance.now()
     frameProfiler?.begin(now)
     renderer.info.reset()
@@ -579,7 +674,28 @@ export function createWorld(
       renderer.render(scene, camera)
     } else composer.render()
     const cost = performance.now() - start
-    frameProfiler?.end(now, cost, renderer.info, quality, progress)
+    const gpuCost = frameProfiler?.gpuCost()
+    if (gpuCost !== null && gpuCost !== undefined && elapsed > 2)
+      peakGpuPerScale = Math.max(
+        peakGpuPerScale * Math.exp(-seconds / 120),
+        gpuCost / (ratio * ratio),
+      )
+    qualityFrames++
+    windowUpdateCost += cost + updateMs
+    frameProfiler?.end(now, cost, renderer.info, quality, progress, {
+      updateMs,
+      rawInterval,
+      requestedProgress,
+      requestAgeMs:
+        now - lastProgressRequest < 750
+          ? Math.max(0, performance.now() - lastProgressRequest)
+          : null,
+      targetFps,
+      bufferWidth,
+      bufferHeight,
+      atmosphereWidth: atmosphereTarget?.width || bufferWidth,
+      atmosphereHeight: atmosphereTarget?.height || bufferHeight,
+    })
     camera.position.y = cameraY
     target.y = targetY
     if (firstFrame) {
@@ -603,38 +719,111 @@ export function createWorld(
       canvas.dataset.meteorActive = uniforms.uMeteor.value.x >= 0 ? 'true' : 'false'
       canvas.dataset.meteorVisibility = uniforms.uMeteorVisibility.value.toFixed(3)
       canvas.dataset.qualityStep = String(quality.step)
+      canvas.dataset.targetFps = String(targetFps)
       sampleStart = now
       sampleFrames = 0
     }
-    // A sustained 50 ms cadence is only 20 fps. The old 52 ms threshold
-    // mistakenly treated that common missed-vsync cadence as healthy.
-    slow = cost > 27 || delta > (efficient ? 42 : 52) ? slow + 1 : Math.max(0, slow - 1)
-    const adaptationSamples = quality.step === 0 ? 10 : 20
-    if (slow > adaptationSamples) {
-      let next = degradeQuality(quality)
-      // A device missing the 30 fps budget by more than one full frame needs a
-      // decisive initial response, not several seconds at each intermediate
-      // resolution. Both steps are precompiled/allocation-free except resizing.
-      if (efficient && cost > 55) next = degradeQuality(next)
-      if (next !== quality) {
-        const resized = next.atmosphereRatio !== quality.atmosphereRatio
-        quality = next
-        ratio = quality.atmosphereRatio
-        uniforms.uDetail.value = quality.detail ? 1 : 0
-        grade.uniforms.haloEnabled!.value = quality.halo ? 1 : 0
-        geometry.setDrawRange(0, Math.floor(count * quality.particleFraction))
-        frameProfiler?.event('quality-degraded', {
-          step: quality.step,
-          ratio,
-          particles: geometry.drawRange.count,
-          halo: quality.halo,
-          detail: quality.detail,
-        })
-        if (resized) resize()
+    // Capacity is measured across complete windows, not from the render-cap
+    // clock's remainder. A regular 30 Hz callback stream isn't a power-mode
+    // detector and must not accidentally receive another 30 Hz throttle.
+    if (now - qualityWindow >= 2000 && frozenProgress === undefined) {
+      const spacing = callbackIntervals.sort((a, b) => a - b)
+      const baseInterval = spacing[Math.floor(spacing.length * 0.2)] || 1000 / 60
+      const observedTarget = baseInterval >= 28 ? 30 : 60
+      const fps = (qualityFrames * 1000) / (now - qualityWindow)
+      const stableCallbacks =
+        (spacing[Math.floor(spacing.length * 0.95)] || 100) <= (1000 / observedTarget) * 1.12
+      const healthy =
+        targetFps === 60 &&
+        fps >= observedTarget - 2 &&
+        stableCallbacks &&
+        windowUpdateCost / Math.max(1, qualityFrames) < (1000 / observedTarget) * 0.4
+      healthyWindows = healthy ? healthyWindows + 1 : 0
+      pressuredWindows = targetFps === 60 && fps < observedTarget - 5 ? pressuredWindows + 1 : 0
+      let next = quality
+      if (elapsed > 3 && now >= qualityCooldown) {
+        if (pressuredWindows >= 2) {
+          next = degradeQuality(quality)
+          qualityCooldown = now + 10000
+        } else if (healthyWindows >= 3) {
+          const proposed = recoverQuality(quality, window.devicePixelRatio)
+          if (
+            !peakGpuPerScale ||
+            peakGpuPerScale * proposed.atmosphereRatio ** 2 < (1000 / observedTarget) * 0.65
+          )
+            next = proposed
+          healthyWindows = 0
+        }
       }
-      slow = 0
+      if (next !== quality) {
+        applyQuality(next)
+      }
+      canvas.dataset.observedCallbackCadence = String(observedTarget)
+      qualityWindow = now
+      qualityFrames = 0
+      windowUpdateCost = 0
+      callbackIntervals.length = 0
     }
   }
+  function applyQuality(next: typeof quality) {
+    const resized =
+      next.atmosphereRatio !== quality.atmosphereRatio ||
+      next.foregroundRatio !== quality.foregroundRatio
+    const recovering = next.atmosphereRatio > quality.atmosphereRatio
+    quality = next
+    ratio = quality.atmosphereRatio
+    uniforms.uDetail.value = quality.detail ? 1 : 0
+    grade.uniforms.haloEnabled!.value = quality.halo ? 1 : 0
+    if (bloom) bloom.enabled = quality.halo
+    geometry.setDrawRange(0, Math.floor(count * quality.particleFraction))
+    frameProfiler?.event(recovering ? 'quality-recovered' : 'quality-degraded', {
+      step: quality.step,
+      ratio,
+      particles: geometry.drawRange.count,
+      halo: quality.halo,
+      detail: quality.detail,
+    })
+    if (resized) resize()
+    canvas.dataset.bloomEnabled = String(bloom?.enabled || false)
+  }
+  if (frameProfiler?.enabled)
+    window.__matrixWorldDebug = {
+      setProgress,
+      setQuality: (patch) => applyQuality({ ...quality, ...patch }),
+      freeze: (value, seconds) => {
+        frozenProgress = value
+        frozenTime = seconds
+        setProgress(value)
+      },
+      resume: () => {
+        frozenProgress = undefined
+        frozenTime = undefined
+      },
+      pauseDrawing: (paused) => {
+        drawingPaused = paused
+        frameProfiler?.event('drawing-paused', { paused })
+      },
+      snapshot: () => ({
+        quality: { ...quality },
+        cameraUpdates,
+        progress,
+        requestedProgress,
+        buffer: { width: bufferWidth, height: bufferHeight },
+        atmosphere: {
+          width: atmosphereTarget?.width || bufferWidth,
+          height: atmosphereTarget?.height || bufferHeight,
+        },
+        composer: { width: composer.readBuffer.width, height: composer.readBuffer.height },
+        bloomEnabled: bloom?.enabled || false,
+        enabledPasses: composer.passes.filter((pass) => pass.enabled).length,
+        detailUniform: uniforms.uDetail.value,
+        haloUniform: grade.uniforms.haloEnabled!.value,
+        particleCount: geometry.drawRange.count,
+        drawCalls: renderer.info.render.calls,
+        glAntialias: gl.getContextAttributes()?.antialias,
+        css: { width: surfaceWidth, height: surfaceHeight },
+      }),
+    }
   const contextLost = (event: Event) => {
     event.preventDefault()
     onFailure()
@@ -645,7 +834,19 @@ export function createWorld(
   observer.observe(canvas)
   canvas.addEventListener('webglcontextlost', contextLost)
   const onResize = () => {
-    if (coarsePointer && window.innerWidth === surfaceWidth) return
+    const bounds = canvas.getBoundingClientRect()
+    if (window.devicePixelRatio !== surfaceDpr) {
+      surfaceDpr = window.devicePixelRatio
+      applyQuality({
+        ...quality,
+        foregroundRatio: Math.min(surfaceDpr, efficient ? 3 : 2),
+        atmosphereRatio: efficient
+          ? Math.min(surfaceDpr, quality.atmosphereRatio)
+          : Math.min(surfaceDpr, 2),
+      })
+    }
+    if (Math.round(bounds.width) === surfaceWidth && Math.round(bounds.height) === surfaceHeight)
+      return
     resize()
   }
   window.addEventListener('resize', onResize, { passive: true })
@@ -720,6 +921,7 @@ export function createWorld(
       bloom?.dispose()
       grade.dispose()
       frameProfiler?.dispose()
+      if (frameProfiler?.enabled) delete window.__matrixWorldDebug
       composer.dispose()
       renderer.dispose()
       renderer.forceContextLoss()

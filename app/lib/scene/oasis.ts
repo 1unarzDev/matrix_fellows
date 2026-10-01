@@ -25,9 +25,9 @@ function bank(angle: number, inland = 0) {
   // Two loose planting islands replace the evenly scattered central shoreline.
   // Palms, reeds, stones and dry-bank plants share these anchors, while their
   // inland offsets preserve depth and the outer framing stays untouched.
-  if (angle > -1.85 && angle < -.35) {
-    const cluster = angle < -1.1 ? -1.47 : -.72
-    angle = THREE.MathUtils.lerp(angle, cluster, .46)
+  if (angle > -1.85 && angle < -0.35) {
+    const cluster = angle < -1.1 ? -1.47 : -0.72
+    angle = THREE.MathUtils.lerp(angle, cluster, 0.46)
   }
   let radius = 0.6
   const point = new THREE.Vector3()
@@ -41,11 +41,7 @@ function bank(angle: number, inland = 0) {
   return point
 }
 
-export function createOasisDressing(
-  scene: THREE.Scene,
-  camera: THREE.Camera,
-  efficient = false,
-) {
+export function createOasisDressing(scene: THREE.Scene, camera: THREE.Camera, efficient = false) {
   const group = new THREE.Group()
   const wind = { value: 0 }
   const windStrength = { value: 0 }
@@ -56,10 +52,12 @@ export function createOasisDressing(
   // Buried geometry must not draw through it just because it uses another pass.
   function groundMaterial(material: THREE.Material) {
     if (efficient) {
-      // Alpha hashing preserves the scroll reveal without sorting/blending
-      // every overlapping leaf at the Retina foreground resolution.
-      material.transparent = false
-      material.alphaHash = true
+      // Hashing without temporal accumulation made fades visibly grainy.
+      // Continuous alpha preserves the authored reveal; derivative coverage
+      // below resolves cutout boundaries on the non-MSAA direct canvas.
+      material.transparent = true
+      material.alphaHash = false
+      material.alphaToCoverage = false
       material.depthWrite = true
     }
     const previousCompile = material.onBeforeCompile.bind(material)
@@ -83,20 +81,31 @@ export function createOasisDressing(
       shader.fragmentShader =
         'varying vec3 oasisWorld; uniform float oasisExpansion; uniform float oasisWaterLevel;\n' +
         terrainGLSL +
-        shader.fragmentShader.replace(
-          '#include <clipping_planes_fragment>',
-          `
+        shader.fragmentShader
+          .replace(
+            '#include <clipping_planes_fragment>',
+            `
         #include <clipping_planes_fragment>
         if (oasisWorld.y < max(oasisWaterLevel, terrain(oasisWorld.xz, 1.0, oasisExpansion) - .025)) discard;`,
-        ).replace(
-          '#include <alphatest_fragment>',
-          `
+          )
+          .replace(
+            '#include <alphatest_fragment>',
+            `
         // Cut out the leaf texture independently of the whole-grove reveal.
         // Testing opacity * texture alpha made entire canopies pop at alphaTest.
         diffuseColor.a /= max(opacity, .0001);
-        #include <alphatest_fragment>
+        ${
+          efficient
+            ? `
+        #ifdef USE_ALPHATEST
+          float oasisAlphaWidth=max(fwidth(diffuseColor.a),.001);
+          diffuseColor.a=smoothstep(alphaTest-oasisAlphaWidth,alphaTest+oasisAlphaWidth,diffuseColor.a);
+          if(diffuseColor.a<=0.0) discard;
+        #endif`
+            : '#include <alphatest_fragment>'
+        }
         diffuseColor.a *= opacity;`,
-        )
+          )
     }
     material.customProgramCacheKey = () =>
       `${previousCacheKey()}-oasis-ground-v2-${efficient ? 'direct-alpha' : 'post-tone'}`
@@ -235,6 +244,12 @@ export function createOasisDressing(
     })
     mesh.instanceMatrix.needsUpdate = true
   }
+  // These placements never expand. Upload once; reveal, wind, clipping and
+  // light changes live in uniforms, not in 678 identical matrix rewrites.
+  updateInstances(rocks, rockPlacements, 1)
+  updateInstances(foliage, leafPlacements, 1)
+  const stormSky = new THREE.Color('#c3d1ce')
+  const stormGround = new THREE.Color('#666c62')
   function setProgress(value: number, force = false) {
     if (value === progress && !force) return
     progress = value
@@ -242,8 +257,8 @@ export function createOasisDressing(
     waterLevel.value = -1 + floodHeight(progress)
     const storm = stormStrength(progress)
     fill.intensity = THREE.MathUtils.lerp(2.1, 1.25, storm)
-    fill.color.set('#f4dfb1').lerp(new THREE.Color('#c3d1ce'), storm)
-    fill.groundColor.set('#46644c').lerp(new THREE.Color('#666c62'), storm)
+    fill.color.set('#f4dfb1').lerp(stormSky, storm)
+    fill.groundColor.set('#46644c').lerp(stormGround, storm)
     sun.intensity = THREE.MathUtils.lerp(2.4, 0.35, storm)
     const opacity =
       THREE.MathUtils.smoothstep(progress, 0.24, 0.43) *
@@ -255,9 +270,6 @@ export function createOasisDressing(
     materials.forEach((material) => {
       material.opacity = opacity
     })
-    const expansion = 1
-    updateInstances(rocks, rockPlacements, expansion)
-    updateInstances(foliage, leafPlacements, expansion)
     const palmsVisible = camera.position.distanceTo(groveCenter) < 140
     palmInstances.forEach((mesh) => (mesh.visible = palmsVisible))
   }
@@ -270,59 +282,87 @@ export function createOasisDressing(
     if (disposed) return
     type Placement = { origin: THREE.Vector3; scale: THREE.Vector3; rotation: number }
     const dry = (x: number, z: number, height: number, width = 1, rotation = 0): Placement => ({
-      origin: new THREE.Vector3(x, ground(x, z) - .18, z),
-      scale: new THREE.Vector3(height * width, height, height), rotation,
+      origin: new THREE.Vector3(x, ground(x, z) - 0.18, z),
+      scale: new THREE.Vector3(height * width, height, height),
+      rotation,
     })
     const plants = (count: number, height: number, offset: number) =>
       Array.from({ length: count }, (_, i) => {
-        const angle = -1.85 + ((i * .618 + offset) % 1) * 2.1
-        const origin = bank(angle, .15 + random() * .19)
-        return dry(origin.x, origin.z, height * (.65 + random() * .65), .85 + random() * .3, random() * 6.28)
+        const angle = -1.85 + ((i * 0.618 + offset) % 1) * 2.1
+        const origin = bank(angle, 0.15 + random() * 0.19)
+        return dry(
+          origin.x,
+          origin.z,
+          height * (0.65 + random() * 0.65),
+          0.85 + random() * 0.3,
+          random() * 6.28,
+        )
       })
-    const arch = dry(30, -98, 12, 1.15, -.12)
+    const arch = dry(30, -98, 12, 1.15, -0.12)
     const crown = (x: number, y: number, width: number, rotation: number): Placement => ({
       origin: new THREE.Vector3(x, arch.origin.y + y, -98),
-      scale: new THREE.Vector3(width, 2.6, 3.2), rotation,
+      scale: new THREE.Vector3(width, 2.6, 3.2),
+      rotation,
     })
     const assets = [
       { name: 'cliff_cave_rock', tint: '#ad8e74', placements: [arch] },
-      { name: 'rock_largeA', tint: '#ad8e74',
-        placements: [crown(27, 10.3, 4.2, .2), crown(32.5, 10.6, 3.9, -.35)] },
-      { name: 'rock_tallA', tint: '#ad8e74',
-        placements: [dry(23, -98, 8, 1, .3), dry(37, -98, 7, 1, 2.4), dry(-25, -65, 5, .9, .4)] },
-      { name: 'rock_tallH', tint: '#a98c73',
-        placements: [dry(43, -104, 10, .8, 1.5), dry(49, -109, 6, 1, 2), dry(-30, -78, 8, .85, 1)] },
-      { name: 'cactus_tall', tint: '#53644a', placements: plants(9, 3.4, .1) },
-      { name: 'cactus_short', tint: '#68734f', placements: plants(7, 1.9, .3) },
-      { name: 'plant_bush', tint: '#697150', placements: plants(20, 1.3, .15) },
-      { name: 'plant_bushSmall', tint: '#8a8054', placements: plants(16, .7, .21) },
+      {
+        name: 'rock_largeA',
+        tint: '#ad8e74',
+        placements: [crown(27, 10.3, 4.2, 0.2), crown(32.5, 10.6, 3.9, -0.35)],
+      },
+      {
+        name: 'rock_tallA',
+        tint: '#ad8e74',
+        placements: [dry(23, -98, 8, 1, 0.3), dry(37, -98, 7, 1, 2.4), dry(-25, -65, 5, 0.9, 0.4)],
+      },
+      {
+        name: 'rock_tallH',
+        tint: '#a98c73',
+        placements: [
+          dry(43, -104, 10, 0.8, 1.5),
+          dry(49, -109, 6, 1, 2),
+          dry(-30, -78, 8, 0.85, 1),
+        ],
+      },
+      { name: 'cactus_tall', tint: '#53644a', placements: plants(9, 3.4, 0.1) },
+      { name: 'cactus_short', tint: '#68734f', placements: plants(7, 1.9, 0.3) },
+      { name: 'plant_bush', tint: '#697150', placements: plants(20, 1.3, 0.15) },
+      { name: 'plant_bushSmall', tint: '#8a8054', placements: plants(16, 0.7, 0.21) },
     ]
-    await Promise.all(assets.map(async (asset) => {
-      try {
-        const geometry = await loadDesertGeometry(asset.name)
-        if (disposed) { geometry.dispose(); return }
-        geometries.add(geometry)
-        const material = new THREE.MeshLambertMaterial({
-          color: '#ffffff', transparent: true, flatShading: true,
-        })
-        groundMaterial(material)
-        materials.add(material)
-        const mesh = new THREE.InstancedMesh(geometry, material, asset.placements.length)
-        mesh.name = `desert-${asset.name}`
-        accentMeshes.add(mesh)
-        mesh.frustumCulled = false
-        asset.placements.forEach((_, index) => {
-          const color = new THREE.Color(asset.tint)
-          color.multiplyScalar(.9 + (index % 4) * .055)
-          mesh.setColorAt(index, color)
-        })
-        updateInstances(mesh, asset.placements, 1)
-        group.add(mesh)
-        setProgress(progress, true)
-      } catch {
-        // Optional dressing must never prevent the main world from rendering.
-      }
-    }))
+    await Promise.all(
+      assets.map(async (asset) => {
+        try {
+          const geometry = await loadDesertGeometry(asset.name)
+          if (disposed) {
+            geometry.dispose()
+            return
+          }
+          geometries.add(geometry)
+          const material = new THREE.MeshLambertMaterial({
+            color: '#ffffff',
+            transparent: true,
+            flatShading: true,
+          })
+          groundMaterial(material)
+          materials.add(material)
+          const mesh = new THREE.InstancedMesh(geometry, material, asset.placements.length)
+          mesh.name = `desert-${asset.name}`
+          accentMeshes.add(mesh)
+          mesh.frustumCulled = false
+          asset.placements.forEach((_, index) => {
+            const color = new THREE.Color(asset.tint)
+            color.multiplyScalar(0.9 + (index % 4) * 0.055)
+            mesh.setColorAt(index, color)
+          })
+          updateInstances(mesh, asset.placements, 1)
+          group.add(mesh)
+          setProgress(progress, true)
+        } catch {
+          // Optional dressing must never prevent the main world from rendering.
+        }
+      }),
+    )
   })().catch(() => {
     // A failed optional module download leaves the original grove intact.
   })
@@ -344,11 +384,11 @@ export function createOasisDressing(
       tree.traverse((object) => {
         if (!(object instanceof THREE.Mesh)) return
         const originals = Array.isArray(object.material) ? object.material : [object.material]
-        const foliage = originals.some(
-          (original) => Boolean((original as THREE.MeshBasicMaterial).map),
+        const foliage = originals.some((original) =>
+          Boolean((original as THREE.MeshBasicMaterial).map),
         )
-        const mapped = originals.find(
-          (original) => Boolean((original as THREE.MeshBasicMaterial).map),
+        const mapped = originals.find((original) =>
+          Boolean((original as THREE.MeshBasicMaterial).map),
         ) as THREE.MeshBasicMaterial | undefined
         if (mapped?.map) {
           leafMap = mapped.map
@@ -470,23 +510,25 @@ export function createOasisDressing(
     setProgress,
     setTime: (seconds: number) => {
       wind.value = seconds
-      const dt = lastWindTime === undefined ? 0 : Math.max(0, Math.min(.1, seconds-lastWindTime))
+      const dt = lastWindTime === undefined ? 0 : Math.max(0, Math.min(0.1, seconds - lastWindTime))
       lastWindTime = seconds
       // Scroll changes wind intensity, never its phase. Ease intensity too, so
       // quick navigation cannot snap the canopy into a different wind pose.
-      windStrength.value += (stormStrength(progress)-windStrength.value)*(1-Math.exp(-dt*3))
+      windStrength.value += (stormStrength(progress) - windStrength.value) * (1 - Math.exp(-dt * 3))
       if (!group.visible) return
       palmPlacements.forEach(({ origin, scale, rotation }, index) => {
         const strength = windStrength.value
-        const gust = Math.sin(seconds * .65 + origin.x * .055)
-        const sway = Math.sin(seconds * .55 + index * .7) + strength * .3 * Math.sin(seconds * .95 + index * .7)
+        const gust = Math.sin(seconds * 0.65 + origin.x * 0.055)
+        const sway =
+          Math.sin(seconds * 0.55 + index * 0.7) +
+          strength * 0.3 * Math.sin(seconds * 0.95 + index * 0.7)
         // Rotate about the grounded asset origin; no translation or sinking.
         transform.position.copy(origin)
         transform.scale.setScalar(scale)
         transform.rotation.set(
-          Math.sin(seconds * .47 + index) * (.001 + strength * .014),
+          Math.sin(seconds * 0.47 + index) * (0.001 + strength * 0.014),
           rotation,
-          sway * (.0015 + strength * .032) - strength * (.022 + gust * .009),
+          sway * (0.0015 + strength * 0.032) - strength * (0.022 + gust * 0.009),
         )
         transform.updateMatrix()
         palmInstances.forEach((mesh) => mesh.setMatrixAt(index, transform.matrix))

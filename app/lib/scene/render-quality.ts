@@ -32,22 +32,20 @@ export function initialQuality(profile: RenderProfile, devicePixelRatio: number)
     ? {
         profile,
         step: 0,
-        // Phones previously began at 0.7, then repeatedly reallocated this
-        // full-screen target while they were already missing frames. Start at
-        // the measured steady-state tier instead. The foreground retains a
-        // bounded retina-aware ratio; only the naturally soft atmosphere is
-        // heavily downsampled.
-        atmosphereRatio: Math.min(devicePixelRatio, 0.4),
-        foregroundRatio: Math.min(devicePixelRatio, 1.7),
-        particleFraction: 0.6,
+        // Input modality chooses a pass structure, not a permanent detail cap.
+        // Start at CSS-resolution procedural imagery and native foreground;
+        // sustained capacity can recover the procedural layer to native DPR.
+        atmosphereRatio: Math.min(devicePixelRatio, 1),
+        foregroundRatio: Math.min(devicePixelRatio, 3),
+        particleFraction: 1,
         halo: false,
-        detail: false,
+        detail: true,
       }
     : {
         profile,
         step: 0,
-        atmosphereRatio: Math.min(devicePixelRatio, 1.5),
-        foregroundRatio: Math.min(devicePixelRatio, 1.5),
+        atmosphereRatio: Math.min(devicePixelRatio, 2),
+        foregroundRatio: Math.min(devicePixelRatio, 2),
         particleFraction: 1,
         halo: true,
         detail: true,
@@ -55,31 +53,31 @@ export function initialQuality(profile: RenderProfile, devicePixelRatio: number)
 }
 
 export function degradeQuality(state: QualityState): QualityState {
-  const minimumRatio = state.profile === 'efficient' ? 0.4 : 0.65
+  const minimumRatio = Math.min(state.foregroundRatio, state.profile === 'efficient' ? 1 : 1.5)
   if (state.atmosphereRatio > minimumRatio + 0.001)
     return {
       ...state,
       step: state.step + 1,
       atmosphereRatio: Math.max(minimumRatio, state.atmosphereRatio * 0.85),
-      particleFraction: Math.max(0.72, state.particleFraction * 0.88),
+      // Desktop has no independent procedural target: its composer really
+      // uses foregroundRatio. Keep both scales coherent on that path.
+      foregroundRatio:
+        state.profile === 'cinematic'
+          ? Math.max(minimumRatio, state.atmosphereRatio * 0.85)
+          : state.foregroundRatio,
     }
 
-  // Resolution has a hard floor so the atmosphere remains coherent. Further
-  // sustained overload removes only the small mobile halo and bounded particle
-  // overdraw; both switches are allocation-free and do not compile new shaders.
-  if (state.halo)
-    return {
-      ...state,
-      step: state.step + 1,
-      halo: false,
-      detail: false,
-      particleFraction: Math.max(0.6, state.particleFraction * 0.82),
-    }
-  if (state.particleFraction > 0.46)
-    return {
-      ...state,
-      step: state.step + 1,
-      particleFraction: Math.max(0.46, state.particleFraction * 0.8),
-    }
   return state
+}
+
+export function recoverQuality(state: QualityState, devicePixelRatio: number): QualityState {
+  const maximum = Math.min(devicePixelRatio, state.profile === 'efficient' ? 3 : 2)
+  if (state.atmosphereRatio >= maximum - 0.001) return state
+  const ratio = Math.min(maximum, state.atmosphereRatio * 1.25)
+  return {
+    ...state,
+    step: state.step + 1,
+    atmosphereRatio: ratio,
+    foregroundRatio: state.profile === 'cinematic' ? ratio : state.foregroundRatio,
+  }
 }

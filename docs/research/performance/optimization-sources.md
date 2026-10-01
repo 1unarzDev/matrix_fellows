@@ -1,5 +1,19 @@
 # Performance optimization sources
 
+## October 1 renderer follow-up
+
+Installed Three r180 uses alpha-to-coverage state, but coverage requires an
+actually multisampled framebuffer; setting a material flag does not create one.
+The efficient direct canvas reports antialias false and has no MSAA render target.
+Its foliage now uses continuous transparency/derivative cutout coverage rather
+than alpha hashing during fades. Desktop retains its multisampled composer.
+See [Material alphaToCoverage/alphaHash](https://threejs.org/docs/#api/en/materials/Material)
+and [r180 WebGLState](https://github.com/mrdoob/three.js/blob/r180/src/renderers/webgl/WebGLState.js).
+Lenis nested-scroll traversal is disabled in favor of explicit prevented containers;
+its RAF receives monotonic milliseconds independently of GSAP's smoothed time.
+These are implementation facts, not physical-device performance certification.
+See the [measured checkpoint](../../quality/rendering-checkpoint-2026-10-01.md).
+
 Checked against primary documentation on 2026-09-19. This note applies the
 current Nuxt 4.5.2, Nitro 2.13.4, Three.js r180, and Cloudflare Workers setup in
 this repository. It records implementation guidance, not measured gains; each

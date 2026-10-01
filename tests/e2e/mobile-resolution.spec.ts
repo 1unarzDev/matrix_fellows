@@ -24,15 +24,18 @@ test('high-density mobile screens retain a legible world render scale', async ({
     expect(
       resolution.renderScale,
       `${deviceName} should retain the bounded Retina foreground scale`,
-    ).toBeGreaterThanOrEqual(1.69)
-    expect(resolution.atmosphereScale).toBe(0.4)
+    ).toBeGreaterThanOrEqual(Math.min(resolution.devicePixelRatio, 3) - 0.01)
+    expect(resolution.atmosphereScale).toBeGreaterThanOrEqual(1)
 
     await page
       .locator('#research')
       .evaluate((element) => element.scrollIntoView({ behavior: 'instant' }))
     await expect(page.locator('canvas[data-engine]')).toHaveAttribute('data-progress', /^2\./)
-    await expect(page.locator('canvas[data-engine]')).toHaveAttribute('data-atmosphere-ratio', '0.40')
-    await expect(page.locator('canvas[data-engine]')).toHaveAttribute('data-draw-calls', '4')
+    expect(
+      Number(await page.locator('canvas[data-engine]').getAttribute('data-atmosphere-ratio')),
+    ).toBeGreaterThanOrEqual(1)
+    // Invisible constellation ribbons should not execute a storm-frame draw.
+    await expect(page.locator('canvas[data-engine]')).toHaveAttribute('data-draw-calls', '3')
 
     await context.close()
   }

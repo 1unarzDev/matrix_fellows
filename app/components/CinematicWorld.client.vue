@@ -66,14 +66,14 @@ onMounted(() => {
           wheelMultiplier: 0.7,
           easing: (t: number) => 1 - Math.pow(1 - t, 3),
           syncTouch: false,
-          allowNestedScroll: true,
+          allowNestedScroll: false,
           prevent: (node: HTMLElement) =>
-            Boolean(node.closest('[role="dialog"], [role="listbox"]')),
+            node.matches(
+              '[role="dialog"], [role="listbox"], input, textarea, select, [contenteditable="true"]',
+            ),
         })
       : undefined
-    const tickScroll = smoothScroll
-      ? (seconds: number) => smoothScroll.raf(seconds * 1000)
-      : undefined
+    const tickScroll = smoothScroll ? () => smoothScroll.raf(performance.now()) : undefined
     if (smoothScroll && tickScroll) {
       smoothScroll.on('scroll', ScrollTrigger.update)
       gsap.ticker.add(tickScroll)
@@ -125,6 +125,10 @@ onMounted(() => {
     const chapters = Array.from(document.querySelectorAll<HTMLElement>('[data-chapter]'))
     const main = document.querySelector('main')
     const accentColors = ['#eac279', '#89edc5', '#79c9f3', '#7ddfea', '#c3a4f4', '#c3a4f4']
+    const heroDetails = Array.from(document.querySelectorAll<HTMLElement>('[data-hero-detail]'))
+    let previousHeroOpacity = -1
+    let previousAccent = ''
+    let previousPublishedState = ''
     const layers = chapters
       .flatMap((chapter) =>
         Array.from(
@@ -147,6 +151,8 @@ onMounted(() => {
         inactive: false,
         discovery: Boolean(el.closest('#discovery')),
         beginning: Boolean(el.closest('#beginning')),
+        entry: -1,
+        exit: -1,
       }))
     const documentTop = (element: HTMLElement) => {
       let top = 0
@@ -179,6 +185,8 @@ onMounted(() => {
         layer.top = documentTop(layer.el)
         layer.height = layer.el.offsetHeight
         layer.inactive = false
+        layer.entry = -1
+        layer.exit = -1
         layer.el.dataset.depthLayer = ''
       })
     }
@@ -195,12 +203,23 @@ onMounted(() => {
       const oceanTime = Math.max(0, Math.min(1, stage - 2))
       const worldStage = stage - 3.2 * oceanTime ** 2 * (1 - oceanTime) ** 2
       world?.setProgress(worldStage)
-      emit('progress', stage)
+      // The parent consumes only chapter and arrival thresholds, not continuous
+      // camera coordinates. Avoid rerendering the entire homepage each tick.
+      const publishedState = `${Math.min(5, Math.floor(stage + 0.28))}:${stage > 0.2}`
+      if (publishedState !== previousPublishedState) {
+        previousPublishedState = publishedState
+        emit('progress', stage)
+      }
       const index = Math.min(4, Math.floor(stage))
-      document.documentElement.style.setProperty(
-        '--color-acid',
-        gsap.utils.interpolate(accentColors[index]!, accentColors[index + 1]!, stage - index),
+      const accent = gsap.utils.interpolate(
+        accentColors[index]!,
+        accentColors[index + 1]!,
+        Math.round((stage - index) * 64) / 64,
       )
+      if (accent !== previousAccent) {
+        previousAccent = accent
+        document.documentElement.style.setProperty('--color-acid', accent)
+      }
       const ease = (value: number) => {
         const t = Math.max(0, Math.min(1, value))
         return t * t * (3 - 2 * t)
@@ -219,6 +238,9 @@ onMounted(() => {
         if (layer.el.hasAttribute('data-ocean-intro')) entry *= ease((stage - 2.01) / 0.12)
         let exit = ease((viewportHeight * 0.22 - bottom) / (viewportHeight * 0.5))
         if (layer.beginning) exit = Math.max(exit, ease((stage - 0.08) / 0.3))
+        if (entry === layer.entry && exit === layer.exit) return
+        layer.entry = entry
+        layer.exit = exit
         gsap.set(layer.el, {
           opacity: entry * (1 - exit),
           z: touchLayout ? 0 : -240 * (1 - entry) + 90 * exit,
@@ -229,8 +251,11 @@ onMounted(() => {
           force3D: true,
         })
       })
-      if (!media.matches)
-        gsap.set('[data-hero-detail]', { opacity: 1 - ease((stage - 0.08) / 0.3) })
+      const heroOpacity = 1 - ease((stage - 0.08) / 0.3)
+      if (!media.matches && heroOpacity !== previousHeroOpacity) {
+        previousHeroOpacity = heroOpacity
+        gsap.set(heroDetails, { opacity: heroOpacity })
+      }
     }
     const settleTimeline = (value: number, direction: number, velocity: number) => {
       const scroll = value * maxScroll
@@ -433,6 +458,12 @@ onMounted(() => {
       }
     }
     mediaChanged = () => {
+      previousHeroOpacity = -1
+      layers.forEach((layer) => {
+        layer.entry = -1
+        layer.exit = -1
+        layer.inactive = false
+      })
       if (media.matches) {
         gsap.set('[data-hero-detail]', { clearProps: 'opacity' })
         layers.forEach((layer) =>
@@ -501,7 +532,7 @@ onBeforeUnmount(() => {
   <canvas
     ref="canvas"
     aria-hidden="true"
-    class="pointer-events-none fixed inset-x-0 top-0 z-0 h-lvh w-full transition-opacity duration-[900ms] ease-[cubic-bezier(.22,.72,.2,1)] motion-reduce:transition-none sm:h-dvh"
+    class="pointer-events-none fixed inset-x-0 top-0 z-0 h-lvh w-full transition-opacity duration-[900ms] ease-[cubic-bezier(.22,.72,.2,1)] motion-reduce:transition-none"
     :class="ready && !failed ? 'opacity-100' : 'opacity-0'"
   />
 </template>

@@ -16,6 +16,16 @@ export interface ProfileFrame {
   time: number
   interval: number | null
   cpuMs: number
+  updateMs: number
+  rawInterval: number | null
+  requestedProgress: number
+  requestAgeMs: number | null
+  progressLag: number
+  targetFps: number
+  bufferWidth: number
+  bufferHeight: number
+  atmosphereWidth: number
+  atmosphereHeight: number
   gpuMs: number | null
   calls: number
   triangles: number
@@ -39,16 +49,29 @@ export interface WorldProfile {
   rejectedGpuSamples: number
   frames: ProfileFrame[]
   events: ProfileEvent[]
+  callbacks: { time: number; interval: number | null }[]
 }
 
 declare global {
   interface Window {
     __MATRIX_PROFILE__?: boolean
     __matrixWorldProfile?: WorldProfile
+    __matrixWorldDebug?: {
+      setProgress(value: number): void
+      setQuality(patch: Partial<QualityState>): void
+      freeze(progress: number, seconds: number): void
+      resume(): void
+      pauseDrawing(paused: boolean): void
+      snapshot(): Record<string, any>
+    }
   }
 }
 
 export interface FrameProfiler {
+  enabled: boolean
+  gpuCost(): number | null
+  callback(now: number): void
+  pause(): void
   begin(now: number): void
   end(
     now: number,
@@ -56,6 +79,18 @@ export interface FrameProfiler {
     info: THREE.WebGLInfo,
     quality: QualityState,
     progress: number,
+    timing: Pick<
+      ProfileFrame,
+      | 'updateMs'
+      | 'rawInterval'
+      | 'requestedProgress'
+      | 'requestAgeMs'
+      | 'targetFps'
+      | 'bufferWidth'
+      | 'bufferHeight'
+      | 'atmosphereWidth'
+      | 'atmosphereHeight'
+    >,
   ): void
   event(name: string, detail?: ProfileEvent['detail']): void
   dispose(): void
@@ -67,8 +102,6 @@ export function createFrameProfiler(
 ): FrameProfiler | undefined {
   const enabled =
     window.__MATRIX_PROFILE__ === true || new URLSearchParams(location.search).has('matrixProfile')
-  if (!enabled) return
-
   const profile: WorldProfile = {
     startedAt: performance.now(),
     renderer: rendererName,
@@ -76,8 +109,9 @@ export function createFrameProfiler(
     rejectedGpuSamples: 0,
     frames: [],
     events: [],
+    callbacks: [],
   }
-  window.__matrixWorldProfile = profile
+  if (enabled) window.__matrixWorldProfile = profile
 
   const gl2 = gl instanceof WebGL2RenderingContext ? gl : undefined
   const timer = gl2?.getExtension('EXT_disjoint_timer_query_webgl2') as TimerExtension | null
@@ -86,6 +120,9 @@ export function createFrameProfiler(
   let active: WebGLQuery | undefined
   let nextId = 0
   let previousTime: number | undefined
+  let previousCallback: number | undefined
+  let latestGpuMs: number | null = null
+  let lastQueryAt = -500
 
   const collect = () => {
     if (!gl2 || !timer || !pending.length) return
@@ -98,6 +135,7 @@ export function createFrameProfiler(
       const item = pending[0]!
       if (!gl2.getQueryParameter(item.query, gl2.QUERY_RESULT_AVAILABLE)) break
       item.frame.gpuMs = gl2.getQueryParameter(item.query, gl2.QUERY_RESULT) / 1_000_000
+      latestGpuMs = item.frame.gpuMs
       gl2.deleteQuery(item.query)
       pending.shift()
       profile.gpuTiming = 'available'
@@ -105,13 +143,31 @@ export function createFrameProfiler(
   }
 
   return {
-    begin() {
+    enabled,
+    gpuCost: () => latestGpuMs,
+    pause() {
+      previousTime = undefined
+      previousCallback = undefined
+    },
+    callback(now) {
+      if (!enabled) return
+      profile.callbacks.push({
+        time: now - profile.startedAt,
+        interval: previousCallback === undefined ? null : now - previousCallback,
+      })
+      previousCallback = now
+      if (profile.callbacks.length > 18000) profile.callbacks.splice(0, 3000)
+    },
+    begin(now) {
       collect()
       if (!gl2 || !timer || pending.length >= 8) return
+      if (!enabled && now - lastQueryAt < 500) return
+      lastQueryAt = now
       active = gl2.createQuery() || undefined
       if (active) gl2.beginQuery(timer.TIME_ELAPSED_EXT, active)
     },
-    end(now, cpuMs, info, quality, progress) {
+    end(now, cpuMs, info, quality, progress, timing) {
+      if (!enabled && !active) return
       const frame: ProfileFrame = {
         id: nextId++,
         time: now - profile.startedAt,
@@ -125,9 +181,12 @@ export function createFrameProfiler(
         atmosphereRatio: quality.atmosphereRatio,
         particleFraction: quality.particleFraction,
         progress,
+        ...timing,
+        progressLag: Math.abs(timing.requestedProgress - progress),
       }
       previousTime = now
-      profile.frames.push(frame)
+      if (enabled) profile.frames.push(frame)
+      if (profile.frames.length > 18000) profile.frames.splice(0, 3000)
       if (active && gl2 && timer) {
         gl2.endQuery(timer.TIME_ELAPSED_EXT)
         pending.push({ query: active, frame })
@@ -136,7 +195,9 @@ export function createFrameProfiler(
       collect()
     },
     event(name, detail) {
+      if (!enabled) return
       profile.events.push({ time: performance.now() - profile.startedAt, name, detail })
+      if (profile.events.length > 500) profile.events.splice(0, 100)
     },
     dispose() {
       if (active && gl2 && timer) {

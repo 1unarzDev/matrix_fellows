@@ -2,6 +2,16 @@ import { describe, expect, it } from 'vitest'
 import { nextFrameTime, settleProgress } from '../../app/lib/scene/frame-clock'
 
 describe('30 Hz frame pacing', () => {
+  it('renders every callback in active 60 Hz and constrained 30 Hz streams', () => {
+    for (const cadence of [16.65, 33.1]) {
+      let last = 0
+      for (let frame = 1; frame <= 90; frame++) {
+        const next = nextFrameTime(frame * cadence, last, 60)
+        expect(next).not.toBeNull()
+        last = next!
+      }
+    }
+  })
   it('settles touch camera steps identically at 30 and 60 Hz without overshoot', () => {
     const sample = (fps: number) => {
       let progress = 2
@@ -24,10 +34,14 @@ describe('30 Hz frame pacing', () => {
     }
   })
   it('still limits a 60 Hz callback stream', () => {
-    let last = 0, count = 0
+    let last = 0,
+      count = 0
     for (let i = 1; i <= 120; i++) {
-      const next = nextFrameTime(i * 1000 / 60, last)
-      if (next !== null) { last = next; count++ }
+      const next = nextFrameTime((i * 1000) / 60, last)
+      if (next !== null) {
+        last = next
+        count++
+      }
     }
     expect(count).toBeGreaterThanOrEqual(59)
     expect(count).toBeLessThanOrEqual(61)

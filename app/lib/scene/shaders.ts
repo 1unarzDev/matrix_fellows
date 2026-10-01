@@ -691,20 +691,39 @@ export const constellationLineVertex = /* glsl */ `
 uniform float uCosmicTime;
 attribute vec3 color;
 attribute float aGroup;
+attribute vec3 aStart;
+attribute vec3 aEnd;
+uniform vec2 uResolution;
+uniform float uLineWidth;
 varying vec3 vColor;
+varying float vAcross;
 ${constellationMotionGLSL}
 void main() {
-  vec3 moved=position;
-  moved.xy+=constellationDrift(aGroup,moved.z,uCosmicTime);
+  vec3 start=aStart, end=aEnd;
+  start.xy+=constellationDrift(aGroup,start.z,uCosmicTime);
+  end.xy+=constellationDrift(aGroup,end.z,uCosmicTime);
+  vec4 a=projectionMatrix*modelViewMatrix*vec4(start,1.0);
+  vec4 b=projectionMatrix*modelViewMatrix*vec4(end,1.0);
+  vec2 direction=normalize((b.xy/b.w-a.xy/a.w)*uResolution+vec2(.00001));
+  vec2 normal=vec2(-direction.y,direction.x);
+  float radius=uLineWidth*.5+1.0;
+  vec4 clip=mix(a,b,position.x);
+  clip.xy+=normal*position.y*radius*2.0/uResolution*clip.w;
   vColor=color;
-  gl_Position=projectionMatrix*modelViewMatrix*vec4(moved,1.0);
+  vAcross=position.y*radius;
+  gl_Position=clip;
 }
 `
 
 export const constellationLineFragment = /* glsl */ `
 uniform float uOpacity;
+uniform float uLineWidth;
 varying vec3 vColor;
-void main(){gl_FragColor=vec4(vColor,uOpacity);}
+varying float vAcross;
+void main(){
+  float coverage=1.0-smoothstep(max(0.0,uLineWidth*.5-.5),uLineWidth*.5+.5,abs(vAcross));
+  gl_FragColor=vec4(vColor,uOpacity*coverage);
+}
 `
 export const particleFragment = /* glsl */ `
 varying float vAlpha;
@@ -719,19 +738,18 @@ void main(){
   // CSS pixels. Keep the streak restrained but wide enough to resolve.
   coord.x*=1.0+vRain*2.7;
   float d=length(coord);
-  float coverage=1.0;
-  if(vRain>.001) {
-    float edgeWidth=max(fwidth(d)*1.25,.018);
-    if(d>1.0+edgeWidth)discard;
-    coverage=1.0-smoothstep(1.0-edgeWidth,1.0+edgeWidth,d);
-  } else if(d>1.0)discard;
+  float edgeWidth=max(fwidth(d)*1.25,.018);
+  if(d>1.0+edgeWidth)discard;
+  float coverage=1.0-smoothstep(1.0-edgeWidth,1.0+edgeWidth,d);
   float glow=exp(-d*d*6.0);
   // Preserve a small, resolved center inside atmospheric motes and stars.
   // Their broad halo remains soft, but the sprite no longer reads as one
   // uniformly blurred disc on high-density mobile screens.
   glow+=exp(-d*d*30.0)*.48*(1.0-vFish)*(1.0-vRain);
   float body=exp(-(coord.x*coord.x*.8+coord.y*coord.y*9.0)*3.0);
-  float tail=step(coord.x,-.2)*step(abs(coord.y),(-coord.x-.18)*.45)*.35;
+  float tailMargin=(-coord.x-.18)*.45-abs(coord.y);
+  float tailAA=max(fwidth(tailMargin),.01);
+  float tail=(1.0-smoothstep(-.2-tailAA,-.2+tailAA,coord.x))*smoothstep(-tailAA,tailAA,tailMargin)*.35;
   glow=mix(glow,body+tail+exp(-d*d*3.0)*.10,vFish);
   gl_FragColor=vec4(vColor,glow*vAlpha*coverage);
 }

@@ -7,14 +7,15 @@ measurements belong in [quality reports](../quality/).
 
 ## Targets and interpretation
 
-- The cinematic renderer intentionally targets **30 rendered frames per second**.
-  A stable 30 fps is preferable to oscillation between higher and missed-vsync
-  rates on thermally constrained phones.
+- The renderer targets **60 scene submissions per second during active scrolling**,
+  and 30 after 750 ms of inactivity. Submission is not proof of presentation.
+  A constrained 30 Hz callback stream must receive every opportunity, not another
+  application throttle; it is not equivalent to 60 fps.
 - Text, navigation, forms, and opportunity content must remain usable without
   WebGL and under `prefers-reduced-motion`.
-- Mobile quality is bounded rather than assumed: fewer particles, cheaper bloom,
-  separate background resolution, stable foreground resolution, and adaptive
-  degradation are part of the implementation.
+- Both profiles preserve full procedural detail and 12,000 particles. Mobile
+  separates procedural resolution from a native foreground (up to DPR 3), with
+  recoverable resolution changes informed by measured capacity.
 - Browser emulation, SwiftShader, and desktop GPUs answer different questions.
   None is a substitute for physical iPhone/Safari testing under normal and low
   power modes.
@@ -48,7 +49,7 @@ a gradient atmosphere and fine horizon glow rather than proxy terrain, is used
 only at the opening chapter, and has no second canvas or JavaScript loading
 loop. One optional 64 px accent rotates around a stable identity mark
 using a compositor-only transform, then stops when the first valid composer
-frame starts the single 300 ms opacity reveal. A 12-second safety path falls
+frame starts the single 900 ms opacity reveal. A 12-second safety path falls
 back if the world never becomes ready; page content and navigation remain
 usable throughout. Static resource-route handoffs reuse that small accent on a
 pointer-transparent, destination-colored veil after a 110 ms anti-flash delay.
@@ -64,15 +65,15 @@ measured document scroll to narrative stage `0…5`. The same update:
 - updates active navigation.
 
 Lenis owns desktop wheel smoothing and feeds the GSAP ticker. Touch keeps native
-inertia (`syncTouch: false`). Mobile renderer progress uses a frame-rate-independent
-75 ms exponential settle to absorb stepped touch events without altering document
-scroll. Direct navigation and restored hashes synchronize before the first scene
+inertia (`syncTouch: false`). Progress requests coalesce to the freshest value at
+the next scene frame; no extra touch-camera settlement delays document scrolling.
+Direct navigation and restored hashes synchronize before the first scene
 frame; their SSR copy remains visible rather than being covered by a loader.
 
 Layout measurement is cached. A `ResizeObserver` refreshes ScrollTrigger only
 when the main document height changes, with a 90 ms debounce. Safari toolbar
-height changes do not repeatedly reallocate mobile render targets when width is
-unchanged.
+height changes use stable `lvh` canvas bounds; actual bounds and DPR determine
+buffer allocation and projection, rather than ignoring all same-width resizes.
 
 ## GPU render paths
 
@@ -82,13 +83,13 @@ terrain can correctly occlude models.
 
 | Setting                | Cinematic profile             | Efficient profile                                                |
 | ---------------------- | ----------------------------- | ---------------------------------------------------------------- |
-| Particle buffer / draw | 12,000 / 12,000               | 2,600 / 1,560 initially; one-way floor 1,196                     |
-| Initial pixel ratio    | `min(devicePixelRatio, 1.5)`  | background `min(devicePixelRatio, 0.4)`; foreground at most 1.7 |
+| Particle buffer / draw | 12,000 / 12,000               | 12,000 / 12,000 |
+| Initial pixel ratio    | `min(devicePixelRatio, 2)`  | background `min(devicePixelRatio, 1)`; foreground at most 3 |
 | HDR target samples     | up to 4× MSAA                 | none; avoids a redundant full-screen multisample resolve         |
 | Background             | rendered directly in composer | separate half-float color/depth target, then direct canvas composite |
 | Bloom                  | UnrealBloom multi-mip pass    | no separate bloom pass                                           |
-| Final edge treatment   | MSAA                          | 1.7× foreground plus reconstructed background                    |
-| Adaptive ratio floor   | 0.65                          | 0.4 for procedural background                                    |
+| Final edge treatment   | MSAA                          | native foreground, derivative coverage and screen-space line ribbons |
+| Adaptive ratio floor   | min(DPR, 1.5)                          | min(DPR, 1) for procedural background |
 
 Profile selection is independent of layout width. Coarse-pointer devices and
 machines reporting at most four logical processors or 4 GB device memory begin
@@ -155,33 +156,24 @@ tail on mobile. On constrained devices, no optional planet/model is loaded.
 
 ## Frame pacing and adaptive quality
 
-`frame-clock.ts` accepts callbacks near the operating system's 30 Hz boundary,
-including slightly early iOS callbacks, and avoids the accidental 33/66 ms
-alternation caused by a rigid comparison.
+`frame-clock.ts` tolerates slightly early callbacks at both 60 and 30 Hz. Raw
+callbacks are measured independently of its scheduled remainder. Two-second
+capacity windows require two pressured windows to reduce resolution, three
+healthy windows to recover it, and a ten-second reduction cooldown. Asynchronous
+GPU samples constrain promotion where available. This is not battery detection.
+Detail, density and bloom are preserved by adaptation. Desktop scales the actual
+composer and renderer together; efficient mode scales its atmosphere target.
+Static oasis matrices are initialized once, not rebuilt on scroll.
 
-Each rendered frame records both render cost and callback cadence. Sustained
-pressure increments a slow-frame counter when:
-
-- render cost exceeds 27 ms; or
-- callback spacing exceeds 42 ms on mobile / 52 ms on desktop.
-
-The first decision occurs after 10 slow samples and later decisions after 20.
-The efficient profile starts at its measured steady-state atmosphere tier,
-preventing weak phones from reallocating progressively smaller render targets
-while already missing frames. Later quality changes:
-
-1. multiply the adaptive ratio by 0.85, down to the platform floor;
-2. disable the mobile halo and reduce procedural FBM/wave octaves; and
-3. reduce the active particle draw range, down to 46%.
-
-This is one-way within a session to prevent quality oscillation. On mobile, only
-the expensive atmosphere target follows the adaptive ratio; the foreground stays
-at its capped sharp ratio. The page exposes `data-fps`, `data-pixel-ratio`,
+The page exposes `data-fps`, `data-pixel-ratio`,
 `data-atmosphere-ratio`, `data-renderer`, shader compile state/time, program count,
 draw calls, triangles, points, and scene-state diagnostics on the canvas. DOM
 diagnostics update every two seconds rather than every frame. Opt-in
 `?matrixProfile` instrumentation retains rendered-frame data in memory and uses
-asynchronous disjoint timer queries when the driver supports them.
+asynchronous disjoint timer queries when the driver supports them. CPU scene
+updates and draw submission are separate; neither is GPU time or presentation.
+Normal GPU sampling is limited to 2 Hz. Opt-in traces are bounded and include
+raw callbacks, buffer dimensions and requested-versus-consumed progress.
 
 ## Pausing, failure, and teardown
 
@@ -220,10 +212,12 @@ RTX 4070 Ti SUPER at desktop and mobile-emulated viewports. That verifies the ca
 and shader correctness on that GPU, not phone performance. The dated
 [mobile report](../quality/mobile-performance-report.md) records both the older
 MSAA removal and the subsequent weak-phone pass. A 120-second SwiftShader
-forward/reverse soak rendered at 29.49 fps overall, with every ten-second window
-at 28.9–30 fps, rendered-frame p95 at or below 50 ms, and no >100 ms stalls.
-This remains a proxy: the owner's phone reported roughly 10 fps before the
-second pass and must be retested after deployment. The [SEO audit](../operations/seo-audit.md)
+forward/reverse soak's final historical result was 28.31 fps overall, with
+oasis-facing windows at 26.3–26.8 fps: its every-window 28 fps gate failed.
+Older better numbers describe different runs, not today's checkout. The old
+approximately 10 fps phone report remains unresolved; newer qualitative feedback
+is not a fresh measurement. See the [current checkpoint](../quality/rendering-checkpoint-2026-10-01.md).
+The [SEO audit](../operations/seo-audit.md)
 recorded a simulated-mobile LCP of 3.5 s and 1,600 ms total blocking time before
 the SEO changes; the report explicitly treats animation/bootstrap cost as open.
 

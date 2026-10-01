@@ -65,13 +65,15 @@ try {
       canvas.height = 120
       const gl = canvas.getContext('webgl', { preserveDrawingBuffer: true })
       if (!gl) throw new Error('WebGL unavailable')
+      if (!gl.getExtension('OES_standard_derivatives'))
+        throw new Error('Shader derivatives required')
       const program = gl.createProgram()
       for (const [type, source] of [
         [
           gl.VERTEX_SHADER,
           'attribute vec2 position; varying vec2 vUv; void main(){vUv=position*.5+.5;gl_Position=vec4(position,0,1);}',
         ],
-        [gl.FRAGMENT_SHADER, fragment],
+        [gl.FRAGMENT_SHADER, '#extension GL_OES_standard_derivatives : enable\n' + fragment],
       ]) {
         const shader = gl.createShader(type)
         gl.shaderSource(shader, source)

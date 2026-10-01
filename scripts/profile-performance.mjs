@@ -50,7 +50,7 @@ try {
       if (message.type() === 'error') errors.push(message.text())
     })
     const started = performance.now()
-    await page.goto(`${base}/#research`, { waitUntil: 'domcontentloaded' })
+    await page.goto(`${base}/?matrixProfile=1#research`, { waitUntil: 'domcontentloaded' })
     const domReady = performance.now() - started
     await page.locator('[data-ready="true"]').waitFor()
     const hydrated = performance.now() - started
@@ -65,11 +65,12 @@ try {
     await page.waitForTimeout(350)
     const previewSettled = performance.now() - started
     if (mode === 'paused-webgl') {
-      await canvas.evaluate((element) => {
-        element.style.display = 'none'
-      })
+      await page.evaluate(() => window.__matrixWorldDebug.pauseDrawing(true))
       await page.waitForTimeout(250)
     }
+    const cdp = await context.newCDPSession(page)
+    await cdp.send('Performance.enable')
+    const metricsBefore = await cdp.send('Performance.getMetrics')
     const journey = await page.evaluate(async () => {
       const from = document.querySelector('#research').offsetTop
       const to = document.querySelector('#frontiers').offsetTop
@@ -103,7 +104,23 @@ try {
         canvas: { ...document.querySelector('canvas[data-first-scene-ms]')?.dataset },
       }
     })
+    const metricsAfter = await cdp.send('Performance.getMetrics')
+    const before = Object.fromEntries(metricsBefore.metrics.map(({ name, value }) => [name, value]))
+    const domCosts = Object.fromEntries(
+      metricsAfter.metrics
+        .filter(({ name }) =>
+          [
+            'LayoutDuration',
+            'RecalcStyleDuration',
+            'TaskDuration',
+            'LayoutCount',
+            'RecalcStyleCount',
+          ].includes(name),
+        )
+        .map(({ name, value }) => [name, value - (before[name] || 0)]),
+    )
     reports.push({
+      domCosts,
       mode,
       software,
       domReady,

@@ -14,6 +14,12 @@ import {
 } from '../shared/data/opportunity-catalog-enrichment.ts'
 import { opportunitySchema } from '../shared/utils/validation.ts'
 import { reviewedSources } from '../workers/source-registry.ts'
+import { internshipAdditions } from '../shared/data/internship-additions.ts'
+import {
+  enrichInternship,
+  internshipPatches,
+  INTERNSHIP_REVIEW_VERSION,
+} from '../shared/data/internship-catalog.ts'
 
 const apply = process.argv.includes('--apply')
 const project = 'xlnjzzbsxzadrvbrggau'
@@ -175,6 +181,19 @@ for (const row of rows || []) {
       : {}),
     ...(shouldUpgrade ? { searchVersion: CATALOG_ENRICHMENT_VERSION } : {}),
   }
+  if (
+    internshipPatches[row.id] &&
+    Number(item.internshipReviewVersion || 0) < INTERNSHIP_REVIEW_VERSION
+  ) {
+    const enriched = enrichInternship({ ...item, ...patch })
+    for (const name of [...Object.keys(internshipPatches[row.id]), 'internshipReviewVersion'])
+      patch[name] = enriched[name]
+  }
+  const addedInternship = internshipAdditions.find((entry) => entry.id === row.id)
+  if (addedInternship && Number(item.internshipReviewVersion || 0) < INTERNSHIP_REVIEW_VERSION) {
+    patch.fieldEvidence = addedInternship.fieldEvidence
+    patch.internshipReviewVersion = INTERNSHIP_REVIEW_VERSION
+  }
   if (!Object.keys(patch).length) continue
   changed++
   if (apply) {
@@ -189,7 +208,18 @@ for (const row of rows || []) {
     if (monitorSeed) {
       const monitor = await client
         .from('opportunity_monitors')
-        .update({ seed: { ...monitorSeed, ...nextData, sourceUrls: monitorSeed.sourceUrls || [] } })
+        .update({
+          seed: {
+            ...monitorSeed,
+            ...nextData,
+            sourceUrls: [
+              ...new Set([
+                ...(monitorSeed.sourceUrls || []),
+                ...(nextData.fieldEvidence || []).map((entry) => entry.url),
+              ]),
+            ],
+          },
+        })
         .eq('id', row.id)
       if (monitor.error) throw new Error(`${row.id} monitor: ${monitor.error.message}`)
     }
@@ -208,7 +238,12 @@ for (const id of texasIneligibleCatalogIds) {
     if (result.error) throw new Error(`${id}: ${result.error.message}`)
   }
 }
-const curatedRoutes = [...catalogAdditions, ...catalogExpansion, ...disciplineCatalogExpansion]
+const curatedRoutes = [
+  ...catalogAdditions,
+  ...catalogExpansion,
+  ...disciplineCatalogExpansion,
+  ...internshipAdditions,
+]
 for (const item of curatedRoutes) {
   opportunitySchema.parse(item)
   if (apply) {
@@ -224,6 +259,23 @@ for (const item of curatedRoutes) {
       { onConflict: 'id', ignoreDuplicates: true },
     )
     if (result.error) throw new Error(`${item.id}: ${result.error.message}`)
+    if (internshipAdditions.some((entry) => entry.id === item.id)) {
+      const monitor = await client.from('opportunity_monitors').upsert(
+        {
+          id: item.id,
+          url: item.url,
+          seed: {
+            ...item,
+            sourceUrls: [
+              ...new Set([item.url, ...(item.fieldEvidence || []).map((entry) => entry.url)]),
+            ],
+          },
+          last_success_at: item.verifiedAt,
+        },
+        { onConflict: 'id', ignoreDuplicates: true },
+      )
+      if (monitor.error) throw new Error(`${item.id} monitor: ${monitor.error.message}`)
+    }
   }
 }
 if (apply) {
@@ -246,6 +298,12 @@ if (apply) {
       { onConflict: 'id', ignoreDuplicates: true },
     )
     if (result.error) throw new Error(`${source.id}: ${result.error.message}`)
+    if (internshipAdditions.some(item => item.sourceId === source.id)) {
+      const version = await client.from('opportunity_source_registry')
+        .update({ parser_version: source.parserVersion })
+        .eq('id', source.id).eq('authoritative_hub', source.authoritativeHub)
+      if (version.error) throw new Error(`${source.id}: ${version.error.message}`)
+    }
   }
 }
 console.log(

@@ -1,3 +1,5 @@
+import { internshipAdditions } from '../shared/data/internship-additions'
+
 export interface ReviewedSource {
   id: string
   name: string
@@ -17,6 +19,19 @@ export interface ReviewedSource {
 // produce a review candidate; publication still uses the existing review and
 // repeated-observation boundaries.
 export const reviewedSources: ReviewedSource[] = [
+  ...internshipAdditions.map((item) => ({
+    id: item.sourceId,
+    name: item.title,
+    authoritativeHub: item.url,
+    permittedHost: new URL(item.url).hostname,
+    permittedPathPrefix: new URL(item.url).pathname,
+    sourceType: 'official-html' as const,
+    discoveryMethod: 'First-party specific high-school route reviewed September 30, 2026',
+    parserVersion: 'evidence-agent-v8',
+    scope: 'Specific high-school placement; unrelated college jobs excluded',
+    publicationPolicy: 'monitor-confirmed' as const,
+    reviewedAt: item.verifiedAt,
+  })),
   {
     id: 'openreview-active-venues',
     name: 'OpenReview active venues',

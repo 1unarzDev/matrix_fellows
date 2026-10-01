@@ -140,6 +140,66 @@ describe('catalog search database sorting', () => {
     expect(await ids('no-program-fee')).toEqual(['free-program'])
   })
 
+  it('indexes internship materials, respects overrides and excludes unpaid work from paid filters', async () => {
+    await db.exec(`
+      create function public.opportunity_slug(text,text) returns text language sql immutable as $$ select $2 $$;
+      create table public.calendar_opportunity_selections (
+        opportunity_id text primary key, enabled boolean, include_deadlines boolean, include_events boolean, priority integer
+      );
+    `)
+    const migration = await readFile(
+      new URL('../../supabase/migrations/021_internship_catalog.sql', import.meta.url),
+      'utf8',
+    )
+    await db.exec(migration)
+    await db.exec(migration)
+    await db.exec(
+      await readFile(
+        new URL(
+          '../../supabase/migrations/022_internship_compensation_filter.sql',
+          import.meta.url,
+        ),
+        'utf8',
+      ),
+    )
+    for (const [id, compensation] of [
+      ['unpaid-work', 'Unpaid research placement.'],
+      ['no-pay', 'No compensation or stipend.'],
+      ['paid-work', '$60/hour paid employment.'],
+      ['excluded-stipend', 'High-school students are not eligible to receive a stipend.'],
+      ['unverified-pay', 'Unknown stipend; do not assume paid.'],
+    ]) {
+      await db.query(
+        `insert into public.opportunities(id,slug,data,overrides) values ($1,$1,$2::jsonb,$3::jsonb)`,
+        [
+          id,
+          JSON.stringify({
+            title: id,
+            kind: 'Internship',
+            discipline: 'Computer science',
+            status: 'open',
+            costs: { compensation },
+            internship: { applicationMaterials: ['Technical portfolio'] },
+          }),
+          JSON.stringify({ internship: { applicationMaterials: ['Research resume'] } }),
+        ],
+      )
+    }
+    const result = await db.query<{ id: string }>(
+      `select id from public.search_opportunities(p_funding => array['paid'])`,
+    )
+    expect(result.rows.map((row) => row.id)).toContain('paid-work')
+    expect(result.rows.map((row) => row.id)).not.toContain('unpaid-work')
+    expect(result.rows.map((row) => row.id)).not.toContain('no-pay')
+    expect(result.rows.map((row) => row.id)).not.toContain('excluded-stipend')
+    expect(result.rows.map((row) => row.id)).not.toContain('unverified-pay')
+    const indexed = await db.query<{ search_document: string }>(
+      `select search_document from public.opportunities where id='paid-work'`,
+    )
+    expect(indexed.rows[0]?.search_document).toContain('Research resume')
+    expect(indexed.rows[0]?.search_document).not.toContain('Technical portfolio')
+  })
+
   it('uses reviewed discipline fit before global prominence without displacing exact intent', async () => {
     await db.exec(
       await readFile(

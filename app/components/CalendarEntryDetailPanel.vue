@@ -55,6 +55,10 @@ const dateContext = computed(() => {
           <dd class="mt-2 leading-5 text-paper/72">{{ entry.location }}</dd>
         </div>
       </dl>
+      <div v-if="entry.internshipAccess" class="mt-5 rounded-xl bg-paper/[.035] p-4 text-xs leading-5 text-paper/65">
+        <p>{{ entry.internshipAccess }}</p>
+        <p class="mt-3"><span class="text-paper/40">Pay / stipend:</span> {{ entry.compensation || 'Not stated in the reviewed evidence' }}</p>
+      </div>
 
       <section v-if="entry.requirements.length" class="calendar-detail__section">
         <p class="calendar-detail__label">What to prepare first</p>

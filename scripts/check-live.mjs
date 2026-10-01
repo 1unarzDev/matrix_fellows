@@ -5,6 +5,7 @@ import { parse } from 'node-html-parser'
 import { officialProfiles } from '../workers/official-sources.ts'
 import { catalogSeeds } from '../workers/catalog.ts'
 import { opportunitySchema } from '../shared/utils/validation.ts'
+import { texasIneligibleCatalogIds } from '../shared/data/opportunity-catalog-expansion.ts'
 
 const origin = 'https://matrixfellows.com'
 for (const agent of ['facebookexternalhit/1.1', 'Twitterbot/1.0', 'Discordbot/2.0']) {
@@ -71,6 +72,7 @@ for (const profile of officialProfiles) {
   console.log(`${profile.name}: published with source provenance`)
 }
 for (const { item: expected } of catalogSeeds) {
+  if (!expected.published || texasIneligibleCatalogIds.includes(expected.id)) continue
   const item = opportunitySchema.parse(liveItems.find((item) => item.id === expected.id))
   assert.equal(item.published, true)
   console.log(`${item.title}: public catalog record OK`)

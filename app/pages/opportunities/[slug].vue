@@ -111,7 +111,7 @@ const modeLabels = {
             target="_blank"
             rel="noopener noreferrer"
             class="tactile inline-flex min-h-11 items-center rounded-full border border-acid/40 bg-acid/10 px-5 text-xs text-acid"
-            >Official call ↗</a
+            >{{ item.kind === 'Internship' ? 'Official internship ↗' : 'Official call ↗' }}</a
           >
         </div>
       </header>
@@ -160,6 +160,8 @@ const modeLabels = {
               eligibility and submission rules.
             </p>
           </section>
+
+          <InternshipInformation v-if="item.kind === 'Internship' || item.internship" :item="item" />
 
           <section aria-labelledby="timeline">
             <h2 id="timeline" class="font-display text-2xl">Edition timeline</h2>

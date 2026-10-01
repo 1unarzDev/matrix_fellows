@@ -506,12 +506,14 @@ onBeforeUnmount(() => {
                             'Workshop',
                             'Publication',
                             'Program',
+                            'Internship',
+                            'Summer program',
                           ]"
                           label="Opportunity type"
                           full-width
                         />
                       </div>
-                      ><AdminField v-model="editing.discipline" label="Discipline" /><AdminField
+                      <AdminField v-model="editing.discipline" label="Discipline" /><AdminField
                         v-model="editing.description"
                         label="Description"
                         multiline
@@ -542,6 +544,7 @@ onBeforeUnmount(() => {
                           class="accent-acid"
                         />Published</label
                       >
+                      <InternshipEditor v-if="editing.kind === 'Internship' || editing.internship" :item="editing" @update="editing = $event" />
                       <p class="text-xs text-paper/40">
                         Edits to imported fields are preserved on future imports. Hiding a listing
                         suppresses it until you publish it again.

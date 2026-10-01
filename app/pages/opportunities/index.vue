@@ -59,7 +59,7 @@ const sortOptions = [
   },
   {
     value: 'next-deadline',
-    label: 'Next submission',
+    label: 'Next deadline',
     description: 'Nearest verified actionable deadline first',
   },
   {
@@ -228,7 +228,7 @@ useHead({
           Find a route for the work you want to do.
         </h1>
         <p class="mt-5 max-w-2xl text-sm leading-7 text-paper/58">
-          Search specific poster, paper, workshop, challenge, and research-program routes.
+          Search internships, summer research, poster, paper, workshop, and challenge routes.
           Eligibility, program costs, compensation, and participation requirements remain explicit
           when organizers have not stated them.
         </p>
@@ -278,6 +278,10 @@ useHead({
           </button>
         </div>
       </form>
+
+      <nav aria-label="Opportunity collections" class="mt-5 flex flex-wrap gap-2">
+        <NuxtLink v-for="collection in [{ label: 'All opportunities', kind: '' }, { label: 'Internships', kind: 'Internship' }, { label: 'Summer research programs', kind: 'Summer program' }]" :key="collection.label" :to="{ path: '/opportunities', query: { ...route.query, kind: collection.kind || undefined, page: undefined } }" :aria-current="(collection.kind ? asArray(route.query.kind).length === 1 && selected('kind', collection.kind) : !route.query.kind) ? 'page' : undefined" class="collection-link min-h-11 rounded-full border border-paper/15 px-4 py-3 text-xs text-paper/60 transition-[color,border-color,background-color,transform] duration-300 hover:-translate-y-0.5 hover:border-acid/35 hover:text-acid aria-[current=page]:border-acid/35 aria-[current=page]:bg-acid/[.06] aria-[current=page]:text-acid motion-reduce:transform-none motion-reduce:transition-none">{{ collection.label }}</NuxtLink>
+      </nav>
 
       <div class="mt-12 grid gap-10 lg:grid-cols-[15rem_minmax(0,1fr)] xl:gap-16">
         <aside class="hidden lg:block" aria-label="Opportunity filters">

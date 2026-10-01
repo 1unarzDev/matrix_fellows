@@ -82,14 +82,29 @@ export const meetingEventSchema = z.object({
   url: optionalUrl,
   published: z.boolean().default(true),
 })
-export const calendarOpportunitySelectionSchema = z.object({
-  opportunityId: z.string().trim().min(1).max(650),
-  enabled: z.boolean(),
-  includeDeadlines: z.boolean(),
-  includeEvents: z.boolean(),
-  priority: z.number().int().min(0).max(100),
-}).refine((value) => value.includeDeadlines || value.includeEvents, {
-  message: 'Show deadlines, event dates, or both.',
+export const calendarOpportunitySelectionSchema = z
+  .object({
+    opportunityId: z.string().trim().min(1).max(650),
+    enabled: z.boolean(),
+    includeDeadlines: z.boolean(),
+    includeEvents: z.boolean(),
+    priority: z.number().int().min(0).max(100),
+  })
+  .refine((value) => value.includeDeadlines || value.includeEvents, {
+    message: 'Show deadlines, event dates, or both.',
+  })
+export const internshipSchema = z.object({
+  texasEligibility: z.enum(['eligible', 'conditional', 'local-only', 'not-verified']),
+  texasEligibilityNote: z.string().min(1).max(700),
+  placement: z.enum(['employment', 'research-placement', 'research-program']).optional(),
+  duration: z.string().max(500).nullable().optional(),
+  commitment: z.string().max(500).nullable().optional(),
+  housing: z.string().max(500).nullable().optional(),
+  meals: z.string().max(500).nullable().optional(),
+  experience: z.string().max(500).nullable().optional(),
+  independentResearch: z.string().max(500).nullable().optional(),
+  applicationMaterials: z.array(z.string().min(1).max(500)).max(20).optional(),
+  selectionStages: z.array(z.string().min(1).max(500)).max(12).optional(),
 })
 export const opportunitySchema = z.object({
   id: z.string().min(1).max(650),
@@ -138,6 +153,10 @@ export const opportunitySchema = z.object({
             'camera-ready',
             'event',
             'results',
+            'application',
+            'recommendation',
+            'interview',
+            'offer',
           ])
           .optional(),
         precision: z.enum(['exact', 'date-only']).optional(),
@@ -238,6 +257,8 @@ export const opportunitySchema = z.object({
     .max(5)
     .optional(),
   prerequisites: z.array(z.string().min(1).max(700)).max(30).optional(),
+  internship: internshipSchema.optional(),
+  internshipReviewVersion: z.number().int().min(1).optional(),
   costs: z
     .object({
       application: z.string().max(400).nullable().optional(),

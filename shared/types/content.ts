@@ -45,6 +45,8 @@ export interface CalendarOpportunityEntry {
   kind: CalendarOpportunityKind
   state: CalendarOpportunityState
   requirements: string[]
+  internshipAccess?: string
+  compensation?: string | null
   contributionFormat?: string
   officialUrl: string
   submissionUrl?: string
@@ -114,6 +116,20 @@ export interface OpportunityCost {
   publication?: string | null
   aid?: string | null
 }
+/** Reviewed placement facts. Unknown fields stay absent; eligibility is not admission. */
+export interface InternshipDetails {
+  texasEligibility: 'eligible' | 'conditional' | 'local-only' | 'not-verified'
+  texasEligibilityNote: string
+  placement?: 'employment' | 'research-placement' | 'research-program'
+  duration?: string | null
+  commitment?: string | null
+  housing?: string | null
+  meals?: string | null
+  experience?: string | null
+  independentResearch?: string | null
+  applicationMaterials?: string[]
+  selectionStages?: string[]
+}
 export interface OpportunityMilestone {
   superseded?: boolean
   label: string
@@ -132,6 +148,10 @@ export interface OpportunityMilestone {
     | 'camera-ready'
     | 'event'
     | 'results'
+    | 'application'
+    | 'recommendation'
+    | 'interview'
+    | 'offer'
   precision?: 'exact' | 'date-only'
   originalTimezone?: string | null
   tentative?: boolean
@@ -213,6 +233,8 @@ export interface Opportunity {
   preparationStages?: PreparationStage[]
   prerequisites?: string[]
   costs?: OpportunityCost
+  internship?: InternshipDetails
+  internshipReviewVersion?: number
   outcomes?: string[]
   participationModes?: Array<
     'in-person' | 'remote-submission' | 'remote-presentation' | 'remote-participation' | 'hybrid'

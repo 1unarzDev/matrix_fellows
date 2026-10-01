@@ -48,6 +48,8 @@ Owner and maintainer runbooks.
 
 - [Membership form and Google Sheets](operations/join-form.md)
 - [Living opportunity catalog](operations/opportunity-monitoring.md)
+- [Internship catalog](operations/internship-catalog.md) — Texas access, application details, monitoring and rollout.
+- [Internship rollout verification](quality/internship-rollout-2026-09-30.md) — observed checks and remaining limitations.
 - [Catalog search and source review](operations/opportunity-catalog.md)
 - [Research-guide authoring](operations/research-guides.md)
 - [Meeting schedule and archive](operations/meetings.md)

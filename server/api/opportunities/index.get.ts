@@ -31,8 +31,10 @@ export default defineEventHandler(async (event): Promise<OpportunitySearchResult
       return input.funding.some(
         (value) =>
           (value === 'paid' &&
-            /(paid|stipend|salary|award|\$\d)/.test(compensation) &&
-            !/\bno (wage|stipend|compensation)/.test(compensation)) ||
+            /(\b(paid|stipend|salary|wages?)\b|\$\d)/.test(compensation) &&
+            !/\bunpaid\b|\bvolunteer\b|\bno (pay|wage|stipend|compensation)|without (pay|compensation)|not eligible|excludes|do not assume|not (paid|verified)|unverified|unknown|\$0(?:\b|\.)/.test(
+              compensation,
+            )) ||
           (value === 'aid' &&
             /(aid|waiver|scholarship|assistance|reimbursement|cover)/.test(aid)) ||
           (value === 'no-program-fee' &&
@@ -46,6 +48,7 @@ export default defineEventHandler(async (event): Promise<OpportunitySearchResult
       const noEntryFee =
         `${item.costs?.application || ''} ${item.costs?.submission || ''}`.toLowerCase()
       return (
+        item.published &&
         (!term || haystack.includes(term)) &&
         (!input.disciplines.length ||
           input.disciplines.some((value) => disciplines.includes(value))) &&

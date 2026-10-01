@@ -53,6 +53,68 @@ function extraction(overrides: Record<string, unknown> = {}) {
 }
 
 describe('monitoring date evidence', () => {
+  it('rejects positive compensation when the organizer excludes high-school stipends', () => {
+    const quote = 'High school students are not eligible to receive a stipend.'
+    expect(() => validateExtraction(extraction({ costs: { submission: null, registration: null, accompanyingAdult: null, travel: null, materials: null, publication: null, aid: null, compensation: { value: 'Paid stipend', evidence: quote, url } } }), docs(`${sourceText} ${quote}`), seed(), now, false)).toThrow('Compensation contradicts')
+  })
+  it('retains reviewed internship facts when a page omits them', () => {
+    const item = {
+      ...seed(),
+      internship: {
+        texasEligibility: 'conditional' as const,
+        texasEligibilityNote: 'Relocation required.',
+        housing: 'Own housing',
+        applicationMaterials: ['Resume'],
+      },
+    }
+    const result = validateExtraction(extraction(), docs(sourceText), item, now, false)
+    expect(result.internship).toEqual(item.internship)
+  })
+  it('updates internship materials only with exact excerpts and keeps editorial Texas access', () => {
+    const quote = 'Submit a resume and unofficial transcript.'
+    const item = {
+      ...seed(),
+      internship: {
+        texasEligibility: 'conditional' as const,
+        texasEligibilityNote: 'Relocation required.',
+      },
+    }
+    const raw = extraction({
+      internship: { applicationMaterials: [{ value: 'resume', evidence: quote, url }] },
+    })
+    const result = validateExtraction(raw, docs(`${sourceText} ${quote}`), item, now, false)
+    expect(result.internship?.applicationMaterials).toEqual(['resume'])
+    expect(result.internship?.texasEligibilityNote).toBe('Relocation required.')
+    expect(() =>
+      validateExtraction(
+        extraction({ internship: { housing: { value: 'Free housing', evidence: quote, url } } }),
+        docs(`${sourceText} ${quote}`),
+        item,
+        now,
+        false,
+      ),
+    ).toThrow('exact excerpt')
+  })
+  it('requires review before geographic restrictions can change Texas access', () => {
+    const quote = 'Only Chicago residents may apply.'
+    const item = {
+      ...seed(),
+      restrictions: { geography: 'United States' },
+      internship: {
+        texasEligibility: 'conditional' as const,
+        texasEligibilityNote: 'National application.',
+      },
+    }
+    expect(() =>
+      validateExtraction(
+        extraction({ restrictions: { geography: { value: quote, evidence: quote, url } } }),
+        docs(`${sourceText} ${quote}`),
+        item,
+        now,
+        false,
+      ),
+    ).toThrow('editor review required')
+  })
   it('accepts explicit rolling submissions without inventing a deadline', () => {
     const quote = 'We accept submissions throughout the year.'
     const result = validateExtraction(
@@ -114,30 +176,51 @@ describe('automatic publication safeguards', () => {
     const quote = 'The research program runs from June 20 through July 30, 2027.'
     const result = validateExtraction(
       extraction({
-        milestones: [{
-          label: 'Research program', date: '2027-06-20', endDate: '2027-07-30',
-          rangeDisplay: 'span', kind: 'event', evidence: quote, url,
-        }],
+        milestones: [
+          {
+            label: 'Research program',
+            date: '2027-06-20',
+            endDate: '2027-07-30',
+            rangeDisplay: 'span',
+            kind: 'event',
+            evidence: quote,
+            url,
+          },
+        ],
       }),
       docs(`${sourceText} ${quote}`),
-      seed([{
-        label: 'Research program', date: '2027-06-20', kind: 'event', timezone: null,
-        evidence: quote, url,
-      }]),
+      seed([
+        {
+          label: 'Research program',
+          date: '2027-06-20',
+          kind: 'event',
+          timezone: null,
+          evidence: quote,
+          url,
+        },
+      ]),
       now,
     )
     expect(result.milestones?.[0]).toMatchObject({ endDate: '2027-07-30', rangeDisplay: 'span' })
   })
 
   it('rejects an inferred span when the source only gives separate checkpoints', () => {
-    const quote = 'The research program is held with orientation on June 20, 2027. The final showcase is July 30, 2027.'
+    const quote =
+      'The research program is held with orientation on June 20, 2027. The final showcase is July 30, 2027.'
     expect(() =>
       validateExtraction(
         extraction({
-          milestones: [{
-            label: 'Research program', date: '2027-06-20', endDate: '2027-07-30',
-            rangeDisplay: 'span', kind: 'event', evidence: quote, url,
-          }],
+          milestones: [
+            {
+              label: 'Research program',
+              date: '2027-06-20',
+              endDate: '2027-07-30',
+              rangeDisplay: 'span',
+              kind: 'event',
+              evidence: quote,
+              url,
+            },
+          ],
         }),
         docs(`${sourceText} ${quote}`),
         seed(),
@@ -147,19 +230,30 @@ describe('automatic publication safeguards', () => {
   })
 
   it('retains source-backed non-continuous dates as endpoints', () => {
-    const quote = 'The research program is held with orientation on June 20, 2027. The final showcase is July 30, 2027.'
+    const quote =
+      'The research program is held with orientation on June 20, 2027. The final showcase is July 30, 2027.'
     const result = validateExtraction(
       extraction({
-        milestones: [{
-          label: 'Required campus checkpoints', date: '2027-06-20', endDate: '2027-07-30',
-          rangeDisplay: 'endpoints', kind: 'event', evidence: quote, url,
-        }],
+        milestones: [
+          {
+            label: 'Required campus checkpoints',
+            date: '2027-06-20',
+            endDate: '2027-07-30',
+            rangeDisplay: 'endpoints',
+            kind: 'event',
+            evidence: quote,
+            url,
+          },
+        ],
       }),
       docs(`${sourceText} ${quote}`),
       seed(),
       now,
     )
-    expect(result.milestones?.[0]).toMatchObject({ endDate: '2027-07-30', rangeDisplay: 'endpoints' })
+    expect(result.milestones?.[0]).toMatchObject({
+      endDate: '2027-07-30',
+      rangeDisplay: 'endpoints',
+    })
   })
 
   it('does not regress the confirmed cycle to an older edition mentioned on the page', () => {

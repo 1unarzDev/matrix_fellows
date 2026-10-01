@@ -9,6 +9,8 @@ import { catalogExpansion } from '../shared/data/opportunity-catalog-expansion'
 import { disciplineCatalogExpansion } from '../shared/data/opportunity-discipline-expansion'
 import { enrichCatalogOpportunity } from '../shared/data/opportunity-catalog-enrichment'
 import type { Opportunity } from '../shared/types/content'
+import { enrichInternship } from '../shared/data/internship-catalog'
+import { internshipAdditions } from '../shared/data/internship-additions'
 
 const researchedSeeds = [...programs, ...competitions, ...publications, ...workshops].map((raw) => {
   const entry = enrichCatalogOpportunity(raw as Record<string, any>)
@@ -37,11 +39,25 @@ const researchedSeeds = [...programs, ...competitions, ...publications, ...works
 })
 export const catalogSeeds = [
   ...researchedSeeds,
-  ...[...catalogAdditions, ...catalogExpansion, ...disciplineCatalogExpansion].map((item) => ({
+  ...[
+    ...catalogAdditions,
+    ...catalogExpansion,
+    ...disciplineCatalogExpansion,
+    ...internshipAdditions,
+  ].map((item) => ({
     sources: [...new Set([item.url, ...(item.fieldEvidence || []).map((entry) => entry.url)])],
     item: opportunitySchema.parse(item) as Opportunity,
   })),
-]
+].map((seed) => {
+  const item = opportunitySchema.parse(enrichInternship(seed.item)) as Opportunity
+  return {
+    ...seed,
+    item,
+    sources: [
+      ...new Set([...seed.sources, ...(item.fieldEvidence || []).map((entry) => entry.url)]),
+    ],
+  }
+})
 
 // New discoveries can expand within reviewed official institutions, never
 // arbitrary domains supplied by a model or an HTTP caller.
@@ -59,7 +75,15 @@ export function approvedSource(url: string) {
       !parsed.username &&
       !parsed.password &&
       !parsed.port &&
-      allowedHosts.has(parsed.hostname)
+      allowedHosts.has(parsed.hostname) &&
+      (!internshipAdditions.some((item) => new URL(item.url).hostname === parsed.hostname) ||
+        internshipAdditions.some((item) =>
+          [item.url, ...(item.fieldEvidence || []).map((entry) => entry.url)].some(
+            (url) =>
+              new URL(url).hostname === parsed.hostname &&
+              parsed.pathname === new URL(url).pathname,
+          ),
+        ))
     )
   } catch {
     return false

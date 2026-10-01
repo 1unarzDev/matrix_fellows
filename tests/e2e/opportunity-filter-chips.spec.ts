@@ -1,5 +1,17 @@
 import { expect, test } from '@playwright/test'
 
+test('roomier chips wrap without clipping on narrow screens', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 320, height: 900 })
+  await page.goto('/opportunities?kind=Internship&discipline=Environmental%20science&funding=aid&free=true', { waitUntil: 'networkidle' })
+  const chips = page.getByLabel('Active opportunity filters')
+  await expect(chips.getByRole('button')).toHaveCount(4)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
+  for (const chip of await chips.getByRole('button').all()) {
+    expect(await chip.evaluate(element => element.scrollWidth <= element.clientWidth + 2)).toBe(true)
+  }
+  await chips.screenshot({ path: `test-results/premium-filter-chips-${testInfo.project.name}.png` })
+})
+
 test('filter choices produce removable animated chips without duplicate category navigation', async ({ page, isMobile }) => {
   await page.goto('/opportunities', { waitUntil: 'networkidle' })
   const chips = page.getByLabel('Active opportunity filters')

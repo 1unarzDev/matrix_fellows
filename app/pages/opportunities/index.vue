@@ -314,8 +314,8 @@ useHead({
 
       <div ref="filterChips" aria-label="Active opportunity filters" class="filter-summary mt-5" :style="filterChipHeight ? { height: `${filterChipHeight}px` } : undefined">
         <TransitionGroup name="filter-chip" tag="div" class="filter-chip-list" @before-leave="(element: Element) => { (element as HTMLButtonElement).disabled = true }">
-          <button v-for="filter in activeFilters" :key="filter.id" type="button" class="filter-chip" :aria-label="`Remove ${filter.label} filter`" @click="removeFilter(filter.key, filter.value, $event)">
-            <span>{{ filter.label }}</span>
+          <button v-for="filter in activeFilters" :key="filter.id" type="button" class="filter-chip" :class="{ 'filter-chip--compact-label': filter.label.length <= 14 }" :aria-label="`Remove ${filter.label} filter`" @click="removeFilter(filter.key, filter.value, $event)">
+            <span class="filter-chip__label">{{ filter.label }}</span>
             <span class="filter-chip__remove" aria-hidden="true"><SiteIcon name="close" :size="12" /></span>
           </button>
         </TransitionGroup>
@@ -478,17 +478,23 @@ useHead({
 
 <style scoped>
 .filter-summary { transition:height 480ms cubic-bezier(.22,1,.36,1); }
-.filter-chip-list { position:relative;display:flex;flex-wrap:wrap;gap:.5rem;min-height:2.75rem; }
-.filter-chip { display:inline-flex;align-items:center;gap:.45rem;max-width:100%;min-height:2.75rem;padding:.55rem .7rem .55rem 1rem;border:1px solid rgb(228 199 151 / 19%);border-radius:999px;background:linear-gradient(115deg,rgb(228 199 151 / 6%),rgb(196 178 238 / 4%));color:rgb(244 241 233 / 73%);font-size:.7rem;text-align:left;line-height:1.4;transition:background-color 320ms ease,border-color 320ms ease,box-shadow 420ms ease,color 240ms ease; }
-.filter-chip:hover,.filter-chip:focus-visible { color:var(--color-acid);border-color:rgb(228 199 151 / 38%);box-shadow:0 0 18px rgb(228 199 151 / 6%);outline-offset:3px; }
-.filter-chip__remove { display:grid;place-items:center;flex:0 0 1.4rem;height:1.4rem;border-radius:999px;opacity:.35;transform:scale(.8) rotate(-12deg);transition:opacity 300ms ease,transform 460ms cubic-bezier(.22,1,.36,1),background-color 300ms ease; }
-.filter-chip:hover .filter-chip__remove,.filter-chip:focus-visible .filter-chip__remove { opacity:1;transform:scale(1) rotate(0);background:rgb(228 199 151 / 9%); }
+.filter-chip-list { position:relative;display:flex;flex-wrap:wrap;gap:.625rem;min-height:2.75rem; }
+.filter-chip { position:relative;isolation:isolate;overflow:hidden;display:inline-flex;align-items:center;gap:.65rem;max-width:100%;min-height:2.875rem;padding:.65rem .95rem .65rem 1.25rem;border:1px solid rgb(228 199 151 / 21%);border-radius:999px;background:linear-gradient(135deg,rgb(244 241 233 / 5%),rgb(228 199 151 / 3%) 45%,rgb(196 178 238 / 4%));box-shadow:inset 0 1px 0 rgb(255 249 234 / 6%),inset 0 -1px 0 rgb(0 0 0 / 12%);color:rgb(244 241 233 / 78%);font-size:.72rem;letter-spacing:.015em;text-align:left;line-height:1.45;transition:border-color 380ms ease,box-shadow 480ms ease,color 300ms ease; }
+.filter-chip--compact-label { padding-left:1.45rem;padding-right:1.1rem; }
+.filter-chip::before { content:'';position:absolute;z-index:-1;inset:0;border-radius:inherit;background:radial-gradient(ellipse at 20% 0%,rgb(228 199 151 / 12%),transparent 75%);opacity:0;transition:opacity 480ms cubic-bezier(.22,1,.36,1);pointer-events:none; }
+.filter-chip:hover,.filter-chip:focus-visible { color:var(--color-acid);border-color:rgb(228 199 151 / 38%);box-shadow:inset 0 1px 0 rgb(255 249 234 / 10%),0 4px 16px rgb(0 0 0 / 10%),0 0 20px rgb(228 199 151 / 4%);outline-offset:3px; }
+.filter-chip:focus-visible { outline:2px solid rgb(228 199 151 / 65%); }
+.filter-chip:hover::before,.filter-chip:focus-visible::before { opacity:1; }
+.filter-chip__label { min-width:0;transition:transform 480ms cubic-bezier(.22,1,.36,1); }
+.filter-chip:hover .filter-chip__label { transform:translateY(-.5px); }
+.filter-chip__remove { display:grid;place-items:center;flex:0 0 1.45rem;height:1.45rem;border-radius:999px;opacity:.42;transform:scale(.88) rotate(-8deg);transition:opacity 340ms ease,transform 480ms cubic-bezier(.22,1,.36,1),background-color 340ms ease,box-shadow 420ms ease; }
+.filter-chip:hover .filter-chip__remove,.filter-chip:focus-visible .filter-chip__remove { opacity:1;transform:scale(1) rotate(0);background:rgb(228 199 151 / 8%);box-shadow:inset 0 0 0 1px rgb(228 199 151 / 9%); }
 .filter-chip-enter-active,.filter-chip-move { transition:opacity 440ms ease,transform 560ms cubic-bezier(.22,1,.36,1); }
 .filter-chip-leave-active { position:absolute;pointer-events:none;transition:opacity 240ms ease,transform 360ms cubic-bezier(.4,0,.2,1); }
 .filter-chip-enter-from { opacity:0;transform:translateY(7px) scale(.94); }
 .filter-chip-leave-to { opacity:0;transform:translateY(-4px) scale(.96); }
 @media (hover:none) { .filter-chip__remove { opacity:.75;transform:none; } }
-@media (prefers-reduced-motion:reduce) { .filter-summary,.filter-chip,.filter-chip__remove,.filter-chip-enter-active,.filter-chip-leave-active,.filter-chip-move { transition:none!important;transform:none!important; } }
+@media (prefers-reduced-motion:reduce) { .filter-summary,.filter-chip,.filter-chip::before,.filter-chip__label,.filter-chip__remove,.filter-chip-enter-active,.filter-chip-leave-active,.filter-chip-move { transition:none!important;transform:none!important; } }
 .catalog-page::before {
   content: '';
   position: fixed;

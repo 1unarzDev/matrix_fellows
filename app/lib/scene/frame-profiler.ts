@@ -62,6 +62,8 @@ declare global {
       freeze(progress: number, seconds: number): void
       resume(): void
       pauseDrawing(paused: boolean): void
+      useGeneralShader(enabled: boolean): void
+      useGeneralComposite(enabled: boolean): void
       snapshot(): Record<string, any>
     }
   }

@@ -5,6 +5,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js'
 import { createOasisDressing } from './oasis'
 import { nextFrameTime } from './frame-clock'
+import { worldShaderPhase } from './shader-phase'
 import { constellationLayout, constellationStarCount } from './constellations'
 import { createFrameProfiler } from './frame-profiler'
 import {
@@ -15,6 +16,8 @@ import {
 } from './render-quality'
 import {
   worldFragment,
+  landWorldFragment,
+  stormWorldFragment,
   screenVertex,
   particleVertex,
   particleFragment,
@@ -94,7 +97,20 @@ export function createWorld(
     depthWrite: true,
     depthTest: true,
   })
-  background.add(new THREE.Mesh(quadGeometry, quadMaterial))
+  const landMaterial = quadMaterial.clone()
+  landMaterial.uniforms = uniforms
+  landMaterial.fragmentShader = landWorldFragment
+  const stormMaterial = quadMaterial.clone()
+  stormMaterial.uniforms = uniforms
+  stormMaterial.fragmentShader = stormWorldFragment
+  const worldQuad = new THREE.Mesh(quadGeometry, landMaterial)
+  background.add(worldQuad)
+  // Compile both programs up front. Only the original equations' exactly-zero
+  // branches disappear; all terrain, atmosphere and seven water octaves remain.
+  const journeyPreparation = new THREE.Scene()
+  journeyPreparation.add(new THREE.Mesh(quadGeometry, quadMaterial))
+  const stormPreparation = new THREE.Scene()
+  stormPreparation.add(new THREE.Mesh(quadGeometry, stormMaterial))
   // The procedural landscape dominates fragment cost. On phones render only
   // that layer at a lower resolution; retain a sharp full-resolution foreground
   // for palm leaves, rocks, particles and constellation lines.
@@ -162,6 +178,7 @@ export function createWorld(
         // On the efficient path this composite is written directly to the
         // canvas. Keep the restrained meteor at display resolution without a
         // second full-screen render target/pass.
+#ifndef MATRIX_NO_METEOR
         if(meteor.x>=0.0) {
           float seed=fract(meteor.y*3.7);
           float side=step(.5,fract(meteor.y*17.13));
@@ -186,6 +203,7 @@ export function createWorld(
           vec3 meteorColor=mix(vec3(.42,.57,.72),vec3(.68,.46,.39),seed);
           c+=meteorColor*(tailCore*.46+tailVeil+headCore*.92+headGlow*.14)*eventFade;
         }
+#endif
         gl_FragColor=vec4(pow(vec3(1.0)-exp(-max(c,vec3(0.0))*1.35),vec3(.92)),1.0);
         gl_FragDepth=texture2D(depthBuffer,vUv).r;
       }`,
@@ -194,7 +212,17 @@ export function createWorld(
       })
     : undefined
   const compositeBackground = new THREE.Scene()
-  if (atmosphereCopy) compositeBackground.add(new THREE.Mesh(quadGeometry, atmosphereCopy))
+  const plainAtmosphereCopy = atmosphereCopy?.clone()
+  if (plainAtmosphereCopy && atmosphereCopy) {
+    plainAtmosphereCopy.uniforms = atmosphereCopy.uniforms
+    plainAtmosphereCopy.defines = { MATRIX_NO_METEOR: 1 }
+  }
+  const compositeQuad = plainAtmosphereCopy
+    ? new THREE.Mesh(quadGeometry, plainAtmosphereCopy)
+    : undefined
+  if (compositeQuad) compositeBackground.add(compositeQuad)
+  const meteorPreparation = new THREE.Scene()
+  if (atmosphereCopy) meteorPreparation.add(new THREE.Mesh(quadGeometry, atmosphereCopy))
   const renderTarget = new THREE.WebGLRenderTarget(1, 1, {
     type: THREE.HalfFloatType,
     samples: efficient ? 0 : Math.min(4, renderer.capabilities.maxSamples),
@@ -413,6 +441,8 @@ export function createWorld(
   let cameraUpdates = 0
   let frozenProgress: number | undefined, frozenTime: number | undefined
   let drawingPaused = false
+  let generalShaderOnly = false
+  let generalCompositeOnly = false
   // Explicit crest, basin, waterline, and submerged control points keep the reveals spatial.
   const cameraKeys = [
     { at: 0, position: [0, 6.5, 30], target: [0, 3, -40] },
@@ -617,6 +647,9 @@ export function createWorld(
     // Consume only the freshest scroll position once per new scene frame.
     // DOM scrolling stays independent; no second touch-only lag is added.
     if (requestedProgress !== progress) updateCamera(requestedProgress)
+    const shaderPhase = generalShaderOnly ? 'journey' : worldShaderPhase(progress)
+    worldQuad.material =
+      shaderPhase === 'land' ? landMaterial : shaderPhase === 'storm' ? stormMaterial : quadMaterial
     lastRender = now
     last = frameTime
     uniforms.uTime.value = elapsed
@@ -639,6 +672,12 @@ export function createWorld(
       uniforms.uMeteor.value.set(progress > 3.45 ? 0.5 : -1, 0.371, 0, 0)
     }
     meteorUniform.copy(uniforms.uMeteor.value)
+    if (compositeQuad && atmosphereCopy && plainAtmosphereCopy)
+      compositeQuad.material =
+        !generalCompositeOnly &&
+        (uniforms.uMeteor.value.x < 0 || uniforms.uMeteorVisibility.value <= 0)
+          ? plainAtmosphereCopy
+          : atmosphereCopy
     const lightning = lightningState(frozenTime ?? elapsed)
     uniforms.uLightning.value.set(lightning.intensity, lightning.seed)
     oasisDressing.setTime(frozenTime ?? elapsed)
@@ -803,7 +842,28 @@ export function createWorld(
         drawingPaused = paused
         frameProfiler?.event('drawing-paused', { paused })
       },
+      useGeneralShader: (enabled) => {
+        generalShaderOnly = enabled
+        frameProfiler?.event('general-shader-control', { enabled })
+      },
+      useGeneralComposite: (enabled) => {
+        generalCompositeOnly = enabled
+        frameProfiler?.event('general-composite-control', { enabled })
+      },
       snapshot: () => ({
+        meteorActive: uniforms.uMeteor.value.x >= 0,
+        meteorVisibility: uniforms.uMeteorVisibility.value,
+        compositeVariant: compositeQuad
+          ? compositeQuad.material === plainAtmosphereCopy
+            ? 'plain'
+            : 'meteor'
+          : null,
+        shaderPhase:
+          worldQuad.material === landMaterial
+            ? 'land'
+            : worldQuad.material === stormMaterial
+              ? 'storm'
+              : 'journey',
         quality: { ...quality },
         cameraUpdates,
         progress,
@@ -859,6 +919,8 @@ export function createWorld(
   canvas.dataset.compileState = 'pending'
   Promise.all([
     renderer.compileAsync(background, screenCamera),
+    renderer.compileAsync(journeyPreparation, screenCamera),
+    renderer.compileAsync(stormPreparation, screenCamera),
     oasisDressing.ready.then(async () => {
       const palmParts = oasisDressing.getPalmPartCounts()
       canvas.dataset.palmTrunkParts = String(palmParts.trunk)
@@ -886,8 +948,72 @@ export function createWorld(
       }
     }),
     ...(atmosphereCopy ? [renderer.compileAsync(compositeBackground, screenCamera)] : []),
+    ...(atmosphereCopy ? [renderer.compileAsync(meteorPreparation, screenCamera)] : []),
   ])
-    .then(() => {
+    .then(async () => {
+      // Link completion does not guarantee that a driver has prepared the
+      // pipeline for the actual HDR/depth attachment. The software trace's
+      // largest gap occurred on first general-program use after the land range.
+      // Warm each program on its real framebuffer while the canvas is hidden,
+      // yielding between submissions; never read back pixels in production.
+      const savedProgress = progress
+      const savedMaterial = worldQuad.material
+      const savedComposite = compositeQuad?.material
+      const previousTarget = renderer.getRenderTarget()
+      const savedMeteor = uniforms.uMeteor.value.clone()
+      try {
+        for (const [material, warmProgress] of [
+          [landMaterial, 0.8],
+          [quadMaterial, 1.17],
+          [stormMaterial, 1.8],
+        ] as const) {
+          if (disposed) return
+          updateCamera(warmProgress)
+          worldQuad.material = material
+          renderer.setRenderTarget(atmosphereTarget ?? composer.readBuffer)
+          renderer.clear()
+          renderer.render(background, screenCamera)
+          await new Promise<void>((resolve) => setTimeout(resolve, 0))
+        }
+        if (compositeQuad && atmosphereCopy && plainAtmosphereCopy) {
+          for (const material of [plainAtmosphereCopy, atmosphereCopy]) {
+            if (disposed) return
+            compositeQuad.material = material
+            uniforms.uMeteor.value.set(material === atmosphereCopy ? 0.5 : -1, 0.371, 0, 0)
+            uniforms.uMeteorVisibility.value = 1
+            renderer.setRenderTarget(null)
+            renderer.clear()
+            renderer.render(compositeBackground, screenCamera)
+            await new Promise<void>((resolve) => setTimeout(resolve, 0))
+          }
+        }
+        // A zero-timeout fence poll is asynchronous completion, not GPU timing
+        // or a synchronous readback. Bound startup polling even on a stalled driver.
+        if (!disposed && gl instanceof WebGL2RenderingContext) {
+          const fence = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0)
+          if (fence) {
+            gl.flush()
+            const warmDeadline = performance.now() + 2000
+            try {
+              while (!disposed && performance.now() < warmDeadline && gl.clientWaitSync(fence, 0, 0) === gl.TIMEOUT_EXPIRED)
+                await new Promise<void>((resolve) => setTimeout(resolve, 16))
+            } finally {
+              gl.deleteSync(fence)
+            }
+          }
+        }
+      } finally {
+        if (!disposed) {
+          uniforms.uMeteor.value.copy(savedMeteor)
+          updateCamera(savedProgress)
+          oasisDressing.setProgress(savedProgress, true)
+          worldQuad.material = savedMaterial
+          if (compositeQuad && savedComposite) compositeQuad.material = savedComposite
+          renderer.setRenderTarget(previousTarget)
+        }
+      }
+      if (disposed) return
+      canvas.dataset.framebuffersWarm = 'true'
       canvas.dataset.compileState = 'ready'
     })
     .catch(() => {
@@ -914,7 +1040,10 @@ export function createWorld(
       lineMaterial.dispose()
       quadGeometry.dispose()
       quadMaterial.dispose()
+      landMaterial.dispose()
+      stormMaterial.dispose()
       atmosphereCopy?.dispose()
+      plainAtmosphereCopy?.dispose()
       atmosphereTarget?.dispose()
       backgroundPass.dispose()
       scenePass.dispose()

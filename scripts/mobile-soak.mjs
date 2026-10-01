@@ -8,6 +8,8 @@ const software = process.env.PROFILE_GPU === 'software'
 const width = Number(process.env.PROFILE_WIDTH || 390)
 const height = Number(process.env.PROFILE_HEIGHT || 844)
 const targetFps = Number(process.env.PROFILE_TARGET_FPS || 60)
+// Diagnostic isolation only: never changes the shipped default visual policy.
+const qualityOverride = process.env.PROFILE_QUALITY ? JSON.parse(process.env.PROFILE_QUALITY) : null
 const browser = await chromium.launch({
   args: software
     ? ['--no-sandbox', '--enable-unsafe-swiftshader']
@@ -79,6 +81,8 @@ try {
     return performance.now() - start
   })
 
+  if (qualityOverride)
+    await page.evaluate((quality) => window.__matrixWorldDebug.setQuality(quality), qualityOverride)
   const trace = await page.evaluate(async (duration) => {
     const profile = window.__matrixWorldProfile
     if (!profile) throw new Error('World profile was not initialized')
@@ -171,6 +175,7 @@ try {
       targetFps,
       renderer: trace.profile.renderer,
       powerMode: 'not available in browser emulation',
+      qualityOverride,
       frameMeaning: 'new scene submissions, not independently verified screen presentations',
       trace: 'beginning-to-community, 20s each direction',
     },

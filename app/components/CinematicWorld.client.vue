@@ -123,11 +123,22 @@ onMounted(() => {
     window.addEventListener('wheel', cancelChapterNavigation, { passive: true })
     window.addEventListener('touchstart', cancelChapterNavigation, { passive: true })
     const chapters = Array.from(document.querySelectorAll<HTMLElement>('[data-chapter]'))
+    // Never animate an inherited custom property on the document root: that
+    // invalidates every offscreen resource card. Keep visible neighbors in the
+    // same palette so chapter handoffs and persistent navigation stay coherent.
+    const accentRegions = Array.from(
+      document.querySelectorAll<HTMLElement>('[data-chapter], [data-cinematic-accent]'),
+    ).map((el) => ({
+      el,
+      fixed: el.dataset.cinematicAccent === 'fixed',
+      top: 0,
+      height: 0,
+      accent: '',
+    }))
     const main = document.querySelector('main')
     const accentColors = ['#eac279', '#89edc5', '#79c9f3', '#7ddfea', '#c3a4f4', '#c3a4f4']
     const heroDetails = Array.from(document.querySelectorAll<HTMLElement>('[data-hero-detail]'))
     let previousHeroOpacity = -1
-    let previousAccent = ''
     let previousPublishedState = ''
     const layers = chapters
       .flatMap((chapter) =>
@@ -181,6 +192,10 @@ onMounted(() => {
       restStops[0] = 0
       measuredHeight = main?.offsetHeight || 0
       maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight)
+      accentRegions.forEach((region) => {
+        region.top = documentTop(region.el)
+        region.height = region.el.offsetHeight
+      })
       layers.forEach((layer) => {
         layer.top = documentTop(layer.el)
         layer.height = layer.el.offsetHeight
@@ -216,9 +231,16 @@ onMounted(() => {
         accentColors[index + 1]!,
         Math.round((stage - index) * 64) / 64,
       )
-      if (accent !== previousAccent) {
-        previousAccent = accent
-        document.documentElement.style.setProperty('--color-acid', accent)
+      for (const region of accentRegions) {
+        if (
+          !region.fixed &&
+          (region.top > scroll + viewportHeight * 1.4 ||
+            region.top + region.height < scroll - viewportHeight * 0.4)
+        )
+          continue
+        if (region.accent === accent) continue
+        region.accent = accent
+        region.el.style.setProperty('--color-acid', accent)
       }
       const ease = (value: number) => {
         const t = Math.max(0, Math.min(1, value))
@@ -495,7 +517,7 @@ onMounted(() => {
       layers.forEach((layer) =>
         gsap.set(layer.el, { clearProps: 'transform,opacity,transformOrigin' }),
       )
-      document.documentElement.style.removeProperty('--color-acid')
+      accentRegions.forEach((region) => region.el.style.removeProperty('--color-acid'))
       media.removeEventListener('change', mediaChanged)
     }
   }

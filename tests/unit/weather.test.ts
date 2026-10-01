@@ -72,6 +72,10 @@ describe('scroll-driven storm and flood', () => {
   })
 
   it('fades an active meteor away when scrolling out of the cosmic chapter', () => {
+    expect(meteorChapterVisibility(0)).toBe(0)
+    expect(meteorChapterVisibility(3.4)).toBe(0)
+    expect(meteorChapterVisibility(3.6)).toBeGreaterThan(0)
+    expect(meteorChapterVisibility(3.6)).toBeLessThan(1)
     expect(meteorChapterVisibility(4)).toBe(1)
     expect(meteorChapterVisibility(4.3)).toBeGreaterThan(0)
     expect(meteorChapterVisibility(4.3)).toBeLessThan(1)

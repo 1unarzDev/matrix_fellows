@@ -1,5 +1,78 @@
 # Rendering checkpoint — October 1, 2026
 
+## Closeout of the second optimization batch
+
+Owner requested closing out optimization rather than starting further experiments.
+This batch builds on `62d4d78`; the preceding sections remain historical evidence.
+
+Changes: exact land/storm shader specialization with shared uniforms and prewarmed
+programs; omit the meteor composite only when its contribution is zero; scope
+animated accent variables to visible chapters/navigation instead of the document
+root; resolve foliage coverage derivatives before custom terrain discard; hide
+active meteors on reverse navigation out of cosmos. Startup framebuffer warming
+uses asynchronous fence polling capped at two seconds, with teardown guards.
+No terrain/water octave, particle-density, foreground-resolution or lighting
+reduction was used for these savings.
+
+Measured before the final startup/foliage changes:
+
+- Identical three-second transition DOM probe: style recalculation fell from
+  473.366 to 103.625 ms (~78%); layouts 34 to 3; task time 951.538 to 431.546 ms.
+- RTX 4070 Ti SUPER, Chromium iPhone viewport emulation, 120-second production
+  journey: all twelve ten-second windows submitted 60 scene frames/sec,
+  p95/p99 <=16.8 ms, no recorded stalls. Native 1170×2532 foreground, full
+  detail/12,000 particles; procedural source recovered from 1× to 1.953125×
+  (762×1648). Trace `/tmp/matrix-cycle2-final-hardware.json`.
+- Same-renderer software comparison: land specialization median intervals
+  133.3–150 versus general 183.4–199.9 ms. Removing an inactive meteor branch
+  improved 149.9–150 to 133.3 ms. These fixed-view gains did **not** fix the
+  complete software journey: 30-second windows 4.8/5.7/5.8 fps, including a
+  583.4 ms first-use interval. `/tmp/matrix-cycle2-final-software.json`.
+- Isolated land equivalence: 63 combinations byte-identical. Storm: 108
+  combinations, nine with a single-channel one-LSB difference, others identical.
+  These are fixed-camera color comparisons, not comprehensive depth/motion proof.
+- Rejected lazy-sky experiment: identical image but slower software shader
+  submission (103.95 versus 89.25 ms). Diagnostic variant is not shipped.
+
+Final source passes typecheck, all 157 unit tests and production build. Production
+browser suite: 12 passed, two intentional desktop skips of mobile-only checks.
+Includes frozen full-canvas equivalence, phase boundaries/reversals, actual
+buffers/passes/recovery, scoped accents, meteor reversal and early route teardown.
+Log: `/tmp/matrix-closeout-e2e.log`.
+
+Final iPhone/iPad emulation visual assertions pass. Four matched initial/native
+palm captures are byte-identical to pre-coverage-reordering captures; this proves
+no regression in those views, not a demonstrated improvement in every foliage
+edge. Captures: `/tmp/matrix-closeout-visual`, prior `/tmp/matrix-cycle2-before-alpha`.
+
+Final 120-second hardware rerun: 59.91 scene submissions/sec overall; all twelve
+windows 59.6–60, p95/p99 <=16.8 ms, zero >100 ms stalls, maximum 83.4 ms
+(isolated gaps in windows 0, 1 and 4). Progress lag p95 zero; request age p95
+2.3–3.8 ms. GPU timer p95 3.159 ms; scene-update p95 .1 ms. Foreground remains
+1170×2532/full detail/12,000 particles. Source recovered 1×→1.25×→1.5625×,
+ending 609×1319, **not** the earlier run's 1.953125×. Thus FPS and adaptive source
+quality differ simultaneously; these runs are not an identical-quality speedup
+comparison. Readiness 2.673 s, compile/warm 187.4 ms, first scene 509.4 ms.
+Trace `/tmp/matrix-closeout-hardware.json`; no browser errors. These are submitted
+frames, not independently verified physical display presentations.
+
+Final 30-second SwiftShader smoke run still fails: 4.8/5.5/5.5 fps; p95
+233.4 ms, maximum 283.3 ms. The previous 583.4 ms first-use gap did not recur,
+but this is not proof warm-up eliminated it. Preview upload overlapped part of
+this smoke run, so do not use it as a controlled before/after speed comparison.
+Readiness 3.825 s. `/tmp/matrix-closeout-software.json`. No browser errors.
+
+Closeout preview version `afb270bb-3ff3-4ea5-8ce3-7b9fdd4dd369`:
+[test candidate](https://rendering-closeout-oct01-matrix-fellows.lunarzdev.workers.dev).
+Production traffic remains unchanged. No backend migration/deployment required.
+
+Physical iPhone/iPad Safari, Android, integrated-GPU and battery-saving/thermal
+tests remain unverified. Software GPU remains severely overloaded; a cadence
+diagnostic must not be read as proof of an operating-system 30 Hz limit. No
+universal smoothness or native-source-fidelity claim, and no production rollout
+based solely on this workstation. Next action is affected-device preview testing,
+not another speculative optimization round.
+
 ## Build and scope
 
 Candidate is based on `8dbcf7e`, with the renderer changes in this checkpoint.

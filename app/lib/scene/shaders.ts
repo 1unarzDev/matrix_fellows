@@ -42,7 +42,8 @@ export function lightningState(seconds: number) {
 }
 export const stormStrength = (progress: number) =>
   smooth(1.06, 1.42, progress) * (1 - smooth(2.9, 3.15, progress))
-export const meteorChapterVisibility = (progress: number) => 1 - smooth(4.12, 4.5, progress)
+export const meteorChapterVisibility = (progress: number) =>
+  smooth(3.45, 3.7, progress) * (1 - smooth(4.12, 4.5, progress))
 export const rainStrength = (progress: number) =>
   smooth(1.06, 1.42, progress) * (1 - smooth(2.1, 2.38, progress))
 const SWELL_START = 1.16
@@ -55,10 +56,23 @@ export const swellStrength = (progress: number) =>
 export const nearSwellFactor = (distance: number) =>
   NEAR_SWELL_FLOOR + (1 - NEAR_SWELL_FLOOR) * smooth(NEAR_SWELL_START, NEAR_SWELL_FULL, distance)
 export const weatherGLSL = /* glsl */ `
+#ifdef MATRIX_LAND
+// The selected range ends before the first weather/flood weight can be nonzero.
+float floodHeight(float p) { return 0.0; }
+float stormStrength(float p) { return 0.0; }
+float rainStrength(float p) { return 0.0; }
+float swellStrength(float p) { return 0.0; }
+#else
 float floodHeight(float p) { return 2.0*smoothstep(1.28,1.55,p)+16.0*smoothstep(1.65,1.98,p); }
+#ifdef MATRIX_STORM
+float stormStrength(float p) { return 1.0; }
+float rainStrength(float p) { return 1.0; }
+#else
 float stormStrength(float p) { return smoothstep(1.06,1.42,p)*(1.0-smoothstep(2.9,3.15,p)); }
 float rainStrength(float p) { return smoothstep(1.06,1.42,p)*(1.0-smoothstep(2.1,2.38,p)); }
+#endif
 float swellStrength(float p) { return stormStrength(p)*smoothstep(${SWELL_START},${SWELL_FULL},p); }
+#endif
 `
 
 export const terrainGLSL = /* glsl */ `
@@ -164,6 +178,9 @@ vec3 waves(vec2 p) {
   return vec3(h,slope)+swell(p);
 }
 float sunCloudCover(vec3 ray, vec3 sun) {
+#if defined(MATRIX_LAND) || defined(MATRIX_STORM)
+  return 0.0;
+#else
   // A small cloud passes over the light source only. Its feathered footprint
   // must not become an extra full-sky weather transition.
   vec2 local=ray.xy-sun.xy;
@@ -172,6 +189,7 @@ float sunCloudCover(vec3 ray, vec3 sun) {
   float density=smoothstep(ceiling-.14,ceiling+.14,local.y+(billow-.5)*.15);
   float footprint=1.0-smoothstep(.13,.32,length(local*vec2(1.0,1.2)));
   return density*footprint*smoothstep(1.08,1.2,uProgress);
+#endif
 }
 vec3 sky(vec3 rd, vec3 sun) {
   float height=clamp(rd.y*1.6,0.0,1.0);
@@ -250,15 +268,28 @@ vec3 sky(vec3 rd, vec3 sun) {
 void main() {
   float p=uProgress;
   float oasis=smoothstep(.15,.9,p);
+#ifdef MATRIX_LAND
+  float ocean=0.0;
+#else
   float ocean=smoothstep(1.28,1.92,p);
-  float storm=stormStrength(p);
-  float waterLevel=-1.0+floodHeight(p);
+#endif
+#if defined(MATRIX_LAND) || defined(MATRIX_STORM)
+  float dive=0.0;
+  float cosmos=0.0;
+#else
   float dive=smoothstep(2.15,2.72,p);
   float cosmos=smoothstep(3.15,4.15,p);
+#endif
+  float storm=stormStrength(p);
+  float waterLevel=-1.0+floodHeight(p);
   vec2 uv=vUv;
   float waterline=smoothstep(2.16,2.68,p)*1.4-.2;
   waterline+=sin(uv.x*11.0+uTime*1.1)*.028+sin(uv.x*26.0-uTime*.7)*.012;
+#if defined(MATRIX_LAND) || defined(MATRIX_STORM)
+  float edge=0.0;
+#else
   float edge=exp(-abs(uv.y-waterline)*45.0)*smoothstep(2.1,2.3,p)*(1.0-smoothstep(2.6,2.8,p));
+#endif
   uv.x+=sin(uv.y*55.0+uTime*1.3)*edge*.015;
   uv.y+=sin(uv.x*24.0-uTime)*edge*.009;
   vec2 screen=(uv-0.5)*vec2(uAspect,1.0);
@@ -267,8 +298,12 @@ void main() {
   vec3 up=cross(right,forward);
   vec3 rd=normalize(forward+0.9326*(screen.x*right+screen.y*up));
   vec3 sun=normalize(vec3(0.48*min(1.0,uAspect/1.25),0.26,-1.0));
+#if defined(MATRIX_LAND) || defined(MATRIX_STORM)
+  float submerged=0.0;
+#else
   float submerged=1.0-smoothstep(waterline-.018,waterline+.018,uv.y);
   submerged=max(submerged,smoothstep(2.68,2.75,p));
+#endif
   // Once a pixel is fully underwater, the expensive sky and ocean raymarch
   // cannot contribute. Keep the feathered waterline on the full path.
   vec3 col=vec3(0.0);
@@ -465,6 +500,7 @@ void main() {
   }
 
   // Surface spray stays below the lens. Only the later dive crosses the waterline.
+#ifndef MATRIX_LAND
   if(p>1.28 && p<2.02) {
     float inundation=.16*storm*smoothstep(1.28,1.55,p)*(1.0-smoothstep(1.8,2.02,p));
     float crest=-.25+1.5*inundation+sin(uv.x*9.0+uTime*1.7)*.065+sin(uv.x*21.0-uTime*2.1)*.025;
@@ -477,6 +513,7 @@ void main() {
     col=mix(col,surge,cover);
     if(cover>.5)sceneDistance=.15;
   }
+#endif
 
   if(submerged>0.0 && cosmos<.999) {
   vec2 warp=uv+vec2(sin(uv.y*9.0+uTime*.24),cos(uv.x*7.0-uTime*.19))*.022;
@@ -590,6 +627,9 @@ void main() {
   gl_FragColor=vec4(col,1.0);
 }
 `
+
+export const landWorldFragment = '#define MATRIX_LAND 1\n' + worldFragment
+export const stormWorldFragment = '#define MATRIX_STORM 1\n' + worldFragment
 
 export const particleVertex = /* glsl */ `
 ${weatherGLSL}

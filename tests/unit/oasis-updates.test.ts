@@ -3,6 +3,25 @@ import * as THREE from 'three'
 import { createOasisDressing } from '../../app/lib/scene/oasis'
 
 describe('oasis scroll updates', () => {
+  it('evaluates cutout coverage before discarding buried fragments', () => {
+    const scene = new THREE.Scene()
+    const dressing = createOasisDressing(scene, new THREE.PerspectiveCamera(), true)
+    try {
+      scene.traverse((object) => {
+        if (!(object instanceof THREE.InstancedMesh) || ![38, 640].includes(object.count)) return
+        const material = object.material as THREE.Material
+        const shader = {
+          vertexShader: THREE.ShaderLib.lambert.vertexShader,
+          fragmentShader: THREE.ShaderLib.lambert.fragmentShader,
+          uniforms: {},
+        }
+        material.onBeforeCompile(shader as Parameters<THREE.Material['onBeforeCompile']>[0], {} as THREE.WebGLRenderer)
+        expect(shader.fragmentShader.indexOf('fwidth(diffuseColor.a)')).toBeLessThan(shader.fragmentShader.indexOf('if (oasisWorld.y'))
+      })
+    } finally {
+      dressing.dispose()
+    }
+  })
   it('keeps static rock/reed transforms and buffers unchanged during reversible scrolling', () => {
     const scene = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera()

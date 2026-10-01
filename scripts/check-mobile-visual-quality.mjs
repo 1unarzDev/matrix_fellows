@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { mkdir } from 'node:fs/promises'
 import { chromium, devices } from '@playwright/test'
 
-const output = 'test-results/mobile-visual-quality'
+const output = process.env.VISUAL_OUTPUT || 'test-results/mobile-visual-quality'
 const baseURL = process.env.TEST_BASE_URL || 'http://localhost:3000'
 await mkdir(output, { recursive: true })
 

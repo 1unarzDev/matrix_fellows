@@ -83,12 +83,6 @@ export function createOasisDressing(scene: THREE.Scene, camera: THREE.Camera, ef
         terrainGLSL +
         shader.fragmentShader
           .replace(
-            '#include <clipping_planes_fragment>',
-            `
-        #include <clipping_planes_fragment>
-        if (oasisWorld.y < max(oasisWaterLevel, terrain(oasisWorld.xz, 1.0, oasisExpansion) - .025)) discard;`,
-          )
-          .replace(
             '#include <alphatest_fragment>',
             `
         // Cut out the leaf texture independently of the whole-grove reveal.
@@ -104,11 +98,15 @@ export function createOasisDressing(scene: THREE.Scene, camera: THREE.Camera, ef
         #endif`
             : '#include <alphatest_fragment>'
         }
-        diffuseColor.a *= opacity;`,
+        diffuseColor.a *= opacity;
+        // Resolve coverage before custom terrain discard: derivatives in a
+        // diverged quad are undefined, and empty leaf texels need no expensive
+        // terrain evaluation. Ground/water clipping itself is unchanged.
+        if (oasisWorld.y < max(oasisWaterLevel, terrain(oasisWorld.xz, 1.0, oasisExpansion) - .025)) discard;`,
           )
     }
     material.customProgramCacheKey = () =>
-      `${previousCacheKey()}-oasis-ground-v2-${efficient ? 'direct-alpha' : 'post-tone'}`
+      `${previousCacheKey()}-oasis-ground-v3-${efficient ? 'direct-alpha' : 'post-tone'}`
   }
   scene.add(group)
   const fill = new THREE.HemisphereLight('#f4dfb1', '#46644c', 2.1)

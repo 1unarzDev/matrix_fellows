@@ -259,6 +259,7 @@ onBeforeUnmount(() => {
   >
     <a
       href="#main"
+      data-cinematic-accent="fixed"
       class="fixed left-4 top-4 z-[100] -translate-y-24 rounded bg-acid px-5 py-3 text-ink focus:translate-y-0"
       >Skip to content</a
     >
@@ -306,6 +307,7 @@ onBeforeUnmount(() => {
     />
 
     <header
+      data-cinematic-accent
       class="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-6 pb-7 pt-[max(1.75rem,env(safe-area-inset-top))] sm:px-10 lg:px-16 lg:py-9"
     >
       <a
@@ -332,6 +334,7 @@ onBeforeUnmount(() => {
 
     <nav
       aria-label="Journey sections"
+      data-cinematic-accent="fixed"
       class="fixed right-6 top-1/2 z-30 hidden -translate-y-1/2 flex-col items-end gap-6 lg:flex"
     >
       <a
@@ -360,6 +363,7 @@ onBeforeUnmount(() => {
     </nav>
     <nav
       aria-label="Mobile sections"
+      data-cinematic-accent="fixed"
       class="fixed inset-x-3 bottom-[max(.75rem,env(safe-area-inset-bottom))] z-30 rounded-full border border-white/20 bg-white/[.055] p-1.5 shadow-[inset_0_1px_0_#ffffff26,0_8px_32px_#0000001a] backdrop-blur-2xl backdrop-saturate-150 lg:hidden"
     >
       <div class="relative grid grid-cols-6">
@@ -809,6 +813,7 @@ onBeforeUnmount(() => {
     </main>
 
     <footer
+      data-cinematic-accent
       class="site-footer relative isolate z-10 px-6 pb-28 pt-20 sm:px-10 sm:pt-24 lg:px-16 lg:pb-12"
     >
       <div class="footer-inner relative z-[1] mx-auto max-w-[90rem]">

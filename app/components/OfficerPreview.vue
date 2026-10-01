@@ -4,6 +4,8 @@ const carousel = useTemplateRef<HTMLElement>('carousel')
 const revealed = ref(false)
 const activeOfficer = ref(0)
 const indicatorProgress = ref(0)
+const tappedOfficer = ref<number | null>(null)
+const hoveredOfficer = ref<number | null>(null)
 let revealObserver: IntersectionObserver | undefined
 let carouselFrame: number | undefined
 let carouselAnimation: number | undefined
@@ -197,7 +199,12 @@ const officers = [
         v-for="(officer, index) in officers"
         :key="officer.name"
         class="officer-card"
-        :class="{ 'officer-card--active': activeOfficer === index }"
+        :class="{
+          'officer-card--active': activeOfficer === index,
+          'officer-card--engaged': tappedOfficer === index || hoveredOfficer === index,
+        }"
+        @pointerenter="hoveredOfficer = $event.pointerType === 'mouse' ? index : null"
+        @pointerleave="hoveredOfficer = null"
         :style="{
           '--officer-delay': `${index * 75}ms`,
           '--officer-focus': Math.max(0, 1 - Math.abs(indicatorProgress - index)),
@@ -205,6 +212,13 @@ const officers = [
         :aria-label="`${officer.name}, ${officer.role}`"
       >
         <div class="officer-card__portrait">
+          <button
+            type="button"
+            class="officer-card__reveal"
+            :aria-label="`Reveal portrait of ${officer.name}`"
+            :aria-pressed="tappedOfficer === index"
+            @click="tappedOfficer = tappedOfficer === index ? null : index"
+          />
           <img
             :src="officer.image"
             :alt="`Portrait of ${officer.name}`"
@@ -365,6 +379,21 @@ const officers = [
     filter 720ms cubic-bezier(0.22, 0.72, 0.2, 1),
     transform 820ms cubic-bezier(0.16, 1, 0.3, 1);
 }
+.officer-card__reveal {
+  position: absolute;
+  z-index: 5;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+.officer-card__reveal:focus-visible {
+  outline: 2px solid rgb(228 199 151 / 80%);
+  outline-offset: -5px;
+}
 .officer-card__wash {
   position: absolute;
   z-index: 2;
@@ -417,8 +446,8 @@ const officers = [
 .officer-carousel__controls {
   display: none;
 }
-@media (hover: hover) and (pointer: fine) {
-  .officer-card:hover .officer-card__portrait {
+@media (min-width: 640px) {
+  .officer-card--engaged .officer-card__portrait {
     border-color: rgb(228 199 151 / 30%);
     box-shadow:
       inset 0 1px 0 rgb(255 255 255 / 10%),
@@ -426,30 +455,33 @@ const officers = [
       0 0 30px rgb(201 169 225 / 7%);
     transform: translate3d(0, -6px, 0) rotate(0.25deg);
   }
-  .officer-card:nth-child(even):hover .officer-card__portrait {
+  .officer-card--engaged:nth-child(even) .officer-card__portrait {
     transform: translate3d(0, -6px, 0) rotate(-0.25deg);
   }
-  .officer-card:hover .officer-card__portrait img {
+  .officer-card--engaged .officer-card__portrait img {
     filter: grayscale(0.05) saturate(0.9) contrast(1.015) brightness(0.98) sepia(0.04);
     transform: scale(1.055);
   }
-  .officer-card:hover .officer-card__portrait::after,
-  .officer-card:hover .officer-card__wash {
+  .officer-card--engaged .officer-card__portrait::after,
+  .officer-card--engaged .officer-card__wash {
     opacity: 0.42;
   }
-  .officer-card:hover .officer-card__index {
+  .officer-card--engaged .officer-card__index {
     color: rgb(255 235 199 / 86%);
     background: rgb(92 62 44 / 24%);
     transform: scale(1.08) rotate(5deg);
   }
-  .officer-card:hover .officer-card__caption {
+  .officer-card--engaged .officer-card__caption {
     transform: translate3d(0, -2px, 0);
   }
-  .officer-card:hover .officer-card__caption p {
+  .officer-card--engaged .officer-card__caption p {
     color: rgb(228 199 151 / 66%);
   }
 }
 @media (max-width: 639px) {
+  .officer-card__reveal {
+    display: none;
+  }
   .officer-preview {
     width: min(100%, 31rem);
     margin-top: 7rem;

@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test'
 
-// Explicit coarse-wheel units exercise mouse smoothing. Playwright's wheel()
-// emits arbitrary pixel deltas, which are intentionally native when ambiguous.
+// Explicit line units retain the historical chapter-assistance input trace.
+// Pixel-based mouse and trackpad gestures now also receive wheel smoothing.
 const coarseWheel = (page: Page, pixels: number) =>
   page.evaluate((pixels) => {
     document.body.dispatchEvent(

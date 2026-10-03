@@ -64,10 +64,11 @@ measured document scroll to narrative stage `0…5`. The same update:
 - interpolates the site accent color; and
 - updates active navigation.
 
-Lenis smooths explicit coarse-wheel gestures and feeds the GSAP ticker. Precision
-and ambiguous pixel gestures keep native scrolling; the constant-space
-`wheel-input.ts` heuristic does not claim to identify hardware. Switching to
-precision input cancels pending wheel easing/assistance at actual document scroll.
+Lenis smooths vertical wheel input from both mice and trackpads and feeds the
+GSAP ticker. WheelEvent cannot reliably identify the physical input device, so
+`wheel-input.ts` no longer guesses from delta magnitude or gesture history.
+Horizontal-dominant gestures remain native and cancel pending wheel easing at
+the actual document position; pinch-to-zoom and nested UI are not intercepted.
 Touch keeps native
 inertia (`syncTouch: false`). Progress requests coalesce to the freshest value at
 the next scene frame; no extra touch-camera settlement delays document scrolling.

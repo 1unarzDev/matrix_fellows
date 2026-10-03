@@ -1,5 +1,27 @@
 # Laptop-first checkpoint — October 2, 2026
 
+### October 3 desktop smoothing restored — owner preference
+
+Owner reports smoothing missing on their computer and requests smoothing for
+both mice and trackpads if hardware detection is unreliable. Removed the
+delta/notch-history heuristic: all nonzero vertical-dominant wheel gestures now
+smooth immediately, including fractional pixel input and the first mouse notch.
+Horizontal-dominant input, pinch-to-zoom, nested UI, native touch and reduced
+motion remain excluded. No renderer fidelity, cadence or quality changes, no
+extra input listener, history, timer, layout read or runtime import.
+
+`npx vitest run tests/unit/wheel-input.test.ts` reproduces the old behavior with
+three failures before the policy change, then passes after it. Build/typecheck,
+all 164 unit tests and documentation checks pass. This reverses the previous
+owner-requested precision/native policy; historical performance measurements
+above and below are not evidence for this newly requested interaction policy.
+Focused browser checks: four passed / two expected skips, covering desktop
+mouse/trackpad routing, nested UI/zoom, hybrid touch rendering and slow-scroll
+assistance. A broader resource-atmosphere test fails on both the unchanged live
+production build and candidate with the same missing-element error; unrelated
+to this homepage policy and not altered here. Artifacts
+`/tmp/matrix-wheel-focused`, `/tmp/matrix-wheel-existing-control`.
+
 ### October 3 production release — owner authorized
 
 Owner requested publishing the accumulated performance improvements, discovery

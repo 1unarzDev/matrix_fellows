@@ -213,13 +213,13 @@ test('a touch-primary device with a secondary fine pointer keeps efficient rende
     }
   })
   expect(result.coarse).toBe(true)
-  expect(result.precision).toBe(false)
+  expect(result.precision).toBe(true)
   expect(result.state.quality.profile).toBe('efficient')
   expect(result.state.particleCount).toBe(12000)
   expect(result.state.quality.foregroundRatio).toBe(3)
 })
 
-test('precision gestures remain native; discrete wheels smooth; switching cancels old easing and nested UI is untouched', async ({
+test('mouse and trackpad wheels both smooth while nested UI and zoom remain native', async ({
   page,
 }, info) => {
   test.skip(info.project.name !== 'desktop')
@@ -265,13 +265,13 @@ test('precision gestures remain native; discrete wheels smooth; switching cancel
       mode: document.querySelector('canvas')?.dataset.wheelMode,
     }
   })
-  expect(result.precision).toBe(false)
+  expect(result.precision).toBe(true)
   expect(result.coarse).toBe(true)
-  expect(result.precisionAfterWheel).toBe(false)
+  expect(result.precisionAfterWheel).toBe(true)
   expect(result.nested).toBe(false)
   expect(result.pinch).toBe(false)
-  expect(Math.abs(result.drift)).toBeLessThan(2)
-  expect(result.mode).toBe('native')
+  expect(result.drift).toBeGreaterThan(2)
+  expect(result.mode).toBe('smooth')
 })
 
 for (const control of ['useLegacyComposerSwap', 'useLegacyBloomDepth'] as const) {

@@ -7,7 +7,7 @@ describe('wheel gesture routing, not hardware identification', () => {
     expect(input.observe({ deltaMode: 1, deltaY: 3, deltaX: 0 }, 0)).toBe('smooth')
     expect(input.observe({ deltaMode: 2, deltaY: -1, deltaX: 0 }, 30)).toBe('smooth')
   })
-  it('keeps precision input and its large inertial tail native', () => {
+  it('smooths precision input and its large inertial tail', () => {
     const input = createWheelInputPolicy()
     for (const [time, deltaY] of [
       [0, 1.5],
@@ -19,17 +19,17 @@ describe('wheel gesture routing, not hardware identification', () => {
       [350, 120],
       [500, 120],
     ])
-      expect(input.observe({ deltaMode: 0, deltaY: deltaY!, deltaX: 0 }, time!)).toBe('native')
+      expect(input.observe({ deltaMode: 0, deltaY: deltaY!, deltaX: 0 }, time!)).toBe('smooth')
   })
-  it('requires repeatable discrete pixel notches and supports switching inputs', () => {
+  it('smooths pixel wheels immediately without gesture warmup', () => {
     const input = createWheelInputPolicy()
-    expect(input.observe({ deltaMode: 0, deltaY: 100, deltaX: 0 }, 0)).toBe('native')
+    expect(input.observe({ deltaMode: 0, deltaY: 100, deltaX: 0 }, 0)).toBe('smooth')
     expect(input.observe({ deltaMode: 0, deltaY: 100, deltaX: 0 }, 70)).toBe('smooth')
-    expect(input.observe({ deltaMode: 0, deltaY: 5.5, deltaX: 0 }, 85)).toBe('native')
-    expect(input.observe({ deltaMode: 0, deltaY: 100, deltaX: 0 }, 500)).toBe('native')
+    expect(input.observe({ deltaMode: 0, deltaY: 5.5, deltaX: 0 }, 85)).toBe('smooth')
+    expect(input.observe({ deltaMode: 0, deltaY: 100, deltaX: 0 }, 500)).toBe('smooth')
     expect(input.observe({ deltaMode: 0, deltaY: 100, deltaX: 0 }, 560)).toBe('smooth')
   })
-  it('does not guess a mouse from a fast, variable trackpad burst or horizontal input', () => {
+  it('smooths variable trackpad bursts but preserves horizontal input', () => {
     const input = createWheelInputPolicy()
     for (const [time, deltaY] of [
       [0, 170],
@@ -37,7 +37,10 @@ describe('wheel gesture routing, not hardware identification', () => {
       [20, 98],
       [30, 44],
     ])
-      expect(input.observe({ deltaMode: 0, deltaY: deltaY!, deltaX: 0 }, time!)).toBe('native')
-    expect(input.observe({ deltaMode: 0, deltaY: 120, deltaX: 2 }, 100)).toBe('native')
+      expect(input.observe({ deltaMode: 0, deltaY: deltaY!, deltaX: 0 }, time!)).toBe('smooth')
+    expect(input.observe({ deltaMode: 0, deltaY: 120, deltaX: 2 }, 100)).toBe('smooth')
+    expect(input.observe({ deltaMode: 0, deltaY: 2, deltaX: 120 }, 110)).toBe('native')
+    expect(input.observe({ deltaMode: 0, deltaY: 0, deltaX: 120 }, 120)).toBe('native')
+    expect(input.observe({ deltaMode: 0, deltaY: 0, deltaX: 0 }, 130)).toBe('native')
   })
 })

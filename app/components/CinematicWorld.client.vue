@@ -114,7 +114,7 @@ onMounted(() => {
     // One clock and one smoothed scroll position for both the DOM and camera.
     // Touch keeps its native inertia; nested menus/dialogs keep their own scroll.
     const wheelInput = createWheelInputPolicy()
-    let wheelMode: 'native' | 'smooth' = 'native'
+    let wheelMode: 'native' | 'smooth' = wheelCapable ? 'smooth' : 'native'
     if (canvas.value && wheelCapable) canvas.value.dataset.wheelMode = wheelMode
     let cancelWheelSettle = () => {}
     const smoothScroll = lenisModule
@@ -141,14 +141,14 @@ onMounted(() => {
                 )
             )
               return false
-            const next = wheelInput.observe(event, performance.now())
+            const next = wheelInput.observe(event)
             if (next !== wheelMode) {
               wheelMode = next
               if (canvas.value) canvas.value.dataset.wheelMode = next
             }
             if (next === 'native') {
               // Stop the old easing tail at the actual document position; do
-              // not jump to the wheel's pending target or reset native inertia.
+              // not jump to the wheel's pending target or capture horizontal input.
               if (smoothScroll?.isScrolling === 'smooth')
                 smoothScroll.scrollTo(smoothScroll.actualScroll, { immediate: true, force: true })
               cancelWheelSettle()

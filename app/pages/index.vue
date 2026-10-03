@@ -880,7 +880,9 @@ onBeforeUnmount(() => {
           class="flex flex-col gap-3 pt-5 text-[11px] sm:flex-row sm:items-center sm:justify-between"
         >
           <p class="text-paper/30">Student-founded. Built on curiosity.</p>
-          <div class="flex items-center gap-4">
+          <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <NuxtLink to="/workspace" class="footer-utility">Officer workspace</NuxtLink>
+            <span class="footer-utility-separator" aria-hidden="true">·</span>
             <button class="footer-utility" @click="adminOpen = true">
               <SiteIcon name="lock" :size="13" /> Member admin
             </button>

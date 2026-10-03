@@ -1,0 +1,22 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "matrix-fellows-outreach",
+  "main": "outreach.ts",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "triggers": { "crons": ["0 16 * * 1,3,5", "*/15 * * * *"] },
+  "workflows": [
+    {
+      "name": "matrix-outreach-research",
+      "binding": "OUTREACH_RESEARCH",
+      "class_name": "OutreachResearchWorkflow",
+    },
+  ],
+  "vars": {
+    "OUTREACH_ENABLED": "false",
+    "GEMINI_TERMS_CONFIRMED": "false",
+    "GEMINI_FREE_PROJECT_CONFIRMED": "false",
+    "GEMINI_MODEL": "gemini-2.5-flash",
+  },
+  "observability": { "enabled": true },
+}

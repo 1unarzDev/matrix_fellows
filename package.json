@@ -18,6 +18,7 @@
     "test:e2e": "playwright test",
     "deploy": "npm run build && wrangler deploy",
     "deploy:imports": "wrangler deploy --config workers/wrangler.jsonc",
+    "deploy:outreach": "wrangler deploy --config workers/outreach.wrangler.jsonc",
     "seed": "node --env-file-if-exists=.env scripts/seed.mjs",
     "capture": "node scripts/capture.mjs",
     "check:oasis-reveal": "node scripts/check-oasis-reveal.mjs",
@@ -42,6 +43,7 @@
     "zod": "^4.1.0"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261003.1",
     "@electric-sql/pglite": "^0.5.8",
     "@playwright/test": "^1.55.0",
     "@types/node": "^22.0.0",

@@ -29,6 +29,15 @@ Scheduled opportunity Worker ───────► source fetch / AI extracti
 The frontend Worker and opportunity Worker deploy independently. A failed or
 paused importer does not stop the public site; existing published records remain.
 
+The adult-officer partnership workspace is another isolated route/backend seam.
+It uses named invitation-only Supabase identities, not the shared administration
+PIN. A separate outreach Worker/Workflow maintains bounded evidence/review jobs;
+approved mailbox sending is a distinct server-only operation, not a research
+Workflow operation. The pilot research credential remains privileged (see the
+runbook's trust boundary). Private records, tokens and profiles are excluded from public
+SSR payloads, cache, sitemaps and unpaid model requests. See the
+[workspace runbook](../operations/partnership-workspace.md).
+
 ## Major modules and interfaces
 
 ### Page and content

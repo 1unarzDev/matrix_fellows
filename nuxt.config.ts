@@ -34,6 +34,13 @@ export default defineNuxtConfig({
     sheetsSyncToken: '',
     meetingAdminPin: '',
     meetingAdminSessionSecret: '',
+    workspaceSessionSecret: '',
+    workspaceMailboxEncryptionKey: '',
+    googleOAuthClientId: '',
+    googleOAuthClientSecret: '',
+    microsoftOAuthClientId: '',
+    microsoftOAuthClientSecret: '',
+    microsoftOAuthTenant: 'common',
     public: {
       supabaseUrl: '',
       supabaseAnonKey: '',

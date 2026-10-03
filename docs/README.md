@@ -46,6 +46,9 @@ Current visual intent plus the source material behind specific decisions.
 
 Owner and maintainer runbooks.
 
+- [Private partnership workspace](operations/partnership-workspace.md) — adult-officer accounts, bounded research, profiles and approved mailbox sending.
+- [Partnership workspace verification](quality/partnership-workspace-2026-10-03.md) — implementation checks and live-setup gates.
+
 - [Membership form and Google Sheets](operations/join-form.md)
 - [Living opportunity catalog](operations/opportunity-monitoring.md)
 - [Internship catalog](operations/internship-catalog.md) — Texas access, application details, monitoring and rollout.

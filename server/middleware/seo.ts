@@ -9,8 +9,18 @@ export default defineEventHandler((event) => {
     return sendRedirect(event, `https://matrixfellows.com${url.pathname}${url.search}`, 301)
   }
   const path = url.pathname
+  if (path === '/login' || path === '/workspace' || path.startsWith('/workspace/')) {
+    setHeader(event, 'X-Robots-Tag', 'noindex, nofollow')
+    setHeader(event, 'Cache-Control', 'private, no-store')
+    setHeader(event, 'Referrer-Policy', 'same-origin')
+    return
+  }
   if (path.startsWith('/api/')) {
     setHeader(event, 'X-Robots-Tag', 'noindex')
+    if (path === '/api/workspace' || path.startsWith('/api/workspace/')) {
+      setHeader(event, 'Cache-Control', 'private, no-store')
+      setHeader(event, 'Referrer-Policy', 'same-origin')
+    }
     return
   }
   if (

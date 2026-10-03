@@ -64,7 +64,11 @@ measured document scroll to narrative stage `0…5`. The same update:
 - interpolates the site accent color; and
 - updates active navigation.
 
-Lenis owns desktop wheel smoothing and feeds the GSAP ticker. Touch keeps native
+Lenis smooths explicit coarse-wheel gestures and feeds the GSAP ticker. Precision
+and ambiguous pixel gestures keep native scrolling; the constant-space
+`wheel-input.ts` heuristic does not claim to identify hardware. Switching to
+precision input cancels pending wheel easing/assistance at actual document scroll.
+Touch keeps native
 inertia (`syncTouch: false`). Progress requests coalesce to the freshest value at
 the next scene frame; no extra touch-camera settlement delays document scrolling.
 Direct navigation and restored hashes synchronize before the first scene
@@ -95,6 +99,17 @@ Profile selection is independent of layout width. Coarse-pointer devices and
 machines reporting at most four logical processors or 4 GB device memory begin
 efficiently, so landscape phones and weak wide displays do not inherit desktop
 MSAA, bloom, and particle settings. CSS breakpoints remain layout-only.
+
+CPU/memory hints do not prove GPU power. The instrumented `matrixPipeline` override
+allows same-device comparisons; it is ignored without `matrixProfile`. Direct
+composition is not desktop-feature-equivalent, so routing every laptop to it is
+not an accepted optimization. See the [laptop checkpoint](../quality/laptop-performance-checkpoint-2026-10-02.md).
+
+On the cinematic path world and foreground retain their separate HDR/MSAA passes
+and depth resolve. Merging them failed the strict HiDPI image-equivalence gate
+and was rejected. The final grade writes to the screen without swapping composer
+targets, preventing a redundant full-size HDR/MSAA allocation while retaining
+the original pass graph, MSAA, bloom and grading.
 
 Splitting the mobile background is important: the expensive procedural ray work
 can remain bounded without making palm cutouts, constellation lines, text-adjacent
@@ -184,7 +199,10 @@ switches to the static fallback.
 
 `World.dispose()` cancels RAF, disconnects the observer, removes resize/context
 listeners, disposes oasis resources, geometries, materials, render targets,
-passes, composer, and renderer, then releases the WebGL context. The cinematic
+passes, composer, and renderer, then releases the WebGL context.
+If async shader linking is still pending, RAF/listeners detach immediately while
+GPU/material release waits for all linker polls to settle; destroying programs
+mid-poll is unsafe in Three r180. Disposal is idempotent. The cinematic
 adapter separately destroys Lenis, kills the master timeline/trigger, removes
 GSAP ticker work, disconnects layout observation, clears transforms, and removes
 event/media listeners.
@@ -207,7 +225,7 @@ event/media listeners.
 
 ## Measurements and known limits
 
-The latest recorded hardware-accelerated chapter captures held about 30 fps on an
+Historical hardware-accelerated chapter captures held about 30 fps on an
 RTX 4070 Ti SUPER at desktop and mobile-emulated viewports. That verifies the cap
 and shader correctness on that GPU, not phone performance. The dated
 [mobile report](../quality/mobile-performance-report.md) records both the older
@@ -226,10 +244,11 @@ Current risks:
 - physical iPhone Safari performance, thermal throttling, and low-power mode;
 - main-thread startup from animation libraries and hydration on real devices;
 - procedural fragment cost during the ocean/descent transition;
-- adaptive quality only decreases—it does not recover after a temporary spike;
-- the efficient atmosphere remains intentionally soft at a 0.4 ratio, with
-  reconstructed local contrast; the foreground is capped at 1.7× and the DOM stays
-  at native browser resolution.
+- affected-laptop performance and the limits of CPU/memory startup hints;
+- source reconstruction still softer than the native procedural reference on
+  constrained hardware, despite the new 1× floor/native foreground and recovery;
+- severe software-renderer overload, and distinguishing overload from browser
+  cadence restrictions without pretending to detect battery settings.
 
 ## Verification and profiling
 

@@ -4,6 +4,7 @@ import { chromium, devices } from '@playwright/test'
 
 const base = process.env.TEST_BASE_URL || 'http://localhost:8787'
 const software = process.env.PROFILE_GPU === 'software'
+const desktop = process.env.PROFILE_DEVICE === 'desktop'
 const modes = (process.env.PROFILE_MODES || 'normal,paused-webgl').split(',')
 const browser = await chromium.launch({
   args: software
@@ -20,7 +21,14 @@ const browser = await chromium.launch({
 try {
   const reports = []
   for (const mode of modes) {
-    const context = await browser.newContext({ ...devices['iPhone 13'] })
+    const context = await browser.newContext({
+      ...(desktop ? devices['Desktop Chrome'] : devices['iPhone 13']),
+      viewport: {
+        width: Number(process.env.PROFILE_WIDTH || (desktop ? 1440 : 390)),
+        height: Number(process.env.PROFILE_HEIGHT || (desktop ? 900 : 844)),
+      },
+      deviceScaleFactor: Number(process.env.PROFILE_DPR || (desktop ? 2 : 3)),
+    })
     await context.addInitScript(() => {
       globalThis.__matrixProfile = { lcp: 0, longTasks: [], longFrames: [] }
       new PerformanceObserver((list) => {
@@ -123,6 +131,7 @@ try {
       domCosts,
       mode,
       software,
+      device: desktop ? 'desktop' : 'iPhone emulation',
       domReady,
       hydrated,
       cinematicReady,

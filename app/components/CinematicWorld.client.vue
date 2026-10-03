@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { World } from '~/lib/scene/world'
 import { getTimelineAssist } from '~/lib/timeline-assist'
+import { createWheelInputPolicy } from '~/lib/wheel-input'
 
 const emit = defineEmits<{
   progress: [value: number]
@@ -43,6 +44,9 @@ onMounted(() => {
   if (media.matches) emit('scene', 'fallback')
   const init = async () => {
     const touchLayout = window.matchMedia('(pointer: coarse)').matches
+    // A secondary mouse/trackpad can exist on a touch-primary laptop or tablet.
+    // Layout and renderer stay unchanged; only wheel interaction gains Lenis.
+    const wheelCapable = !touchLayout || window.matchMedia('(any-pointer: fine)').matches
     // Fetch the world while the animation libraries initialize. Construction
     // still waits for stable layout, but its large module no longer sits behind
     // font/layout work on the critical path.
@@ -50,7 +54,7 @@ onMounted(() => {
     const [{ gsap }, { ScrollTrigger }, lenisModule] = await Promise.all([
       import('gsap'),
       import('gsap/ScrollTrigger'),
-      touchLayout ? Promise.resolve(undefined) : import('lenis'),
+      wheelCapable ? import('lenis') : Promise.resolve(undefined),
     ])
     if (canvas.value) canvas.value.dataset.importMs = (performance.now() - mountedAt).toFixed(1)
     await yieldToMain()
@@ -59,6 +63,10 @@ onMounted(() => {
     ScrollTrigger.config({ ignoreMobileResize: true })
     // One clock and one smoothed scroll position for both the DOM and camera.
     // Touch keeps its native inertia; nested menus/dialogs keep their own scroll.
+    const wheelInput = createWheelInputPolicy()
+    let wheelMode: 'native' | 'smooth' = 'native'
+    if (canvas.value && wheelCapable) canvas.value.dataset.wheelMode = wheelMode
+    let cancelWheelSettle = () => {}
     const smoothScroll = lenisModule
       ? new lenisModule.default({
           autoRaf: false,
@@ -67,6 +75,37 @@ onMounted(() => {
           easing: (t: number) => 1 - Math.pow(1 - t, 3),
           syncTouch: false,
           allowNestedScroll: false,
+          virtualScroll: ({ event }) => {
+            if (!(event instanceof WheelEvent) || event.ctrlKey) return false
+            // This hook precedes Lenis' prevented-container check. Nested UI
+            // must neither classify the page's device nor cancel its animation.
+            if (
+              event
+                .composedPath()
+                .some(
+                  (node) =>
+                    node instanceof HTMLElement &&
+                    node.matches(
+                      '[role="dialog"], [role="listbox"], input, textarea, select, [contenteditable="true"], [data-lenis-prevent]',
+                    ),
+                )
+            )
+              return false
+            const next = wheelInput.observe(event, performance.now())
+            if (next !== wheelMode) {
+              wheelMode = next
+              if (canvas.value) canvas.value.dataset.wheelMode = next
+            }
+            if (next === 'native') {
+              // Stop the old easing tail at the actual document position; do
+              // not jump to the wheel's pending target or reset native inertia.
+              if (smoothScroll?.isScrolling === 'smooth')
+                smoothScroll.scrollTo(smoothScroll.actualScroll, { immediate: true, force: true })
+              cancelWheelSettle()
+              return false
+            }
+            return true
+          },
           prevent: (node: HTMLElement) =>
             node.matches(
               '[role="dialog"], [role="listbox"], input, textarea, select, [contenteditable="true"]',
@@ -333,8 +372,12 @@ onMounted(() => {
     let smoothSettleDirection = 0
     let smoothIntentVelocity = 0
     let lastSmoothInputAt = 0
+    cancelWheelSettle = () => {
+      clearTimeout(smoothSettleTimer)
+      smoothIntentVelocity = 0
+    }
     const scheduleSmoothSettle = () => {
-      if (!smoothScroll || media.matches) return
+      if (!smoothScroll || media.matches || wheelMode !== 'smooth') return
       clearTimeout(smoothSettleTimer)
       smoothSettleTimer = setTimeout(() => {
         // Decide from Lenis' requested destination, not its still-easing visual

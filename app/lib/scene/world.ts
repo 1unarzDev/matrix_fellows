@@ -43,11 +43,16 @@ export function createWorld(
   let firstFrame = true
   const coarsePointer = window.matchMedia('(pointer: coarse)').matches
   const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory
-  const renderProfile = initialRenderProfile({
-    coarsePointer,
-    hardwareConcurrency: navigator.hardwareConcurrency,
-    deviceMemory: memory,
-  })
+  const query = new URLSearchParams(location.search)
+  const pipelineControl = query.has('matrixProfile') ? query.get('matrixPipeline') : null
+  const renderProfile =
+    pipelineControl === 'cinematic' || pipelineControl === 'efficient'
+      ? pipelineControl
+      : initialRenderProfile({
+          coarsePointer,
+          hardwareConcurrency: navigator.hardwareConcurrency,
+          deviceMemory: memory,
+        })
   const efficient = renderProfile === 'efficient'
   let quality = initialQuality(renderProfile, window.devicePixelRatio)
   const renderer = new THREE.WebGLRenderer({
@@ -299,6 +304,10 @@ export function createWorld(
   composer.addPass(scenePass)
   if (bloom) composer.addPass(bloom)
   composer.addPass(grade)
+  // The final grade writes to the canvas, not to writeBuffer. Swapping after
+  // that pass made both full-size HDR/MSAA targets allocate on alternate frames.
+  // Keep one persistent scene target; bloom already operates on readBuffer.
+  grade.needsSwap = false
 
   // Stable seeds allow every particle to survive the entire journey.
   let seed = 1709
@@ -850,6 +859,11 @@ export function createWorld(
         generalCompositeOnly = enabled
         frameProfiler?.event('general-composite-control', { enabled })
       },
+      useLegacyComposerSwap: (enabled) => {
+        // Same pass graph, with legacy target ping-pong for allocation/image
+        // comparison. Merged rendering was rejected at HiDPI precision gates.
+        grade.needsSwap = enabled
+      },
       snapshot: () => ({
         meteorActive: uniforms.uMeteor.value.x >= 0,
         meteorVisibility: uniforms.uMeteorVisibility.value,
@@ -874,6 +888,11 @@ export function createWorld(
           height: atmosphereTarget?.height || bufferHeight,
         },
         composer: { width: composer.readBuffer.width, height: composer.readBuffer.height },
+        targetTextures: renderer.info.memory.textures,
+        composition: efficient ? 'direct' : 'separate-hdr',
+        targetSamples: composer.readBuffer.samples,
+        resolvesDepth: composer.readBuffer.resolveDepthBuffer,
+        swapsAfterGrade: grade.needsSwap,
         bloomEnabled: bloom?.enabled || false,
         enabledPasses: composer.passes.filter((pass) => pass.enabled).length,
         detailUniform: uniforms.uDetail.value,
@@ -916,12 +935,14 @@ export function createWorld(
   // preview releases. Supporting drivers use parallel shader compilation and
   // avoids paying the whole link cost in the first visible frame.
   const compileStarted = performance.now()
+  let preparationSettled = false
   canvas.dataset.compileState = 'pending'
-  Promise.all([
+  Promise.allSettled([
     renderer.compileAsync(background, screenCamera),
     renderer.compileAsync(journeyPreparation, screenCamera),
     renderer.compileAsync(stormPreparation, screenCamera),
     oasisDressing.ready.then(async () => {
+      if (disposed) return
       const palmParts = oasisDressing.getPalmPartCounts()
       canvas.dataset.palmTrunkParts = String(palmParts.trunk)
       canvas.dataset.palmFoliageParts = String(palmParts.foliage)
@@ -950,7 +971,10 @@ export function createWorld(
     ...(atmosphereCopy ? [renderer.compileAsync(compositeBackground, screenCamera)] : []),
     ...(atmosphereCopy ? [renderer.compileAsync(meteorPreparation, screenCamera)] : []),
   ])
-    .then(async () => {
+    .then(async (results) => {
+      const failed = results.find((result) => result.status === 'rejected')
+      if (failed?.status === 'rejected') throw failed.reason
+      if (disposed) return
       // Link completion does not guarantee that a driver has prepared the
       // pipeline for the actual HDR/depth attachment. The software trace's
       // largest gap occurred on first general-program use after the land range.
@@ -995,7 +1019,11 @@ export function createWorld(
             gl.flush()
             const warmDeadline = performance.now() + 2000
             try {
-              while (!disposed && performance.now() < warmDeadline && gl.clientWaitSync(fence, 0, 0) === gl.TIMEOUT_EXPIRED)
+              while (
+                !disposed &&
+                performance.now() < warmDeadline &&
+                gl.clientWaitSync(fence, 0, 0) === gl.TIMEOUT_EXPIRED
+              )
                 await new Promise<void>((resolve) => setTimeout(resolve, 16))
             } finally {
               gl.deleteSync(fence)
@@ -1022,38 +1050,46 @@ export function createWorld(
       canvas.dataset.compileState = 'fallback'
     })
     .finally(() => {
+      preparationSettled = true
       canvas.dataset.compileMs = (performance.now() - compileStarted).toFixed(1)
-      if (!disposed) frame = requestAnimationFrame(draw)
+      if (disposed) releaseResources()
+      else frame = requestAnimationFrame(draw)
     })
+  function releaseResources() {
+    // Three r180's async linker polls live WebGLProgram objects. Releasing
+    // materials/context while those polls run can reject after route teardown.
+    oasisDressing.dispose()
+    geometry.dispose()
+    material.dispose()
+    lineGeometry.dispose()
+    lineMaterial.dispose()
+    quadGeometry.dispose()
+    quadMaterial.dispose()
+    landMaterial.dispose()
+    stormMaterial.dispose()
+    atmosphereCopy?.dispose()
+    plainAtmosphereCopy?.dispose()
+    atmosphereTarget?.dispose()
+    backgroundPass.dispose()
+    scenePass.dispose()
+    bloom?.dispose()
+    grade.dispose()
+    frameProfiler?.dispose()
+    composer.dispose()
+    renderer.dispose()
+    renderer.forceContextLoss()
+  }
   return {
     setProgress,
     dispose() {
+      if (disposed) return
       disposed = true
       cancelAnimationFrame(frame)
       observer.disconnect()
       window.removeEventListener('resize', onResize)
       canvas.removeEventListener('webglcontextlost', contextLost)
-      oasisDressing.dispose()
-      geometry.dispose()
-      material.dispose()
-      lineGeometry.dispose()
-      lineMaterial.dispose()
-      quadGeometry.dispose()
-      quadMaterial.dispose()
-      landMaterial.dispose()
-      stormMaterial.dispose()
-      atmosphereCopy?.dispose()
-      plainAtmosphereCopy?.dispose()
-      atmosphereTarget?.dispose()
-      backgroundPass.dispose()
-      scenePass.dispose()
-      bloom?.dispose()
-      grade.dispose()
-      frameProfiler?.dispose()
       if (frameProfiler?.enabled) delete window.__matrixWorldDebug
-      composer.dispose()
-      renderer.dispose()
-      renderer.forceContextLoss()
+      if (preparationSettled) releaseResources()
     },
   }
 }

@@ -1,4 +1,18 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
+
+// Explicit coarse-wheel units exercise mouse smoothing. Playwright's wheel()
+// emits arbitrary pixel deltas, which are intentionally native when ambiguous.
+const coarseWheel = (page: Page, pixels: number) =>
+  page.evaluate((pixels) => {
+    document.body.dispatchEvent(
+      new WheelEvent('wheel', {
+        deltaMode: 1,
+        deltaY: pixels / (100 / 6),
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
+  }, pixels)
 
 test.describe('cinematic timeline settling', () => {
   test.beforeEach(async ({ page }) => {
@@ -34,7 +48,7 @@ test.describe('cinematic timeline settling', () => {
     const settleAt = async (top: number, expected: number) => {
       if (test.info().project.name === 'desktop') {
         const current = await page.evaluate(() => window.scrollY)
-        await page.mouse.wheel(0, (top - current) / 0.7)
+        await coarseWheel(page, (top - current) / 0.7)
       } else {
         await page.evaluate(
           (nextTop) => window.scrollTo({ top: nextTop, behavior: 'instant' }),
@@ -131,10 +145,7 @@ test.describe('cinematic timeline settling', () => {
     const researchRest = researchTop + (frontiersTop - researchTop) * 0.13
     const quickScrollTo = async (top: number) => {
       const current = await page.evaluate(() => window.scrollY)
-      await page.mouse.wheel(
-        0,
-        (top - current) / (test.info().project.name === 'desktop' ? 0.7 : 1),
-      )
+      await coarseWheel(page, (top - current) / (test.info().project.name === 'desktop' ? 0.7 : 1))
     }
 
     await quickScrollTo(researchTop + (frontiersTop - researchTop) * 0.76)
@@ -164,12 +175,7 @@ test.describe('cinematic timeline settling', () => {
     ])
     const transitionLength = frontiersTop - researchTop
     const preTransition = researchTop + transitionLength * 0.56
-    if (testInfo.project.name === 'desktop') {
-      const current = await page.evaluate(() => window.scrollY)
-      await page.mouse.wheel(0, (preTransition - current) / 0.7)
-    } else {
-      await page.evaluate((top) => window.scrollTo({ top, behavior: 'instant' }), preTransition)
-    }
+    await page.evaluate((top) => window.scrollTo({ top, behavior: 'instant' }), preTransition)
     await page.waitForTimeout(900)
 
     // A brief initial impulse followed by a long, slow tail models a trackpad
@@ -200,10 +206,7 @@ test.describe('cinematic timeline settling', () => {
     const readingPosition = communityTop + 900
 
     if (test.info().project.name === 'desktop')
-      await page.mouse.wheel(
-        0,
-        (readingPosition - (await page.evaluate(() => window.scrollY))) / 0.7,
-      )
+      await coarseWheel(page, (readingPosition - (await page.evaluate(() => window.scrollY))) / 0.7)
     else
       await page.evaluate((top) => window.scrollTo({ top, behavior: 'instant' }), readingPosition)
     await expect
@@ -225,10 +228,7 @@ test.describe('cinematic timeline settling', () => {
     const readingPosition = researchTop + (frontiersTop - researchTop) * 0.55
 
     if (test.info().project.name === 'desktop')
-      await page.mouse.wheel(
-        0,
-        (readingPosition - (await page.evaluate(() => window.scrollY))) / 0.7,
-      )
+      await coarseWheel(page, (readingPosition - (await page.evaluate(() => window.scrollY))) / 0.7)
     else
       await page.evaluate((top) => window.scrollTo({ top, behavior: 'instant' }), readingPosition)
     await expect

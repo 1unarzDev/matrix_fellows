@@ -93,7 +93,8 @@ Supporting scene modules keep specialized implementation local:
 - [`oasis.ts`](../../app/lib/scene/oasis.ts) — shoreline dressing, wind, flooding visibility, async assets, and disposal.
 - [`desert-geometry.ts`](../../app/lib/scene/desert-geometry.ts) — load, normalize, merge, and release compact GLB geometry.
 - [`constellations.ts`](../../app/lib/scene/constellations.ts) — source-backed star and line layouts.
-- [`frame-clock.ts`](../../app/lib/scene/frame-clock.ts) — testable 30 Hz pacing and mobile camera settlement.
+- [`frame-clock.ts`](../../app/lib/scene/frame-clock.ts) — testable active/idle cadence without throttling the UI ticker.
+- [`wheel-input.ts`](../../app/lib/wheel-input.ts) — constant-space precision/coarse wheel routing, independent of rendering quality.
 
 See [performance and rendering](performance.md) before changing any of these.
 

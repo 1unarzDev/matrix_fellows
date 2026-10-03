@@ -64,6 +64,7 @@ declare global {
       pauseDrawing(paused: boolean): void
       useGeneralShader(enabled: boolean): void
       useGeneralComposite(enabled: boolean): void
+      useLegacyComposerSwap(enabled: boolean): void
       snapshot(): Record<string, any>
     }
   }

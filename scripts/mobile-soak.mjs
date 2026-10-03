@@ -5,8 +5,11 @@ import { chromium, devices } from '@playwright/test'
 const base = process.env.TEST_BASE_URL || 'http://localhost:8787'
 const duration = Number(process.env.PROFILE_DURATION_MS || 120_000)
 const software = process.env.PROFILE_GPU === 'software'
-const width = Number(process.env.PROFILE_WIDTH || 390)
-const height = Number(process.env.PROFILE_HEIGHT || 844)
+const desktop = process.env.PROFILE_DEVICE === 'desktop'
+const width = Number(process.env.PROFILE_WIDTH || (desktop ? 1440 : 390))
+const height = Number(process.env.PROFILE_HEIGHT || (desktop ? 900 : 844))
+const deviceScaleFactor = Number(process.env.PROFILE_DPR || (desktop ? 2 : 3))
+const pipeline = process.env.PROFILE_PIPELINE
 const targetFps = Number(process.env.PROFILE_TARGET_FPS || 60)
 // Diagnostic isolation only: never changes the shipped default visual policy.
 const qualityOverride = process.env.PROFILE_QUALITY ? JSON.parse(process.env.PROFILE_QUALITY) : null
@@ -30,7 +33,8 @@ const percentile = (values, fraction) => {
 
 try {
   const context = await browser.newContext({
-    ...devices['iPhone 13'],
+    ...(desktop ? devices['Desktop Chrome'] : devices['iPhone 13']),
+    deviceScaleFactor,
     viewport: { width, height },
     screen: { width, height },
   })
@@ -61,7 +65,9 @@ try {
     if (message.type() === 'error') errors.push(message.text())
   })
   const navigationStart = performance.now()
-  await page.goto(`${base}/?matrixProfile=1`, { waitUntil: 'domcontentloaded' })
+  await page.goto(`${base}/?matrixProfile=1${pipeline ? `&matrixPipeline=${pipeline}` : ''}`, {
+    waitUntil: 'domcontentloaded',
+  })
   const domReady = performance.now() - navigationStart
   await page.locator('[data-ready="true"]').waitFor()
   const hydrated = performance.now() - navigationStart
@@ -83,6 +89,8 @@ try {
 
   if (qualityOverride)
     await page.evaluate((quality) => window.__matrixWorldDebug.setQuality(quality), qualityOverride)
+  if (process.env.PROFILE_LEGACY_COMPOSER_SWAP === '1')
+    await page.evaluate(() => window.__matrixWorldDebug.useLegacyComposerSwap(true))
   const trace = await page.evaluate(async (duration) => {
     const profile = window.__matrixWorldProfile
     if (!profile) throw new Error('World profile was not initialized')
@@ -113,6 +121,14 @@ try {
       journeyEnd,
       mainHeight: main?.getBoundingClientRect().height || 0,
       canvas: { ...document.querySelector('canvas')?.dataset },
+      rendererState: window.__matrixWorldDebug.snapshot(),
+      device: {
+        dpr: devicePixelRatio,
+        coarsePointer: matchMedia('(pointer: coarse)').matches,
+        hardwareConcurrency: navigator.hardwareConcurrency,
+        deviceMemory: navigator.deviceMemory ?? null,
+        assets: [...document.scripts].map((script) => script.src).filter(Boolean),
+      },
     }
   }, duration)
 
@@ -168,6 +184,10 @@ try {
   const report = {
     environment: {
       software,
+      device: desktop ? 'desktop' : 'iPhone emulation',
+      deviceScaleFactor,
+      pipelineControl: pipeline || null,
+      signals: trace.device,
       width,
       height,
       duration,
@@ -176,6 +196,7 @@ try {
       renderer: trace.profile.renderer,
       powerMode: 'not available in browser emulation',
       qualityOverride,
+      legacyComposerSwap: process.env.PROFILE_LEGACY_COMPOSER_SWAP === '1',
       frameMeaning: 'new scene submissions, not independently verified screen presentations',
       trace: 'beginning-to-community, 20s each direction',
     },
@@ -226,6 +247,7 @@ try {
       windows,
       qualityEvents: trace.profile.events.filter((event) => event.name.startsWith('quality-')),
       finalCanvas: trace.canvas,
+      rendererState: trace.rendererState,
     },
     errors,
   }

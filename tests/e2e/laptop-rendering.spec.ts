@@ -274,62 +274,65 @@ test('precision gestures remain native; discrete wheels smooth; switching cancel
   expect(result.mode).toBe('native')
 })
 
-test('stable composer target is visually equivalent to legacy ping-pong across the journey', async ({
-  page,
-}, info) => {
-  test.skip(info.project.name !== 'desktop')
-  test.setTimeout(180_000)
-  await page.goto('/?matrixProfile=1')
-  await page.locator('canvas.opacity-100').waitFor()
-  // The class starts a 900 ms fade; it does not mean the displayed pixels are
-  // fully opaque yet. Compare only settled, matching presentation states.
-  await expect(page.locator('canvas[data-engine]')).toHaveCSS('opacity', '1')
-  const shot = () =>
-    page.locator('canvas[data-engine]').screenshot({
-      style:
-        'body * { visibility: hidden !important; } canvas[data-engine] { visibility: visible !important; }',
-    })
-  for (const progress of [0.8, 1.8, 2.45, 3, 4.4]) {
-    await page.evaluate((progress) => {
-      const debug = (window as any).__matrixWorldDebug
-      debug.freeze(progress, 8)
-      debug.useLegacyComposerSwap(true)
-    }, progress)
-    await page.waitForTimeout(250)
-    const before = (await shot()).toString('base64')
-    await page.evaluate(() => (window as any).__matrixWorldDebug.useLegacyComposerSwap(false))
-    await page.waitForTimeout(250)
-    const after = (await shot()).toString('base64')
-    const difference = await page.evaluate(
-      async ({ before, after }) => {
-        const decode = async (data: string) => {
-          const image = new Image()
-          image.src = `data:image/png;base64,${data}`
-          await image.decode()
-          const canvas = document.createElement('canvas')
-          canvas.width = image.width
-          canvas.height = image.height
-          const context = canvas.getContext('2d')!
-          context.drawImage(image, 0, 0)
-          return context.getImageData(0, 0, canvas.width, canvas.height).data
-        }
-        const a = await decode(before),
-          b = await decode(after)
-        let changed = 0,
-          maxDelta = 0
-        for (let i = 0; i < a.length; i++) {
-          const delta = Math.abs(a[i]! - b[i]!)
-          if (delta) changed++
-          maxDelta = Math.max(maxDelta, delta)
-        }
-        return { maxDelta, fraction: changed / a.length }
-      },
-      { before, after },
-    )
-    expect(difference.maxDelta).toBeLessThanOrEqual(1)
-    expect(difference.fraction).toBeLessThan(0.0001)
-  }
-})
+for (const control of ['useLegacyComposerSwap', 'useLegacyBloomDepth'] as const) {
+  test(`${control} preserves the image across the journey`, async ({ page }, info) => {
+    test.skip(info.project.name !== 'desktop')
+    test.setTimeout(180_000)
+    await page.goto('/?matrixProfile=1')
+    await page.locator('canvas.opacity-100').waitFor()
+    // The class starts a 900 ms fade; it does not mean the displayed pixels are
+    // fully opaque yet. Compare only settled, matching presentation states.
+    await expect(page.locator('canvas[data-engine]')).toHaveCSS('opacity', '1')
+    const shot = () =>
+      page.locator('canvas[data-engine]').screenshot({
+        style:
+          'body * { visibility: hidden !important; } canvas[data-engine] { visibility: visible !important; }',
+      })
+    for (const progress of [0.8, 1.8, 2.45, 3, 4.4]) {
+      await page.evaluate(
+        ({ progress, control }) => {
+          const debug = (window as any).__matrixWorldDebug
+          debug.freeze(progress, 8)
+          debug[control](true)
+        },
+        { progress, control },
+      )
+      await page.waitForTimeout(250)
+      const before = (await shot()).toString('base64')
+      await page.evaluate((control) => (window as any).__matrixWorldDebug[control](false), control)
+      await page.waitForTimeout(250)
+      const after = (await shot()).toString('base64')
+      const difference = await page.evaluate(
+        async ({ before, after }) => {
+          const decode = async (data: string) => {
+            const image = new Image()
+            image.src = `data:image/png;base64,${data}`
+            await image.decode()
+            const canvas = document.createElement('canvas')
+            canvas.width = image.width
+            canvas.height = image.height
+            const context = canvas.getContext('2d')!
+            context.drawImage(image, 0, 0)
+            return context.getImageData(0, 0, canvas.width, canvas.height).data
+          }
+          const a = await decode(before),
+            b = await decode(after)
+          let changed = 0,
+            maxDelta = 0
+          for (let i = 0; i < a.length; i++) {
+            const delta = Math.abs(a[i]! - b[i]!)
+            if (delta) changed++
+            maxDelta = Math.max(maxDelta, delta)
+          }
+          return { maxDelta, fraction: changed / a.length }
+        },
+        { before, after },
+      )
+      expect(difference.maxDelta).toBeLessThanOrEqual(1)
+      expect(difference.fraction).toBeLessThan(0.0001)
+    }
+  })
+}
 
 test('cinematic targets avoid duplicate allocation without changing passes, bloom or density', async ({
   page,
@@ -341,6 +344,21 @@ test('cinematic targets avoid duplicate allocation without changing passes, bloo
     ;(window as any).__matrixBlits = 0
     ;(window as any).__matrixDepthBlits = 0
     ;(window as any).__matrixMultisampleStorage = []
+    ;(window as any).__matrixDepthStorage = []
+    const depthStorage = WebGL2RenderingContext.prototype.renderbufferStorage
+    WebGL2RenderingContext.prototype.renderbufferStorage = function (...args) {
+      if (
+        [
+          this.DEPTH_COMPONENT16,
+          this.DEPTH_COMPONENT24,
+          this.DEPTH_COMPONENT32F,
+          this.DEPTH24_STENCIL8,
+          this.DEPTH32F_STENCIL8,
+        ].includes(args[1])
+      )
+        (window as any).__matrixDepthStorage.push(args.slice(1))
+      return depthStorage.apply(this, args)
+    }
     const storage = WebGL2RenderingContext.prototype.renderbufferStorageMultisample
     WebGL2RenderingContext.prototype.renderbufferStorageMultisample = function (...args) {
       ;(window as any).__matrixMultisampleStorage.push(args.slice(1))
@@ -368,10 +386,19 @@ test('cinematic targets avoid duplicate allocation without changing passes, bloo
       resolvesPerFrame: ((window as any).__matrixBlits - blits) / (profile.frames.length - frames),
       depthResolves: (window as any).__matrixDepthBlits - depthBlits,
       storage: (window as any).__matrixMultisampleStorage,
+      depthStorage: (window as any).__matrixDepthStorage,
     }
   })
   expect(result.state.quality.profile).toBe('cinematic')
   expect(result.state.bloomEnabled).toBe(true)
+  // Color-only bloom must not allocate any sub-resolution depth renderbuffer.
+  expect(
+    result.depthStorage.filter(
+      (entry: number[]) =>
+        entry[1] < result.state.buffer.width && entry[2] < result.state.buffer.height,
+    ),
+  ).toHaveLength(0)
+  expect(result.state.bloomDepthTargets).toBe(0)
   expect(result.state.particleCount).toBe(12000)
   expect(result.state.enabledPasses).toBe(4)
   expect(result.state.composition).toBe('separate-hdr')

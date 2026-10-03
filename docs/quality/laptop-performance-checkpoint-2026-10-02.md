@@ -1,5 +1,93 @@
 # Laptop-first checkpoint — October 2, 2026
 
+### October 3 production release — owner authorized
+
+Owner requested publishing the accumulated performance improvements, discovery
+hover refinements (`26f3546`) and first-scroll text reveal fix (`2870249`).
+Promoted the exact tested preview version `1f2051c7-fc86-42c9-9540-851962665605`
+to 100% production traffic, replacing `16fe788b-1ec9-40a2-a71a-25d0e3d77a6b`.
+Nuxt build `703afb09-4129-489f-8e77-ed22b3a66fd8` verified on
+`https://matrixfellows.com/_nuxt/builds/latest.json`. No rebuild between the
+release gate and promotion; no database or opportunity-worker deployment.
+
+Remote preview release gate: discovery interactions, chapter reveals and laptop
+rendering suites, desktop/mobile emulation, 31 passed / 13 expected skips.
+Artifacts `/tmp/matrix-production-release-check`.
+Live production smoke: hover and first-scroll reveal tests both pass; homepage,
+join, meetings, opportunities and guides return HTTP 200. Artifacts
+`/tmp/matrix-live-release-smoke`.
+Existing physical-device gaps and residual laptop pressure remain open;
+publishing is not a performance-goal
+completion claim. Unrelated working-tree files preserved.
+
+### October 3 paired drawing control and color-only bloom
+
+New owner report `matrix-performance-6d94b91b-5439-4855-a761-6706986fdfd6.json`
+matches the current diagnostic preview build, Linux/Firefox 153, 1792×1002/DPR 1.
+Owner reports scrolling did not feel laggy at all while drawing was paused.
+Hardware/power context comes from the preceding owner report, not automatic
+detection; actual adapter remains unknown. No GPU queries are available.
+
+Raw callback comparison (startup and toggle boundaries excluded):
+
+| Interval | Samples | p50 / p95 / p99 / max (ms) | Callbacks >25 ms |
+| --- | --- | --- | --- |
+| Drawing on, 4–12.256 s | 310 | 17.24 / 49.82 / 66.88 / 84.20 | 141 (45.5%) |
+| Paused, 12.5–23.8 s | 627 | 17.06 / 33.18 / 33.50 / 99.96 | 37 (5.9%) |
+| Resumed, after 24.3 s | 312 | 33.32 / 50.46 / 66.46 / 83.84 | 207 (66.3%) |
+
+Paused interval intentionally contains zero submissions. DOM, scroll and camera
+update paths continue; full detail/12,000 particles, 1792×1002 buffers, MSAA 4
+and bloom remain configured, with no quality transitions. This supports rendering
+pressure, not a uniformly imposed 30 Hz browser limit or scrolling alone.
+Manual trajectories are not identical: drawing-on progress covers .43–3.03 and
+resumed 0–2.49; paused callbacks do not record camera positions. This is a useful
+causal isolation, not a matched per-chapter GPU benchmark or presentation proof.
+
+First bounded change removes unused depth buffers from all eleven bloom-only
+targets. Three r180 creates these by default; bloom only samples color, and each
+target is cleared before one fullscreen quad. Original scene HDR depth/MSAA and
+both original scene passes remain intact. No shader equations, bloom kernels,
+glow factors, target resolution, particle count, cadence or mobile path changes.
+At 1792×1002 this avoids 1,645,728 depth pixels. The baseline GL-allocation test
+observes eleven DEPTH_COMPONENT16 attachments: nominal storage ~3.14 MiB here,
+~9.06 MiB at 2880×1800 (driver padding may differ; an initial four-byte estimate
+was conservative). These are allocation estimates, not total VRAM measurements
+or proven laptop speedups. Opt-in legacy-depth control allows
+matched image/timing comparisons and records its toggles in exports.
+
+Regression loop: `TEST_BASE_URL=<url> PROFILE_GPU=hardware npx playwright test
+tests/e2e/laptop-rendering.spec.ts --project=desktop --grep 'cinematic targets'
+--workers=1`. Previous preview fails with eleven sub-resolution depth allocations;
+candidate passes with zero. Five frozen chapter images (.8/1.8/2.45/3/4.4 at
+time 8) match the existing strict gate (maximum one code value, fewer than
+.01% changed channels) in Chromium and visible Firefox, with the legacy
+attachments toggled at matching composition/resolution. This is still-image
+nonregression evidence, not physical motion/presentation validation.
+
+164 unit tests, typecheck/build and docs checks pass. Chromium desktop/mobile
+suite: 12 passed, six intentional skips. Visible Firefox image/allocation checks:
+two passed. Initial concurrent browser runs shared Playwright artifact folders
+and collided during trace cleanup; reruns used distinct output directories and
+passed. Candidate Nuxt build `703afb09-4129-489f-8e77-ed22b3a66fd8`, preview
+version `1f2051c7-fc86-42c9-9540-851962665605` at
+<https://laptop-fidelity-oct03-matrix-fellows.lunarzdev.workers.dev/?matrixProfile=1>;
+remote latest-build identity checked. No production traffic deployment.
+
+Short lab GPU-query ABBA check (Linux/RTX 4070 Ti SUPER, 1792×1002/DPR 1,
+frozen time 8, unchanged full-quality pipeline, ~89 samples per 1.5-second
+interval) does **not** establish a speedup: oasis GPU medians legacy
+1.56/2.59 ms versus color-only 2.95/3.70 ms; storm legacy 3.64/1.87 versus
+color-only 2.68/1.87 ms. Large run-order variation and p95 spikes up to 9.41 ms
+make this inconclusive, not a substitute for the affected laptop. Retained for
+verified allocation reduction and image equivalence, not advertised FPS gains.
+
+Next limiting-factor experiment: same-device color-only-bloom versus this report,
+then isolate procedural shading versus postprocessing/target traffic if pressure
+persists. Do not equate the memory saving or RTX regression checks with solving
+the affected laptop. Legion, physical iPad/Android, power/thermal and actual
+presentation evidence remain open.
+
 ### October 3 affected-device trace — i7-13620H / RTX 4050 laptop
 
 Owner supplied `matrix-performance-3760f4a5-bd87-4889-a2b0-55d05ea2d4ed.json`

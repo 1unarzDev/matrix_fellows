@@ -239,6 +239,13 @@ export function createWorld(
   scenePass.clear = false
   scenePass.clearDepth = false
   const bloom = efficient ? undefined : new UnrealBloomPass(new THREE.Vector2(1, 1), 0.48, 0, 1.05)
+  const bloomTargets = bloom
+    ? [bloom.renderTargetBright, ...bloom.renderTargetsHorizontal, ...bloom.renderTargetsVertical]
+    : []
+  // Bloom only samples color and draws one full-screen quad into each target.
+  // No pass reads these depth attachments; retain scene depth on the HDR target
+  // where terrain/vegetation occlusion actually needs it.
+  for (const target of bloomTargets) target.depthBuffer = false
   // Very coarse mip levels create visibly offset/blocky lobes around the sun.
   // Keep bloom's fine halo; the analytic lens shader supplies its broad glow.
   if (bloom) bloom.compositeMaterial.uniforms.bloomFactors!.value = [1, 0.65, 0.25, 0.08, 0.02]
@@ -879,6 +886,14 @@ export function createWorld(
         // comparison. Merged rendering was rejected at HiDPI precision gates.
         grade.needsSwap = enabled
       },
+      useLegacyBloomDepth: (enabled) => {
+        for (const target of bloomTargets) {
+          if (target.depthBuffer === enabled) continue
+          target.dispose()
+          target.depthBuffer = enabled
+        }
+        frameProfiler?.event('bloom-depth-control', { enabled })
+      },
       snapshot: () => ({
         meteorActive: uniforms.uMeteor.value.x >= 0,
         meteorVisibility: uniforms.uMeteorVisibility.value,
@@ -909,6 +924,7 @@ export function createWorld(
         resolvesDepth: composer.readBuffer.resolveDepthBuffer,
         swapsAfterGrade: grade.needsSwap,
         bloomEnabled: bloom?.enabled || false,
+        bloomDepthTargets: bloomTargets.filter((target) => target.depthBuffer).length,
         enabledPasses: composer.passes.filter((pass) => pass.enabled).length,
         detailUniform: uniforms.uDetail.value,
         haloUniform: grade.uniforms.haloEnabled!.value,

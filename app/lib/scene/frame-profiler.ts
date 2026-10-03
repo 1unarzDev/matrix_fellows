@@ -65,6 +65,7 @@ declare global {
       useGeneralShader(enabled: boolean): void
       useGeneralComposite(enabled: boolean): void
       useLegacyComposerSwap(enabled: boolean): void
+      useLegacyBloomDepth(enabled: boolean): void
       snapshot(): Record<string, any>
     }
   }

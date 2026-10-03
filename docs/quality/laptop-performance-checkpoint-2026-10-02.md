@@ -2,6 +2,39 @@
 
 ## October 3 final fidelity gate — supersedes candidate below
 
+### Subsequent Firefox delivery isolation
+
+Previous goal turn made implementation/test progress (`fcb7f65`); this turn adds
+matched engine evidence. Existing soak now accepts `PROFILE_BROWSER=firefox` and
+`PROFILE_HEADED=1`, records both and uses the Firefox desktop descriptor. Software
+selection explicitly rejects Firefox rather than mislabeling it SwiftShader.
+No new site-rendering changes or production deployment in this follow-up.
+
+Same available Linux/RTX machine, Firefox 155, 1440×900 CSS/DPR 2, 30-second
+forward/reverse scripted journey; power mode unknown:
+
+| Execution | Live windows (submissions/sec) | Candidate windows | >100 ms stalls, live/candidate |
+| --- | --- | --- | --- |
+| Headless | 48.6 / 46.3 / 53.0 | 47.7 / 47.0 / 53.2 | 7 / 5 |
+| Visible window | 60 / 60 / 60 | 59.7 / 60 / 60 | 0 / 0 |
+
+Headless runs changed resolution 2→1.7→2; therefore these are **not fixed-quality
+speed comparisons**. Visible-window runs stayed full 2880×1800 source/foreground,
+MSAA 4, bloom/full detail/12,000 particles, no quality transitions. Visible-window
+submission p99 live/candidate 17.12/17.14 ms; maximum 17.16/34.08 ms; raw callback
+p95 17.08 ms both. No demonstrated speedup; native-gesture latency and allocation
+savings remain separate implemented benefits. GPU queries unavailable; renderer
+string privacy-masked. Headless/headed change alone removes the local failure,
+but underlying compositor/backend cause is not proven (`about:support` inaccessible
+through Playwright). Do not attribute this failure to Windows Zen or power saving.
+
+Artifacts `/tmp/matrix-firefox-{production,candidate}.json` and
+`/tmp/matrix-firefox-headed-{production,candidate}.json`. Next primary gate remains
+the Legion/Windows/Zen normal versus battery-saving test on **the same preview**,
+actual WebGL/backend and exported raw callbacks/submissions. Minimal console export
+is in the [physical-device procedure](physical-device-performance-procedure.md).
+Firefox control command: `PROFILE_BROWSER=firefox PROFILE_HEADED=1 PROFILE_DEVICE=desktop PROFILE_DPR=2 PROFILE_DURATION_MS=30000 node scripts/mobile-soak.mjs`.
+
 Owner has now identified the affected laptop as a Lenovo Legion with laptop
 RTX 4080, Windows and Zen (Firefox-derived); battery saver was probably enabled.
 Actual WebGL GPU/backend and plugged-in normal-power comparison remain unknown.

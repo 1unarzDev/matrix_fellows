@@ -1,10 +1,13 @@
 // Long production-journey profiler. It records actual world render submissions,
 // not just browser RAF callbacks. Emulation/SwiftShader remain device proxies.
-import { chromium, devices } from '@playwright/test'
+import { chromium, firefox, devices } from '@playwright/test'
 
 const base = process.env.TEST_BASE_URL || 'http://localhost:8787'
 const duration = Number(process.env.PROFILE_DURATION_MS || 120_000)
 const software = process.env.PROFILE_GPU === 'software'
+const browserEngine = process.env.PROFILE_BROWSER === 'firefox' ? 'firefox' : 'chromium'
+if (browserEngine === 'firefox' && software)
+  throw new Error('SwiftShader selection is Chromium-only; do not label Firefox as a software-GPU run')
 const desktop = process.env.PROFILE_DEVICE === 'desktop'
 const width = Number(process.env.PROFILE_WIDTH || (desktop ? 1440 : 390))
 const height = Number(process.env.PROFILE_HEIGHT || (desktop ? 900 : 844))
@@ -13,16 +16,20 @@ const pipeline = process.env.PROFILE_PIPELINE
 const targetFps = Number(process.env.PROFILE_TARGET_FPS || 60)
 // Diagnostic isolation only: never changes the shipped default visual policy.
 const qualityOverride = process.env.PROFILE_QUALITY ? JSON.parse(process.env.PROFILE_QUALITY) : null
-const browser = await chromium.launch({
-  args: software
-    ? ['--no-sandbox', '--enable-unsafe-swiftshader']
-    : [
-        '--no-sandbox',
-        '--enable-gpu',
-        '--use-gl=angle',
-        '--use-angle=gl-egl',
-        '--ignore-gpu-blocklist',
-      ],
+const browser = await (browserEngine === 'firefox' ? firefox : chromium).launch({
+  headless: process.env.PROFILE_HEADED !== '1',
+  args:
+    browserEngine === 'firefox'
+      ? []
+      : software
+        ? ['--no-sandbox', '--enable-unsafe-swiftshader']
+        : [
+            '--no-sandbox',
+            '--enable-gpu',
+            '--use-gl=angle',
+            '--use-angle=gl-egl',
+            '--ignore-gpu-blocklist',
+          ],
 })
 
 const percentile = (values, fraction) => {
@@ -33,7 +40,9 @@ const percentile = (values, fraction) => {
 
 try {
   const context = await browser.newContext({
-    ...(desktop ? devices['Desktop Chrome'] : devices['iPhone 13']),
+    ...(desktop
+      ? devices[browserEngine === 'firefox' ? 'Desktop Firefox' : 'Desktop Chrome']
+      : devices['iPhone 13']),
     deviceScaleFactor,
     viewport: { width, height },
     screen: { width, height },
@@ -197,6 +206,8 @@ try {
       powerMode: 'not available in browser emulation',
       qualityOverride,
       legacyComposerSwap: process.env.PROFILE_LEGACY_COMPOSER_SWAP === '1',
+      browserEngine,
+      headless: process.env.PROFILE_HEADED !== '1',
       frameMeaning: 'new scene submissions, not independently verified screen presentations',
       trace: 'beginning-to-community, 20s each direction',
     },

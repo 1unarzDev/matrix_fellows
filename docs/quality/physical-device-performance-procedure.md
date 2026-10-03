@@ -73,3 +73,38 @@ If a device fails, export the frame profile and Safari/Chrome performance trace,
 identify the failing chapter/window, note the final quality tier, and compare a
 normal run with a paused-WebGL control. Do not lower the global quality floor or
 remove an art-direction feature based only on a single stationary FPS reading.
+
+### Minimal laptop export
+
+For the current laptop candidate, use the preview with `?matrixProfile=1` rather
+than mixing production and preview builds across devices. After the warm
+forward/reverse journey, run this in the browser console and paste/save the copied
+JSON. Firefox/Zen and Chromium developer consoles provide `copy()`; this reads
+only rendering diagnostics, not form responses or authentication storage.
+
+```js
+copy(JSON.stringify({
+  capturedAt: new Date().toISOString(),
+  url: location.href,
+  userAgent: navigator.userAgent,
+  viewport: { width: innerWidth, height: innerHeight, dpr: devicePixelRatio },
+  hardwareConcurrency: navigator.hardwareConcurrency,
+  deviceMemory: navigator.deviceMemory ?? null,
+  assets: [...document.scripts].map(script => script.src).filter(Boolean),
+  canvas: { ...document.querySelector('canvas[data-engine]')?.dataset },
+  state: window.__matrixWorldDebug?.snapshot(),
+  profile: window.__matrixWorldProfile,
+}))
+```
+
+Provide power mode, plugged-in/battery state, device model and refresh rate
+separately; the export cannot reliably detect these. In Firefox/Zen also include
+the Graphics section from `about:support` (WebGL renderer and Compositing).
+Masked renderer strings may not identify the actual GPU. Keep recordings and
+DevTools-heavy traces separate from an unrecorded visual check.
+
+Local Firefox comparisons can reuse the soak command with
+`PROFILE_BROWSER=firefox PROFILE_DEVICE=desktop PROFILE_HEADED=1`. Record
+headless/headed explicitly: October 3 testing showed materially different frame
+delivery between them on the same Linux machine. Neither establishes Windows
+Zen or battery-saving performance.

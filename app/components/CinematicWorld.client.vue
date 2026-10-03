@@ -11,6 +11,47 @@ const emit = defineEmits<{
 const canvas = ref<HTMLCanvasElement>()
 const failed = ref(false)
 const ready = ref(false)
+const profiling = ref(false)
+const reportCopied = ref(false)
+const runtimeConfig = useRuntimeConfig()
+
+function performanceReport() {
+  // Explicit opt-in and user action only. Never collect page/form content,
+  // storage, authentication state or reliable-looking power-mode guesses.
+  return JSON.stringify({
+    capturedAt: new Date().toISOString(),
+    buildId: runtimeConfig.app.buildId,
+    url: location.href,
+    userAgent: navigator.userAgent,
+    viewport: { width: innerWidth, height: innerHeight, dpr: devicePixelRatio },
+    hardwareConcurrency: navigator.hardwareConcurrency,
+    deviceMemory: (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? null,
+    powerMode: 'not detected; provide manually',
+    assets: [...document.scripts].map((script) => script.src).filter(Boolean),
+    canvas: { ...canvas.value?.dataset },
+    state: window.__matrixWorldDebug?.snapshot(),
+    profile: window.__matrixWorldProfile,
+  })
+}
+
+function savePerformanceReport() {
+  const url = URL.createObjectURL(new Blob([performanceReport()], { type: 'application/json' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `matrix-performance-${runtimeConfig.app.buildId}.json`
+  link.click()
+  // Allow the browser to consume the download before releasing the blob.
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
+async function copyPerformanceReport() {
+  try {
+    await navigator.clipboard.writeText(performanceReport())
+    reportCopied.value = true
+  } catch {
+    savePerformanceReport()
+  }
+}
 let world: World | undefined
 let cleanup: (() => void) | undefined
 let disposed = false
@@ -40,6 +81,7 @@ async function yieldToMain() {
 }
 
 onMounted(() => {
+  profiling.value = new URLSearchParams(location.search).has('matrixProfile')
   media = window.matchMedia('(prefers-reduced-motion: reduce)')
   if (media.matches) emit('scene', 'fallback')
   const init = async () => {
@@ -613,4 +655,28 @@ onBeforeUnmount(() => {
     class="pointer-events-none fixed inset-x-0 top-0 z-0 h-lvh w-full transition-opacity duration-[900ms] ease-[cubic-bezier(.22,.72,.2,1)] motion-reduce:transition-none"
     :class="ready && !failed ? 'opacity-100' : 'opacity-0'"
   />
+  <aside
+    v-if="profiling"
+    aria-label="Performance diagnostics"
+    data-lenis-prevent
+    class="fixed bottom-4 left-4 z-[100] max-w-[calc(100vw-2rem)] rounded-2xl border border-white/20 bg-black/80 px-4 py-3 text-xs text-white shadow-lg"
+  >
+    <p class="mb-2">After scrolling, save this report and attach it to the chat.</p>
+    <div class="flex flex-wrap gap-3">
+      <button
+        type="button"
+        class="rounded-lg border border-white/30 px-3 py-2 hover:bg-white/10 focus-visible:outline-2"
+        @click="savePerformanceReport"
+      >
+        Save performance report
+      </button>
+      <button
+        type="button"
+        class="rounded-lg border border-white/30 px-3 py-2 hover:bg-white/10 focus-visible:outline-2"
+        @click="copyPerformanceReport"
+      >
+        {{ reportCopied ? 'Report copied' : 'Copy report' }}
+      </button>
+    </div>
+  </aside>
 </template>

@@ -196,6 +196,10 @@ asynchronous disjoint timer queries when the driver supports them. CPU scene
 updates and draw submission are separate; neither is GPU time or presentation.
 Normal GPU sampling is limited to 2 Hz. Opt-in traces are bounded and include
 raw callbacks, buffer dimensions and requested-versus-consumed progress.
+An opt-in diagnostic panel can save/copy that existing profile with the loaded
+Nuxt build ID and viewport/render state. It is absent on normal visits, performs
+serialization only on user action, and does not collect form answers or storage.
+Power mode remains a manually supplied condition, not an inferred measurement.
 
 ## Pausing, failure, and teardown
 

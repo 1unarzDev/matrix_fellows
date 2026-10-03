@@ -78,7 +78,16 @@ remove an art-direction feature based only on a single stationary FPS reading.
 
 For the current laptop candidate, use the preview with `?matrixProfile=1` rather
 than mixing production and preview builds across devices. After the warm
-forward/reverse journey, run this in the browser console and paste/save the copied
+forward/reverse journey, click **Save performance report** in the small diagnostic
+panel and attach the downloaded JSON. **Copy report** is an alternative; if the
+browser refuses clipboard access, it downloads the report instead. The controls
+exist only with profiling explicitly enabled and are absent from ordinary visits.
+The export includes the loaded Nuxt build ID, existing frame/callback profile,
+render state, canvas diagnostics and viewport/browser signals. It does not read
+form answers, authentication state or browser storage. Supply power mode and
+plugged-in/battery state separately; they are not inferred.
+
+If the controls are unavailable, run this in the browser console and paste/save the copied
 JSON. Firefox/Zen and Chromium developer consoles provide `copy()`; this reads
 only rendering diagnostics, not form responses or authentication storage.
 

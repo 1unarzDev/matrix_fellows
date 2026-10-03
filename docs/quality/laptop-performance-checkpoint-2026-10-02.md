@@ -1,5 +1,34 @@
 # Laptop-first checkpoint — October 2, 2026
 
+### October 3 remaining laptop feedback — export support
+
+Owner retested the laptop and reports it still feels a bit laggy. Tested URL,
+power condition and whether the residual is page delay or cinematic stepping
+are not yet confirmed; requested those details. This is a remaining owner-reported
+failure, not superseded by passing lab submission counters.
+
+Added Save/Copy controls to the existing `?matrixProfile=1` instrumentation only,
+so the owner can attach its bounded JSON without developer-console setup. Export
+includes loaded Nuxt build ID, existing callbacks/frames, current wheel mode,
+actual buffers, quality and browser/viewport signals. No form answers, storage or
+authentication state. Power mode explicitly unknown/manual. Serialization occurs
+only on click; ordinary visits have no panel. Clipboard denial falls back to a
+JSON download. This is reproduction support, **not a performance fix**; render
+algorithms, cadence, quality and imagery are unchanged.
+
+Regression failed before implementation (missing download control). Typecheck,
+build and all 164 unit tests pass. Chromium desktop/phone laptop-rendering suite:
+9 passed, 5 intentional skips, including export privacy/build identity, controls
+absent without opt-in, existing wheel/pacing and strict visual-equivalence tests.
+Visible Firefox desktop export: 1 passed locally and 1 against the remote preview.
+
+Diagnostic preview version `8cb3d15d-dcf4-45bf-ba00-c9b6736f97b8`, Nuxt build
+`3760f4a5-bd87-4889-a2b0-55d05ea2d4ed`, at
+<https://laptop-fidelity-oct03-matrix-fellows.lunarzdev.workers.dev/?matrixProfile=1>.
+Remote latest-build identity checked. Preview-only upload, no traffic deployment.
+Next gate: owner scrolls the laggy sections and attaches the saved JSON, noting
+power mode, tested URL and the visual symptom. Local lab/device gaps below remain.
+
 ### October 3 full-document sustained check
 
 The existing soak stops at `#community`; it omitted the remaining calendar/join

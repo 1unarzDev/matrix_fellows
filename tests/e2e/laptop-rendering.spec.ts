@@ -1,4 +1,34 @@
 import { expect, test } from '@playwright/test'
+import { readFile } from 'node:fs/promises'
+
+test('opt-in performance export identifies the loaded build without collecting form answers', async ({
+  page,
+}) => {
+  await page.goto('/?matrixProfile=1')
+  await expect(page.locator('canvas[data-engine]')).toHaveCSS('opacity', '1')
+  await page.evaluate(() => {
+    const input = document.createElement('input')
+    input.value = 'private-form-answer-not-for-diagnostics'
+    document.body.append(input)
+  })
+  const save = page.getByRole('button', { name: 'Save performance report' })
+  await expect(save).toBeVisible()
+  const pending = page.waitForEvent('download')
+  await save.click()
+  const download = await pending
+  const contents = await readFile((await download.path())!, 'utf8')
+  const report = JSON.parse(contents)
+  const build = await (await page.request.get('/_nuxt/builds/latest.json')).json()
+  expect(report.buildId).toBe(build.id)
+  expect(report.profile.frames.length).toBeGreaterThan(0)
+  expect(report.viewport.dpr).toBeGreaterThan(0)
+  expect(report.canvas.engine).toBeTruthy()
+  expect(report.state.particleCount).toBe(12000)
+  expect(report.powerMode).toBe('not detected; provide manually')
+  expect(contents).not.toContain('private-form-answer-not-for-diagnostics')
+  await page.goto('/')
+  await expect(page.getByRole('button', { name: 'Save performance report' })).toHaveCount(0)
+})
 
 test('document motion keeps active cadence after the camera reaches its final chapter', async ({
   page,

@@ -438,7 +438,18 @@ onMounted(() => {
               },
         invalidateOnRefresh: true,
         onRefreshInit: measure,
-        onRefresh: apply,
+        onRefresh: () => {
+          // Refresh can revert the timeline and invoke onUpdate while GSAP is
+          // restoring styles. Those values were computed, not necessarily
+          // applied. Recommit the DOM state once refresh has finished reverting.
+          layers.forEach((layer) => {
+            layer.inactive = false
+            layer.entry = -1
+            layer.exit = -1
+          })
+          previousHeroOpacity = -1
+          apply()
+        },
       },
     })
     timeline.fromTo(

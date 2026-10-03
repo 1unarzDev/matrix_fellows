@@ -2,8 +2,7 @@ import { expect, test } from '@playwright/test'
 
 test('document motion keeps active cadence after the camera reaches its final chapter', async ({
   page,
-}, info) => {
-  test.skip(info.project.name !== 'desktop')
+}) => {
   await page.goto('/?matrixProfile=1')
   await expect(page.locator('canvas[data-engine]')).toHaveCSS('opacity', '1')
   const result = await page.evaluate(async () => {
@@ -12,6 +11,7 @@ test('document motion keeps active cadence after the camera reaches its final ch
     window.scrollTo(0, startY)
     await new Promise((resolve) => setTimeout(resolve, 3000))
     const profile = (window as any).__matrixWorldProfile
+    const before = (window as any).__matrixWorldDebug.snapshot()
     const first = profile.frames.length
     const start = performance.now()
     await new Promise<void>((resolve) => {
@@ -24,11 +24,15 @@ test('document motion keeps active cadence after the camera reaches its final ch
     })
     const targets = profile.frames.slice(first).map((frame: any) => frame.targetFps)
     const endY = scrollY
+    const after = (window as any).__matrixWorldDebug.snapshot()
     await new Promise((resolve) => setTimeout(resolve, 1500))
-    return { startY, endY, targets, idle: profile.frames.at(-1).targetFps }
+    return { startY, endY, targets, before, after, idle: profile.frames.at(-1).targetFps }
   })
   expect(result.endY - result.startY).toBeGreaterThan(500)
   expect(result.targets.length).toBeGreaterThan(10)
+  expect(result.before.progress).toBe(5)
+  expect(result.after.progress).toBe(5)
+  expect(result.after.cameraUpdates).toBe(result.before.cameraUpdates)
   // The first submitted frame may precede the scroll callback.
   expect(result.targets.slice(2).every((target: number) => target === 60)).toBe(true)
   expect(result.idle).toBe(30)

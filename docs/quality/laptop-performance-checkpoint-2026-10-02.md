@@ -1,5 +1,29 @@
 # Laptop-first checkpoint — October 2, 2026
 
+### October 3 follow-up verification and rejected experiment
+
+Build `8d6b01b4` final-section cadence regression now covers both Chromium desktop
+and phone emulation, and asserts camera progress remains exactly 5 with no extra
+camera updates while the document moves. Both pass; visible Firefox desktop
+passes the same regression (1 test). This expands regression
+coverage, not physical iPhone evidence. Preview/runtime are unchanged.
+
+Tested a temporary surface-only shader specialization for progress 1.06–1.42:
+compile-time zero dive/cosmos/submerged/edge, retaining the changing weather,
+flood, water and sun-cloud fields. Existing shader benchmark at full detail,
+time 8, aspect 1.6: 780×1688/progress 1.25 median synchronized draw/readback
+0.650 ms baseline versus 0.675 ms prototype. Three interleaved 1560×3376/progress
+1.35 runs: baseline medians 2.875/2.775/2.900 ms, prototype 2.750/2.775/2.750 ms;
+p95 ranges 4.275–4.425 versus 4.225–4.350 ms. Identical image fingerprints in
+those views only. These are synthetic-size isolated-shader synchronized timings,
+not async GPU timing, laptop viewport tests, presentation or motion proof.
+Overlapping results do not justify another program/compile path. Rejected;
+temporary benchmark variant removed, shipped shader unchanged.
+
+`lspci` and `/dev/dri` confirm only the RTX 4070 Ti SUPER is available; no local
+integrated GPU. Affected Windows/Zen power-mode and device comparisons remain
+the primary unresolved gate. Do not infer their failure cause from this host.
+
 ## October 3 follow-up — document-motion cadence
 
 Owner confirms the affected Legion used Windows/Zen, probably battery saver;

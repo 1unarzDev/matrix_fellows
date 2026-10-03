@@ -523,9 +523,6 @@ onBeforeUnmount(() => {
         <div
           class="relative w-full max-w-5xl max-sm:[text-shadow:0_2px_18px_#06100de6] max-sm:[&_p]:text-paper/90"
         >
-          <p class="mb-8 text-[10px] uppercase tracking-[.25em] text-acid">
-            02 — A first discovery
-          </p>
           <DiscoveryReveal />
           <DiscoveryCompass class="mt-8 sm:mt-10" />
         </div>

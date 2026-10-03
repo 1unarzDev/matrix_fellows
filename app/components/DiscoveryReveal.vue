@@ -72,11 +72,19 @@ onBeforeUnmount(() => {
     :data-touch-revealed="touchRevealed || undefined"
     :class="{ 'is-touch-revealed': touchRevealed }"
     :tabindex="coarsePointer ? -1 : 0"
-    class="discovery-reveal relative w-full max-w-2xl outline-none focus-visible:outline-1 focus-visible:outline-offset-8 focus-visible:outline-acid/55"
+    class="discovery-reveal relative w-full max-w-[30rem] outline-none focus-visible:outline-1 focus-visible:outline-offset-8 focus-visible:outline-acid/55"
     @pointerenter="positionReveal"
     @pointermove="positionReveal"
     @pointerdown="positionTouchReveal"
   >
+    <p
+      class="discovery-reveal__label mb-8 grid h-4 text-[10px] uppercase tracking-[.25em] text-acid"
+    >
+      <span class="discovery-reveal__label-original">02 — A first discovery</span>
+      <span aria-hidden="true" class="discovery-reveal__label-alternate"
+        >02 — Under the surface</span
+      >
+    </p>
     <div class="discovery-reveal__original max-w-xl">
       <h2
         id="discovery-title"
@@ -96,11 +104,6 @@ onBeforeUnmount(() => {
 
     <div aria-hidden="true" class="discovery-reveal__xray absolute inset-0">
       <div class="discovery-reveal__alternate max-w-xl">
-        <p
-          class="discovery-reveal__eyebrow text-[10px] uppercase tracking-[.24em] text-[#b7dce3]/75"
-        >
-          Under the surface
-        </p>
         <h3 class="discovery-reveal__heading font-display text-5xl leading-[1.02] sm:text-7xl">
           <span>Try what you</span>
           <em>don’t know.</em>
@@ -268,6 +271,7 @@ onBeforeUnmount(() => {
 
 .discovery-reveal__alternate {
   position: relative;
+  padding-top: 3rem;
   z-index: 1;
   text-shadow: 0 2px 18px rgb(23 31 29 / 0.28);
 }
@@ -303,23 +307,32 @@ onBeforeUnmount(() => {
   text-shadow: 0 8px 32px rgb(205 184 133 / 0.08);
 }
 
-.discovery-reveal__eyebrow {
-  position: absolute;
-  bottom: calc(100% + 0.7rem);
-  left: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  margin: 0;
+.discovery-reveal__label {
+  position: relative;
+  z-index: 3;
+  pointer-events: none;
 }
 
-.discovery-reveal__eyebrow::before {
-  width: 0.28rem;
-  height: 0.28rem;
-  border: 1px solid rgb(183 220 227 / 0.72);
-  border-radius: 50%;
-  content: '';
-  box-shadow: 0 0 0.65rem rgb(183 220 227 / 0.2);
+.discovery-reveal__label > span {
+  grid-area: 1 / 1;
+  transition:
+    opacity 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.discovery-reveal__label-alternate {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+.is-touch-revealed .discovery-reveal__label-original {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+.is-touch-revealed .discovery-reveal__label-alternate {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .discovery-reveal__lens {
@@ -586,6 +599,16 @@ onBeforeUnmount(() => {
 }
 
 @media (hover: hover) and (pointer: fine) {
+  .discovery-reveal:is(:hover, :focus-visible) .discovery-reveal__label-original {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  .discovery-reveal:is(:hover, :focus-visible) .discovery-reveal__label-alternate {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
   .discovery-reveal:hover,
   .discovery-reveal:focus-visible {
     --reveal-radius-x: calc(var(--lens-size) / 2);
@@ -790,6 +813,7 @@ onBeforeUnmount(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .discovery-reveal__label > span,
   .discovery-reveal__xray,
   .discovery-reveal__original,
   .discovery-reveal__lens,

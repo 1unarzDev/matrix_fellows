@@ -26,6 +26,21 @@ test('discovery thought follows the pointer and reveals as one composition', asy
   await page.mouse.move(bounds!.x + bounds!.width * 0.68, bounds!.y + bounds!.height * 0.42)
   await expect(reveal.locator('.discovery-reveal__original')).toHaveCSS('opacity', '0')
   await expect(reveal.locator('.discovery-reveal__lens')).toHaveCSS('opacity', '0.64')
+  await expect(reveal.locator('.discovery-reveal__label-original')).toHaveCSS('opacity', '0')
+  await expect(reveal.locator('.discovery-reveal__label-alternate')).toHaveCSS('opacity', '1')
+  await expect(reveal.locator('.discovery-reveal__label-alternate')).toHaveText(
+    '02 — Under the surface',
+  )
+  expect(bounds!.width).toBeLessThanOrEqual(480)
+  const labelPositions = await reveal.evaluate((element) => {
+    const label = element.querySelector('.discovery-reveal__label')!
+    const alternate = element.querySelector('.discovery-reveal__label-alternate')!
+    return {
+      label: label.getBoundingClientRect().top,
+      alternate: alternate.getBoundingClientRect().top,
+    }
+  })
+  expect(Math.abs(labelPositions.label - labelPositions.alternate)).toBeLessThanOrEqual(1)
   await expect(reveal.locator('.discovery-reveal__bloom')).toHaveCount(0)
   await expect(reveal.locator('.discovery-reveal__xray')).toHaveCSS(
     'background-color',
@@ -59,9 +74,12 @@ test('discovery thought follows the pointer and reveals as one composition', asy
   expect(point.x).toBeCloseTo(bounds!.width * 0.68, 0)
   expect(point.y).toBeCloseTo(bounds!.height * 0.42, 0)
 
-  await page.mouse.move(1300, 100)
+  // Empty space beside the text must not keep the lens active.
+  await page.mouse.move(bounds!.x + bounds!.width + 32, bounds!.y + bounds!.height * 0.42)
   await expect(reveal.locator('.discovery-reveal__original')).toHaveCSS('opacity', '1')
   await expect(reveal.locator('.discovery-reveal__lens')).toHaveCSS('opacity', '0')
+  await expect(reveal.locator('.discovery-reveal__label-original')).toHaveCSS('opacity', '1')
+  await expect(reveal.locator('.discovery-reveal__label-alternate')).toHaveCSS('opacity', '0')
 })
 
 test('discovery interactions are keyboard reachable and respect reduced motion', async ({
@@ -104,10 +122,14 @@ test('touch layouts use an accessible tap toggle and preserve native scrolling',
   await expect(reveal).toHaveAttribute('data-touch-revealed', 'true')
   await expect(toggle).toHaveAttribute('aria-pressed', 'true')
   await expect(toggle).toHaveAccessibleName('Return to the original discovery note')
+  await expect(reveal.locator('.discovery-reveal__label-original')).toHaveCSS('opacity', '0')
+  await expect(reveal.locator('.discovery-reveal__label-alternate')).toHaveCSS('opacity', '1')
   await expect(reveal.locator('.discovery-reveal__lens')).toHaveCSS('opacity', '0')
   await expect(reveal.locator('.discovery-reveal__original')).toHaveCSS('opacity', '0')
 
   await toggle.click()
+  await expect(reveal.locator('.discovery-reveal__label-original')).toHaveCSS('opacity', '1')
+  await expect(reveal.locator('.discovery-reveal__label-alternate')).toHaveCSS('opacity', '0')
   await expect(toggle).toHaveAttribute('aria-pressed', 'false')
   await expect(reveal).not.toHaveAttribute('data-touch-revealed', 'true')
 

@@ -1,9 +1,29 @@
-// Tolerate sub-millisecond RAF jitter at the OS's own 30 Hz limit.
-export function nextFrameTime(now: number, last: number, fps = 30): number | null {
+// Preserve a nominal phase when balanced RAF jitter moves a callback slightly
+// early. Rejecting it outright can halve an otherwise matching 30/60 Hz stream.
+// A phase advance, rather than resetting every early grant to `now`, retains
+// the budget on higher-refresh displays. This timestamp is scheduling-only;
+// animation and profiling continue to use the actual callback/render time.
+export function nextFrameTime(
+  now: number,
+  last: number,
+  fps = 30,
+  rawInterval?: number,
+): number | null {
   const interval = 1000 / fps
   const delta = now - last
-  if (delta < interval - 1) return null
-  return delta < interval ? now : now - (delta % interval)
+  const tolerance = Math.max(1, interval * 0.15)
+  if (delta < interval - tolerance) return null
+  // A genuinely matching, marginally early stream (e.g. 33.1 ms) can follow
+  // actual time without a rare double throttle. The raw callback interval must
+  // match: elapsed time since the last *submitted* frame is not that evidence
+  // on high-refresh displays. Bound this soft grace to <0.5 extra fps at 60 Hz.
+  if (
+    delta < interval &&
+    rawInterval !== undefined &&
+    Math.abs(rawInterval - interval) <= interval * 0.008
+  )
+    return now
+  return last + Math.max(1, Math.floor(delta / interval)) * interval
 }
 
 // A short, frame-rate-independent camera settle absorbs stepped touch events.

@@ -1,7 +1,65 @@
 import { describe, expect, it } from 'vitest'
 import { nextFrameTime, settleProgress } from '../../app/lib/scene/frame-clock'
 
-describe('30 Hz frame pacing', () => {
+describe('cinematic frame pacing', () => {
+  it('uses available callbacks below its budget and stays within budget above it across jittered cadences', () => {
+    for (const targetFps of [30, 60]) {
+      for (let callbackFps = 20; callbackFps <= 240; callbackFps++) {
+        let last = 0,
+          previous = 0,
+          count = 0
+        for (let frame = 1; frame <= callbackFps * 10; frame++) {
+          const now =
+            (frame * 1000) / callbackFps - (frame % 2 ? Math.min((1000 / callbackFps) * 0.1, 3) : 0)
+          const next = nextFrameTime(now, last, targetFps, now - previous)
+          previous = now
+          if (next !== null) {
+            last = next
+            count++
+          }
+        }
+        const expected = Math.min(callbackFps, targetFps) * 10
+        expect(count, `target=${targetFps}, callbacks=${callbackFps}`).toBeGreaterThanOrEqual(
+          expected - 5,
+        )
+        expect(count, `target=${targetFps}, callbacks=${callbackFps}`).toBeLessThanOrEqual(
+          expected + 5,
+        )
+      }
+    }
+  })
+  it('does not halve matching-rate delivery when callbacks alternate slightly early and late', () => {
+    for (const fps of [30, 60]) {
+      const interval = 1000 / fps
+      let last = 0
+      for (let frame = 1; frame <= 120; frame++) {
+        // Balanced jitter: every other callback arrives 10% early, but the
+        // two-frame period and average callback cadence remain exact.
+        const now = frame * interval - (frame % 2 ? interval * 0.1 : 0)
+        const next = nextFrameTime(now, last, fps)
+        expect(next, `fps=${fps}, frame=${frame}`).not.toBeNull()
+        last = next!
+      }
+    }
+  })
+  it('retains its budget with jittered high-refresh callbacks instead of drifting faster', () => {
+    for (const callbackFps of [75, 90, 120, 144]) {
+      for (const targetFps of [30, 60]) {
+        let last = 0,
+          count = 0
+        for (let frame = 1; frame <= callbackFps * 4; frame++) {
+          const now = ((frame - (frame % 2 ? 0.1 : 0)) * 1000) / callbackFps
+          const next = nextFrameTime(now, last, targetFps)
+          if (next !== null) {
+            last = next
+            count++
+          }
+        }
+        expect(count).toBeGreaterThanOrEqual(targetFps * 4 - 1)
+        expect(count).toBeLessThanOrEqual(targetFps * 4 + 1)
+      }
+    }
+  })
   it('renders every callback in active 60 Hz and constrained 30 Hz streams', () => {
     for (const cadence of [16.65, 33.1]) {
       let last = 0
@@ -28,7 +86,7 @@ describe('30 Hz frame pacing', () => {
   it('does not skip slightly early low-power callbacks', () => {
     let last = 0
     for (let i = 1; i <= 90; i++) {
-      const next = nextFrameTime(i * 33.1, last)
+      const next = nextFrameTime(i * 33.1, last, 30, 33.1)
       expect(next).not.toBeNull()
       last = next!
     }

@@ -647,7 +647,7 @@ export function createWorld(
       now - lastProgressRequest < 750 || elapsed < 1.8 || frozenProgress !== undefined ? 60 : 30
     // A 30 Hz callback can arrive a fraction early (notably low-power iOS).
     // Do not skip it and accidentally alternate 33/66 ms frames.
-    const frameTime = nextFrameTime(now, last, targetFps)
+    const frameTime = nextFrameTime(now, last, targetFps, rawInterval ?? undefined)
     if (frameTime === null) return
     const updateStart = performance.now()
     const seconds = Math.min(now - lastRender, 100) / 1000

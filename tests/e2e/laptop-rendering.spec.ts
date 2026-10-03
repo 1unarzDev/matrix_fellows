@@ -1,5 +1,39 @@
 import { expect, test } from '@playwright/test'
 
+test('document motion keeps active cadence after the camera reaches its final chapter', async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== 'desktop')
+  await page.goto('/?matrixProfile=1')
+  await expect(page.locator('canvas[data-engine]')).toHaveCSS('opacity', '1')
+  const result = await page.evaluate(async () => {
+    const community = document.querySelector<HTMLElement>('#community')!
+    const startY = community.offsetTop + 300
+    window.scrollTo(0, startY)
+    await new Promise((resolve) => setTimeout(resolve, 3000))
+    const profile = (window as any).__matrixWorldProfile
+    const first = profile.frames.length
+    const start = performance.now()
+    await new Promise<void>((resolve) => {
+      const step = () => {
+        window.scrollTo(0, startY + (performance.now() - start) / 4)
+        if (performance.now() - start < 2500) requestAnimationFrame(step)
+        else resolve()
+      }
+      step()
+    })
+    const targets = profile.frames.slice(first).map((frame: any) => frame.targetFps)
+    const endY = scrollY
+    await new Promise((resolve) => setTimeout(resolve, 1500))
+    return { startY, endY, targets, idle: profile.frames.at(-1).targetFps }
+  })
+  expect(result.endY - result.startY).toBeGreaterThan(500)
+  expect(result.targets.length).toBeGreaterThan(10)
+  // The first submitted frame may precede the scroll callback.
+  expect(result.targets.slice(2).every((target: number) => target === 60)).toBe(true)
+  expect(result.idle).toBe(30)
+})
+
 test('balanced callback jitter does not discard available active scene frames', async ({
   page,
 }, info) => {

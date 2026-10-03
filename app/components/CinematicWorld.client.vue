@@ -179,6 +179,7 @@ onMounted(() => {
     const heroDetails = Array.from(document.querySelectorAll<HTMLElement>('[data-hero-detail]'))
     let previousHeroOpacity = -1
     let previousPublishedState = ''
+    let previousAppliedScroll = -1
     const layers = chapters
       .flatMap((chapter) =>
         Array.from(
@@ -256,7 +257,8 @@ onMounted(() => {
       // neighboring chapters with matching speed and retains reversible scroll.
       const oceanTime = Math.max(0, Math.min(1, stage - 2))
       const worldStage = stage - 3.2 * oceanTime ** 2 * (1 - oceanTime) ** 2
-      world?.setProgress(worldStage)
+      world?.setProgress(worldStage, scroll !== previousAppliedScroll)
+      previousAppliedScroll = scroll
       // The parent consumes only chapter and arrival thresholds, not continuous
       // camera coordinates. Avoid rerendering the entire homepage each tick.
       const publishedState = `${Math.min(5, Math.floor(stage + 0.28))}:${stage > 0.2}`

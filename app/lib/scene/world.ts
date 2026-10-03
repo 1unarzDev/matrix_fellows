@@ -31,7 +31,7 @@ import {
 } from './shaders'
 
 export interface World {
-  setProgress(value: number): void
+  setProgress(value: number, documentMoved?: boolean): void
   dispose(): void
 }
 
@@ -431,6 +431,9 @@ export function createWorld(
   let progress = 0
   let requestedProgress = 0
   let lastProgressRequest = 0
+  // Document motion can continue beyond the last camera chapter. Keep cadence
+  // activity separate from camera-request age used by the lag profiler.
+  let lastMotionRequest = 0
   let previousCallback = 0
   let rawInterval: number | null = null
   let bufferWidth = 0,
@@ -610,9 +613,11 @@ export function createWorld(
     grade.uniforms.meteorVisibility!.value = meteorVisibility
     oasisDressing.setProgress(progress)
   }
-  function setProgress(value: number) {
+  function setProgress(value: number, documentMoved = false) {
     const next = THREE.MathUtils.clamp(frozenProgress ?? value, 0, 5)
-    if (next !== requestedProgress) lastProgressRequest = performance.now()
+    const changed = next !== requestedProgress
+    if (changed || documentMoved) lastMotionRequest = performance.now()
+    if (changed) lastProgressRequest = lastMotionRequest
     requestedProgress = next
   }
   function draw(now: number) {
@@ -644,7 +649,7 @@ export function createWorld(
     }
     frameProfiler?.callback(now)
     const targetFps =
-      now - lastProgressRequest < 750 || elapsed < 1.8 || frozenProgress !== undefined ? 60 : 30
+      now - lastMotionRequest < 750 || elapsed < 1.8 || frozenProgress !== undefined ? 60 : 30
     // A 30 Hz callback can arrive a fraction early (notably low-power iOS).
     // Do not skip it and accidentally alternate 33/66 ms frames.
     const frameTime = nextFrameTime(now, last, targetFps, rawInterval ?? undefined)

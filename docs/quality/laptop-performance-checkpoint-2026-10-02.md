@@ -1,5 +1,38 @@
 # Laptop-first checkpoint — October 2, 2026
 
+## October 3 follow-up — document-motion cadence
+
+Owner confirms the affected Legion used Windows/Zen, probably battery saver;
+normal-power and same-laptop preview comparisons remain unavailable. No adapter
+or operating-system cadence restriction has been established.
+
+Reproduced another scheduling defect in the real page: the document continues
+well past the final camera chapter, but only camera-progress changes marked
+activity. A slow 628-pixel final-section scroll selected 30 fps despite motion.
+The new browser regression failed on build `79c95887` before the fix. The existing
+progress call now carries a cached document-movement boolean; cadence activity
+is separate from camera-request age, preserving lag metrics and avoiding new
+listeners, layout reads, camera work or UI throttling. No quality, effects,
+resolution, pass structure or smoothing changes. Stopped scrolling still returns
+to 30 fps idle. This fixes an application defect, not evidence of Legion success.
+
+164 unit tests, typecheck and production build pass. Desktop laptop-rendering
+suite: 5 passed, 1 intentional skip, including the previously failing real-page
+cadence regression, strict visual equivalence, wheel routing and buffer tests.
+Mobile suite: 1 passed, 5 intentional skips (secondary-pointer preservation).
+Commands: `TEST_BASE_URL=http://127.0.0.1:8789 PROFILE_GPU=hardware npx playwright
+test tests/e2e/laptop-rendering.spec.ts --project=desktop --workers=1`, repeated
+with `--project=mobile`. These are local Chromium regression checks, not physical
+device/presentation verification or a new matched GPU performance claim.
+
+Current preview at <https://laptop-fidelity-oct03-matrix-fellows.lunarzdev.workers.dev>
+is version `bf294091-465e-4486-8be0-7c65ad78dc4f`, Nuxt build
+`8d6b01b4-000e-4ca7-a9ab-f3c60dccf3d5`; remote build identity checked.
+Preview-only upload, no production traffic deployment. Earlier measurements below
+remain specific to their builds. Next primary gate: same Legion normal/battery
+saver comparisons on this preview and live production, with adapter/refresh and
+profile export. Android/iPad, integrated-GPU, thermal and presentation gaps remain.
+
 ## October 3 final fidelity gate — supersedes candidate below
 
 ### Balanced-jitter clock correction — current candidate

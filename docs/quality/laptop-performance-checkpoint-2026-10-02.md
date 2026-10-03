@@ -9,6 +9,11 @@ matched engine evidence. Existing soak now accepts `PROFILE_BROWSER=firefox` and
 `PROFILE_HEADED=1`, records both and uses the Firefox desktop descriptor. Software
 selection explicitly rejects Firefox rather than mislabeling it SwiftShader.
 No new site-rendering changes or production deployment in this follow-up.
+An independent concurrent commit `2870249` fixes first-scroll reveal state in
+`CinematicWorld` and adds chapter-reveal tests. It is preserved. The browser
+comparisons here exercised the existing preview/local production artifacts
+identified above, not a rebuilt artifact containing that later UI fix; do not
+extend these results to the latest checkout without rebuilding and rerunning.
 
 Same available Linux/RTX machine, Firefox 155, 1440×900 CSS/DPR 2, 30-second
 forward/reverse scripted journey; power mode unknown:

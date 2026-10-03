@@ -171,8 +171,15 @@ tail on mobile. On constrained devices, no optional planet/model is loaded.
 
 ## Frame pacing and adaptive quality
 
-`frame-clock.ts` tolerates slightly early callbacks at both 60 and 30 Hz. Raw
-callbacks are measured independently of its scheduled remainder. Two-second
+`frame-clock.ts` retains a nominal phase across balanced early/late callback
+jitter at both 60 and 30 Hz, rather than rejecting an early callback and doubling
+the next interval. A 15% phase grace handles slight jitter without resetting the
+budget on high-refresh streams. Marginally early steady streams can follow actual
+time only when the independently measured raw callback interval matches the
+target within 0.8%; this is not evidence of device power mode. Animation and
+profiling use actual timestamps, never the scheduling phase (which can be slightly
+ahead of the current callback). Raw callbacks are measured independently of its
+scheduled remainder. Two-second
 capacity windows require two pressured windows to reduce resolution, three
 healthy windows to recover it, and a ten-second reduction cooldown. Asynchronous
 GPU samples constrain promotion where available. This is not battery detection.

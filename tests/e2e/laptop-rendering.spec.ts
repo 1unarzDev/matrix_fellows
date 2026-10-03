@@ -9,7 +9,8 @@ test('balanced callback jitter does not discard available active scene frames', 
     const nativeRaf = window.requestAnimationFrame.bind(window)
     let previous = -Infinity,
       mapped = 0,
-      frame = 0
+      frame = 0,
+      previousSlot = -Infinity
     // Diagnostic timestamps only: deliver every real callback, preserve their
     // ordering, and give all callbacks in a browser frame the same timestamp.
     // This neither caps the UI ticker nor changes shipped scheduling.
@@ -18,7 +19,9 @@ test('balanced callback jitter does not discard available active scene frames', 
         if (now !== previous) {
           previous = now
           const interval = 1000 / 60
-          mapped = Math.round(now / interval) * interval - (++frame % 2 ? interval * 0.1 : 0)
+          const slot = Math.max(previousSlot + 1, Math.round(now / interval))
+          previousSlot = slot
+          mapped = slot * interval - (++frame % 2 ? interval * 0.1 : 0)
         }
         callback(mapped)
       })
@@ -44,8 +47,12 @@ test('balanced callback jitter does not discard available active scene frames', 
     }
   }, start)
   expect(result.callbacks).toBeGreaterThan(60)
+  expect(result.minimumRawInterval).toBeGreaterThan(0)
   expect(result.minimumRawInterval).toBeLessThan(15.8)
   expect(result.frames / result.callbacks).toBeGreaterThanOrEqual(0.97)
+  const expectedRatio = await page.evaluate(() => Math.min(devicePixelRatio, 2))
+  expect(result.state.quality.atmosphereRatio).toBe(expectedRatio)
+  expect(result.state.quality.foregroundRatio).toBe(expectedRatio)
   expect(result.state.quality.detail).toBe(true)
   expect(result.state.particleCount).toBe(12000)
   expect(result.state.bloomEnabled).toBe(true)

@@ -2,6 +2,86 @@
 
 ## October 3 final fidelity gate — supersedes candidate below
 
+### Balanced-jitter clock correction — current candidate
+
+Previous goal turn yielded engine-isolation evidence. This turn reproduced an
+application pacing defect with `npx vitest run tests/unit/frame-clock.test.ts`:
+balanced matching-rate early/late callbacks fail before the correction. The old
+fixed 1 ms grace skips matching callbacks. The corrected clock retains nominal
+phase with 15% grace; the existing steady slightly-early case now requires the
+**raw** interval to match within 0.8%, not elapsed time since the last submission.
+No animation timestamp, cadence target, shader, buffer ratio, pass or UI ticker
+changes. No power-mode inference or UA rule.
+
+Synthetic ten-second loop, exact matching average cadence with alternating 10%
+early callbacks (not hardware/device measurements):
+
+| Target/callback cadence | Old submissions | Corrected submissions | Old/new maximum interval |
+| --- | --- | --- | --- |
+| 30 Hz | 228 | 300 | 66.67 / 36.67 ms |
+| 60 Hz | 378 | 600 | 33.33 / 18.33 ms |
+
+Tests also sweep every integer callback cadence 20–240 Hz for ten synthetic
+seconds at 30/60 targets, requiring available delivery below budget and bounded
+delivery above it. A first widened-grace prototype retained a high-refresh drift
+defect; rejected before browser testing. Final focused tests: 7 passing; full
+unit suite: 164 passing; typecheck passes. Physical Windows/Zen/battery-saver
+benefit remains unverified; this corrects a demonstrable portable clock defect,
+not the complete laptop workload problem.
+
+Implementation commits `444af4b` and `5dd175a`, including the independent committed reveal/UI
+fixes `2870249` and `26f3546`. Isolated checkout
+`/tmp/matrix-clock-verify.XzfGj6`; generated Nuxt directory overridden **only in
+that checkout** to avoid symlinked dependency-cache paths. Initial isolated build
+failed prerender import resolution; explicit isolated build directory fixed it.
+Final production build passes, Nuxt ID `79c95887-df10-4b0d-a940-4abc4127fa21`
+(initial candidate was `608c94d5-821c-45a6-a677-f9c12bae2fe6`). Local production
+server `http://127.0.0.1:8788`. Final preview version
+`6fe726fb-1e3c-44ec-b49a-71e42594c0ca` at
+<https://laptop-fidelity-oct03-matrix-fellows.lunarzdev.workers.dev> supersedes
+the earlier preview versions below. Deployment list still identifies live
+production as `16fe788b-1ec9-40a2-a71a-25d0e3d77a6b`; no traffic deployment.
+
+Real-renderer regression injects monotonic, phase-aligned balanced timestamps
+without discarding native callbacks or shipping any override. Old local build
+`c2d00a0c-6f4e-4912-b5b2-223a308adccf` fails: 76.03% of available callbacks
+submit scenes. Corrected build passes the unchanged >=97% gate in three Chromium
+repeats and visible Firefox. These are **synthetic clock inputs**, not a physical
+display/cadence result. Frame quality ratios, full detail, bloom and 12,000
+particles are asserted unchanged in the test.
+
+Final broad browser suite: 49 passed, 17 intentional skips. First run had a
+max-delta-30 image failure; investigation found the ready class does not mean
+the 900 ms CSS fade has finished (observed opacity 0.989101 before capture versus
+1 afterward). Frozen comparisons now require computed opacity 1. Three isolated
+HiDPI image repeats and the broad rerun pass, with original image thresholds.
+This fixes capture readiness, not the shipped fade or rendering appearance.
+Visible Firefox suite: 4 passed, 1 mobile-only skip; final jitter fixture repeated
+separately after enforcing monotonic timestamps. Artifacts
+`/tmp/matrix-clock-{final-e2e,visual-repeat,browser-red-final,browser-green-final,firefox-e2e,firefox-jitter-final}`.
+
+| Lab journey, same available RTX host | Window submissions/sec | p95 / p99 | Maximum | >100 ms stalls |
+| --- | --- | --- | --- | --- |
+| Chromium desktop, 120 s | all 12 at 60 | 16.8 / 16.8 ms | 16.8 ms | 0 |
+| Chromium phone emulation, 120 s | 59.9–60 | 16.7 / 16.8 ms | 33.4 ms | 0 |
+| Visible Firefox desktop, 30 s | 60 / 60 / 60 | 17.10 / 17.12 ms | 17.16 ms | 0 |
+
+Desktop stays 2880×1800 source/foreground, MSAA 4, bloom/full detail/12k particles,
+no quality transitions; asynchronous GPU p95 6.626 ms, CPU update/submission p95
+0.1/0.3 ms. Phone stays native 1170×2532 foreground/full detail/12k; source
+recovers 1→1.25→1.5625→1.953125, final 762×1648; GPU p95 4.683 ms,
+CPU update/submission p95 0.1/0.2 ms. That is a simultaneous source-quality
+change relative to prior traces, not a matched-quality speedup claim or native
+procedural resolution. Firefox GPU queries unavailable; no quality transitions.
+No browser errors. `/tmp/matrix-clock-{desktop-soak,mobile-soak,firefox-headed}.json`.
+
+Next bounded local check: actual scrolling after the camera progression clamps
+at the final chapter. The current activity marker changes only with camera
+progress; test whether that incorrectly selects idle cadence while the document
+still moves before changing it. The primary external gate remains the owner's
+Windows/Zen/Legion normal/battery-saving exports and visual check. Android/iPad
+physical performance and thermal/presentation evidence remain open. Goal not complete.
+
 ### Subsequent Firefox delivery isolation
 
 Previous goal turn made implementation/test progress (`fcb7f65`); this turn adds

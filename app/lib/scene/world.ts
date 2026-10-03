@@ -853,7 +853,17 @@ export function createWorld(
         frozenTime = undefined
       },
       pauseDrawing: (paused) => {
+        if (paused === drawingPaused) return
         drawingPaused = paused
+        // Diagnostic freezes must not become fake frame stalls or teach the
+        // adaptive controller that an intentionally undrawn window is slow.
+        frameProfiler?.pause()
+        qualityWindow = performance.now()
+        qualityFrames = 0
+        windowUpdateCost = 0
+        callbackIntervals.length = 0
+        healthyWindows = 0
+        pressuredWindows = 0
         frameProfiler?.event('drawing-paused', { paused })
       },
       useGeneralShader: (enabled) => {

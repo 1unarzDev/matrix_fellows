@@ -1,6 +1,61 @@
 import { expect, test } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 
+test('diagnostic drawing pause preserves scrolling and quality without inventing a resume stall', async ({
+  page,
+}) => {
+  await page.goto('/?matrixProfile=1')
+  await expect(page.locator('canvas[data-engine]')).toHaveCSS('opacity', '1')
+  await page.evaluate(() =>
+    scrollTo(0, document.querySelector<HTMLElement>('#community')!.offsetTop + 300),
+  )
+  await page.waitForTimeout(1000)
+  await page.getByRole('button', { name: 'Pause drawing (diagnostic)' }).click()
+  const before = await page.evaluate(() => ({
+    frames: window.__matrixWorldProfile!.frames.length,
+    callbacks: window.__matrixWorldProfile!.callbacks.length,
+    quality: window.__matrixWorldDebug!.snapshot().quality,
+    y: scrollY,
+  }))
+  await page.evaluate(async () => {
+    const start = performance.now(),
+      y = scrollY
+    await new Promise<void>((resolve) => {
+      const step = () => {
+        scrollTo(0, y + (performance.now() - start) / 5)
+        if (performance.now() - start < 2500) requestAnimationFrame(step)
+        else resolve()
+      }
+      step()
+    })
+  })
+  const paused = await page.evaluate(() => ({
+    frames: window.__matrixWorldProfile!.frames.length,
+    callbacks: window.__matrixWorldProfile!.callbacks.length,
+    y: scrollY,
+  }))
+  expect(paused.frames).toBe(before.frames)
+  expect(paused.callbacks).toBeGreaterThan(before.callbacks + 10)
+  expect(paused.y - before.y).toBeGreaterThan(400)
+  await page.getByRole('button', { name: 'Resume drawing' }).click()
+  await expect
+    .poll(() => page.evaluate(() => window.__matrixWorldProfile!.frames.length))
+    .toBeGreaterThan(before.frames)
+  const resumed = await page.evaluate(
+    (first) => ({
+      first: window.__matrixWorldProfile!.frames[first],
+      quality: window.__matrixWorldDebug!.snapshot().quality,
+      events: window.__matrixWorldProfile!.events.filter(
+        (event) => event.name === 'drawing-paused',
+      ),
+    }),
+    before.frames,
+  )
+  expect(resumed.first!.interval).toBeNull()
+  expect(resumed.quality).toEqual(before.quality)
+  expect(resumed.events.map((event) => event.detail?.paused)).toEqual([true, false])
+})
+
 test('opt-in performance export identifies the loaded build without collecting form answers', async ({
   page,
 }) => {

@@ -87,6 +87,15 @@ render state, canvas diagnostics and viewport/browser signals. It does not read
 form answers, authentication state or browser storage. Supply power mode and
 plugged-in/battery state separately; they are not inferred.
 
+For the drawing-versus-DOM comparison, scroll a troublesome section for about
+10 seconds normally, click **Pause drawing (diagnostic)** and scroll the same
+section for 10 seconds, then **Resume drawing** and repeat normally. Save one
+report afterward; toggle events mark the comparison intervals. Raw callback
+samples continue during the pause, while scene submissions intentionally stop.
+Do not treat a paused/static scene as a successful rendering result. Compare
+the same layout, input pattern and power condition and note whether page delay
+remains when drawing is paused.
+
 If the controls are unavailable, run this in the browser console and paste/save the copied
 JSON. Firefox/Zen and Chromium developer consoles provide `copy()`; this reads
 only rendering diagnostics, not form responses or authentication storage.

@@ -1,5 +1,58 @@
 # Laptop-first checkpoint — October 2, 2026
 
+### October 3 affected-device trace — i7-13620H / RTX 4050 laptop
+
+Owner supplied `matrix-performance-3760f4a5-bd87-4889-a2b0-55d05ea2d4ed.json`
+(preserved untracked). Battery saver **on**, slightly delayed/choppy, less severe
+than the Legion. Correct preview/build confirmed in the file. UA reports
+Linux/Gecko Firefox 153; this is a different device/environment from the
+Windows/Zen Legion. Installed RTX 4050 is owner-reported; the masked
+`Intel(R) HD Graphics, or similar` string does **not** identify the actual adapter.
+
+About 28 seconds, 1,023 submissions / 1,119 callbacks, 1792×1002 CSS/DPR 1,
+full 1792×1002 source/foreground, MSAA 4, bloom/full detail/12,000 particles,
+no quality changes. GPU timings unavailable. This short manual journey is not
+a 120-second acceptance run and includes startup, pauses and reversals.
+
+| Active-target stage | Interval p50 / p95 / p99 / max (ms) | CPU submission p95 (ms) |
+| --- | --- | --- |
+| 0.x desert→oasis (includes startup) | 33.36 / 49.34 / 66.88 / 99.68 | 4 |
+| 1.x oasis→storm | 33.34 / 67.04 / 83.46 / 83.76 | 3 |
+| 2.x ocean/descent | 32.64 / 49.76 / 50.46 / 50.64 | 2 |
+| 4.x cosmos | 17.10 / 33.42 / 33.66 / 34.22 | 2 |
+
+850 active-target frames after four seconds: 849 have submission interval equal
+to raw callback interval; the exception is the first idle→active wake. Callback
+delivery, not another application cap, is the main observed limitation. Some
+two-second active buckets deliver only 24.5–36 submissions/sec, while lighter
+ones deliver 45.5–51. No >100 ms submission gap; recurring 50–83 ms gaps still
+fail the intended smoothness. Progress backlog is zero, but this does not prove
+full input-to-document/camera latency. Request age includes unchanged requests
+and cannot be interpreted as input delay. Final wheel mode native; prior gesture
+mode history is unavailable.
+
+Ranked hypotheses: rendering/compositor pressure (chapter-dependent callback
+delivery); browser/power restriction (not uniformly 30 Hz); input-processing delay
+(not covered end-to-end by this report). Next controlled comparison pauses only
+WebGL drawing while scrolling the same scene, keeping layout/native scrolling.
+Added a button to the existing opt-in diagnostic panel, not ordinary visits.
+Corrected a diagnostic flaw: old immutable preview reports a 2.5-second intentional
+pause as a 2533.3 ms stall. Toggle now resets profiler timing and quality-window
+counters so intentional freezes cannot trigger false stalls/quality downgrades.
+No normal render/quality/cadence changes and no claimed laptop speed gain.
+
+Typecheck/build and 164 unit tests pass. Chromium laptop-rendering suite: 11
+passed, 5 intentional skips, including paused-scroll/quality/resume and strict
+image-equivalence checks. Visible Firefox pause/export suite: 2 passed locally;
+pause regression also passes against the remote preview (1 test).
+Current build `6d94b91b-5439-4855-a761-6706986fdfd6`, diagnostic preview version
+`3571c4b7-c2e3-4d58-9abf-4d0660b363b3` at
+<https://laptop-fidelity-oct03-matrix-fellows.lunarzdev.workers.dev/?matrixProfile=1>;
+remote build identity checked. No production traffic deployment. Next: affected
+laptop paired drawing-on/off trace in the same section and power condition,
+plus whether DOM movement delay remains during the diagnostic pause. Actual
+backend/adapter from browser Graphics diagnostics remains useful and unresolved.
+
 ### October 3 remaining laptop feedback — export support
 
 Owner retested the laptop and reports it still feels a bit laggy. Tested URL,

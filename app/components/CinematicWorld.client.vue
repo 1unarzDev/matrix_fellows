@@ -13,6 +13,7 @@ const failed = ref(false)
 const ready = ref(false)
 const profiling = ref(false)
 const reportCopied = ref(false)
+const diagnosticDrawingPaused = ref(false)
 const runtimeConfig = useRuntimeConfig()
 
 function performanceReport() {
@@ -51,6 +52,13 @@ async function copyPerformanceReport() {
   } catch {
     savePerformanceReport()
   }
+}
+
+function toggleDiagnosticDrawing() {
+  const debug = window.__matrixWorldDebug
+  if (!debug) return
+  diagnosticDrawingPaused.value = !diagnosticDrawingPaused.value
+  debug.pauseDrawing(diagnosticDrawingPaused.value)
 }
 let world: World | undefined
 let cleanup: (() => void) | undefined
@@ -676,6 +684,14 @@ onBeforeUnmount(() => {
         @click="copyPerformanceReport"
       >
         {{ reportCopied ? 'Report copied' : 'Copy report' }}
+      </button>
+      <button
+        type="button"
+        :aria-pressed="diagnosticDrawingPaused"
+        class="rounded-lg border border-white/30 px-3 py-2 hover:bg-white/10 focus-visible:outline-2"
+        @click="toggleDiagnosticDrawing"
+      >
+        {{ diagnosticDrawingPaused ? 'Resume drawing' : 'Pause drawing (diagnostic)' }}
       </button>
     </div>
   </aside>

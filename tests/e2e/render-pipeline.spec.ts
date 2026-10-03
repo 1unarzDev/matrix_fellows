@@ -46,6 +46,7 @@ test('specialized world and composite preserve the frozen rendered image', async
   await page.goto('/?matrixProfile=1')
   await page.locator('canvas.opacity-100').waitFor()
   await expect(page.locator('canvas')).toHaveAttribute('data-framebuffers-warm', 'true')
+  await expect(page.locator('canvas[data-engine]')).toHaveCSS('opacity', '1')
   const shot = () =>
     page.locator('canvas[data-engine]').screenshot({
       style:

@@ -3,28 +3,37 @@ import { nextFrameTime, settleProgress } from '../../app/lib/scene/frame-clock'
 
 describe('cinematic frame pacing', () => {
   it('uses available callbacks below its budget and stays within budget above it across jittered cadences', () => {
-    for (const targetFps of [30, 60]) {
-      for (let callbackFps = 20; callbackFps <= 240; callbackFps++) {
-        let last = 0,
-          previous = 0,
-          count = 0
-        for (let frame = 1; frame <= callbackFps * 10; frame++) {
-          const now =
-            (frame * 1000) / callbackFps - (frame % 2 ? Math.min((1000 / callbackFps) * 0.1, 3) : 0)
-          const next = nextFrameTime(now, last, targetFps, now - previous)
-          previous = now
-          if (next !== null) {
-            last = next
-            count++
+    for (const pattern of ['balanced', 'random']) {
+      for (const targetFps of [30, 60]) {
+        for (let callbackFps = 20; callbackFps <= 240; callbackFps++) {
+          let last = 0,
+            previous = 0,
+            count = 0
+          let seed = 217
+          for (let frame = 1; frame <= callbackFps * 10; frame++) {
+            seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0
+            const jitter =
+              pattern === 'random'
+                ? ((seed / 4294967296 - 0.5) * 0.2 * 1000) / callbackFps
+                : -(frame % 2 ? Math.min((1000 / callbackFps) * 0.1, 3) : 0)
+            const now = (frame * 1000) / callbackFps + jitter
+            const next = nextFrameTime(now, last, targetFps, now - previous)
+            previous = now
+            if (next !== null) {
+              last = next
+              count++
+            }
           }
+          const expected = Math.min(callbackFps, targetFps) * 10
+          expect(
+            count,
+            `${pattern}: target=${targetFps}, callbacks=${callbackFps}`,
+          ).toBeGreaterThanOrEqual(expected - 5)
+          expect(
+            count,
+            `${pattern}: target=${targetFps}, callbacks=${callbackFps}`,
+          ).toBeLessThanOrEqual(expected + 5)
         }
-        const expected = Math.min(callbackFps, targetFps) * 10
-        expect(count, `target=${targetFps}, callbacks=${callbackFps}`).toBeGreaterThanOrEqual(
-          expected - 5,
-        )
-        expect(count, `target=${targetFps}, callbacks=${callbackFps}`).toBeLessThanOrEqual(
-          expected + 5,
-        )
       }
     }
   })

@@ -12,6 +12,7 @@ export function nextFrameTime(
   const interval = 1000 / fps
   const delta = now - last
   const tolerance = Math.max(1, interval * 0.15)
+  const steadyTolerance = interval * 0.008
   if (delta < interval - tolerance) return null
   // A genuinely matching, marginally early stream (e.g. 33.1 ms) can follow
   // actual time without a rare double throttle. The raw callback interval must
@@ -19,8 +20,9 @@ export function nextFrameTime(
   // on high-refresh displays. Bound this soft grace to <0.5 extra fps at 60 Hz.
   if (
     delta < interval &&
+    delta >= interval - steadyTolerance &&
     rawInterval !== undefined &&
-    Math.abs(rawInterval - interval) <= interval * 0.008
+    Math.abs(rawInterval - interval) <= steadyTolerance
   )
     return now
   return last + Math.max(1, Math.floor(delta / interval)) * interval

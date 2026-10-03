@@ -1,5 +1,56 @@
 import { expect, test } from '@playwright/test'
 
+test('balanced callback jitter does not discard available active scene frames', async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== 'desktop')
+  test.skip(process.env.PROFILE_GPU !== 'hardware', 'requires available hardware callback headroom')
+  await page.addInitScript(() => {
+    const nativeRaf = window.requestAnimationFrame.bind(window)
+    let previous = -Infinity,
+      mapped = 0,
+      frame = 0
+    // Diagnostic timestamps only: deliver every real callback, preserve their
+    // ordering, and give all callbacks in a browser frame the same timestamp.
+    // This neither caps the UI ticker nor changes shipped scheduling.
+    window.requestAnimationFrame = (callback) =>
+      nativeRaf((now) => {
+        if (now !== previous) {
+          previous = now
+          const interval = 1000 / 60
+          mapped = Math.round(now / interval) * interval - (++frame % 2 ? interval * 0.1 : 0)
+        }
+        callback(mapped)
+      })
+  })
+  await page.goto('/?matrixProfile=1')
+  await expect(page.locator('canvas[data-engine]')).toHaveCSS('opacity', '1')
+  await page.evaluate(() => (window as any).__matrixWorldDebug.freeze(0.8, 8))
+  await page.waitForTimeout(1000)
+  const start = await page.evaluate(() => {
+    const profile = (window as any).__matrixWorldProfile
+    return { frames: profile.frames.length, callbacks: profile.callbacks.length }
+  })
+  await page.waitForTimeout(2000)
+  const result = await page.evaluate((start) => {
+    const profile = (window as any).__matrixWorldProfile
+    return {
+      frames: profile.frames.length - start.frames,
+      callbacks: profile.callbacks.length - start.callbacks,
+      minimumRawInterval: Math.min(
+        ...profile.callbacks.slice(start.callbacks).map((v: any) => v.interval),
+      ),
+      state: (window as any).__matrixWorldDebug.snapshot(),
+    }
+  }, start)
+  expect(result.callbacks).toBeGreaterThan(60)
+  expect(result.minimumRawInterval).toBeLessThan(15.8)
+  expect(result.frames / result.callbacks).toBeGreaterThanOrEqual(0.97)
+  expect(result.state.quality.detail).toBe(true)
+  expect(result.state.particleCount).toBe(12000)
+  expect(result.state.bloomEnabled).toBe(true)
+})
+
 test('a touch-primary device with a secondary fine pointer keeps efficient rendering but smooths mouse wheels', async ({
   page,
 }, info) => {
@@ -100,6 +151,9 @@ test('stable composer target is visually equivalent to legacy ping-pong across t
   test.setTimeout(180_000)
   await page.goto('/?matrixProfile=1')
   await page.locator('canvas.opacity-100').waitFor()
+  // The class starts a 900 ms fade; it does not mean the displayed pixels are
+  // fully opaque yet. Compare only settled, matching presentation states.
+  await expect(page.locator('canvas[data-engine]')).toHaveCSS('opacity', '1')
   const shot = () =>
     page.locator('canvas[data-engine]').screenshot({
       style:

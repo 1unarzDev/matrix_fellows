@@ -7,13 +7,18 @@ const duration = Number(process.env.PROFILE_DURATION_MS || 120_000)
 const software = process.env.PROFILE_GPU === 'software'
 const browserEngine = process.env.PROFILE_BROWSER === 'firefox' ? 'firefox' : 'chromium'
 if (browserEngine === 'firefox' && software)
-  throw new Error('SwiftShader selection is Chromium-only; do not label Firefox as a software-GPU run')
+  throw new Error(
+    'SwiftShader selection is Chromium-only; do not label Firefox as a software-GPU run',
+  )
 const desktop = process.env.PROFILE_DEVICE === 'desktop'
 const width = Number(process.env.PROFILE_WIDTH || (desktop ? 1440 : 390))
 const height = Number(process.env.PROFILE_HEIGHT || (desktop ? 900 : 844))
 const deviceScaleFactor = Number(process.env.PROFILE_DPR || (desktop ? 2 : 3))
 const pipeline = process.env.PROFILE_PIPELINE
 const targetFps = Number(process.env.PROFILE_TARGET_FPS || 60)
+const scrollExtent = process.env.PROFILE_SCROLL_EXTENT || 'community'
+if (!['community', 'page'].includes(scrollExtent))
+  throw new Error('PROFILE_SCROLL_EXTENT must be community or page')
 // Diagnostic isolation only: never changes the shipped default visual policy.
 const qualityOverride = process.env.PROFILE_QUALITY ? JSON.parse(process.env.PROFILE_QUALITY) : null
 const browser = await (browserEngine === 'firefox' ? firefox : chromium).launch({
@@ -100,46 +105,50 @@ try {
     await page.evaluate((quality) => window.__matrixWorldDebug.setQuality(quality), qualityOverride)
   if (process.env.PROFILE_LEGACY_COMPOSER_SWAP === '1')
     await page.evaluate(() => window.__matrixWorldDebug.useLegacyComposerSwap(true))
-  const trace = await page.evaluate(async (duration) => {
-    const profile = window.__matrixWorldProfile
-    if (!profile) throw new Error('World profile was not initialized')
-    const main = document.querySelector('main')
-    const maxScroll = Math.min(
-      document.documentElement.scrollHeight - innerHeight,
-      document.querySelector('#community').offsetTop,
-    )
-    const journeyStart = performance.now() - profile.startedAt
-    profile.events.push({ time: journeyStart, name: 'journey-start' })
-    const start = performance.now()
-    await new Promise((resolve) => {
-      const drive = (now) => {
-        const phase = ((now - start) / 20_000) % 2
-        const progress = phase <= 1 ? phase : 2 - phase
-        window.scrollTo(0, maxScroll * progress)
-        if (now - start < duration) requestAnimationFrame(drive)
-        else resolve()
+  const trace = await page.evaluate(
+    async ({ duration, scrollExtent }) => {
+      const profile = window.__matrixWorldProfile
+      if (!profile) throw new Error('World profile was not initialized')
+      const main = document.querySelector('main')
+      const pageEnd = document.documentElement.scrollHeight - innerHeight
+      const maxScroll =
+        scrollExtent === 'page'
+          ? pageEnd
+          : Math.min(pageEnd, document.querySelector('#community').offsetTop)
+      const journeyStart = performance.now() - profile.startedAt
+      profile.events.push({ time: journeyStart, name: 'journey-start' })
+      const start = performance.now()
+      await new Promise((resolve) => {
+        const drive = (now) => {
+          const phase = ((now - start) / 20_000) % 2
+          const progress = phase <= 1 ? phase : 2 - phase
+          window.scrollTo(0, maxScroll * progress)
+          if (now - start < duration) requestAnimationFrame(drive)
+          else resolve()
+        }
+        requestAnimationFrame(drive)
+      })
+      const journeyEnd = performance.now() - profile.startedAt
+      profile.events.push({ time: journeyEnd, name: 'journey-end' })
+      return {
+        profile: structuredClone(profile),
+        startup: structuredClone(window.__matrixStartup),
+        journeyStart,
+        journeyEnd,
+        mainHeight: main?.getBoundingClientRect().height || 0,
+        canvas: { ...document.querySelector('canvas')?.dataset },
+        rendererState: window.__matrixWorldDebug.snapshot(),
+        device: {
+          dpr: devicePixelRatio,
+          coarsePointer: matchMedia('(pointer: coarse)').matches,
+          hardwareConcurrency: navigator.hardwareConcurrency,
+          deviceMemory: navigator.deviceMemory ?? null,
+          assets: [...document.scripts].map((script) => script.src).filter(Boolean),
+        },
       }
-      requestAnimationFrame(drive)
-    })
-    const journeyEnd = performance.now() - profile.startedAt
-    profile.events.push({ time: journeyEnd, name: 'journey-end' })
-    return {
-      profile: structuredClone(profile),
-      startup: structuredClone(window.__matrixStartup),
-      journeyStart,
-      journeyEnd,
-      mainHeight: main?.getBoundingClientRect().height || 0,
-      canvas: { ...document.querySelector('canvas')?.dataset },
-      rendererState: window.__matrixWorldDebug.snapshot(),
-      device: {
-        dpr: devicePixelRatio,
-        coarsePointer: matchMedia('(pointer: coarse)').matches,
-        hardwareConcurrency: navigator.hardwareConcurrency,
-        deviceMemory: navigator.deviceMemory ?? null,
-        assets: [...document.scripts].map((script) => script.src).filter(Boolean),
-      },
-    }
-  }, duration)
+    },
+    { duration, scrollExtent },
+  )
 
   const frames = trace.profile.frames.filter(
     (frame) => frame.time >= trace.journeyStart && frame.time <= trace.journeyEnd,
@@ -209,7 +218,7 @@ try {
       browserEngine,
       headless: process.env.PROFILE_HEADED !== '1',
       frameMeaning: 'new scene submissions, not independently verified screen presentations',
-      trace: 'beginning-to-community, 20s each direction',
+      trace: `beginning-to-${scrollExtent}, 20s each direction`,
     },
     startup: {
       domReady,

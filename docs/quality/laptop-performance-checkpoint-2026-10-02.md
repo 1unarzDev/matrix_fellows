@@ -1,5 +1,42 @@
 # Laptop-first checkpoint — October 2, 2026
 
+### October 3 full-document sustained check
+
+The existing soak stops at `#community`; it omitted the remaining calendar/join
+tail. `PROFILE_SCROLL_EXTENT=page` now optionally drives to the actual document
+end, with the old trace preserved by default and the extent recorded in the
+report. This is profiling-script coverage, not shipped rendering changes.
+
+Build `8d6b01b4`, same Linux/RTX host, visible Firefox, 1440×900/DPR 2,
+120-second full-page forward/reverse journey: all 12 windows at 60 scene
+submissions/sec, p95 17.08/p99 17.12/max 17.14 ms, zero >100 ms stalls or errors.
+3,141 frames had clamped camera progress 5; the tail remains at active cadence.
+Full 2880×1800 source/foreground, MSAA 4, bloom/full detail/12,000 particles;
+no quality changes. GPU queries unavailable, CPU submission p95 1 ms (Firefox
+timer precision). Trace `/tmp/matrix-page-firefox-soak.json`.
+Command: `TEST_BASE_URL=http://127.0.0.1:8789 PROFILE_GPU=hardware
+PROFILE_DEVICE=desktop PROFILE_BROWSER=firefox PROFILE_HEADED=1
+PROFILE_SCROLL_EXTENT=page PROFILE_DURATION_MS=120000
+PROFILE_OUTPUT=/tmp/matrix-page-firefox-soak.json node scripts/mobile-soak.mjs`.
+This changes chapter/window distribution versus older community-only traces;
+it is sustained regression evidence, not a matched before/after speed gain or
+Windows/Zen/power/physical-presentation validation.
+
+Same-build Chromium phone emulation, 390×844/DPR 3, 120-second full-page trace:
+all 12 windows at 60 submissions/sec, p95 16.7/p99/max 16.8 ms, no >100 ms
+stalls or errors. Native 1170×2532 foreground/full detail/12,000 particles;
+source recovered 1→1.25→1.5625→1.953125 (final 762×1648), not fixed-quality
+timing or native procedural output. Async GPU p95 3.332 ms, CPU update/submission
+p95 0.1/0.2 ms; 3,745 frames at clamped progress 5. Trace
+`/tmp/matrix-page-mobile-soak.json`. Reuse the command above without Firefox/headed
+flags and with `PROFILE_DEVICE=mobile` and the corresponding output path.
+Physical iPhone/iPad/Android and affected-laptop conditions remain unverified.
+
+A visible Firefox second-page/bring-to-front resume probe was inconclusive:
+the original document still reported `hidden=false`. It did not verify a real
+background/resume cycle and justifies no shipped behavior change. Actual-device
+background/resume remains part of the open device procedure.
+
 ### October 3 follow-up verification and rejected experiment
 
 Build `8d6b01b4` final-section cadence regression now covers both Chromium desktop

@@ -3,7 +3,8 @@ import type { OutreachProfile, OutreachProposal, OutreachTarget } from '#shared/
 import type { OutreachPlannerItem } from '#shared/types/outreach'
 import { outreachPriority } from '#shared/utils/outreach'
 import { proposalStyles } from '#shared/utils/outreach-tailoring'
-useSeoMeta({ title: 'Partnership studio | Matrix Fellows', robots: 'noindex, nofollow' })
+definePageMeta({ alias: ['/dashboard'] })
+useSeoMeta({ title: 'Dashboard | Matrix Fellows', robots: 'noindex, nofollow' })
 const { data, loading, busy, error, notice, refresh, mutate } = useWorkspace()
 const route = useRoute()
 const callbackMessage = computed(() => {
@@ -12,11 +13,12 @@ const callbackMessage = computed(() => {
   if (route.query.mailbox === 'failed')
     return 'Mailbox connection did not complete. Check provider consent and try again in Connections.'
   if (route.query.auth === 'failed')
-    return 'Sign-in did not complete. Please sign in with your approved officer account.'
+    return 'Sign-in did not complete. Please sign in with your approved member account.'
   return ''
 })
 const tab = ref('queue')
-const sections = [
+const canDiscover = computed(() => ['officer', 'admin'].includes(data.value?.member.role || ''))
+const allSections = [
   { value: 'queue', label: 'Discovery', icon: 'compass' },
   { value: 'drafts', label: 'Proposals', icon: 'mail' },
   { value: 'profiles', label: 'Your profile', icon: 'spark' },
@@ -25,6 +27,17 @@ const sections = [
   { value: 'research', label: 'Research runs', icon: 'globe' },
   { value: 'settings', label: 'Connections', icon: 'lock' },
 ] as const
+const sections = computed(() =>
+  canDiscover.value
+    ? allSections
+    : ['saved', 'profiles', 'drafts', 'society', 'settings'].map((value) =>
+        allSections.find((section) => section.value === value)!,
+      ),
+)
+const visibleProposals = computed(() =>
+  (data.value?.proposals || []).filter((p) => canDiscover.value || p.kind === 'student'),
+)
+const initializedAccess = ref(false)
 const query = ref('')
 const status = ref('active')
 const discipline = ref('all')
@@ -47,9 +60,64 @@ onMounted(() => window.addEventListener('beforeunload', unloadGuard))
 onBeforeUnmount(() => window.removeEventListener('beforeunload', unloadGuard))
 function planSaved(id: string) {
   selectedId.value = id
-  tab.value = 'queue'
+  if (canDiscover.value) tab.value = 'queue'
+  else {
+    plannerForm.targetId = id
+    plannerForm.title = `Explore ${data.value?.targets.find((t) => t.id === id)?.name || 'this connection'}`
+    nextTick(() =>
+      document.getElementById('personal-planner')?.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          ? 'instant'
+          : 'smooth',
+        block: 'start',
+      }),
+    )
+  }
 }
 const selected = computed(() => data.value?.targets.find((t) => t.id === selectedId.value))
+const assignedMembers = ref<
+  { targetId: string; userId: string; email: string; createdAt: string }[]
+>([])
+const assignmentEmail = ref('')
+const assignmentError = ref('')
+const assignmentBusy = ref(false)
+async function loadAssignments() {
+  assignedMembers.value = []
+  assignmentError.value = ''
+  if (!canDiscover.value || !selected.value) return
+  const targetId = selected.value.id
+  try {
+    const result = await $fetch<{ assignments: typeof assignedMembers.value }>(
+      '/api/workspace/assignments',
+      { query: { targetId } },
+    )
+    if (selectedId.value === targetId) assignedMembers.value = result.assignments
+  } catch (e: any) {
+    if (selectedId.value === targetId)
+      assignmentError.value = e?.data?.statusMessage || 'Assignments could not be loaded.'
+  }
+}
+watch(selectedId, () => {
+  assignmentEmail.value = ''
+  void loadAssignments()
+})
+async function assignMember(email: string, action: 'assign' | 'revoke') {
+  if (!canDiscover.value || !selected.value || assignmentBusy.value) return
+  assignmentBusy.value = true
+  assignmentError.value = ''
+  try {
+    await $fetch('/api/workspace/assignments', {
+      method: 'POST',
+      body: { targetId: selected.value.id, email: email.trim(), action },
+    })
+    assignmentEmail.value = ''
+    await loadAssignments()
+  } catch (e: any) {
+    assignmentError.value = e?.data?.statusMessage || 'This assignment could not be changed.'
+  } finally {
+    assignmentBusy.value = false
+  }
+}
 const acquisition = computed(
   () =>
     selected.value?.dossier.acquisition as
@@ -148,6 +216,7 @@ function localDateTime(value?: string | null) {
   return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
 }
 function openTarget(t?: OutreachTarget) {
+  if (!canDiscover.value) return
   Object.assign(targetForm, {
     id: t?.id || '',
     expectedUpdatedAt: t?.updatedAt || '',
@@ -256,6 +325,14 @@ const societyForm = reactive({
 })
 watch(data, (value) => {
   if (!value) return
+  if (!initializedAccess.value) {
+    initializedAccess.value = true
+    if (!canDiscover.value) {
+      tab.value = 'saved'
+      scope.value = 'student'
+    }
+  }
+  if (!canDiscover.value && ['queue', 'research'].includes(tab.value)) tab.value = 'saved'
   const p = value.profiles[0]
   if (p)
     Object.assign(profileForm, {
@@ -298,7 +375,7 @@ async function plan() {
     'POST',
     {
       targetId: selected.value.id,
-      kind: scope.value,
+      kind: canDiscover.value ? scope.value : 'student',
       style: proposalStyle.value,
       profileId: scope.value === 'student' ? profileId.value : null,
     },
@@ -317,7 +394,7 @@ async function toggleSave(t: OutreachTarget) {
 }
 const proposalId = ref('')
 const draft = reactive({ recipient: '', subject: '', body: '', mailboxId: '', profileId: '' })
-const proposal = computed(() => data.value?.proposals.find((p) => p.id === proposalId.value))
+const proposal = computed(() => visibleProposals.value.find((p) => p.id === proposalId.value))
 const sendConfirm = ref(false)
 const uncertainSends = ref<string[]>([])
 function openProposal(p: OutreachProposal) {
@@ -454,7 +531,7 @@ async function saveSource() {
   }
 }
 watch(tab, (value) => {
-  if (value === 'research') void loadResearch()
+  if (value === 'research' && canDiscover.value) void loadResearch()
 })
 const connecting = ref(false)
 const providers = ref({ gmail: false, outlook: false })
@@ -585,8 +662,12 @@ onMounted(async () => {
 
 <template>
   <WorkspaceShell
-    title="Good research starts with a good connection."
-    subtitle="A private, evidence-first studio for discovering partners, shaping useful proposals, and following through thoughtfully."
+    :title="
+      canDiscover
+        ? 'Good research starts with a good connection.'
+        : 'A little direction. A lot of possibility.'
+    "
+    subtitle="Your research profile, saved opportunities, and next steps—in one thoughtful place."
   >
     <template #header
       ><div class="account">
@@ -603,10 +684,10 @@ onMounted(async () => {
     <div v-if="callbackMessage" role="status" class="ws-alert">{{ callbackMessage }}</div>
     <div v-if="loading && !data" class="ws-empty">
       <OrbitalLoader />
-      <p>Opening your private studio…</p>
+      <p>Opening your dashboard…</p>
     </div>
     <div v-else-if="data" class="studio-layout">
-      <nav class="studio-nav" aria-label="Partnership studio">
+      <nav class="studio-nav" aria-label="Dashboard sections">
         <button
           v-for="section in sections"
           :key="section.value"
@@ -622,7 +703,7 @@ onMounted(async () => {
       </nav>
       <Transition name="ws-content" mode="out-in"
         ><section :key="tab" class="studio-content">
-          <template v-if="tab === 'queue'">
+          <template v-if="tab === 'queue' && canDiscover">
             <div class="section-top">
               <div>
                 <p class="ws-kicker">The right people, not more people</p>
@@ -1090,6 +1171,56 @@ onMounted(async () => {
                       Not viable
                     </button>
                   </div>
+                  <section class="assignment-section">
+                    <h3>Assign a personal connection</h3>
+                    <p class="ws-muted">
+                      Share this reviewed connection with a specific enrolled member. Assignment
+                      permits a personal inquiry, not a society-wide proposal or a promise of
+                      mentoring.
+                    </p>
+                    <p v-if="selected.status !== 'ready'" class="ws-muted">
+                      Mark the candidate ready after reviewing contact evidence and fit before
+                      assigning them.
+                    </p>
+                    <div v-if="assignmentError" class="ws-alert ws-error" role="alert">
+                      {{ assignmentError }}
+                    </div>
+                    <form @submit.prevent="assignMember(assignmentEmail, 'assign')">
+                      <label class="ws-field"
+                        >Member email<input
+                          v-model="assignmentEmail"
+                          type="email"
+                          required
+                          autocomplete="off"
+                          placeholder="member@example.org"
+                          :disabled="assignmentBusy"
+                      /></label>
+                      <button
+                        class="ws-button"
+                        :disabled="
+                          assignmentBusy || selected.status !== 'ready' || !assignmentEmail.trim()
+                        "
+                      >
+                        Assign connection<SiteIcon name="plus" :size="14" />
+                      </button>
+                    </form>
+                    <TransitionGroup name="assignment" tag="div">
+                      <div
+                        v-for="assignment in assignedMembers"
+                        :key="assignment.userId"
+                        class="job-row"
+                      >
+                        <span class="ws-muted">{{ assignment.email }}</span>
+                        <button
+                          class="ws-button"
+                          :disabled="assignmentBusy"
+                          @click="assignMember(assignment.email, 'revoke')"
+                        >
+                          Revoke<span class="sr-only"> access for {{ assignment.email }}</span>
+                        </button>
+                      </div>
+                    </TransitionGroup>
+                  </section>
                 </article>
                 <div v-else class="ws-empty dossier-empty">
                   <SiteIcon name="compass" :size="32" />
@@ -1112,7 +1243,7 @@ onMounted(async () => {
             <div class="queue-layout">
               <div class="candidate-list">
                 <button
-                  v-for="p in data.proposals"
+                  v-for="p in visibleProposals"
                   :key="p.id"
                   class="candidate"
                   :class="{ selected: p.id === proposalId }"
@@ -1125,7 +1256,7 @@ onMounted(async () => {
                     data.targets.find((t) => t.id === p.targetId)?.name
                   }}</small>
                 </button>
-                <div v-if="!data.proposals.length" class="ws-empty">
+                <div v-if="!visibleProposals.length" class="ws-empty">
                   Select a candidate in Discovery and shape a proposal. Nothing is sent
                   automatically.
                 </div>
@@ -1275,8 +1406,8 @@ onMounted(async () => {
               <p class="ws-kicker">Your context changes the proposal</p>
               <h2>Your research profile</h2>
               <p class="ws-muted">
-                Describe only work and skills you can substantiate. This profile belongs to your
-                adult officer account, not a directory of minors.
+                Describe only work and skills you can substantiate. This private profile belongs to
+                your account; it is not a public member directory.
               </p>
               <div class="ws-divider" />
               <div class="ws-grid">
@@ -1413,56 +1544,53 @@ onMounted(async () => {
               <p class="ws-kicker">A credible shared introduction</p>
               <h2>What we can genuinely offer</h2>
               <p class="ws-muted">
-                Keep accomplishments specific and evidenced. Society claims are reviewed by an
-                administrator before use.
+                Keep accomplishments specific and evidenced. Officers review society claims before
+                use.
               </p>
               <div class="ws-divider" />
               <label class="ws-field"
                 >Society name<input
                   v-model="societyForm.name"
                   required
-                  :disabled="data.member.role !== 'admin'" /></label
+                  :disabled="!canDiscover" /></label
               ><label class="ws-field"
                 >Concise introduction<textarea
                   v-model="societyForm.description"
-                  :disabled="data.member.role !== 'admin'"
+                  :disabled="!canDiscover"
                 /></label
               ><label class="ws-field"
                 >Demonstrated capabilities, comma separated<input
                   v-model="societyForm.capabilities"
-                  :disabled="data.member.role !== 'admin'" /></label
+                  :disabled="!canDiscover" /></label
               ><label class="ws-field"
                 >Adult sponsor / supervising contact<input
                   v-model="societyForm.sponsor"
-                  :disabled="data.member.role !== 'admin'"
+                  :disabled="!canDiscover"
               /></label>
               <h3>Reviewed accomplishments</h3>
               <div v-for="(a, i) in societyForm.accomplishments" :key="i" class="sample">
                 <label class="ws-field"
-                  >Title<input
-                    v-model="a.title"
-                    required
-                    :disabled="data.member.role !== 'admin'" /></label
+                  >Title<input v-model="a.title" required :disabled="!canDiscover" /></label
                 ><label class="ws-field"
                   >What happened, and our actual contribution<textarea
                     v-model="a.description"
                     required
-                    :disabled="data.member.role !== 'admin'"
+                    :disabled="!canDiscover"
                   /></label
                 ><label class="ws-field"
                   >Supporting public source<input
                     v-model="a.url"
                     type="url"
-                    :disabled="data.member.role !== 'admin'"
+                    :disabled="!canDiscover"
                 /></label>
-                <div v-if="data.member.role === 'admin'" class="consent">
+                <div v-if="canDiscover" class="consent">
                   <AnimatedCheckbox
                     v-model="a.verified"
                     label="I reviewed this accomplishment against its supporting source."
                   />
                 </div>
                 <button
-                  v-if="data.member.role === 'admin'"
+                  v-if="canDiscover"
                   type="button"
                   class="ws-button"
                   @click="societyForm.accomplishments.splice(i, 1)"
@@ -1470,7 +1598,7 @@ onMounted(async () => {
                   Remove
                 </button>
               </div>
-              <div class="ws-actions" v-if="data.member.role === 'admin'">
+              <div class="ws-actions" v-if="canDiscover">
                 <button
                   type="button"
                   class="ws-button"
@@ -1488,7 +1616,9 @@ onMounted(async () => {
                   Save reviewed profile
                 </button>
               </div>
-              <p v-else class="ws-muted">An administrator manages shared society claims.</p>
+              <p v-else class="ws-muted">
+                Officers manage the society's reviewed introduction and claims.
+              </p>
             </form></template
           >
           <template v-else-if="tab === 'saved'"
@@ -1510,22 +1640,85 @@ onMounted(async () => {
             </div>
             <div class="ws-grid">
               <article
-                v-for="t in data.targets.filter((t) => data!.saves.includes(t.id))"
+                v-for="t in data.targets.filter((t) => !canDiscover || data!.saves.includes(t.id))"
                 :key="t.id"
                 class="ws-panel"
               >
-                <span class="ws-chip">{{ t.scope }}</span>
+                <span class="ws-chip">{{ canDiscover ? t.scope : 'Assigned connection' }}</span>
                 <h3 class="draft-title">{{ t.name }}</h3>
                 <p class="ws-muted">{{ t.description }}</p>
                 <div class="ws-actions">
                   <button class="ws-button ws-button--primary" @click="planSaved(t.id)">
-                    Plan connection<SiteIcon name="right" :size="14" /></button
-                  ><button class="ws-button" :disabled="busy" @click="toggleSave(t)">Remove</button>
+                    {{ canDiscover ? 'Plan connection' : 'Plan next step'
+                    }}<SiteIcon name="right" :size="14" /></button
+                  ><button class="ws-button" :disabled="busy" @click="toggleSave(t)">
+                    {{
+                      canDiscover
+                        ? 'Remove'
+                        : data.saves.includes(t.id)
+                          ? 'Unsave'
+                          : 'Save connection'
+                    }}
+                  </button>
+                  <button
+                    v-if="!canDiscover && t.status === 'ready'"
+                    class="ws-button"
+                    @click="selectedId = t.id"
+                  >
+                    Draft a personal proposal<SiteIcon name="mail" :size="14" />
+                  </button>
                 </div>
               </article>
             </div>
-            <div v-if="!data.saves.length" class="ws-empty">
-              Save candidates from their dossier to build a focused shortlist.
+            <Transition name="ws-content" mode="out-in">
+              <section
+                v-if="!canDiscover && selected?.status === 'ready'"
+                :key="selected.id"
+                class="ws-panel secondary-panel personal-proposal"
+              >
+                <p class="ws-kicker">A thoughtful personal introduction</p>
+                <h3>{{ selected.name }}</h3>
+                <p class="ws-muted">{{ selected.description }}</p>
+                <p class="ws-muted">
+                  Choose a small, specific ask and a relevant work sample. A reviewed connection is
+                  not a mentoring offer; check fit and eligibility before contacting them.
+                </p>
+                <ThemedSelect
+                  v-model="profileId"
+                  label="Your research profile"
+                  :options="data.profiles.map((p) => ({ value: p.id, label: p.fullName }))"
+                />
+                <ThemedSelect
+                  v-model="proposalStyle"
+                  label="Proposal approach"
+                  :options="
+                    proposalStyles.map((value) => ({
+                      value,
+                      label: value.charAt(0).toUpperCase() + value.slice(1),
+                    }))
+                  "
+                />
+                <div class="ws-actions">
+                  <button
+                    class="ws-button ws-button--primary"
+                    :disabled="busy || !profileId || !selected.contactEmail"
+                    @click="plan"
+                  >
+                    Shape my proposal<SiteIcon name="right" :size="14" />
+                  </button>
+                  <button class="ws-button" @click="selectedId = ''">Close</button>
+                </div>
+                <p v-if="!selected.contactEmail" class="ws-muted">
+                  A verified public contact is needed before a proposal can be created.
+                </p>
+              </section>
+            </Transition>
+            <div v-if="canDiscover ? !data.saves.length : !data.targets.length" class="ws-empty">
+              {{
+                canDiscover
+                  ? 'Save candidates from their dossier to build a focused shortlist.'
+                  : 'Connections assigned by an officer will appear here. Start with a research goal or an opportunity from the catalog.'
+              }}
             </div>
             <details class="ws-panel secondary-panel">
               <summary>
@@ -1548,7 +1741,7 @@ onMounted(async () => {
                 account.
               </p>
             </details>
-            <article class="ws-panel secondary-panel">
+            <article id="personal-planner" class="ws-panel secondary-panel">
               <p class="ws-kicker">One concrete next step</p>
               <h3>Your lightweight planner</h3>
               <div v-for="item in data.plannerItems || []" :key="item.id" class="planner-row">
@@ -1628,7 +1821,7 @@ onMounted(async () => {
                 >Open calendar<SiteIcon name="calendar" :size="14"
               /></NuxtLink></div
           ></template>
-          <template v-else-if="tab === 'research'"
+          <template v-else-if="tab === 'research' && canDiscover"
             ><p class="ws-kicker">Bounded discovery, not a flood</p>
             <h2>Research runs</h2>
             <p class="ws-muted">
@@ -1846,7 +2039,7 @@ onMounted(async () => {
             <div class="ws-panel account-panel">
               <h3>Access & safety</h3>
               <p class="ws-muted">
-                This private workspace is for approved adult officers. Your role:
+                This private dashboard belongs to your approved account. Your role:
                 {{ data.member.role }}. Researchers are ranked by documented fit and feasibility—not
                 guaranteed response rates. Automatic bulk sending is never enabled.
               </p>
@@ -1859,6 +2052,36 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.assignment-section {
+  margin-top: 32px;
+  padding: 22px;
+  border-radius: 22px;
+  background: #b9a3ed06;
+}
+.personal-proposal > p {
+  margin-block: 12px 20px;
+}
+.personal-proposal > :deep(.themed-select) {
+  margin-block: 16px;
+}
+.assignment-section > h3 {
+  margin-bottom: 12px;
+}
+.assignment-section > p {
+  margin-bottom: 18px;
+}
+.assignment-enter-active,
+.assignment-leave-active,
+.assignment-move {
+  transition:
+    opacity 220ms ease,
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.assignment-enter-from,
+.assignment-leave-to {
+  opacity: 0;
+  transform: translateY(6px);
+}
 .acquisition-panel {
   padding: 20px;
   border: 1px solid #bda8df1a;

@@ -2,7 +2,6 @@ import { z } from 'zod'
 import {
   assertWorkspaceOrigin,
   workspaceConfig,
-  workspaceAuthStorage,
   randomToken,
   hashText,
   sealWorkspace,
@@ -22,19 +21,8 @@ export default defineEventHandler(async (event) => {
   const challenge = await hashText(verifier)
   const redirect = `${new URL(config.public.siteUrl).origin}/api/workspace/auth/callback`
   if (provider === 'email') {
-    if (!email)
-      throw createError({ statusCode: 400, statusMessage: 'Enter your invited email address.' })
+    if (!email) throw createError({ statusCode: 400, statusMessage: 'Enter your email address.' })
     const normalized = email.trim().toLowerCase()
-    const { data: invited, error } = await workspaceAuthStorage(event)
-      .from('outreach_members')
-      .select('user_id')
-      .eq('email', normalized)
-      .eq('enabled', true)
-      .maybeSingle()
-    if (error)
-      throw createError({ statusCode: 503, statusMessage: 'Sign-in is temporarily unavailable.' })
-    // Do not enumerate organizer identities. Auth's configured OTP rate limits remain active.
-    if (!invited) return { sent: true }
     setCookie(
       event,
       WORKSPACE_FLOW_COOKIE,
@@ -52,7 +40,7 @@ export default defineEventHandler(async (event) => {
         headers: { apikey: config.public.supabaseAnonKey, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: normalized,
-          create_user: false,
+          create_user: true,
           code_challenge: challenge,
           code_challenge_method: 's256',
         }),

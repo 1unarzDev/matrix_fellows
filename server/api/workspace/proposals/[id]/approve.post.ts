@@ -1,14 +1,15 @@
 import { z } from 'zod'
 import {
-  requireWorkspaceOfficer,
+  requireWorkspaceMember,
   assertWorkspaceOrigin,
   workspaceAuthStorage,
 } from '../../../../utils/workspace-auth'
 import { approvedEmailFingerprint, validateApprovedEmail } from '../../../../utils/workspace-mail'
+import { assertWorkspaceTarget } from '../../../../utils/workspace-access'
 export default defineEventHandler(async (event) => {
   setHeader(event, 'Cache-Control', 'no-store')
   assertWorkspaceOrigin(event)
-  const officer = await requireWorkspaceOfficer(event)
+  const officer = await requireWorkspaceMember(event)
   const id = z.string().uuid().parse(getRouterParam(event, 'id'))
   const { revision } = z
     .object({ revision: z.number().int().positive() })
@@ -16,8 +17,9 @@ export default defineEventHandler(async (event) => {
   const client = workspaceAuthStorage(event)
   const { data: proposal, error } = await client
     .from('outreach_proposals')
-    .select('id,revision,recipient,subject,body,mailbox_id')
+    .select('id,revision,recipient,subject,body,mailbox_id,target_id,kind')
     .eq('id', id)
+    .eq('created_by', officer.userId)
     .maybeSingle()
   if (error) throw createError({ statusCode: 503, statusMessage: 'Proposal could not be loaded.' })
   if (!proposal || proposal.revision !== revision)
@@ -25,6 +27,7 @@ export default defineEventHandler(async (event) => {
       statusCode: 409,
       statusMessage: 'Proposal changed; reload before approving.',
     })
+  await assertWorkspaceTarget(event, officer, proposal.target_id, proposal.kind)
   if (/\[REVIEW:/i.test(proposal.subject + '\n' + proposal.body))
     throw createError({
       statusCode: 400,

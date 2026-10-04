@@ -1,7 +1,7 @@
-import { requireWorkspaceOfficer, workspaceAuthStorage } from '../../../utils/workspace-auth'
+import { requireWorkspaceMember, workspaceAuthStorage } from '../../../utils/workspace-auth'
 export default defineEventHandler(async (event) => {
   setHeader(event, 'Cache-Control', 'no-store')
-  const officer = await requireWorkspaceOfficer(event)
+  const officer = await requireWorkspaceMember(event)
   const { data, error } = await workspaceAuthStorage(event)
     .from('outreach_mailboxes')
     .select('id,provider,email,enabled,expires_at')

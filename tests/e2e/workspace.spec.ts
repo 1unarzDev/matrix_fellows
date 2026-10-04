@@ -1,4 +1,116 @@
 import { expect, test } from '@playwright/test'
+
+test('member dashboard restricts discovery and builds only assigned personal proposals', async ({
+  page,
+}, info) => {
+  const data: any = fixture()
+  data.member.role = 'member'
+  data.saves = []
+  data.proposals = []
+  data.profiles = [
+    {
+      id: officer,
+      fullName: 'Student Researcher',
+      interests: ['Robotics'],
+      skills: ['Python'],
+      availability: 'Weekly',
+      location: 'Arlington',
+      goals: 'Simulation',
+      consentToShare: true,
+      workSamples: [],
+      updatedAt: '',
+    },
+  ]
+  const requests: { path: string; body: any }[] = []
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.route('**/api/workspace**', (route) => {
+    const path = new URL(route.request().url()).pathname
+    if (path === '/api/workspace') return route.fulfill({ json: data })
+    if (path === '/api/workspace/mailboxes')
+      return route.fulfill({ json: { items: [], providers: { gmail: false, outlook: false } } })
+    if (path === '/api/workspace/planner') {
+      requests.push({ path, body: route.request().postDataJSON() })
+      return route.fulfill({ json: { proposal: {}, notices: [] } })
+    }
+    requests.push({ path, body: null })
+    return route.fulfill({ json: { items: [] } })
+  })
+  await page.goto('/dashboard')
+  await expect(page.getByRole('heading', { name: 'Saved & planned', exact: true })).toBeVisible()
+  const nav = page.getByRole('navigation', { name: 'Dashboard sections' })
+  await expect(nav.getByRole('button', { name: 'Discovery', exact: true })).toHaveCount(0)
+  await expect(nav.getByRole('button', { name: 'Research runs', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Assign connection', exact: true })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Draft a personal proposal', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Shape my proposal', exact: true })).toBeEnabled()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(
+    true,
+  )
+  await page.screenshot({ path: `/tmp/member-builder-${info.project.name}.png`, fullPage: true })
+  await page.getByRole('button', { name: 'Shape my proposal', exact: true }).click()
+  expect(requests.find((r) => r.path === '/api/workspace/planner')?.body).toMatchObject({
+    targetId,
+    kind: 'student',
+    profileId: officer,
+  })
+  await nav.getByRole('button', { name: 'Society', exact: true }).click()
+  await expect(
+    page.getByRole('button', { name: 'Save reviewed profile', exact: true }),
+  ).toHaveCount(0)
+  expect(
+    requests.some(
+      (r) => r.path === '/api/workspace/research' || r.path === '/api/workspace/assignments',
+    ),
+  ).toBe(false)
+  data.targets = []
+  await page.reload()
+  await expect(
+    page.getByRole('button', { name: 'Draft a personal proposal', exact: true }),
+  ).toHaveCount(0)
+  await expect(page.getByText(/Connections assigned by an officer will appear here/)).toBeVisible()
+})
+
+test('officers assign and revoke reviewed connections for enrolled members', async ({ page }) => {
+  const data = fixture()
+  const assignments: any[] = []
+  const requests: any[] = []
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.route('**/api/workspace**', (route) => {
+    const path = new URL(route.request().url()).pathname
+    if (path === '/api/workspace') return route.fulfill({ json: data })
+    if (path === '/api/workspace/mailboxes')
+      return route.fulfill({ json: { items: [], providers: {} } })
+    if (path === '/api/workspace/assignments') {
+      if (route.request().method() === 'POST') {
+        const body = route.request().postDataJSON()
+        requests.push(body)
+        if (body.action === 'assign')
+          assignments.push({ targetId, userId: officer, email: body.email, createdAt: '' })
+        else assignments.splice(0)
+        return route.fulfill({ json: { ok: true } })
+      }
+      return route.fulfill({ json: { assignments } })
+    }
+    return route.fulfill({ json: { items: [] } })
+  })
+  await page.goto('/dashboard')
+  await page.getByRole('button', { name: /Robotics Research Group/ }).click()
+  await page.getByLabel('Member email', { exact: true }).fill('member@example.org')
+  await page.getByRole('button', { name: 'Assign connection', exact: true }).click()
+  await expect(
+    page.getByRole('button', { name: 'Revoke access for member@example.org', exact: true }),
+  ).toBeVisible()
+  await page
+    .getByRole('button', { name: 'Revoke access for member@example.org', exact: true })
+    .click()
+  await expect(
+    page.getByRole('button', { name: 'Revoke access for member@example.org', exact: true }),
+  ).toHaveCount(0)
+  expect(requests).toEqual([
+    { targetId, email: 'member@example.org', action: 'assign' },
+    { targetId, email: 'member@example.org', action: 'revoke' },
+  ])
+})
 const officer = '11111111-1111-4111-8111-111111111111'
 const targetId = '22222222-2222-4222-8222-222222222222'
 const mailboxId = '33333333-3333-4333-8333-333333333333'
@@ -132,7 +244,7 @@ test('workspace header blends into the scene and shares the catalog logo interac
 test('workspace and login are private-indexed and unconfigured auth fails closed', async ({
   request,
 }) => {
-  for (const path of ['/workspace', '/login']) {
+  for (const path of ['/workspace', '/dashboard', '/login']) {
     const response = await request.get(path)
     expect(response.status()).toBe(200)
     expect(response.headers()['x-robots-tag']).toContain('noindex')
@@ -188,7 +300,7 @@ test('private studio presents evidence, unknown priority and all sections withou
     'Proposals',
   ]) {
     await page
-      .getByRole('navigation', { name: 'Partnership studio' })
+      .getByRole('navigation', { name: 'Dashboard sections' })
       .getByRole('button', { name: label, exact: true })
       .click()
     await expect(page.locator('.studio-content')).toBeVisible()
@@ -231,7 +343,7 @@ test('mail sending requires separate approval and final confirmation', async ({ 
   })
   await page.goto('/workspace')
   await page
-    .getByRole('navigation', { name: 'Partnership studio' })
+    .getByRole('navigation', { name: 'Dashboard sections' })
     .getByRole('button', { name: 'Proposals', exact: true })
     .click()
   await page.getByRole('button', { name: /Robotics discussion with Matrix Fellows/ }).click()

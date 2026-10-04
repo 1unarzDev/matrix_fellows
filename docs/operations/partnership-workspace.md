@@ -1,9 +1,14 @@
 # Partnership workspace
 
-The private `/workspace` is an adult-officer pilot, separate from the shared-PIN
-content editor. Public membership responses are not an outreach profile source.
+The private `/dashboard` (`/workspace` remains an alias) supports verified named
+members, separate from the shared-PIN content editor. Discovery and research
+remain officer/admin-only. Public membership responses are not an outreach profile source.
 Research discovers candidates and creates evidence/proposal suggestions; its
-code has no sending path. Every message requires an officer's exact approval.
+code has no sending path. Every message requires its owner's exact approval and
+send confirmation. Members may send personal inquiries only to ready,
+unsuppressed contacts explicitly assigned by an officer. Assignment is rechecked
+at creation, editing, approval, and transactional send claim. Revocation blocks
+approved but unclaimed sends, not messages already submitted to a provider.
 The pilot Worker uses a privileged Supabase service credential: it is not an
 isolated database principal. Protect it accordingly; a scoped research broker is
 required before allowing untrusted executable agent code.
@@ -11,11 +16,13 @@ required before allowing untrusted executable agent code.
 ## Configure identity and storage
 
 Apply the additive outreach migrations in filename order. Use named Supabase
-Auth accounts, disable public registration, and configure Google, Azure/Microsoft
-and email magic-link providers. Invite/pre-create the actual adult officers in
+Auth accounts, enable email-confirmed member registration, and configure Google, Azure/Microsoft
+and email magic-link providers as credentials become available. Invite/pre-create the actual officers in
 Supabase Auth, then insert their UUID and exact confirmed email in
 `outreach_members`; role is `officer` or `admin`. This is not the legacy `editors`
 allowlist. Removing/disabling membership revokes subsequent workspace API access.
+Verified signup creates only a member; it does not approve club participation,
+parental permission, or officer access. Disabled accounts cannot re-enroll.
 
 Allow the actual site origin's `/api/workspace/auth/callback` in Supabase redirect
 settings. Local tests need the localhost equivalent. Configure dependable Auth
@@ -60,7 +67,7 @@ Deploy independently using `npm run deploy:outreach`, after verifying credential
 and the worker dry run. The opportunity-import Worker is unchanged. Supply the
 outreach Worker's Supabase URL/service key; these never reach the browser.
 
-The default worker and database both start paused. Cron schedules one rotated
+The deployed worker is enabled; the database pause switch starts paused. Cron schedules one rotated
 reviewed institutional directory on Monday/Wednesday/Friday at 16:00 UTC; a
 15-minute drain resumes durable queued research. Default review capacity is 45,
 new admissions at most 15/week, batch limit 5, concurrent leases 2, retries 3.
@@ -85,9 +92,9 @@ model request bodies. Add institutions only after access/terms/source review.
 
 Gemini is optional. To activate, explicitly set `OUTREACH_ENABLED=true`,
 `GEMINI_TERMS_CONFIRMED=true`, `GEMINI_FREE_PROJECT_CONFIRMED=true`, configure
-`GEMINI_API_KEY`, and enable AI/terms in workspace settings. Confirm the actual
-project has no paid fallback and the intended adult-only service complies with
-current terms; an adult-owned key is not by itself clearance for a student app.
+`GEMINI_API_KEY`, and enable AI/terms in workspace settings. The owner has confirmed
+permitted use and configured free project `matrix-fellows` (number `175603254773`).
+No paid fallback is implemented.
 Free quota is availability, not a service-level guarantee. Quota exhaustion
 disables model execution; it does not rotate keys or enable billing.
 
@@ -102,10 +109,43 @@ locally. Google Search grounded output is not mined into the candidate database.
 
 Run typecheck, unit/SQL authorization tests, production build, workspace browser
 checks, and `wrangler deploy --dry-run --config workers/outreach.wrangler.jsonc`.
-Then verify real invitation-only sign-in, provider consent, encrypted connection,
+Then verify real email-confirmed sign-in, provider consent, encrypted connection,
 controlled sending to a consenting test address, quota pause, cron and workflow
 completion in the configured preview. Unit mocks are not successful delivery
 evidence. Keep AI/sending inactive until those live setup checks pass.
+
+## Deployed setup checkpoint · October 3, 2026
+
+Supabase project `xlnjzzbsxzadrvbrggau`: migrations 023, 024, and 028 applied.
+All 18 outreach tables have RLS; authenticated users cannot execute enrollment,
+assignment-access, approval, or send-claim service RPCs directly. Public signup
+is enabled with email confirmation retained. Callback allowlist includes
+`https://matrixfellows.com/api/workspace/auth/callback`; legacy admin redirect retained.
+Only existing verified named editor `lunarzdev@outlook.com` was bootstrapped
+as dashboard admin. Other accounts receive no elevated role automatically.
+
+Frontend session/encryption secrets provisioned without rotating existing secrets.
+Research Worker `matrix-fellows-outreach` and Workflow `matrix-outreach-research`
+deployed with Supabase/Gemini credentials and bounded cron schedules. Gemini
+model metadata returned HTTP 200; this is not a generation/quota/billing test.
+The supplied Google project identity is owner-reported, not independently
+established by that key check.
+
+Nine starter candidates and ten reviewed source routes installed. Repeat setup:
+`npx tsx scripts/setup-partnership-workspace.mts` (authenticated Supabase CLI;
+preserves existing candidates and source reviews). The dashboard's import action
+uses the same reviewed registry.
+
+Controlled live Workflow `setup-e1609b6b-4111-45d0-a7aa-49068b5862f1`
+completed UTA SMILE acquisition with three first-party pages and persisted its
+snapshot without a model request. Research returned to paused; a live paused
+claim returned zero jobs. Terms confirmation is stored; AI remains disabled
+pending explicitly screened public excerpts. No outreach emails were sent.
+
+Remaining operator setup: Google/Microsoft OAuth client credentials and provider
+callback/consent registration, reliable Auth SMTP, real sign-in and consenting
+mailbox test. Default Supabase mail delivery may restrict recipients without
+custom SMTP. Neither OAuth login nor mailbox sending is claimed operational.
 
 Record declines/opt-outs immediately. Coordinate outreach per laboratory, not
 just email address. Recheck affiliation/contact evidence before approval. Propose

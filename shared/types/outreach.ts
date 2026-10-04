@@ -97,7 +97,7 @@ export interface OutreachMailbox {
 export interface OutreachMember {
   userId: string
   email: string
-  role: 'officer' | 'admin'
+  role: 'member' | 'officer' | 'admin'
 }
 export interface OutreachSettings {
   paused: boolean

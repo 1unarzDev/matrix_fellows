@@ -1,8 +1,8 @@
-import { requireWorkspaceOfficer, assertWorkspaceOrigin } from '../../../utils/workspace-auth'
+import { requireWorkspaceMember, assertWorkspaceOrigin } from '../../../utils/workspace-auth'
 import { workspaceStorage, workspaceResult } from '../../../utils/workspace-storage'
 export default defineEventHandler(async (event) => {
   assertWorkspaceOrigin(event)
-  const member = await requireWorkspaceOfficer(event)
+  const member = await requireWorkspaceMember(event)
   const id = getRouterParam(event, 'id') || ''
   if (!/^[a-z0-9-]{1,160}$/.test(id))
     throw createError({ statusCode: 400, statusMessage: 'Invalid opportunity.' })

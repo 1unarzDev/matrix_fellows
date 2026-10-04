@@ -1,6 +1,7 @@
 import { z } from 'zod'
+import { assertWorkspaceTarget } from '../../utils/workspace-access'
 import {
-  requireWorkspaceOfficer,
+  requireWorkspaceMember,
   assertWorkspaceOrigin,
   workspaceAuthStorage,
 } from '../../utils/workspace-auth'
@@ -14,7 +15,7 @@ import {
 export default defineEventHandler(async (event) => {
   setHeader(event, 'Cache-Control', 'no-store')
   assertWorkspaceOrigin(event)
-  const officer = await requireWorkspaceOfficer(event)
+  const officer = await requireWorkspaceMember(event)
   const body = z
     .object({
       proposalId: z.string().uuid(),
@@ -24,6 +25,17 @@ export default defineEventHandler(async (event) => {
     })
     .parse(await readBody(event))
   const client = workspaceAuthStorage(event)
+  if (officer.role === 'member') {
+    const { data: proposal } = await client
+      .from('outreach_proposals')
+      .select('target_id,kind')
+      .eq('id', body.proposalId)
+      .eq('created_by', officer.userId)
+      .maybeSingle()
+    if (!proposal)
+      throw createError({ statusCode: 403, statusMessage: 'Send your own personal inquiry only.' })
+    await assertWorkspaceTarget(event, officer, proposal.target_id, proposal.kind)
+  }
   const { data: mailbox, error } = await client
     .from('outreach_mailboxes')
     .select('*')

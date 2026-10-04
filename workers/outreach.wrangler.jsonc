@@ -13,9 +13,9 @@
     },
   ],
   "vars": {
-    "OUTREACH_ENABLED": "false",
-    "GEMINI_TERMS_CONFIRMED": "false",
-    "GEMINI_FREE_PROJECT_CONFIRMED": "false",
+    "OUTREACH_ENABLED": "true",
+    "GEMINI_TERMS_CONFIRMED": "true",
+    "GEMINI_FREE_PROJECT_CONFIRMED": "true",
     "GEMINI_MODEL": "gemini-2.5-flash",
   },
   "observability": { "enabled": true },

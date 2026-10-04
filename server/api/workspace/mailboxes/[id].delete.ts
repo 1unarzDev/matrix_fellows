@@ -1,13 +1,13 @@
 import { z } from 'zod'
 import {
-  requireWorkspaceOfficer,
+  requireWorkspaceMember,
   assertWorkspaceOrigin,
   workspaceAuthStorage,
 } from '../../../utils/workspace-auth'
 export default defineEventHandler(async (event) => {
   setHeader(event, 'Cache-Control', 'no-store')
   assertWorkspaceOrigin(event)
-  const officer = await requireWorkspaceOfficer(event)
+  const officer = await requireWorkspaceMember(event)
   const id = z.string().uuid().parse(getRouterParam(event, 'id'))
   // Tombstone the identity for historical approvals, erase local credentials immediately.
   const { data, error } = await workspaceAuthStorage(event)

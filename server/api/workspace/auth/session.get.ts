@@ -1,8 +1,8 @@
-import { requireWorkspaceOfficer } from '../../../utils/workspace-auth'
+import { requireWorkspaceMember } from '../../../utils/workspace-auth'
 export default defineEventHandler(async (event) => {
   setHeader(event, 'Cache-Control', 'no-store')
   try {
-    const { userId, email, role } = await requireWorkspaceOfficer(event)
+    const { userId, email, role } = await requireWorkspaceMember(event)
     return { configured: true, authenticated: true, officer: { userId, email, role } }
   } catch (cause) {
     const status = (cause as { statusCode?: number }).statusCode

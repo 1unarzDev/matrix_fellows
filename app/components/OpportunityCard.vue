@@ -65,7 +65,7 @@ onMounted(() => {
     class="opportunity-card flex min-w-0 flex-col overflow-hidden rounded-2xl border border-paper/15 transition-[transform,border-color,background-color,box-shadow] duration-700 ease-[cubic-bezier(.16,1,.3,1)] motion-reduce:transition-none"
     :class="
       compact
-        ? 'bg-paper/[.006] shadow-[0_22px_70px_rgba(0,7,15,.14),inset_0_1px_rgba(255,255,255,.05)] backdrop-blur-[18px] backdrop-saturate-[118%] hover:-translate-y-0.5 hover:border-paper/30 hover:bg-paper/[.014] hover:shadow-[0_28px_82px_rgba(0,7,15,.22),0_0_34px_rgba(221,188,119,.035),inset_0_1px_rgba(255,255,255,.07)]'
+        ? 'opportunity-card--featured bg-paper/[.006] shadow-[0_22px_70px_rgba(0,7,15,.14),inset_0_1px_rgba(255,255,255,.05)] backdrop-blur-[18px] backdrop-saturate-[118%]'
         : 'bg-paper/[.015] hover:border-paper/30 hover:bg-paper/[.025] hover:shadow-[0_16px_48px_#00000012]'
     "
   >
@@ -327,3 +327,69 @@ onMounted(() => {
     </div>
   </article>
 </template>
+
+<style scoped>
+.opportunity-card--featured {
+  position: relative;
+  isolation: isolate;
+  transition:
+    transform 900ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 1000ms ease,
+    box-shadow 1000ms ease;
+}
+.opportunity-card--featured::before,
+.opportunity-card--featured::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    opacity 1100ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 1300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.opportunity-card--featured::before {
+  background:
+    radial-gradient(ellipse at 12% 0%, rgb(228 198 142 / 9%), transparent 62%),
+    radial-gradient(ellipse at 100% 80%, rgb(190 173 236 / 6%), transparent 68%);
+  transform: translateY(12px) scale(1.03);
+  z-index: -1;
+}
+.opportunity-card--featured::after {
+  box-shadow:
+    inset 0 1px 0 rgb(244 228 193 / 19%),
+    inset 0 0 36px rgb(225 211 247 / 3%);
+}
+.opportunity-card--featured:focus-within {
+  border-color: rgb(230 217 187 / 24%);
+}
+.opportunity-card--featured:focus-within::before,
+.opportunity-card--featured:focus-within::after {
+  opacity: 1;
+  transform: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .opportunity-card--featured:hover {
+    transform: translateY(-3px);
+    border-color: rgb(230 217 187 / 24%);
+    box-shadow:
+      0 28px 76px rgb(0 7 15 / 19%),
+      0 0 38px rgb(220 199 154 / 4%),
+      inset 0 1px rgb(255 255 255 / 5%);
+  }
+  .opportunity-card--featured:hover::before,
+  .opportunity-card--featured:hover::after {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .opportunity-card--featured,
+  .opportunity-card--featured::before,
+  .opportunity-card--featured::after {
+    transition: none;
+    transform: none !important;
+  }
+}
+</style>

@@ -11,6 +11,7 @@ vi.mock('h3', async (importOriginal) => ({
 }))
 vi.mock('@supabase/supabase-js', () => ({
   createClient: () => ({
+    rpc: async () => ({ data: null, error: null }),
     from: () => ({
       select: () => ({
         eq: () => ({ maybeSingle: async () => ({ data: state.member, error: null }) }),
@@ -22,6 +23,7 @@ import {
   sealWorkspace,
   openWorkspace,
   requireWorkspaceOfficer,
+  requireWorkspaceMember,
   WORKSPACE_COOKIE,
 } from '../../server/utils/workspace-auth'
 const config = {
@@ -39,6 +41,40 @@ afterEach(() => {
   state.member = null
 })
 describe('named officer authentication', () => {
+  it('allows verified members locally but refuses discovery privilege and disabled memberships', async () => {
+    vi.stubGlobal('useRuntimeConfig', () => config)
+    state.cookie = await sealWorkspace(
+      { access_token: 'token', refresh_token: 'refresh', expires_at: Date.now() + 600000 },
+      config.workspaceSessionSecret,
+      WORKSPACE_COOKIE,
+    )
+    state.member = {
+      user_id: 'member-id',
+      email: 'member@example.com',
+      role: 'member',
+      enabled: true,
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockImplementation(async () =>
+          Response.json({
+            id: 'member-id',
+            email: 'member@example.com',
+            email_confirmed_at: new Date().toISOString(),
+          }),
+        ),
+    )
+    expect(await requireWorkspaceMember({ context: {} } as never)).toMatchObject({ role: 'member' })
+    await expect(requireWorkspaceOfficer({ context: {} } as never)).rejects.toMatchObject({
+      statusCode: 403,
+    })
+    state.member.enabled = false
+    await expect(requireWorkspaceMember({ context: {} } as never)).rejects.toMatchObject({
+      statusCode: 403,
+    })
+  })
   it('authenticates encrypted values and separates token purposes', async () => {
     const sealed = await sealWorkspace(
       { value: 'secret' },

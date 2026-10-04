@@ -4,7 +4,7 @@ defineProps<{ title: string; subtitle?: string }>()
 
 <template>
   <div class="workspace-shell">
-    <a href="#workspace-main" class="workspace-skip">Skip to workspace</a>
+    <a href="#workspace-main" class="workspace-skip">Skip to dashboard</a>
     <div class="workspace-glow" aria-hidden="true" />
     <ScienceAccent theme="astronomy" />
     <header class="workspace-header">
@@ -64,9 +64,13 @@ defineProps<{ title: string; subtitle?: string }>()
   background: #d8b977;
   color: #17131b;
   font-size: 12px;
+  opacity: 0;
+  pointer-events: none;
 }
 .workspace-skip:focus-visible {
   top: 15px;
+  opacity: 1;
+  pointer-events: auto;
 }
 .workspace-header {
   min-height: 86px;

@@ -108,15 +108,16 @@ export async function writeWorkspaceSession(
 export function clearWorkspaceSession(event: H3Event) {
   deleteCookie(event, WORKSPACE_COOKIE, { path: '/api/workspace' })
 }
-export interface WorkspaceOfficer {
+export interface WorkspaceMember {
   userId: string
   email: string
-  role: 'officer' | 'admin'
+  role: 'member' | 'officer' | 'admin'
   supabaseUrl: string
   serviceKey: string
 }
+export type WorkspaceOfficer = WorkspaceMember
 
-export async function requireWorkspaceOfficer(event: H3Event): Promise<WorkspaceOfficer> {
+export async function requireWorkspaceMember(event: H3Event): Promise<WorkspaceMember> {
   const config = workspaceConfig(event)
   let tokens: WorkspaceTokens
   try {
@@ -126,7 +127,7 @@ export async function requireWorkspaceOfficer(event: H3Event): Promise<Workspace
       WORKSPACE_COOKIE,
     )
   } catch {
-    throw createError({ statusCode: 401, statusMessage: 'Sign in to the officer workspace.' })
+    throw createError({ statusCode: 401, statusMessage: 'Sign in to your dashboard.' })
   }
   if (tokens.expires_at < Date.now() + 30000) {
     const response = await fetch(
@@ -152,10 +153,19 @@ export async function requireWorkspaceOfficer(event: H3Event): Promise<Workspace
   }
   return validateWorkspaceUser(event, tokens.access_token)
 }
+export async function requireWorkspaceOfficer(event: H3Event): Promise<WorkspaceMember> {
+  const member = await requireWorkspaceMember(event)
+  if (member.role === 'member')
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'Officer access is required for partnership discovery.',
+    })
+  return member
+}
 export async function validateWorkspaceUser(
   event: H3Event,
   accessToken: string,
-): Promise<WorkspaceOfficer> {
+): Promise<WorkspaceMember> {
   const config = workspaceConfig(event)
   // The provider validates the token; a decoded JWT or client-side session is not authorization.
   const response = await fetch(`${config.public.supabaseUrl}/auth/v1/user`, {
@@ -171,6 +181,22 @@ export async function validateWorkspaceUser(
     email?: string
     email_confirmed_at?: string
   }
+  if (!user.email_confirmed_at || !user.email)
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'Verify your email before opening the dashboard.',
+    })
+  // Server-only enrollment checks verified provider identity and never revives
+  // a disabled account or accepts a caller-supplied privilege.
+  const enrolled = await workspaceAuthStorage(event).rpc('outreach_enroll_member', {
+    p_user_id: user.id,
+    p_email: user.email.toLowerCase(),
+  })
+  if (enrolled.error)
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'This account cannot access the dashboard.',
+    })
   const { data: member, error } = await workspaceAuthStorage(event)
     .from('outreach_members')
     .select('user_id,email,role,enabled')
@@ -185,9 +211,12 @@ export async function validateWorkspaceUser(
     !user.email_confirmed_at ||
     !member?.enabled ||
     member.email.toLowerCase() !== user.email?.toLowerCase() ||
-    !['officer', 'admin'].includes(member.role)
+    !['member', 'officer', 'admin'].includes(member.role)
   )
-    throw createError({ statusCode: 403, statusMessage: 'This workspace is invitation-only.' })
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'This account cannot access the dashboard.',
+    })
   event.context.workspaceActor = { userId: user.id, role: member.role }
   return {
     userId: user.id,

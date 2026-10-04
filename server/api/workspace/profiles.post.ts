@@ -1,4 +1,4 @@
-import { requireWorkspaceOfficer, assertWorkspaceOrigin } from '../../utils/workspace-auth'
+import { requireWorkspaceMember, assertWorkspaceOrigin } from '../../utils/workspace-auth'
 import {
   workspaceStorage,
   workspaceResult,
@@ -9,7 +9,7 @@ import {
 import { outreachProfileSchema } from '#shared/utils/outreach'
 export default defineEventHandler(async (event) => {
   assertWorkspaceOrigin(event)
-  const member = await requireWorkspaceOfficer(event)
+  const member = await requireWorkspaceMember(event)
   const body = await workspaceBody(event, outreachProfileSchema)
   return profileFromRow(
     workspaceResult(

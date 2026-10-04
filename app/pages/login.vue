@@ -1,5 +1,5 @@
 <script setup lang="ts">
-useSeoMeta({ title: 'Officer sign-in | Matrix Fellows', robots: 'noindex, nofollow' })
+useSeoMeta({ title: 'Dashboard sign-in | Matrix Fellows', robots: 'noindex, nofollow' })
 const email = ref('')
 const token = ref('')
 const sent = ref(false)
@@ -39,7 +39,7 @@ async function verify() {
       method: 'POST',
       body: { email: email.value.trim(), token: token.value },
     })
-    await navigateTo('/workspace')
+    await navigateTo('/dashboard')
   } catch (cause: any) {
     error.value =
       cause?.data?.message ||
@@ -55,10 +55,9 @@ onMounted(async () => {
       '/api/workspace/auth/session',
     )
     configured.value = session.configured
-    if (session.authenticated) await navigateTo('/workspace')
+    if (session.authenticated) await navigateTo('/dashboard')
     if (route.query.error)
-      error.value =
-        'Sign-in did not complete. Your account must be approved for the officer workspace.'
+      error.value = 'Sign-in did not complete. Your account must be approved for the dashboard.'
   } catch {
     error.value = 'Unable to check sign-in availability. Please refresh and try again.'
   } finally {
@@ -70,7 +69,7 @@ onMounted(async () => {
 <template>
   <WorkspaceShell
     title="Thoughtful connections. Shared possibilities."
-    subtitle="A private workspace for approved adult officers to turn well-researched leads into meaningful partnerships."
+    subtitle="A private dashboard for society members to organize research, opportunities, and meaningful next steps."
   >
     <template #header
       ><NuxtLink to="/" class="ws-button"
@@ -88,7 +87,9 @@ onMounted(async () => {
         </p>
         <ul>
           <li>
-            <SiteIcon name="compass" :size="16" /><span>Research-backed candidate dossiers</span>
+            <SiteIcon name="compass" :size="16" /><span
+              >Your saved opportunities and research plans</span
+            >
           </li>
           <li>
             <SiteIcon name="spark" :size="16" /><span>Proposals tailored to real capabilities</span>
@@ -99,10 +100,10 @@ onMounted(async () => {
         </ul>
       </section>
       <section class="ws-panel login-panel">
-        <p class="ws-kicker">Officer access</p>
-        <h2>Welcome to the studio.</h2>
+        <p class="ws-kicker">Member access</p>
+        <h2>Welcome to your dashboard.</h2>
         <p class="ws-muted">
-          Use the email associated with your approved officer account. Public registration is not
+          Use the email associated with your approved member account. Public registration is not
           available.
         </p>
         <div v-if="error" role="alert" class="ws-alert ws-error">{{ error }}</div>
@@ -135,7 +136,7 @@ onMounted(async () => {
           <Transition name="ws-content" mode="out-in"
             ><form v-if="!sent" key="email" @submit.prevent="login('email')">
               <label class="ws-field"
-                >Officer email<input
+                >Account email<input
                   v-model="email"
                   type="email"
                   autocomplete="email"
@@ -177,7 +178,7 @@ onMounted(async () => {
           >
           <p class="login-note">
             <SiteIcon name="lock" :size="13" />Sign-in does not grant email sending access. Connect
-            your mailbox separately inside the studio.
+            your mailbox separately inside the dashboard.
           </p></template
         >
       </section>

@@ -379,7 +379,6 @@ onBeforeUnmount(() => {
                     'Meeting',
                     'Research',
                     'Support',
-                    'Links',
                     'Listings',
                     'Sources',
                     'Responses',
@@ -447,22 +446,6 @@ onBeforeUnmount(() => {
                         placeholder="https://"
                       />
                     </fieldset>
-                  </div>
-                  <div v-if="tab === 'Links'" class="space-y-4">
-                    <AdminField
-                      v-model="draft.links.join"
-                      label="External community link · reserved"
-                      placeholder="https://"
-                    /><AdminField
-                      v-model="draft.links.contact"
-                      label="Contact link"
-                      placeholder="https:// or mailto:"
-                    />
-                    <p class="text-xs leading-relaxed text-paper/45">
-                      The website now uses its built-in membership form and
-                      contact@matrixfellows.com. These legacy links are retained for future external
-                      community integrations.
-                    </p>
                   </div>
                   <div v-if="tab === 'Listings'">
                     <template v-if="!editing"

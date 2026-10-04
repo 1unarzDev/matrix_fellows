@@ -9,7 +9,13 @@ export default defineEventHandler((event) => {
     return sendRedirect(event, `https://matrixfellows.com${url.pathname}${url.search}`, 301)
   }
   const path = url.pathname
-  if (path === '/login' || path === '/workspace' || path.startsWith('/workspace/')) {
+  if (
+    path === '/login' ||
+    path === '/workspace' ||
+    path.startsWith('/workspace/') ||
+    path === '/dashboard' ||
+    path.startsWith('/dashboard/')
+  ) {
     setHeader(event, 'X-Robots-Tag', 'noindex, nofollow')
     setHeader(event, 'Cache-Control', 'private, no-store')
     setHeader(event, 'Referrer-Policy', 'same-origin')

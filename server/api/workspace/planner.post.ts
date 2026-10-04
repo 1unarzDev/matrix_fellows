@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { requireWorkspaceOfficer, assertWorkspaceOrigin } from '../../utils/workspace-auth'
+import { requireWorkspaceMember, assertWorkspaceOrigin } from '../../utils/workspace-auth'
 import {
   workspaceStorage,
   workspaceResult,
@@ -11,10 +11,11 @@ import {
 } from '../../utils/workspace-storage'
 import type { OutreachProfile } from '#shared/types/outreach'
 import { proposalStyles, tailorOutreachDraft } from '#shared/utils/outreach-tailoring'
+import { assertWorkspaceTarget } from '../../utils/workspace-access'
 
 export default defineEventHandler(async (event) => {
   assertWorkspaceOrigin(event)
-  const member = await requireWorkspaceOfficer(event)
+  const member = await requireWorkspaceMember(event)
   const input = await workspaceBody(
     event,
     z
@@ -27,11 +28,17 @@ export default defineEventHandler(async (event) => {
       .strict(),
   )
   const db = workspaceStorage(event)
+  await assertWorkspaceTarget(event, member, input.targetId, input.kind)
   const target = targetFromRow(
     workspaceResult(
       await db.from('outreach_targets').select('*').eq('id', input.targetId).single(),
     ),
   )
+  if (member.role === 'member' && target.status !== 'ready')
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'Choose a reviewed, ready research connection.',
+    })
   if (['rejected', 'deferred'].includes(target.status))
     throw createError({
       statusCode: 409,

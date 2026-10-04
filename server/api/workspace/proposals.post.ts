@@ -1,4 +1,4 @@
-import { requireWorkspaceOfficer, assertWorkspaceOrigin } from '../../utils/workspace-auth'
+import { requireWorkspaceMember, assertWorkspaceOrigin } from '../../utils/workspace-auth'
 import {
   workspaceStorage,
   workspaceResult,
@@ -7,14 +7,21 @@ import {
   proposalToRow,
 } from '../../utils/workspace-storage'
 import { outreachProposalSchema } from '#shared/utils/outreach'
+import { assertWorkspaceTarget } from '../../utils/workspace-access'
 export default defineEventHandler(async (event) => {
   assertWorkspaceOrigin(event)
-  const member = await requireWorkspaceOfficer(event)
+  const member = await requireWorkspaceMember(event)
   const body = await workspaceBody(event, outreachProposalSchema)
   const db = workspaceStorage(event)
+  await assertWorkspaceTarget(event, member, body.targetId, body.kind)
   const target = workspaceResult(
     await db.from('outreach_targets').select('status').eq('id', body.targetId).single(),
   )
+  if (member.role === 'member' && target.status !== 'ready')
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'Choose a reviewed, ready research connection.',
+    })
   if (body.kind === 'student') {
     if (!body.profileId)
       throw createError({ statusCode: 422, statusMessage: 'Choose a student profile.' })

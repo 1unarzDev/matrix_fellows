@@ -881,7 +881,7 @@ onBeforeUnmount(() => {
         >
           <p class="text-paper/30">Student-founded. Built on curiosity.</p>
           <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <NuxtLink to="/workspace" class="footer-utility">Officer workspace</NuxtLink>
+            <NuxtLink to="/dashboard" class="footer-utility">Dashboard</NuxtLink>
             <span class="footer-utility-separator" aria-hidden="true">·</span>
             <button class="footer-utility" @click="adminOpen = true">
               <SiteIcon name="lock" :size="13" /> Member admin

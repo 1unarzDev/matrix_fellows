@@ -121,8 +121,8 @@ The full working-tree checks (including separate, unshipped catalog work) passed
 248 tests and 16 desktop/mobile browser tests. In the clean release preview,
 the first browser run passed the 12 dashboard tests but failed four PIN-editor
 tests because public Supabase configuration was absent. Rerun uses explicit
-dummy public configuration with mocked endpoints; no real admin PIN or member
-data is used. Screenshots of mobile personal builder and desktop assignments
+dummy public configuration with mocked endpoints passed all 16 checks; no real
+admin PIN or member data is used. Screenshots of mobile personal builder and desktop assignments
 were visually inspected. Physical devices and real mailbox consent/delivery
 remain unverified.
 
@@ -130,3 +130,16 @@ Remaining setup: OAuth client IDs/secrets and callback/provider registration,
 dependable Auth email delivery, real email-verified sign-in, a consenting
 mailbox test, and screened public AI excerpts. See the updated
 [deployment runbook](../operations/partnership-workspace.md).
+
+Frontend deployed from the isolated release: Nuxt build
+`b5d8518c-45b0-4a3c-817d-5b002d4811b9`, Cloudflare version
+`7233a79f-9c2c-4ed1-b8df-b8e5bd9c8ad5`. Live `/dashboard` and `/login`
+return 200 with private/no-store and noindex; unauthenticated workspace and
+assignment APIs return 401. Session reports configured, not authenticated;
+Google/Azure providers accurately report disabled. Custom-domain routing is now
+explicit in Wrangler configuration, avoiding configuration drift on deployment.
+
+Deployment revealed a preexisting Gemini credential stored as a plain frontend
+Worker variable, which Wrangler exposed in its configuration-diff log. The
+unused frontend variable was removed; the research Worker holds a secret
+binding. Owner was notified to rotate the key; rotation is not claimed complete.

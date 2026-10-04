@@ -83,3 +83,50 @@ The pilot research Worker holds a privileged service credential, so database
 privileges do not isolate it from private tables. Do not run untrusted executable
 agents with that credential; a restricted research broker is the next security
 increment if the trust model expands.
+
+## Subsequent member-dashboard and remote setup cycle
+
+The earlier checkpoint above describes the invitation-only pilot; it is retained
+as historical evidence. Release `b4b0e48` opens verified member accounts while
+preserving officer-only discovery/research. Members can send only personal
+inquiries to explicitly assigned, ready, unsuppressed contacts. SQL approval and
+send-claim checks revalidate live assignment; revocation blocks approved but
+unclaimed sends. Ordinary account verification is not club/parental approval.
+
+Supabase migrations 023, 024, and 028 were applied to
+`xlnjzzbsxzadrvbrggau`; unrelated already-applied catalog migrations were not
+rerun. All 18 outreach tables have RLS. Remote authenticated-role checks deny
+execution of privileged enrollment/access/approval/send RPCs; anonymous REST
+requests for targets, reviewed-target view, and membership returned HTTP 401.
+Email confirmation is retained, signup enabled, dashboard callback allowlisted,
+and the preexisting verified named editor enrolled as admin. Nine reviewed
+starter candidates and ten sources are installed without overwriting reviews.
+
+Cloudflare research Workflow `setup-e1609b6b-4111-45d0-a7aa-49068b5862f1`
+completed in three seconds with three UTA SMILE first-party pages. The live
+database confirms checkpoint persistence. No Gemini generation occurred; model
+metadata access returned HTTP 200. Worker credentials and legal/free-use flags
+are configured, but research was restored to paused and AI remains disabled.
+Claiming while paused returned zero jobs. No outreach email was sent.
+
+Production release built in an isolated checkout with its own locked dependency
+install: typecheck and build pass. Unit/SQL tests pass: 225 across 37 files with
+`npx vitest run --maxWorkers=2`. An initial unrestricted concurrent run timed
+out initializing ten PGlite suites under build/test resource contention; the
+bounded rerun passed without weakening timeouts. A symlinked dependency build
+also failed Nuxt's internal import resolution; a separate `npm ci` installation
+resolved it. These failed attempts are not reported as passes.
+
+The full working-tree checks (including separate, unshipped catalog work) passed
+248 tests and 16 desktop/mobile browser tests. In the clean release preview,
+the first browser run passed the 12 dashboard tests but failed four PIN-editor
+tests because public Supabase configuration was absent. Rerun uses explicit
+dummy public configuration with mocked endpoints; no real admin PIN or member
+data is used. Screenshots of mobile personal builder and desktop assignments
+were visually inspected. Physical devices and real mailbox consent/delivery
+remain unverified.
+
+Remaining setup: OAuth client IDs/secrets and callback/provider registration,
+dependable Auth email delivery, real email-verified sign-in, a consenting
+mailbox test, and screened public AI excerpts. See the updated
+[deployment runbook](../operations/partnership-workspace.md).

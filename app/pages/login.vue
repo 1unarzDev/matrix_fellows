@@ -7,6 +7,7 @@ const busy = ref(false)
 const error = ref('')
 const configured = ref(true)
 const checking = ref(true)
+const providers = ref({ google: false, azure: false })
 function resetEmail() {
   sent.value = false
   token.value = ''
@@ -56,8 +57,15 @@ onMounted(async () => {
     )
     configured.value = session.configured
     if (session.authenticated) await navigateTo('/dashboard')
+    else if (session.configured) {
+      try {
+        providers.value = await $fetch('/api/workspace/auth/providers')
+      } catch {
+        // Email remains available; never advertise unconfigured OAuth providers.
+      }
+    }
     if (route.query.error)
-      error.value = 'Sign-in did not complete. Your account must be approved for the dashboard.'
+      error.value = 'Sign-in did not complete. Please verify your email and try again.'
   } catch {
     error.value = 'Unable to check sign-in availability. Please refresh and try again.'
   } finally {
@@ -103,8 +111,8 @@ onMounted(async () => {
         <p class="ws-kicker">Member access</p>
         <h2>Welcome to your dashboard.</h2>
         <p class="ws-muted">
-          Use the email associated with your approved member account. Public registration is not
-          available.
+          Verify your email to create or open your dashboard. Club participation approval is
+          separate; personal research contacts are assigned by officers.
         </p>
         <div v-if="error" role="alert" class="ws-alert ws-error">{{ error }}</div>
         <div v-if="checking" class="ws-muted checking" role="status">Checking secure access…</div>
@@ -112,15 +120,25 @@ onMounted(async () => {
           Workspace authentication has not been configured yet. Contact the society administrator.
         </div>
         <template v-else
-          ><div class="provider-buttons">
-            <button class="ws-button" :disabled="busy" @click="login('google')">
+          ><div v-if="providers.google || providers.azure" class="provider-buttons">
+            <button
+              v-if="providers.google"
+              class="ws-button"
+              :disabled="busy"
+              @click="login('google')"
+            >
               <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
                 <path
                   fill="currentColor"
                   d="M21.4 12.2c0-.7-.1-1.5-.2-2.2H12v4.2h5.3a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.8 2.9-4.3 2.9-7.5ZM12 22c2.7 0 4.9-.9 6.5-2.3L15.3 17c-.9.6-2 .9-3.3.9-2.6 0-4.8-1.7-5.6-4H3.1v2.6A10 10 0 0 0 12 22ZM6.4 14a6 6 0 0 1 0-4V7.4H3.1a10 10 0 0 0 0 9.2L6.4 14ZM12 6.1c1.5 0 2.8.5 3.9 1.5l2.9-2.9A9.6 9.6 0 0 0 12 2a10 10 0 0 0-8.9 5.4L6.4 10c.8-2.3 3-3.9 5.6-3.9Z"
                 /></svg
               >Continue with Google</button
-            ><button class="ws-button" :disabled="busy" @click="login('azure')">
+            ><button
+              v-if="providers.azure"
+              class="ws-button"
+              :disabled="busy"
+              @click="login('azure')"
+            >
               <svg
                 width="17"
                 height="17"
@@ -132,7 +150,9 @@ onMounted(async () => {
               >Continue with Microsoft
             </button>
           </div>
-          <div class="login-divider"><span>or use your email</span></div>
+          <div v-if="providers.google || providers.azure" class="login-divider">
+            <span>or use your email</span>
+          </div>
           <Transition name="ws-content" mode="out-in"
             ><form v-if="!sent" key="email" @submit.prevent="login('email')">
               <label class="ws-field"

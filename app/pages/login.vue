@@ -59,7 +59,9 @@ onMounted(async () => {
     if (session.authenticated) await navigateTo('/dashboard')
     else if (session.configured) {
       try {
-        providers.value = await $fetch('/api/workspace/auth/providers')
+        providers.value = await $fetch<{ google: boolean; azure: boolean }>(
+          '/api/workspace/auth/providers',
+        )
       } catch {
         // Email remains available; never advertise unconfigured OAuth providers.
       }

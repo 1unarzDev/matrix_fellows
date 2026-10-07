@@ -1,12 +1,19 @@
 <script setup lang="ts">
-defineProps<{ title: string; subtitle?: string }>()
+withDefaults(defineProps<{ title?: string; subtitle?: string; variant?: 'dashboard' | 'auth' }>(), {
+  variant: 'dashboard',
+})
 </script>
 
 <template>
-  <div class="workspace-shell">
-    <a href="#workspace-main" class="workspace-skip">Skip to dashboard</a>
+  <div class="workspace-shell" :class="{ 'workspace-shell--auth': variant === 'auth' }">
+    <a href="#workspace-main" class="workspace-skip">{{
+      variant === 'auth' ? 'Skip to sign-in' : 'Skip to dashboard'
+    }}</a>
     <div class="workspace-glow" aria-hidden="true" />
-    <ScienceAccent theme="astronomy" />
+    <ScienceAccent v-if="variant !== 'auth'" theme="astronomy" />
+    <div v-if="$slots.background" class="workspace-background" aria-hidden="true">
+      <slot name="background" />
+    </div>
     <header class="workspace-header">
       <NuxtLink to="/" class="workspace-brand group" aria-label="Matrix Fellows home">
         <span class="workspace-mark"><MatrixMark class="h-6 w-6" /></span>
@@ -15,7 +22,7 @@ defineProps<{ title: string; subtitle?: string }>()
       <slot name="header" />
     </header>
     <main id="workspace-main" class="workspace-main" tabindex="-1">
-      <div class="workspace-heading">
+      <div v-if="variant !== 'auth'" class="workspace-heading">
         <p class="workspace-eyebrow">Research grows through connection</p>
         <h1>{{ title }}</h1>
         <p v-if="subtitle">{{ subtitle }}</p>
@@ -35,6 +42,30 @@ defineProps<{ title: string; subtitle?: string }>()
   --color-acid: #d8b977;
   --ws-muted: #aaa8b1;
   --ws-purple: #b9a3ed;
+}
+.workspace-shell--auth {
+  display: flex;
+  flex-direction: column;
+  background: #090a10;
+}
+.workspace-background {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.workspace-shell--auth .workspace-header {
+  position: relative;
+  z-index: 1;
+}
+.workspace-shell--auth .workspace-main {
+  display: grid;
+  place-items: center;
+  flex: 1;
+  width: 100%;
+  margin: 0;
+  max-width: none;
+  padding: 36px 20px 100px;
 }
 .workspace-glow {
   position: fixed;

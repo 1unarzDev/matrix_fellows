@@ -26,3 +26,53 @@ The following is an engineering recommendation, **not a claim that ScienceClic u
 5. **Measure the bounded alternative.** Compare fixed-time matched crops and short motion captures at phone/iPad CSS size and actual DPR; record rendering dimensions and active frame cadence. Check disk-edge shimmer, repeated texture seams, startup compilation, background pause/resume, and reduced motion. None of these sources constitutes a measured performance pass for Matrix Fellows.
 
 Implementation recommendation: write a small original single-pass shader using one shared flowing disk field and analytic lens-inspired remapping. Keep the verified repositories as references; if substantial code is adopted later, add the relevant notices and audit asset provenance. A physically accurate lookup-table renderer is a separate, benchmarked experiment, not a prerequisite for this decorative login improvement.
+
+## Implementation checkpoint · October 7, 2026
+
+Release `bf52d86` replaces the successful WebGL path's breathing SVG with an
+original single-pass shader in `app/lib/scene/access-cosmos.ts`. Disk density is
+advected at radius-dependent angular speeds; a periodic angular field avoids an
+atan seam. Resolved gold-white emission, a dark shadow, upper/lower lens-inspired
+disk images and violet outer material provide the enlarged composition. Fine
+bands use derivative-aware attenuation. This is an artistic approximation, not
+a numerical Schwarzschild/Kerr solution or ScienceClic/DNGR implementation.
+No third-party renderer code or artwork was copied.
+
+Drawing follows available RAF cadence, without throttling the UI ticker. Hidden
+tabs stop drawing, reduced motion renders a still frame, and teardown disposes
+GPU resources/listeners. WebGL failure retains the vector recovery scene and
+usable form. Drawing buffers use actual CSS dimensions and DPR capped at 2;
+this is not a claim of native DPR-3 output or measured physical-device 60 fps.
+
+Three visual passes reviewed desktop, mobile and iPad-emulated compositions,
+including password preview and successive animation captures. First-pass fine
+texture looked fabric-like; lower-frequency bands with analytic coverage were
+retained after the second pass. Final crops preserve a sharp shadow and brighter
+inner emission without brightening the whole page. Diagnostic captures live at
+`/tmp/matrix-dynamic-{pass1,pass2,final}-*.png` and `/tmp/matrix-dynamic-ipad.png`.
+
+Clean isolated production checkout: typecheck/build pass; 225 unit/SQL tests
+and 30 Chromium desktop/mobile browser tests pass. Scene tests compare actual
+canvas screenshots across time, verify still reduced-motion captures, check
+real drawing-buffer dimensions, shader errors and context-loss form recovery.
+These are browser/software-GPU regression checks, not physical Safari, thermal,
+battery or screen-presentation performance evidence.
+
+Login audit removed the decorative badge and redundant prose, added an animated
+Email link/Password switch, provider rows and passkey option. Existing email
+link/code functionality remains; password/passkey are disabled previews and
+Google/Microsoft respect backend availability. No password/passkey backend,
+credentials, Auth policy changes or new OAuth grants were implemented here.
+
+Reproduce against a production preview without custom-domain routes:
+
+```sh
+npm run typecheck
+npm run build
+npx vitest run --maxWorkers=2
+TEST_BASE_URL=http://localhost:8798 npx playwright test tests/e2e/login-interface.spec.ts tests/e2e/access-cosmos.spec.ts tests/e2e/workspace.spec.ts --workers=2
+```
+
+Next verification: physical iPad Safari and phone motion/heat at normal and
+battery-saving settings. Authentication backend integration is a separate next
+phase; do not relabel disabled previews as working login methods.

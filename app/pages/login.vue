@@ -8,6 +8,7 @@ const error = ref('')
 const configured = ref(true)
 const checking = ref(true)
 const providers = ref({ google: false, azure: false })
+const method = ref<'link' | 'password'>('link')
 const emailInput = ref<HTMLInputElement | null>(null)
 const tokenInput = ref<HTMLInputElement | null>(null)
 const stateHeight = ref<number | null>(null)
@@ -34,8 +35,16 @@ function resetEmail() {
   token.value = ''
   error.value = ''
 }
-async function login(provider: 'google' | 'azure' | 'email') {
+function selectMethod(value: 'link' | 'password') {
   if (busy.value) return
+  method.value = value
+  error.value = ''
+}
+function continueEmail() {
+  if (method.value === 'link') void login('email')
+}
+async function login(provider: 'google' | 'azure' | 'email') {
+  if (busy.value || (provider === 'email' && method.value !== 'link')) return
   userInitiated.value = true
   busy.value = true
   error.value = ''
@@ -116,16 +125,9 @@ onMounted(async () => {
         >Back to the society<SiteIcon name="arrow" :size="14" /></NuxtLink
     ></template>
     <section class="login-panel" aria-labelledby="login-title" :aria-busy="busy || checking">
-      <div class="login-emblem" aria-hidden="true">
-        <SiteIcon :name="sent ? 'mail' : 'lock'" :size="20" />
-      </div>
       <h1 id="login-title">{{ sent ? 'Check your inbox.' : 'Welcome to Matrix.' }}</h1>
       <p class="login-intro">
-        {{
-          sent
-            ? 'Your next step is in your email.'
-            : 'Sign in or create your account with one secure link.'
-        }}
+        {{ sent ? 'Your next step is in your email.' : 'Sign in or create your account.' }}
       </p>
       <Transition name="auth-alert"
         ><p v-if="error" role="alert" class="login-error">{{ error }}</p></Transition
@@ -142,7 +144,30 @@ onMounted(async () => {
           <div v-else-if="!configured" key="unconfigured" class="login-unavailable">
             Sign-in is temporarily unavailable. Please try again later.
           </div>
-          <form v-else-if="!sent" key="email" class="login-form" @submit.prevent="login('email')">
+          <form v-else-if="!sent" key="email" class="login-form" @submit.prevent="continueEmail">
+            <div class="login-methods" role="group" aria-label="Email sign-in method">
+              <span
+                class="login-method-highlight"
+                :class="{ 'is-password': method === 'password' }"
+                aria-hidden="true"
+              />
+              <button
+                type="button"
+                :aria-pressed="method === 'link'"
+                :disabled="busy"
+                @click="selectMethod('link')"
+              >
+                Magic link
+              </button>
+              <button
+                type="button"
+                :aria-pressed="method === 'password'"
+                :disabled="busy"
+                @click="selectMethod('password')"
+              >
+                Password<span class="method-status">Soon</span>
+              </button>
+            </div>
             <label for="login-email">Account email</label>
             <div class="login-input-wrap">
               <SiteIcon name="mail" :size="17" /><input
@@ -157,21 +182,45 @@ onMounted(async () => {
                 :disabled="busy"
               />
             </div>
-            <button class="login-primary" :disabled="busy" type="submit">
-              <span>{{ busy ? 'Sending your link…' : 'Continue with email' }}</span
-              ><span v-if="busy" class="login-spinner" aria-hidden="true" /><SiteIcon
-                v-else
-                name="right"
-                :size="16"
-              />
-            </button>
-            <p class="login-helper">No password needed. New here? This creates your account.</p>
-            <div v-if="providers.google || providers.azure" class="login-alternatives">
+            <div class="login-method-stage">
+              <Transition name="auth-method">
+                <div v-if="method === 'link'" key="link" class="login-method-body">
+                  <button class="login-primary" :disabled="busy" type="submit">
+                    <span>{{ busy ? 'Sending your link…' : 'Continue with email' }}</span
+                    ><span v-if="busy" class="login-spinner" aria-hidden="true" /><SiteIcon
+                      v-else
+                      name="right"
+                      :size="16"
+                    />
+                  </button>
+                  <p class="login-helper">We’ll email a secure sign-in link. No password needed.</p>
+                </div>
+                <div v-else key="password" class="login-method-body">
+                  <label for="login-password">Password</label>
+                  <div class="login-input-wrap">
+                    <SiteIcon name="lock" :size="17" /><input
+                      id="login-password"
+                      type="password"
+                      disabled
+                      autocomplete="off"
+                      placeholder="Password sign-in is coming soon"
+                      aria-describedby="password-status"
+                    />
+                  </div>
+                  <button class="login-primary" type="button" disabled>
+                    Sign in with password<span class="method-status">Coming soon</span>
+                  </button>
+                  <p id="password-status" class="login-helper">
+                    Coming soon. Use a magic link instead.
+                  </p>
+                </div>
+              </Transition>
+            </div>
+            <div class="login-alternatives">
               <span class="login-or">or continue with</span>
               <div class="login-providers">
                 <button
-                  v-if="providers.google"
-                  :disabled="busy"
+                  :disabled="busy || !providers.google"
                   type="button"
                   aria-label="Continue with Google"
                   @click="login('google')"
@@ -181,11 +230,10 @@ onMounted(async () => {
                       fill="currentColor"
                       d="M21.4 12.2c0-.7-.1-1.5-.2-2.2H12v4.2h5.3a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.8 2.9-4.3 2.9-7.5ZM12 22c2.7 0 4.9-.9 6.5-2.3L15.3 17c-.9.6-2 .9-3.3.9-2.6 0-4.8-1.7-5.6-4H3.1v2.6A10 10 0 0 0 12 22ZM6.4 14a6 6 0 0 1 0-4V7.4H3.1a10 10 0 0 0 0 9.2L6.4 14ZM12 6.1c1.5 0 2.8.5 3.9 1.5l2.9-2.9A9.6 9.6 0 0 0 12 2a10 10 0 0 0-8.9 5.4L6.4 10c.8-2.3 3-3.9 5.6-3.9Z"
                     /></svg
-                  >Google
+                  ><span>Google<small v-if="!providers.google">Not configured</small></span>
                 </button>
                 <button
-                  v-if="providers.azure"
-                  :disabled="busy"
+                  :disabled="busy || !providers.azure"
                   type="button"
                   aria-label="Continue with Microsoft"
                   @click="login('azure')"
@@ -198,9 +246,18 @@ onMounted(async () => {
                     aria-hidden="true"
                   >
                     <path d="M0 0h9v9H0zm11 0h9v9h-9zM0 11h9v9H0zm11 0h9v9h-9z" /></svg
-                  >Microsoft
+                  ><span>Microsoft<small v-if="!providers.azure">Not configured</small></span>
                 </button>
               </div>
+              <button
+                class="login-passkey"
+                type="button"
+                disabled
+                aria-label="Sign in with a passkey — coming soon"
+              >
+                <SiteIcon name="lock" :size="15" /><span>Use a passkey</span
+                ><small>Coming soon</small>
+              </button>
             </div>
           </form>
           <div v-else key="sent" class="login-sent">
@@ -250,7 +307,7 @@ onMounted(async () => {
 <style scoped>
 .login-panel {
   width: min(100%, 430px);
-  padding: clamp(28px, 5vw, 42px);
+  padding: clamp(24px, 4vw, 32px);
   border: 1px solid #dacdf222;
   border-radius: 30px;
   background: linear-gradient(140deg, #24232d9c, #11121bd1);
@@ -259,19 +316,6 @@ onMounted(async () => {
     inset 0 1px 0 #ffffff0a,
     0 24px 90px #00000042;
   animation: auth-arrive 850ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-.login-emblem {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 15px;
-  margin-bottom: 24px;
-  color: #d8b977;
-  background: #d8b9770b;
-  box-shadow:
-    inset 0 0 0 1px #d8b97722,
-    0 0 28px #d8b97708;
 }
 .login-panel h1 {
   font-family: Manrope, sans-serif;
@@ -283,11 +327,11 @@ onMounted(async () => {
   font-size: 13px;
   line-height: 1.8;
   color: #aaa8b5;
-  margin: 12px 0 28px;
+  margin: 10px 0 20px;
 }
 .login-form {
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 .login-form label {
   font-size: 12px;
@@ -351,8 +395,107 @@ onMounted(async () => {
   transform: translateY(0) scale(0.99);
 }
 button:disabled {
-  cursor: wait;
+  cursor: not-allowed;
   opacity: 0.55;
+}
+.login-methods {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  position: relative;
+  isolation: isolate;
+  padding: 4px;
+  margin-bottom: 4px;
+  border-radius: 15px;
+  border: 1px solid #dacdf218;
+  background: #080b102f;
+}
+.login-methods button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  font-size: 12px;
+  color: #aaa0bb;
+  transition: color 240ms ease;
+  border-radius: 11px;
+}
+.login-methods button[aria-pressed='true'] {
+  color: #e8d3a6;
+}
+.login-method-highlight {
+  position: absolute;
+  z-index: -1;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc(50% - 4px);
+  border-radius: 11px;
+  background: #d8b9770e;
+  box-shadow:
+    inset 0 0 0 1px #d8b97729,
+    0 4px 15px #00000014;
+  transition: transform 480ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.login-method-highlight.is-password {
+  transform: translateX(100%);
+}
+.method-status {
+  font-size: 9px;
+  line-height: 1;
+  color: #a79bb8;
+}
+.login-method-body {
+  display: grid;
+  gap: 8px;
+  grid-area: 1 / 1;
+}
+.login-method-stage {
+  display: grid;
+}
+.login-method-body input:disabled {
+  font-size: 12px;
+}
+.login-providers small {
+  display: block;
+  margin-top: 3px;
+  font-size: 9px;
+  color: #a89ab9;
+}
+.login-passkey {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  margin-top: 10px;
+  min-height: 44px;
+  color: #cac4d5;
+  font-size: 12px;
+  border: 1px solid #dacdf216;
+  border-radius: 13px;
+}
+.login-passkey small {
+  font-size: 9px;
+  margin-left: auto;
+  color: #b2a7c0;
+}
+.login-passkey {
+  padding-inline: 14px;
+}
+.auth-method-enter-active,
+.auth-method-leave-active {
+  transition:
+    opacity 180ms ease,
+    transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.auth-method-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+.auth-method-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 .login-helper {
   font-size: 11px;
@@ -365,7 +508,7 @@ button:disabled {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  margin-top: 28px;
+  margin-top: 20px;
   color: #aaa2b6;
   font-size: 11px;
   line-height: 1.6;
@@ -386,14 +529,14 @@ button:disabled {
   transform: translateX(2px);
 }
 .login-alternatives {
-  margin-top: 12px;
+  margin-top: 8px;
 }
 .login-or {
   display: block;
   text-align: center;
   font-size: 10px;
   color: #898292;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
 .login-providers {
   display: flex;

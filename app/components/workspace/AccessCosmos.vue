@@ -1,4 +1,13 @@
 <script setup lang="ts">
+import { createAccessCosmos } from '~/lib/scene/access-cosmos'
+const canvas = ref<HTMLCanvasElement | null>(null)
+const active = ref(false)
+let disposeScene: (() => void) | undefined
+const failed = () => {
+  active.value = false
+  disposeScene?.()
+  disposeScene = undefined
+}
 // Deterministic stars keep hydration stable. SVG stays sharp at every display density.
 const stars = Array.from({ length: 74 }, (_, i) => ({
   x: (i * 137.508 + 19) % 1000,
@@ -13,12 +22,28 @@ const visibility = () => {
 onMounted(() => {
   visibility()
   document.addEventListener('visibilitychange', visibility)
+  try {
+    if (canvas.value) {
+      disposeScene = createAccessCosmos(canvas.value)
+      active.value = true
+    }
+  } catch {
+    failed()
+  }
 })
-onBeforeUnmount(() => document.removeEventListener('visibilitychange', visibility))
+onBeforeUnmount(() => {
+  document.removeEventListener('visibilitychange', visibility)
+  disposeScene?.()
+})
 </script>
 
 <template>
-  <div class="access-cosmos" :class="{ 'is-paused': paused }" aria-hidden="true">
+  <div
+    class="access-cosmos"
+    :class="{ 'is-paused': paused, 'is-rendering': active }"
+    aria-hidden="true"
+  >
+    <canvas ref="canvas" class="cosmos-renderer" @webglcontextlost.prevent="failed" />
     <svg class="cosmos-stars" viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid slice">
       <circle
         v-for="(star, i) in stars"
@@ -147,6 +172,21 @@ onBeforeUnmount(() => document.removeEventListener('visibilitychange', visibilit
   pointer-events: none;
   overflow: hidden;
   background: radial-gradient(ellipse at 78% 44%, #39294030, transparent 55%), #090c12;
+}
+.cosmos-renderer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 1200ms ease;
+}
+.is-rendering .cosmos-renderer {
+  opacity: 1;
+}
+.is-rendering .gravity-field,
+.is-rendering .cosmos-stars {
+  visibility: hidden;
 }
 .cosmos-stars {
   position: absolute;

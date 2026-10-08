@@ -43,7 +43,7 @@ test('unified member access supports keyboard email, code errors and changing ad
   if (await page.evaluate(() => matchMedia('(pointer: fine)').matches))
     await expect(email).toBeFocused()
   await expect(page.getByRole('button', { name: 'Continue with email', exact: true })).toBeVisible()
-  await expect(page.getByText('Sign in or create your account with one secure link.')).toBeVisible()
+  await expect(page.getByText('Sign in or create your account.', { exact: true })).toBeVisible()
   await email.fill('researcher@example.org')
   await email.press('Enter')
   const code = page.getByLabel('Email verification code', { exact: true })
@@ -85,7 +85,7 @@ test('configured provider buttons send the selected provider and failed email re
   expect(requests.map((request) => request.body.provider)).toEqual(['google', 'azure', 'email'])
 })
 
-test('email-only access hides unavailable providers and fits narrow screens at both stages', async ({
+test('email-only access labels unavailable providers and fits narrow screens at both stages', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 360, height: 740 })
@@ -93,9 +93,11 @@ test('email-only access hides unavailable providers and fits narrow screens at b
   await page.goto('/login')
   const email = page.getByLabel('Account email', { exact: true })
   await expect(email).toBeVisible()
-  await expect(page.getByRole('button', { name: /Continue with (Google|Microsoft)/ })).toHaveCount(
-    0,
-  )
+  for (const provider of ['Google', 'Microsoft']) {
+    const button = page.getByRole('button', { name: `Continue with ${provider}`, exact: true })
+    await expect(button).toBeDisabled()
+    await expect(button).toContainText('Not configured')
+  }
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(
     true,
   )
@@ -109,6 +111,35 @@ test('email-only access hides unavailable providers and fits narrow screens at b
   const bounds = await code.boundingBox()
   expect(bounds?.x).toBeGreaterThanOrEqual(0)
   expect((bounds?.x || 0) + (bounds?.width || 0)).toBeLessThanOrEqual(360)
+})
+
+test('password and passkey previews are honest and never submit credentials', async ({ page }) => {
+  const requests = await mockAccess(page, { providers: false })
+  await page.goto('/login')
+  const email = page.getByLabel('Account email', { exact: true })
+  await email.fill('researcher@example.org')
+  await page.getByRole('button', { name: 'Password Soon', exact: true }).click()
+  const password = page.getByLabel('Password', { exact: true })
+  await expect(password).toBeVisible()
+  await expect(password).toBeDisabled()
+  await expect(page.getByRole('button', { name: /Sign in with password/ })).toBeDisabled()
+  await expect(
+    page.getByText('Coming soon. Use a magic link instead.', { exact: true }),
+  ).toBeVisible()
+  await expect(page.getByRole('button', { name: /Sign in with a passkey/ })).toBeDisabled()
+  await email.press('Enter')
+  expect(requests).toHaveLength(0)
+  await page.getByRole('button', { name: 'Magic link', exact: true }).click()
+  await expect(password).toHaveCount(0)
+  await expect(email).toHaveValue('researcher@example.org')
+  await email.press('Enter')
+  await expect(page.getByLabel('Email verification code', { exact: true })).toBeVisible()
+  expect(requests).toEqual([
+    {
+      path: '/api/workspace/auth/login',
+      body: { provider: 'email', email: 'researcher@example.org' },
+    },
+  ])
 })
 
 test('pending email request prevents duplicate submission and keeps controls coherent', async ({

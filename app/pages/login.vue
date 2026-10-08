@@ -157,7 +157,7 @@ onMounted(async () => {
                 :disabled="busy"
                 @click="selectMethod('link')"
               >
-                Magic link
+                Email link
               </button>
               <button
                 type="button"
@@ -211,7 +211,7 @@ onMounted(async () => {
                     Sign in with password<span class="method-status">Coming soon</span>
                   </button>
                   <p id="password-status" class="login-helper">
-                    Coming soon. Use a magic link instead.
+                    Coming soon. Use an email link instead.
                   </p>
                 </div>
               </Transition>

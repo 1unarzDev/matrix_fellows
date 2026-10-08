@@ -124,12 +124,12 @@ test('password and passkey previews are honest and never submit credentials', as
   await expect(password).toBeDisabled()
   await expect(page.getByRole('button', { name: /Sign in with password/ })).toBeDisabled()
   await expect(
-    page.getByText('Coming soon. Use a magic link instead.', { exact: true }),
+    page.getByText('Coming soon. Use an email link instead.', { exact: true }),
   ).toBeVisible()
   await expect(page.getByRole('button', { name: /Sign in with a passkey/ })).toBeDisabled()
   await email.press('Enter')
   expect(requests).toHaveLength(0)
-  await page.getByRole('button', { name: 'Magic link', exact: true }).click()
+  await page.getByRole('button', { name: 'Email link', exact: true }).click()
   await expect(password).toHaveCount(0)
   await expect(email).toHaveValue('researcher@example.org')
   await email.press('Enter')

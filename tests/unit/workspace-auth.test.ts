@@ -25,6 +25,7 @@ import {
   requireWorkspaceOfficer,
   requireWorkspaceMember,
   WORKSPACE_COOKIE,
+  requireWorkspaceSecurity,
 } from '../../server/utils/workspace-auth'
 const config = {
   workspaceSessionSecret: 's'.repeat(32),
@@ -41,6 +42,43 @@ afterEach(() => {
   state.member = null
 })
 describe('named officer authentication', () => {
+  it('refresh never upgrades an old sign-in into fresh credential authority', async () => {
+    vi.stubGlobal('useRuntimeConfig', () => config)
+    state.member = {
+      user_id: 'member-id',
+      email: 'member@example.com',
+      role: 'member',
+      enabled: true,
+    }
+    state.cookie = await sealWorkspace(
+      {
+        access_token: 'old',
+        refresh_token: 'refresh',
+        expires_at: 0,
+        authenticated_at: Date.now() - 600000,
+      },
+      config.workspaceSessionSecret,
+      WORKSPACE_COOKIE,
+    )
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockImplementation(async (url: string) =>
+          url.includes('grant_type=refresh_token')
+            ? Response.json({ access_token: 'new', refresh_token: 'new-refresh', expires_in: 3600 })
+            : Response.json({
+                id: 'member-id',
+                email: 'member@example.com',
+                email_confirmed_at: '2026-10-09',
+              }),
+        ),
+    )
+    const event = { context: {} } as any
+    await expect(requireWorkspaceSecurity(event)).rejects.toMatchObject({ statusCode: 401 })
+    expect(event.context.workspaceTokens.access_token).toBe('new')
+    expect(event.context.workspaceTokens.authenticated_at).toBeLessThan(Date.now() - 300000)
+  })
   it('allows verified members locally but refuses discovery privilege and disabled memberships', async () => {
     vi.stubGlobal('useRuntimeConfig', () => config)
     state.cookie = await sealWorkspace(
@@ -56,15 +94,13 @@ describe('named officer authentication', () => {
     }
     vi.stubGlobal(
       'fetch',
-      vi
-        .fn()
-        .mockImplementation(async () =>
-          Response.json({
-            id: 'member-id',
-            email: 'member@example.com',
-            email_confirmed_at: new Date().toISOString(),
-          }),
-        ),
+      vi.fn().mockImplementation(async () =>
+        Response.json({
+          id: 'member-id',
+          email: 'member@example.com',
+          email_confirmed_at: new Date().toISOString(),
+        }),
+      ),
     )
     expect(await requireWorkspaceMember({ context: {} } as never)).toMatchObject({ role: 'member' })
     await expect(requireWorkspaceOfficer({ context: {} } as never)).rejects.toMatchObject({
@@ -112,7 +148,9 @@ describe('named officer authentication', () => {
         }),
       ),
     )
-    await expect(requireWorkspaceOfficer({} as never)).rejects.toMatchObject({ statusCode: 403 })
+    await expect(requireWorkspaceOfficer({ context: {} } as never)).rejects.toMatchObject({
+      statusCode: 403,
+    })
     state.member = {
       user_id: 'officer-id',
       email: 'officer@example.com',
@@ -128,7 +166,9 @@ describe('named officer authentication', () => {
       workspaceActor: { userId: 'officer-id', role: 'officer' },
     })
     state.member.enabled = false
-    await expect(requireWorkspaceOfficer({} as never)).rejects.toMatchObject({ statusCode: 403 })
+    await expect(requireWorkspaceOfficer({ context: {} } as never)).rejects.toMatchObject({
+      statusCode: 403,
+    })
   })
   it('does not trust an unconfirmed or mismatched email', async () => {
     vi.stubGlobal('useRuntimeConfig', () => config)
@@ -153,6 +193,8 @@ describe('named officer authentication', () => {
         }),
       ),
     )
-    await expect(requireWorkspaceOfficer({} as never)).rejects.toMatchObject({ statusCode: 403 })
+    await expect(requireWorkspaceOfficer({ context: {} } as never)).rejects.toMatchObject({
+      statusCode: 403,
+    })
   })
 })

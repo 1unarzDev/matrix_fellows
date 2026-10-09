@@ -1,5 +1,28 @@
 import { expect, test, type Page } from '@playwright/test'
 
+async function settlePanel(page: Page) {
+  await expect(
+    page.locator(
+      '.auth-state-enter-active, .auth-state-leave-active, .auth-method-enter-active, .auth-method-leave-active',
+    ),
+  ).toHaveCount(0)
+  await page.evaluate(async () => {
+    await Promise.all(
+      document
+        .getAnimations()
+        .filter((animation) => {
+          const target = (animation.effect as KeyframeEffect | null)?.target
+          return (
+            target instanceof Element &&
+            target.closest('.login-panel') &&
+            animation.effect?.getTiming().iterations !== Infinity
+          )
+        })
+        .map((animation) => animation.finished.catch(() => undefined)),
+    )
+  })
+}
+
 async function mockAccess(
   page: Page,
   options: { configured?: boolean; providers?: boolean; failLogin?: boolean } = {},
@@ -113,33 +136,158 @@ test('email-only access labels unavailable providers and fits narrow screens at 
   expect((bounds?.x || 0) + (bounds?.width || 0)).toBeLessThanOrEqual(360)
 })
 
-test('password and passkey previews are honest and never submit credentials', async ({ page }) => {
+test('password sign-in, signup and recovery preserve email and show accurate outcomes', async ({
+  page,
+}, info) => {
   const requests = await mockAccess(page, { providers: false })
+  await page.route('**/api/workspace/auth/password', async (route) => {
+    const body = route.request().postDataJSON()
+    requests.push({ path: '/api/workspace/auth/password', body })
+    await route.fulfill(
+      body.action === 'signin'
+        ? { status: 400, json: { statusMessage: 'Check your sign-in details.' } }
+        : { json: { sent: true } },
+    )
+  })
   await page.goto('/login')
   const email = page.getByLabel('Account email', { exact: true })
   await email.fill('researcher@example.org')
-  await page.getByRole('button', { name: 'Password Soon', exact: true }).click()
+  await page.getByRole('button', { name: 'Password', exact: true }).click()
   const password = page.getByLabel('Password', { exact: true })
   await expect(password).toBeVisible()
-  await expect(password).toBeDisabled()
-  await expect(page.getByRole('button', { name: /Sign in with password/ })).toBeDisabled()
-  await expect(
-    page.getByText('Coming soon. Use an email link instead.', { exact: true }),
-  ).toBeVisible()
+  await settlePanel(page)
+  await page.screenshot({
+    path: `/tmp/matrix-password-login-${info.project.name}.png`,
+    fullPage: true,
+  })
+  await expect(password).toBeEnabled()
+  await password.fill('my-current-password')
+  await password.press('Enter')
+  await expect(page.getByRole('alert')).toContainText('Check your sign-in details.')
   await expect(page.getByRole('button', { name: /Sign in with a passkey/ })).toBeDisabled()
-  await email.press('Enter')
-  expect(requests).toHaveLength(0)
+  expect(requests[0]?.body).toEqual({
+    action: 'signin',
+    email: 'researcher@example.org',
+    password: 'my-current-password',
+  })
+  await page.getByRole('button', { name: 'Create an account', exact: true }).click()
+  await password.fill('new-strong-password')
+  await page.getByLabel('Confirm password', { exact: true }).fill('not-the-same-password')
+  await page.getByRole('button', { name: 'Create account', exact: true }).click()
+  await expect(page.getByRole('alert')).toContainText('do not match')
+  expect(requests).toHaveLength(1)
+  await page.getByLabel('Confirm password', { exact: true }).fill('new-strong-password')
+  await page.getByRole('button', { name: 'Create account', exact: true }).click()
+  await expect(page.getByRole('status')).toContainText('confirm your account')
+  await page.getByRole('button', { name: 'Back to sign in', exact: true }).click()
+  await page.getByRole('button', { name: 'Forgot password?', exact: true }).click()
+  await page.getByRole('button', { name: 'Send reset link', exact: true }).click()
+  await expect(page.getByRole('status')).toContainText('If this email has an account')
   await page.getByRole('button', { name: 'Email link', exact: true }).click()
   await expect(password).toHaveCount(0)
   await expect(email).toHaveValue('researcher@example.org')
   await email.press('Enter')
   await expect(page.getByLabel('Email verification code', { exact: true })).toBeVisible()
-  expect(requests).toEqual([
-    {
-      path: '/api/workspace/auth/login',
-      body: { provider: 'email', email: 'researcher@example.org' },
+  expect(requests.at(-1)).toEqual({
+    path: '/api/workspace/auth/login',
+    body: { provider: 'email', email: 'researcher@example.org' },
+  })
+})
+
+test('recovery opens a focused reset form and returns to password sign-in', async ({
+  page,
+}, info) => {
+  await mockAccess(page)
+  await page.route('**/api/workspace/auth/security?recovery=1', (route) =>
+    route.fulfill({ json: { recovery: true } }),
+  )
+  await page.route('**/api/workspace/auth/password', (route) =>
+    route.fulfill({ json: { ok: true, signInRequired: true } }),
+  )
+  await page.goto('/login?recovery=1')
+  await expect(page.getByLabel('Account email', { exact: true })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Continue with Google' })).toHaveCount(0)
+  await expect(page.getByLabel('New password', { exact: true })).toBeVisible()
+  await settlePanel(page)
+  await page.screenshot({
+    path: `/tmp/matrix-password-reset-${info.project.name}.png`,
+    fullPage: true,
+  })
+  await page.getByLabel('New password', { exact: true }).fill('my-new-password')
+  await page.getByLabel('Confirm password', { exact: true }).fill('my-new-password')
+  await page.getByRole('button', { name: 'Update password', exact: true }).click()
+  await expect(page.getByRole('status')).toContainText('Password updated')
+  await expect(
+    page.getByRole('button', { name: 'Sign in with password', exact: true }),
+  ).toBeVisible()
+})
+
+test('native passkey prompt produces a real assertion without exposing session tokens', async ({
+  page,
+  context,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', 'Chromium virtual authenticator')
+  await mockAccess(page)
+  await page.route('**/api/workspace/auth/providers', (route) =>
+    route.fulfill({ json: { google: false, azure: false, passkey: true } }),
+  )
+  const session = await context.newCDPSession(page)
+  await session.send('WebAuthn.enable')
+  const { authenticatorId } = await session.send('WebAuthn.addVirtualAuthenticator', {
+    options: {
+      protocol: 'ctap2',
+      transport: 'internal',
+      hasResidentKey: true,
+      hasUserVerification: true,
+      isUserVerified: true,
+      automaticPresenceSimulation: true,
     },
-  ])
+  })
+  await page.goto('/login')
+  // Seed this authenticator using the native creation ceremony; provider transport
+  // is fixture-only here. This is not evidence of live provider crypto verification.
+  await page.evaluate(async () => {
+    await navigator.credentials.create({
+      publicKey: {
+        challenge: new Uint8Array(32),
+        rp: { id: 'localhost', name: 'Matrix Fellows test' },
+        user: {
+          id: new Uint8Array([1, 2, 3]),
+          name: 'test@example.org',
+          displayName: 'Synthetic member',
+        },
+        pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+        authenticatorSelection: { residentKey: 'required', userVerification: 'required' },
+      },
+    })
+  })
+  let assertion: any
+  await page.route('**/api/workspace/auth/passkey', async (route) => {
+    const body = route.request().postDataJSON()
+    if (body.action === 'signin-options')
+      return route.fulfill({
+        json: {
+          options: {
+            challenge: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+            rpId: 'localhost',
+            timeout: 10000,
+          },
+        },
+      })
+    assertion = body
+    await route.fulfill({
+      status: 400,
+      json: { statusMessage: 'Fixture assertion received; no live sign-in.' },
+    })
+  })
+  await page.getByRole('button', { name: 'Sign in with a passkey', exact: true }).click()
+  await expect(page.getByRole('alert')).toContainText('Fixture assertion received')
+  expect(assertion.action).toBe('signin-verify')
+  expect(assertion.credential.response.signature).toBeTruthy()
+  expect(assertion.credential.response.authenticatorData).toBeTruthy()
+  expect(await page.evaluate(() => Object.keys(localStorage))).not.toContain('supabase.auth.token')
+  await session.send('WebAuthn.removeVirtualAuthenticator', { authenticatorId })
 })
 
 test('pending email request prevents duplicate submission and keeps controls coherent', async ({
@@ -170,6 +318,37 @@ test('pending email request prevents duplicate submission and keeps controls coh
   expect(count).toBe(1)
   release()
   await expect(page.getByLabel('Email verification code', { exact: true })).toBeVisible()
+})
+
+test('canceled passkey prompts can be retried without submitting an assertion', async ({
+  page,
+}) => {
+  await mockAccess(page)
+  await page.route('**/api/workspace/auth/providers', (route) =>
+    route.fulfill({ json: { google: false, azure: false, passkey: true } }),
+  )
+  await page.addInitScript(() => {
+    navigator.credentials.get = async () => {
+      throw new DOMException('Canceled', 'NotAllowedError')
+    }
+  })
+  let count = 0
+  await page.route('**/api/workspace/auth/passkey', async (route) => {
+    expect(route.request().postDataJSON().action).toBe('signin-options')
+    count++
+    await route.fulfill({
+      json: {
+        options: { challenge: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', rpId: 'localhost' },
+      },
+    })
+  })
+  await page.goto('/login')
+  const button = page.getByRole('button', { name: 'Sign in with a passkey', exact: true })
+  await button.click()
+  await expect(page.getByRole('alert')).toContainText('canceled or timed out')
+  await expect(button).toBeEnabled()
+  await button.click()
+  await expect.poll(() => count).toBe(2)
 })
 
 test('reduced motion preserves email and code state transitions', async ({ page }) => {

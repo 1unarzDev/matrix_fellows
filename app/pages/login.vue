@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { usePasskey, passkeySupported, accountError } from '~/utils/passkeys'
 useSeoMeta({ title: 'Sign in or create an account | Matrix Fellows', robots: 'noindex, nofollow' })
 const email = ref('')
 const token = ref('')
@@ -7,7 +8,12 @@ const busy = ref(false)
 const error = ref('')
 const configured = ref(true)
 const checking = ref(true)
-const providers = ref({ google: false, azure: false })
+const providers = ref({ google: false, azure: false, passkey: false })
+const password = ref('')
+const confirmPassword = ref('')
+const passwordMode = ref<'signin' | 'signup' | 'recover' | 'reset'>('signin')
+const notice = ref('')
+const supportsPasskey = ref(false)
 const method = ref<'link' | 'password'>('link')
 const emailInput = ref<HTMLInputElement | null>(null)
 const tokenInput = ref<HTMLInputElement | null>(null)
@@ -15,6 +21,7 @@ const stateHeight = ref<number | null>(null)
 const stateContainer = ref<HTMLElement | null>(null)
 const userInitiated = ref(false)
 let stateObserver: ResizeObserver | undefined
+let passkeyController: AbortController | undefined
 const route = useRoute()
 function focusState() {
   if (
@@ -29,7 +36,10 @@ function measureState(element: Element) {
   stateObserver?.disconnect()
   stateObserver?.observe(element)
 }
-onBeforeUnmount(() => stateObserver?.disconnect())
+onBeforeUnmount(() => {
+  stateObserver?.disconnect()
+  passkeyController?.abort()
+})
 function resetEmail() {
   sent.value = false
   token.value = ''
@@ -42,6 +52,68 @@ function selectMethod(value: 'link' | 'password') {
 }
 function continueEmail() {
   if (method.value === 'link') void login('email')
+  else void submitPassword()
+}
+async function submitPassword() {
+  if (busy.value) return
+  error.value = ''
+  notice.value = ''
+  if (
+    ['signup', 'reset'].includes(passwordMode.value) &&
+    password.value !== confirmPassword.value
+  ) {
+    error.value = 'Your passwords do not match.'
+    return
+  }
+  busy.value = true
+  try {
+    await $fetch('/api/workspace/auth/password', {
+      method: 'POST',
+      body: {
+        action: passwordMode.value,
+        ...(passwordMode.value !== 'reset' ? { email: email.value.trim() } : {}),
+        ...(passwordMode.value !== 'recover' ? { password: password.value } : {}),
+      },
+    })
+    if (passwordMode.value === 'signin') await navigateTo('/dashboard')
+    else if (passwordMode.value === 'reset') {
+      passwordMode.value = 'signin'
+      await navigateTo('/login', { replace: true })
+      notice.value = 'Password updated. Sign in with your new password.'
+    } else
+      notice.value =
+        passwordMode.value === 'signup'
+          ? 'Check your email to confirm your account. Open the link in this browser.'
+          : 'If this email has an account, a reset link is on its way. Open it in this browser.'
+    password.value = ''
+    confirmPassword.value = ''
+  } catch (cause) {
+    error.value = accountError(cause)
+  } finally {
+    busy.value = false
+  }
+}
+function changePasswordMode(value: typeof passwordMode.value) {
+  if (busy.value) return
+  passwordMode.value = value
+  password.value = ''
+  confirmPassword.value = ''
+  error.value = ''
+  notice.value = ''
+}
+async function signInPasskey() {
+  if (busy.value) return
+  busy.value = true
+  error.value = ''
+  passkeyController = new AbortController()
+  try {
+    await usePasskey(false, passkeyController.signal)
+    await navigateTo('/dashboard')
+  } catch (cause) {
+    error.value = accountError(cause)
+  } finally {
+    busy.value = false
+  }
 }
 async function login(provider: 'google' | 'azure' | 'email') {
   if (busy.value || (provider === 'email' && method.value !== 'link')) return
@@ -84,6 +156,7 @@ async function verify() {
   }
 }
 onMounted(async () => {
+  supportsPasskey.value = passkeySupported()
   stateObserver = new ResizeObserver((entries) => {
     const element = entries[0]?.target as HTMLElement | undefined
     if (element?.isConnected) stateHeight.value = element.offsetHeight
@@ -96,18 +169,29 @@ onMounted(async () => {
       '/api/workspace/auth/session',
     )
     configured.value = session.configured
-    if (session.authenticated) await navigateTo('/dashboard')
-    else if (session.configured) {
+    if (route.query.recovery === '1') {
+      method.value = 'password'
+      passwordMode.value = 'reset'
       try {
-        providers.value = await $fetch<{ google: boolean; azure: boolean }>(
-          '/api/workspace/auth/providers',
-        )
+        await $fetch('/api/workspace/auth/security?recovery=1')
+      } catch {
+        passwordMode.value = 'recover'
+        error.value = 'Your reset link expired. Request another below.'
+      }
+    } else if (session.authenticated && route.query.reauth !== '1') await navigateTo('/dashboard')
+    if (session.configured) {
+      try {
+        providers.value = await $fetch<typeof providers.value>('/api/workspace/auth/providers')
       } catch {
         /* Email remains available independently of OAuth. */
       }
     }
     if (route.query.error)
       error.value = 'Sign-in did not complete. Please verify your email and try again.'
+    if (route.query.password === 'updated')
+      notice.value = 'Password updated. Sign in again to continue.'
+    if (route.query.reauth === '1')
+      notice.value = 'Sign in again to unlock account security settings for five minutes.'
   } catch {
     error.value = 'Unable to check sign-in availability. Please refresh and try again.'
     configured.value = false
@@ -125,13 +209,28 @@ onMounted(async () => {
         >Back to the society<SiteIcon name="arrow" :size="14" /></NuxtLink
     ></template>
     <section class="login-panel" aria-labelledby="login-title" :aria-busy="busy || checking">
-      <h1 id="login-title">{{ sent ? 'Check your inbox.' : 'Welcome to Matrix.' }}</h1>
+      <h1 id="login-title">
+        {{
+          sent
+            ? 'Check your inbox.'
+            : method === 'password' && passwordMode === 'reset'
+              ? 'Reset your password.'
+              : 'Welcome to Matrix.'
+        }}
+      </h1>
       <p class="login-intro">
-        {{ sent ? 'Your next step is in your email.' : 'Sign in or create your account.' }}
+        {{
+          sent
+            ? 'Your next step is in your email.'
+            : method === 'password' && passwordMode === 'reset'
+              ? 'Choose a strong password for your account.'
+              : 'Sign in or create your account.'
+        }}
       </p>
       <Transition name="auth-alert"
         ><p v-if="error" role="alert" class="login-error">{{ error }}</p></Transition
       >
+      <p v-if="notice" class="login-helper" role="status">{{ notice }}</p>
       <div
         ref="stateContainer"
         class="login-state"
@@ -145,7 +244,12 @@ onMounted(async () => {
             Sign-in is temporarily unavailable. Please try again later.
           </div>
           <form v-else-if="!sent" key="email" class="login-form" @submit.prevent="continueEmail">
-            <div class="login-methods" role="group" aria-label="Email sign-in method">
+            <div
+              v-if="passwordMode !== 'reset'"
+              class="login-methods"
+              role="group"
+              aria-label="Email sign-in method"
+            >
               <span
                 class="login-method-highlight"
                 :class="{ 'is-password': method === 'password' }"
@@ -165,11 +269,11 @@ onMounted(async () => {
                 :disabled="busy"
                 @click="selectMethod('password')"
               >
-                Password<span class="method-status">Soon</span>
+                Password
               </button>
             </div>
-            <label for="login-email">Account email</label>
-            <div class="login-input-wrap">
+            <label v-if="passwordMode !== 'reset'" for="login-email">Account email</label>
+            <div v-if="passwordMode !== 'reset'" class="login-input-wrap">
               <SiteIcon name="mail" :size="17" /><input
                 id="login-email"
                 ref="emailInput"
@@ -196,27 +300,78 @@ onMounted(async () => {
                   <p class="login-helper">We’ll email a secure sign-in link. No password needed.</p>
                 </div>
                 <div v-else key="password" class="login-method-body">
-                  <label for="login-password">Password</label>
-                  <div class="login-input-wrap">
+                  <label v-if="passwordMode !== 'recover'" for="login-password">{{
+                    passwordMode === 'reset' ? 'New password' : 'Password'
+                  }}</label>
+                  <div v-if="passwordMode !== 'recover'" class="login-input-wrap">
                     <SiteIcon name="lock" :size="17" /><input
                       id="login-password"
+                      v-model="password"
                       type="password"
-                      disabled
-                      autocomplete="off"
-                      placeholder="Password sign-in is coming soon"
-                      aria-describedby="password-status"
+                      :disabled="busy"
+                      :autocomplete="
+                        passwordMode === 'signin' ? 'current-password' : 'new-password'
+                      "
+                      :minlength="passwordMode === 'signin' ? 1 : 12"
+                      maxlength="128"
+                      required
+                      :placeholder="
+                        passwordMode === 'signin' ? 'Your password' : 'At least 12 characters'
+                      "
                     />
                   </div>
-                  <button class="login-primary" type="button" disabled>
-                    Sign in with password<span class="method-status">Coming soon</span>
+                  <template v-if="passwordMode === 'signup' || passwordMode === 'reset'">
+                    <label for="login-password-confirm">Confirm password</label>
+                    <div class="login-input-wrap">
+                      <SiteIcon name="lock" :size="17" /><input
+                        id="login-password-confirm"
+                        v-model="confirmPassword"
+                        type="password"
+                        autocomplete="new-password"
+                        required
+                        minlength="12"
+                        maxlength="128"
+                        :disabled="busy"
+                        placeholder="Repeat your password"
+                      />
+                    </div>
+                  </template>
+                  <button class="login-primary" type="submit" :disabled="busy">
+                    {{
+                      busy
+                        ? 'Please wait…'
+                        : passwordMode === 'signin'
+                          ? 'Sign in with password'
+                          : passwordMode === 'signup'
+                            ? 'Create account'
+                            : passwordMode === 'recover'
+                              ? 'Send reset link'
+                              : 'Update password'
+                    }}
                   </button>
-                  <p id="password-status" class="login-helper">
-                    Coming soon. Use an email link instead.
-                  </p>
+                  <div class="login-password-actions" v-if="passwordMode !== 'reset'">
+                    <button
+                      type="button"
+                      class="login-change"
+                      :disabled="busy"
+                      @click="changePasswordMode(passwordMode === 'signin' ? 'signup' : 'signin')"
+                    >
+                      {{ passwordMode === 'signin' ? 'Create an account' : 'Back to sign in' }}
+                    </button>
+                    <button
+                      v-if="passwordMode === 'signin'"
+                      type="button"
+                      class="login-change"
+                      :disabled="busy"
+                      @click="changePasswordMode('recover')"
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
                 </div>
               </Transition>
             </div>
-            <div class="login-alternatives">
+            <div v-if="passwordMode !== 'reset'" class="login-alternatives">
               <span class="login-or">or continue with</span>
               <div class="login-providers">
                 <button
@@ -252,11 +407,13 @@ onMounted(async () => {
               <button
                 class="login-passkey"
                 type="button"
-                disabled
-                aria-label="Sign in with a passkey — coming soon"
+                :disabled="busy || !providers.passkey || !supportsPasskey"
+                aria-label="Sign in with a passkey"
+                @click="signInPasskey"
               >
                 <SiteIcon name="lock" :size="15" /><span>Use a passkey</span
-                ><small>Coming soon</small>
+                ><small v-if="!supportsPasskey">Browser unavailable</small
+                ><small v-else-if="!providers.passkey">Not configured</small>
               </button>
             </div>
           </form>
@@ -449,6 +606,8 @@ button:disabled {
   display: grid;
   gap: 8px;
   grid-area: 1 / 1;
+  align-content: start;
+  align-self: start;
 }
 .login-method-stage {
   display: grid;
@@ -626,7 +785,9 @@ button:disabled {
   box-shadow: 0 0 0 3px #c8b0ee0b;
 }
 .login-state {
-  transition: height 440ms cubic-bezier(0.22, 1, 0.36, 1);
+  overflow: clip;
+  overflow-clip-margin: 4px;
+  transition: height 320ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 .login-change {
   display: block;
@@ -638,6 +799,12 @@ button:disabled {
 }
 .login-change:hover {
   color: #ddcff4;
+}
+.login-password-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 .auth-state-enter-active,
 .auth-state-leave-active {

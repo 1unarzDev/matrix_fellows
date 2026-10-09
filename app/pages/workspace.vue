@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AccountSecurity from '~/components/workspace/AccountSecurity.vue'
 import type { OutreachProfile, OutreachProposal, OutreachTarget } from '#shared/types/outreach'
 import type { OutreachPlannerItem } from '#shared/types/outreach'
 import { outreachPriority } from '#shared/utils/outreach'
@@ -16,7 +17,7 @@ const callbackMessage = computed(() => {
     return 'Sign-in did not complete. Please sign in with your approved member account.'
   return ''
 })
-const tab = ref('queue')
+const tab = ref(route.query.section === 'settings' ? 'settings' : 'queue')
 const canDiscover = computed(() => ['officer', 'admin'].includes(data.value?.member.role || ''))
 const allSections = [
   { value: 'queue', label: 'Discovery', icon: 'compass' },
@@ -328,7 +329,7 @@ watch(data, (value) => {
   if (!initializedAccess.value) {
     initializedAccess.value = true
     if (!canDiscover.value) {
-      tab.value = 'saved'
+      if (route.query.section !== 'settings') tab.value = 'saved'
       scope.value = 'student'
     }
   }
@@ -1992,7 +1993,7 @@ onMounted(async () => {
             <div v-else class="ws-empty">Loading research controls…</div></template
           >
           <template v-else-if="tab === 'settings'"
-            ><p class="ws-kicker">Separate identity from sending permission</p>
+            ><AccountSecurity /><p class="ws-kicker">Separate identity from sending permission</p>
             <h2>Mailbox connections</h2>
             <div class="ws-panel">
               <p class="ws-muted">

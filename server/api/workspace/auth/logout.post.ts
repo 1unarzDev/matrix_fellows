@@ -6,12 +6,14 @@ import {
   WORKSPACE_COOKIE,
   type WorkspaceTokens,
 } from '../../../utils/workspace-auth'
+import { clearCredentialFlows } from '../../../utils/workspace-credentials'
 export default defineEventHandler(async (event) => {
   setHeader(event, 'Cache-Control', 'no-store')
   assertWorkspaceOrigin(event)
   const config = workspaceConfig(event)
   const token = getCookie(event, WORKSPACE_COOKIE) || ''
   clearWorkspaceSession(event)
+  clearCredentialFlows(event)
   deleteCookie(event, 'matrix-workspace-flow', { path: '/api/workspace' })
   try {
     const tokens = await openWorkspace<WorkspaceTokens>(

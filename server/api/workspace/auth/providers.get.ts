@@ -9,6 +9,13 @@ export default defineEventHandler(async (event) => {
   })
   if (!response.ok)
     throw createError({ statusCode: 503, statusMessage: 'Sign-in providers are unavailable.' })
-  const settings = (await response.json()) as { external?: Record<string, boolean> }
-  return { google: settings.external?.google === true, azure: settings.external?.azure === true }
+  const settings = (await response.json()) as {
+    external?: Record<string, boolean>
+    passkeys_enabled?: boolean
+  }
+  return {
+    google: settings.external?.google === true,
+    azure: settings.external?.azure === true,
+    passkey: settings.passkeys_enabled === true,
+  }
 })

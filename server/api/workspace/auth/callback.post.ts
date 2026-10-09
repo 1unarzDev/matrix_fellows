@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
   const body = z
     .object({ email: z.string().email().max(254), token: z.string().regex(/^\d{6,8}$/) })
     .parse(await readBody(event))
-  let flow: { email?: string; expires: number }
+  let flow: { email?: string; expires: number; kind?: string }
   try {
     flow = await openWorkspace(
       getCookie(event, WORKSPACE_FLOW_COOKIE) || '',
@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
   } catch {
     throw createError({ statusCode: 401, statusMessage: 'Request a new sign-in email.' })
   }
-  if (flow.expires < Date.now() || flow.email !== body.email.toLowerCase())
+  if (flow.kind || flow.expires < Date.now() || flow.email !== body.email.toLowerCase())
     throw createError({ statusCode: 401, statusMessage: 'Request a new sign-in email.' })
   const response = await fetch(`${config.public.supabaseUrl}/auth/v1/verify`, {
     method: 'POST',

@@ -5,13 +5,14 @@ import {
   writeWorkspaceSession,
   WORKSPACE_FLOW_COOKIE,
 } from '../../../utils/workspace-auth'
+import { writeCredentialFlow, RECOVERY_COOKIE } from '../../../utils/workspace-credentials'
 export default defineEventHandler(async (event) => {
   setHeader(event, 'Cache-Control', 'no-store')
   const config = workspaceConfig(event)
   const token = getCookie(event, WORKSPACE_FLOW_COOKIE) || ''
   deleteCookie(event, WORKSPACE_FLOW_COOKIE, { path: '/api/workspace' })
   try {
-    const flow = await openWorkspace<{ verifier: string; expires: number }>(
+    const flow = await openWorkspace<{ verifier: string; expires: number; kind?: string }>(
       token,
       config.workspaceSessionSecret,
       WORKSPACE_FLOW_COOKIE,
@@ -32,9 +33,13 @@ export default defineEventHandler(async (event) => {
       expires_in: number
     }
     await validateWorkspaceUser(event, tokens.access_token)
+    if (flow.kind === 'recovery') {
+      await writeCredentialFlow(event, RECOVERY_COOKIE, { tokens }, 600)
+      return sendRedirect(event, '/login?recovery=1', 303)
+    }
     await writeWorkspaceSession(event, tokens)
     return sendRedirect(event, '/workspace', 303)
   } catch {
-    return sendRedirect(event, '/workspace?auth=failed', 303)
+    return sendRedirect(event, '/login?error=failed', 303)
   }
 })

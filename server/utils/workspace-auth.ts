@@ -88,16 +88,20 @@ export interface WorkspaceTokens {
   access_token: string
   refresh_token: string
   expires_at: number
+  authenticated_at?: number
 }
 export async function writeWorkspaceSession(
   event: H3Event,
   token: { access_token: string; refresh_token: string; expires_in?: number },
+  authenticatedAt = Date.now(),
 ) {
   const value: WorkspaceTokens = {
     access_token: token.access_token,
     refresh_token: token.refresh_token,
     expires_at: Date.now() + (token.expires_in || 3600) * 1000,
+    authenticated_at: authenticatedAt,
   }
+  event.context.workspaceTokens = value
   setCookie(
     event,
     WORKSPACE_COOKIE,
@@ -148,10 +152,25 @@ export async function requireWorkspaceMember(event: H3Event): Promise<WorkspaceM
       refresh_token: string
       expires_in: number
     }
-    await writeWorkspaceSession(event, refreshed)
-    tokens = { ...refreshed, expires_at: Date.now() + refreshed.expires_in * 1000 }
+    await writeWorkspaceSession(event, refreshed, tokens.authenticated_at || 0)
+    tokens = {
+      ...refreshed,
+      expires_at: Date.now() + refreshed.expires_in * 1000,
+      authenticated_at: tokens.authenticated_at,
+    }
   }
+  event.context.workspaceTokens = tokens
   return validateWorkspaceUser(event, tokens.access_token)
+}
+export async function requireWorkspaceSecurity(event: H3Event, fresh = true) {
+  const member = await requireWorkspaceMember(event)
+  const tokens = event.context.workspaceTokens as WorkspaceTokens
+  if (fresh && (!tokens.authenticated_at || Date.now() - tokens.authenticated_at > 5 * 60000))
+    throw createError({
+      statusCode: 401,
+      statusMessage: 'Sign in again before changing account security.',
+    })
+  return { member, tokens }
 }
 export async function requireWorkspaceOfficer(event: H3Event): Promise<WorkspaceMember> {
   const member = await requireWorkspaceMember(event)

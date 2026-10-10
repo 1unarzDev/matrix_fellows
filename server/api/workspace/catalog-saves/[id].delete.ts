@@ -4,7 +4,7 @@ export default defineEventHandler(async (event) => {
   assertWorkspaceOrigin(event)
   const member = await requireWorkspaceMember(event)
   const id = getRouterParam(event, 'id') || ''
-  if (!/^[a-z0-9-]{1,160}$/.test(id))
+  if (!/^[a-z0-9][a-z0-9:_-]{0,199}$/.test(id))
     throw createError({ statusCode: 400, statusMessage: 'Invalid opportunity.' })
   workspaceResult(
     await workspaceStorage(event)

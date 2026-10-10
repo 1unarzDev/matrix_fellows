@@ -19,6 +19,7 @@ defineProps<{
     | 'up'
     | 'warning'
     | 'check'
+    | 'dashboard'
   size?: number
 }>()
 </script>
@@ -35,7 +36,13 @@ defineProps<{
     stroke-linejoin="round"
     aria-hidden="true"
   >
-    <g v-if="name === 'atom'">
+    <g v-if="name === 'dashboard'">
+      <rect x="3" y="3" width="7" height="7" rx="1.5" />
+      <rect x="14" y="3" width="7" height="11" rx="1.5" />
+      <rect x="3" y="14" width="7" height="7" rx="1.5" />
+      <rect x="14" y="18" width="7" height="3" rx="1.5" />
+    </g>
+    <g v-else-if="name === 'atom'">
       <ellipse cx="12" cy="12" rx="10" ry="4" />
       <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)" />
       <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)" />

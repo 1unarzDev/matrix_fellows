@@ -6,7 +6,11 @@ export default defineEventHandler(async (event) => {
   const member = await requireWorkspaceMember(event)
   const body = await workspaceBody(
     event,
-    z.object({ opportunityIds: z.array(z.string().regex(/^[a-z0-9-]{1,160}$/)).max(500) }).strict(),
+    z
+      .object({
+        opportunityIds: z.array(z.string().regex(/^[a-z0-9][a-z0-9:_-]{0,199}$/)).max(500),
+      })
+      .strict(),
   )
   const db = workspaceStorage(event)
   const ids = [...new Set(body.opportunityIds)]

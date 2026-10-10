@@ -6,9 +6,13 @@ import {
   getTimeline,
   nextTimelineIndex,
 } from '#shared/utils/opportunity-lifecycle'
-const props = withDefaults(defineProps<{ item: Opportunity; now: number; compact?: boolean }>(), {
-  compact: false,
-})
+const props = withDefaults(
+  defineProps<{ item: Opportunity; now: number; compact?: boolean; inspect?: boolean }>(),
+  {
+    compact: false,
+  },
+)
+const emit = defineEmits<{ inspect: [] }>()
 const id = useId()
 const state = computed(() => getOpportunityState(props.item, props.now))
 const timeline = computed(() => getTimeline(props.item))
@@ -72,7 +76,7 @@ onMounted(() => {
     <div class="flex-1 p-6 sm:p-7">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <span class="text-[9px] uppercase tracking-[.16em] text-paper/55"
-          >{{ item.kind }}
+          >{{ item.routeType === 'internship-pathway' ? 'College internship pathway' : item.kind }}
           <span v-if="item.edition" class="text-paper/30">/ {{ item.edition }}</span></span
         >
         <span
@@ -88,8 +92,20 @@ onMounted(() => {
         >
       </div>
       <p class="mt-6 text-[9px] uppercase tracking-[.14em] text-paper/40">{{ item.discipline }}</p>
-      <h4 :id="`${id}-title`" class="mt-2 text-xl font-medium tracking-[-.025em] sm:text-2xl">
-        {{ item.title }}
+      <h4
+        :id="`${id}-title`"
+        class="mt-2 text-xl font-medium tracking-[-.025em] sm:text-2xl"
+        :class="{ 'font-display': inspect }"
+      >
+        <button
+          v-if="inspect"
+          type="button"
+          class="text-left focus-visible:outline-acid"
+          @click="emit('inspect')"
+        >
+          {{ item.title }}
+        </button>
+        <template v-else>{{ item.title }}</template>
       </h4>
       <p class="mt-3 text-sm leading-relaxed text-paper/55">{{ item.description }}</p>
       <div class="mt-5 flex items-start gap-2 text-xs leading-relaxed text-paper/60">
@@ -304,25 +320,27 @@ onMounted(() => {
           }}
         </p>
       </div>
-      <div class="flex items-center gap-4">
-        <NuxtLink
-          v-if="item.slug"
-          :to="`/opportunities/${item.slug}`"
-          class="text-xs text-paper/60 hover:text-acid"
-          >Details</NuxtLink
-        >
-        <a
-          :href="item.url"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="group inline-flex items-center gap-3 text-xs text-acid transition-colors duration-700 hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acid motion-reduce:transition-none"
-          >Official website
-          <span
-            aria-hidden="true"
-            class="transition-transform duration-700 ease-out group-hover:-translate-y-0.5 group-hover:translate-x-0.5 motion-reduce:transform-none motion-reduce:transition-none"
-            ><SiteIcon :size="16" /></span
-          ><span class="sr-only">for {{ item.title }} (opens in a new tab)</span></a
-        >
+      <div class="flex min-w-0 flex-wrap items-center gap-4">
+        <slot name="actions">
+          <NuxtLink
+            v-if="item.slug"
+            :to="`/opportunities/${item.slug}`"
+            class="text-xs text-paper/60 hover:text-acid"
+            >Details</NuxtLink
+          >
+          <a
+            :href="item.url"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="group inline-flex items-center gap-3 text-xs text-acid transition-colors duration-700 hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acid motion-reduce:transition-none"
+            >Official website
+            <span
+              aria-hidden="true"
+              class="transition-transform duration-700 ease-out group-hover:-translate-y-0.5 group-hover:translate-x-0.5 motion-reduce:transform-none motion-reduce:transition-none"
+              ><SiteIcon :size="16" /></span
+            ><span class="sr-only">for {{ item.title }} (opens in a new tab)</span></a
+          >
+        </slot>
       </div>
     </div>
   </article>

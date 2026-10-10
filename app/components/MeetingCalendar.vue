@@ -384,7 +384,7 @@ onMounted(() => {
                 ]"
                 :aria-label="cell.meeting
                   ? `${cell.meeting.title}, ${cell.date}, ${meetingDisplayStatus(cell.meeting)}${cell.entries.length ? `, plus ${cell.entries.length} opportunity date${cell.entries.length === 1 ? '' : 's'}` : ''}`
-                  : `${cell.entries.map((entry) => `${entry.opportunityTitle}, ${calendarEntryOccurrenceTitle(entry, cell.date)}${entry.saved ? ', saved on this device' : ''}, ${cell.date}${entry.period?.display === 'span' ? `, period ${entry.period.startDate} through ${entry.period.endDate}` : ''}`).join('; ')}`"
+                  : `${cell.entries.map((entry) => `${entry.opportunityTitle}, ${calendarEntryOccurrenceTitle(entry, cell.date)}${entry.saved ? ', saved opportunity' : ''}, ${cell.date}${entry.period?.display === 'span' ? `, period ${entry.period.startDate} through ${entry.period.endDate}` : ''}`).join('; ')}`"
                 @click="cell.meeting ? selectMeeting(cell.meeting, $event) : selectEntries(cell.entries, cell.date, $event)"
               >
                 <span class="meeting-day__number">{{ cell.day }}</span>

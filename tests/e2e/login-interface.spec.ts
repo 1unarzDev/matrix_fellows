@@ -56,6 +56,71 @@ async function mockAccess(
   return requests
 }
 
+test('account creation unfolds continuously, reverses cleanly, and keeps hidden fields out of sign-in', async ({
+  page,
+}, info) => {
+  const requests = await mockAccess(page)
+  if (info.project.name === 'mobile') await page.setViewportSize({ width: 320, height: 844 })
+  await page.goto('/login')
+  await page.getByRole('button', { name: 'Password', exact: true }).click()
+  await settlePanel(page)
+  const email = page.getByLabel('Account email', { exact: true })
+  await email.fill('researcher@example.org')
+  const confirmation = page.locator('.login-confirmation')
+  await expect(confirmation).toHaveAttribute('inert', '')
+  const heights = await page
+    .getByRole('button', { name: 'Create an account', exact: true })
+    .evaluate(async (button) => {
+      // Start sampling in the same browser task as the click, not after a
+      // round-trip that can miss the beginning of the mobile transition.
+      ;(button as HTMLButtonElement).click()
+      const element = document.querySelector('.login-confirmation')!
+      const samples: number[] = []
+      for (let i = 0; i < 28; i++)
+        await new Promise<void>((resolve) =>
+          requestAnimationFrame(() => {
+            samples.push(element.getBoundingClientRect().height)
+            resolve()
+          }),
+        )
+      return samples
+    })
+  expect(
+    heights.filter((height) => height > 2 && height < heights.at(-1)! - 2).length,
+  ).toBeGreaterThan(2)
+  await expect(page.getByLabel('Confirm password', { exact: true })).toBeEnabled()
+  await expect(email).toHaveValue('researcher@example.org')
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(
+    true,
+  )
+  await page.screenshot({
+    path: `/tmp/matrix-account-motion/signup-${info.project.name}.png`,
+    fullPage: true,
+    animations: 'disabled',
+  })
+  await page.getByRole('button', { name: 'Back to sign in', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Create an account', exact: true })).toBeVisible()
+  await expect(page.getByLabel('Confirm password', { exact: true })).toBeDisabled()
+  // Reversing while the layout is still collapsing must remain interactive.
+  await page.getByRole('button', { name: 'Create an account', exact: true }).click()
+  await page.getByRole('button', { name: 'Back to sign in', exact: true }).click()
+  await settlePanel(page)
+  await expect(confirmation).toHaveAttribute('aria-hidden', 'true')
+  expect(
+    await confirmation.evaluate((element) => element.getBoundingClientRect().height),
+  ).toBeLessThan(1)
+  await page.screenshot({
+    path: `/tmp/matrix-account-motion/signin-${info.project.name}.png`,
+    fullPage: true,
+    animations: 'disabled',
+  })
+  expect(requests).toEqual([])
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.getByRole('button', { name: 'Create an account', exact: true }).click()
+  await expect(page.getByLabel('Confirm password', { exact: true })).toBeEnabled()
+  await expect(email).toHaveValue('researcher@example.org')
+})
+
 test('unified member access supports keyboard email, code errors and changing address', async ({
   page,
 }) => {

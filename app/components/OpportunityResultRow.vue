@@ -2,16 +2,12 @@
 import type { Opportunity } from '#shared/types/content'
 import { displayDate } from '#shared/utils/opportunities'
 import { getOpportunityState, getTimeline } from '#shared/utils/opportunity-lifecycle'
-const props = defineProps<{ item: Opportunity }>()
+import { nextOpportunityMilestone } from '#shared/utils/opportunity-presentation'
+const props = defineProps<{ item: Opportunity; inspect?: boolean }>()
+const emit = defineEmits<{ inspect: [] }>()
 const now = Date.now()
 const state = computed(() => getOpportunityState(props.item, now))
-const next = computed(() =>
-  getTimeline(props.item).find(
-    (point) =>
-      !point.superseded &&
-      Date.parse(point.date.length === 10 ? `${point.date}T23:59:59Z` : point.date) >= now,
-  ),
-)
+const next = computed(() => nextOpportunityMilestone(getTimeline(props.item), now))
 const policy = computed(
   () =>
     ({
@@ -26,12 +22,14 @@ const policy = computed(
   <article
     class="opportunity-row group relative border-b border-paper/12 py-7 first:border-t sm:py-9"
   >
-    <div class="flex items-start gap-4 sm:gap-7">
+    <div class="opportunity-row__layout flex items-start gap-4 sm:gap-7">
       <div class="min-w-0 flex-1">
         <div
           class="flex flex-wrap items-center gap-x-3 gap-y-2 text-[10px] uppercase tracking-[.14em] text-paper/40"
         >
-          <span>{{ item.kind }}</span
+          <span>{{
+            item.routeType === 'internship-pathway' ? 'College internship pathway' : item.kind
+          }}</span
           ><span aria-hidden="true">/</span>
           <span>{{ item.edition || 'Current guidance' }}</span>
           <span
@@ -43,7 +41,10 @@ const policy = computed(
         <h2
           class="opportunity-row__title mt-3 font-display text-xl tracking-[-.03em] text-paper sm:text-2xl"
         >
-          <NuxtLink :to="`/opportunities/${item.slug}`">{{ item.title }}</NuxtLink>
+          <button v-if="inspect" class="text-left" @click="emit('inspect')">
+            {{ item.title }}
+          </button>
+          <NuxtLink v-else :to="`/opportunities/${item.slug}`">{{ item.title }}</NuxtLink>
         </h2>
         <p class="mt-3 max-w-3xl text-sm leading-6 text-paper/58">{{ item.description }}</p>
         <div class="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-paper/52">
@@ -65,13 +66,27 @@ const policy = computed(
           {{ state.label }} · confirm the next action with the organizer
         </p>
       </div>
-      <div class="flex shrink-0 flex-col items-end gap-3">
+      <div class="opportunity-row__controls flex shrink-0 flex-col items-end gap-3">
         <OpportunitySaveButton :id="item.id" compact />
+        <button
+          v-if="inspect"
+          class="opportunity-row__details inline-flex min-h-11 items-center rounded-full px-3 text-xs text-acid"
+          @click="emit('inspect')"
+        >
+          Inspect sources <span aria-hidden="true">↗</span>
+        </button>
         <NuxtLink
+          v-else
           :to="`/opportunities/${item.slug}`"
           class="opportunity-row__details inline-flex min-h-11 items-center rounded-full px-3 text-xs text-acid"
           >Details <span aria-hidden="true">→</span></NuxtLink
         >
+        <div
+          v-if="$slots.actions"
+          class="opportunity-row__actions flex flex-wrap items-center gap-3"
+        >
+          <slot name="actions" />
+        </div>
       </div>
     </div>
   </article>
@@ -115,13 +130,13 @@ const policy = computed(
 .opportunity-row:focus-within::before {
   opacity: 1;
 }
-.opportunity-row__title a {
+.opportunity-row__title :is(a, button) {
   transition:
     color 200ms ease,
     text-shadow 280ms ease;
 }
-.opportunity-row:hover .opportunity-row__title a,
-.opportunity-row__title a:focus-visible {
+.opportunity-row:hover .opportunity-row__title :is(a, button),
+.opportunity-row__title :is(a, button):focus-visible {
   color: var(--color-acid);
   text-shadow: 0 0 24px color-mix(in srgb, var(--color-acid) 12%, transparent);
 }
@@ -133,6 +148,34 @@ const policy = computed(
     transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
     border-color 180ms ease,
     background-color 180ms ease;
+}
+@media (max-width: 560px) {
+  .opportunity-row__layout {
+    display: block;
+    position: relative;
+  }
+  .opportunity-row__title {
+    padding-right: 48px;
+  }
+  .opportunity-row__controls {
+    flex-direction: row;
+    justify-content: space-between;
+    margin-top: 12px;
+  }
+  .opportunity-row__actions {
+    order: -1;
+  }
+  .opportunity-row__actions :deep(button) {
+    min-height: 44px;
+  }
+  .opportunity-row__controls :deep(.save-control) {
+    position: absolute;
+    top: 24px;
+    right: 0;
+  }
+  .opportunity-row__details {
+    padding-inline: 0;
+  }
 }
 .opportunity-row__details:hover,
 .opportunity-row__details:focus-visible {

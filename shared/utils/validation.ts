@@ -218,6 +218,7 @@ export const opportunitySchema = z.object({
       'competition',
       'program',
       'internship',
+      'internship-pathway',
       'summer-program',
       'publication',
       'attendance',

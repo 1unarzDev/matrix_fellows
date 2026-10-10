@@ -1,14 +1,6 @@
-import { requireWorkspaceMember, assertWorkspaceOrigin } from '../../../../utils/workspace-auth'
-import { workspaceStorage, workspaceResult, workspaceId } from '../../../../utils/workspace-storage'
+import { requireWorkspaceMember } from '../../../../utils/workspace-auth'
+
 export default defineEventHandler(async (event) => {
-  assertWorkspaceOrigin(event)
-  const member = await requireWorkspaceMember(event)
-  workspaceResult(
-    await workspaceStorage(event)
-      .from('outreach_planner_items')
-      .delete()
-      .eq('id', workspaceId(event))
-      .eq('user_id', member.userId),
-  )
-  return { deleted: true }
+  await requireWorkspaceMember(event)
+  throw createError({ statusCode: 410, statusMessage: 'Earlier planner records are read-only. Use the canonical plan in Today or Opportunities.' })
 })

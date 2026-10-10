@@ -34,6 +34,8 @@ export default defineCachedEventHandler(
       `${root}/guides`,
       `${root}/meetings`,
       `${root}/join`,
+      `${root}/privacy`,
+      `${root}/terms`,
       ...guideRoutes.map((path) => `${root}${path}`),
       ...slugs.map((slug) => `${root}/opportunities/${slug}`),
     ]
@@ -41,5 +43,5 @@ export default defineCachedEventHandler(
     setHeader(event, 'Cache-Control', 'public, max-age=300, stale-while-revalidate=3600')
     return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((url) => `  <url><loc>${escapeXml(url)}</loc></url>`).join('\n')}\n</urlset>`
   },
-  { maxAge: 300, swr: true, name: 'public-sitemap' },
+  { maxAge: 300, swr: true, name: 'public-sitemap-v2' },
 )

@@ -209,6 +209,7 @@ export interface Opportunity {
     | 'competition'
     | 'program'
     | 'internship'
+    | 'internship-pathway'
     | 'summer-program'
     | 'publication'
     | 'attendance'

@@ -272,12 +272,13 @@ useHead({
           </span>
           <span>
             <strong>Open the research calendar</strong>
-            <small>Saved opportunities glow on your device</small>
+            <small>Your saved opportunities stay in view</small>
           </span>
           <SiteIcon name="right" :size="14" class="catalog-calendar-link__arrow" />
         </NuxtLink>
       </div>
 
+      <OpportunitySaveNotice />
       <form
         action="/opportunities"
         method="get"

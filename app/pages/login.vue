@@ -20,6 +20,9 @@ const tokenInput = ref<HTMLInputElement | null>(null)
 const stateHeight = ref<number | null>(null)
 const stateContainer = ref<HTMLElement | null>(null)
 const userInitiated = ref(false)
+const morphingPassword = ref(false)
+const needsConfirmation = computed(() => ['signup', 'reset'].includes(passwordMode.value))
+let passwordMorphTimer: ReturnType<typeof setTimeout> | undefined
 let stateObserver: ResizeObserver | undefined
 let passkeyController: AbortController | undefined
 const route = useRoute()
@@ -37,6 +40,7 @@ function measureState(element: Element) {
   stateObserver?.observe(element)
 }
 onBeforeUnmount(() => {
+  clearTimeout(passwordMorphTimer)
   stateObserver?.disconnect()
   passkeyController?.abort()
 })
@@ -95,6 +99,11 @@ async function submitPassword() {
 }
 function changePasswordMode(value: typeof passwordMode.value) {
   if (busy.value) return
+  clearTimeout(passwordMorphTimer)
+  morphingPassword.value = true
+  passwordMorphTimer = setTimeout(() => {
+    morphingPassword.value = false
+  }, 420)
   passwordMode.value = value
   password.value = ''
   confirmPassword.value = ''
@@ -234,6 +243,7 @@ onMounted(async () => {
       <div
         ref="stateContainer"
         class="login-state"
+        :class="{ 'login-state--morphing': morphingPassword }"
         :style="stateHeight === null ? undefined : { height: `${stateHeight}px` }"
       >
         <Transition name="auth-state" mode="out-in" @enter="measureState" @after-enter="focusState">
@@ -320,34 +330,45 @@ onMounted(async () => {
                       "
                     />
                   </div>
-                  <template v-if="passwordMode === 'signup' || passwordMode === 'reset'">
-                    <label for="login-password-confirm">Confirm password</label>
-                    <div class="login-input-wrap">
-                      <SiteIcon name="lock" :size="17" /><input
-                        id="login-password-confirm"
-                        v-model="confirmPassword"
-                        type="password"
-                        autocomplete="new-password"
-                        required
-                        minlength="12"
-                        maxlength="128"
-                        :disabled="busy"
-                        placeholder="Repeat your password"
-                      />
+                  <div
+                    class="login-confirmation"
+                    :class="{ 'is-expanded': needsConfirmation }"
+                    :inert="!needsConfirmation"
+                    :aria-hidden="!needsConfirmation"
+                  >
+                    <div class="login-confirmation-inner">
+                      <label for="login-password-confirm">Confirm password</label>
+                      <div class="login-input-wrap">
+                        <SiteIcon name="lock" :size="17" /><input
+                          id="login-password-confirm"
+                          v-model="confirmPassword"
+                          type="password"
+                          autocomplete="new-password"
+                          :required="needsConfirmation"
+                          minlength="12"
+                          maxlength="128"
+                          :disabled="busy || !needsConfirmation"
+                          placeholder="Repeat your password"
+                        />
+                      </div>
                     </div>
-                  </template>
+                  </div>
                   <button class="login-primary" type="submit" :disabled="busy">
-                    {{
-                      busy
-                        ? 'Please wait…'
-                        : passwordMode === 'signin'
-                          ? 'Sign in with password'
-                          : passwordMode === 'signup'
-                            ? 'Create account'
-                            : passwordMode === 'recover'
-                              ? 'Send reset link'
-                              : 'Update password'
-                    }}
+                    <Transition name="auth-copy" mode="out-in"
+                      ><span :key="busy ? 'busy' : passwordMode">
+                        {{
+                          busy
+                            ? 'Please wait…'
+                            : passwordMode === 'signin'
+                              ? 'Sign in with password'
+                              : passwordMode === 'signup'
+                                ? 'Create account'
+                                : passwordMode === 'recover'
+                                  ? 'Send reset link'
+                                  : 'Update password'
+                        }}
+                      </span></Transition
+                    >
                   </button>
                   <div class="login-password-actions" v-if="passwordMode !== 'reset'">
                     <button
@@ -356,13 +377,19 @@ onMounted(async () => {
                       :disabled="busy"
                       @click="changePasswordMode(passwordMode === 'signin' ? 'signup' : 'signin')"
                     >
-                      {{ passwordMode === 'signin' ? 'Create an account' : 'Back to sign in' }}
+                      <Transition name="auth-copy" mode="out-in"
+                        ><span :key="passwordMode === 'signin' ? 'signup' : 'signin'">{{
+                          passwordMode === 'signin' ? 'Create an account' : 'Back to sign in'
+                        }}</span></Transition
+                      >
                     </button>
                     <button
-                      v-if="passwordMode === 'signin'"
                       type="button"
-                      class="login-change"
-                      :disabled="busy"
+                      class="login-change login-forgot"
+                      :class="{ 'is-hidden': passwordMode !== 'signin' }"
+                      :inert="passwordMode !== 'signin'"
+                      :aria-hidden="passwordMode !== 'signin'"
+                      :disabled="busy || passwordMode !== 'signin'"
                       @click="changePasswordMode('recover')"
                     >
                       Forgot password?
@@ -457,11 +484,37 @@ onMounted(async () => {
       <p class="login-footnote">
         <SiteIcon name="lock" :size="12" />Club participation approval is separate.
       </p>
+      <p class="login-legal">
+        By creating an account or using member tools, you agree to our
+        <NuxtLink to="/terms">Terms of service</NuxtLink>. Read our
+        <NuxtLink to="/privacy">Privacy policy</NuxtLink>.
+      </p>
     </section>
   </WorkspaceShell>
 </template>
 
 <style scoped>
+.login-legal {
+  margin: 18px 0 0;
+  color: #aaa8b1;
+  font-size: 11px;
+  line-height: 1.8;
+  text-align: center;
+}
+.login-legal a {
+  color: #dfc68f;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 180ms ease;
+}
+.login-legal a:hover {
+  color: #f4dfb7;
+}
+.login-legal a:focus-visible {
+  outline: 2px solid #d8b977;
+  outline-offset: 4px;
+  border-radius: 2px;
+}
 .login-panel {
   width: min(100%, 430px);
   padding: clamp(24px, 4vw, 32px);
@@ -611,6 +664,78 @@ button:disabled {
 }
 .login-method-stage {
   display: grid;
+}
+.login-confirmation {
+  display: grid;
+  align-self: start;
+  min-height: 0;
+  grid-template-rows: minmax(0, 0fr);
+  opacity: 0;
+  margin-block: -4px;
+  transform: translateY(-5px);
+  transition:
+    grid-template-rows 380ms cubic-bezier(0.22, 1, 0.36, 1),
+    margin 380ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 240ms ease,
+    transform 380ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.login-confirmation.is-expanded {
+  grid-template-rows: minmax(0, 1fr);
+  opacity: 1;
+  margin-block: 0;
+  transform: none;
+}
+.login-confirmation-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+.login-confirmation-inner > label {
+  display: block;
+  margin-bottom: 8px;
+}
+.login-confirmation.is-expanded .login-confirmation-inner {
+  overflow: clip;
+  overflow-clip-margin: 4px;
+}
+.login-state--morphing {
+  height: auto !important;
+  transition: none;
+}
+.login-forgot {
+  transition:
+    opacity 180ms ease,
+    color 220ms ease,
+    visibility 180ms;
+}
+.login-forgot.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.auth-copy-enter-active {
+  transition:
+    opacity 180ms ease,
+    transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.auth-copy-leave-active {
+  transition:
+    opacity 90ms ease,
+    transform 90ms ease;
+}
+.auth-copy-enter-from {
+  opacity: 0;
+  transform: translateY(3px);
+}
+.auth-copy-leave-to {
+  opacity: 0;
+  transform: translateY(-2px);
+}
+.login-password-actions .login-change {
+  min-width: 0;
+  min-height: 44px;
+  padding-inline: 0;
+  margin-inline: 0;
+  text-align: left;
 }
 .login-method-body input:disabled {
   font-size: 12px;

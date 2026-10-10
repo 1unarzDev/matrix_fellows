@@ -1,4 +1,4 @@
-// Only the homepage and explicit catalog/guide routes are public pages. Unknown paths
+// Only explicit public routes produce indexable pages. Unknown paths
 // must not produce duplicate SSR documents.
 export default defineEventHandler((event) => {
   const url = getRequestURL(event)
@@ -31,7 +31,7 @@ export default defineEventHandler((event) => {
   }
   if (
     /^\/(?:guides|opportunities)(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)?\/_payload\.json$/.test(path) ||
-    /^(?:\/join|\/meetings)\/_payload\.json$/.test(path)
+    /^(?:\/join|\/meetings|\/privacy|\/terms)\/_payload\.json$/.test(path)
   ) {
     setHeader(event, 'X-Robots-Tag', 'noindex')
     return
@@ -43,9 +43,12 @@ export default defineEventHandler((event) => {
     path === '/guides' ||
     path === '/meetings' ||
     path === '/join' ||
+    path === '/privacy' ||
+    path === '/terms' ||
     /^\/guides\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(path) ||
     path === '/robots.txt' ||
     path === '/sitemap.xml' ||
+    path === '/.well-known/microsoft-identity-association.json' ||
     path.startsWith('/_nuxt/') ||
     path.startsWith('/__nuxt') ||
     path.startsWith('/models/') ||

@@ -2,6 +2,11 @@
 import type { Opportunity } from '#shared/types/content'
 import { displayDate } from '#shared/utils/opportunities'
 import { getOpportunityState, getTimeline } from '#shared/utils/opportunity-lifecycle'
+import {
+  nextOpportunityMilestone,
+  opportunityCostEntries,
+  opportunityPortalLabel,
+} from '#shared/utils/opportunity-presentation'
 
 const route = useRoute()
 const slug = String(route.params.slug || '')
@@ -13,13 +18,8 @@ if (error.value || !data.value?.item)
 const item = computed(() => data.value!.item)
 const now = Date.now()
 const timeline = computed(() => getTimeline(item.value))
-const next = computed(() =>
-  timeline.value.find(
-    (point) =>
-      !point.superseded &&
-      Date.parse(point.date.length === 10 ? `${point.date}T23:59:59Z` : point.date) >= now,
-  ),
-)
+const next = computed(() => nextOpportunityMilestone(timeline.value, now))
+const portalLabel = computed(() => opportunityPortalLabel(item.value, now))
 const state = computed(() => getOpportunityState(item.value, now))
 const canonical = `https://matrixfellows.com/opportunities/${slug}`
 useSeoMeta({
@@ -37,45 +37,16 @@ const policyLabel = computed(
       'not-stated': 'The organizer does not state a high-school policy',
     })[item.value.highSchoolPolicy || 'not-stated'],
 )
-const costLabels = {
-  application: 'Application',
-  submission: 'Submission',
-  program: 'Program / tuition',
-  compensation: 'Compensation / stipend',
-  registration: 'Registration',
-  accompanyingAdult: 'Accompanying adult',
-  travel: 'Travel & lodging',
-  materials: 'Materials',
-  publication: 'Publication',
-  aid: 'Aid & support',
-} as const
-const programCostKeys = [
-  'application',
-  'program',
-  'compensation',
-  'travel',
-  'materials',
-  'aid',
-] as const
-const contributionCostKeys = [
-  'submission',
-  'registration',
-  'accompanyingAdult',
-  'travel',
-  'materials',
-  'publication',
-  'aid',
-] as const
-const costEntries = computed(() =>
-  (['Internship', 'Summer program', 'Program'].includes(item.value.kind)
-    ? programCostKeys
-    : contributionCostKeys
-  ).map((key) => ({
-    key,
-    label: costLabels[key],
-    value: item.value.costs?.[key] || null,
-    evidence: item.value.fieldEvidence?.find((entry) => entry.field === `costs.${key}`),
-  })),
+const costEntries = computed(() => opportunityCostEntries(item.value))
+const entryCosts = computed(() =>
+  costEntries.value.filter((entry) =>
+    ['application', 'submission', 'registration'].includes(entry.key),
+  ),
+)
+const participationCosts = computed(() =>
+  costEntries.value.filter(
+    (entry) => !['application', 'submission', 'registration'].includes(entry.key),
+  ),
 )
 const modeLabels = {
   'in-person': 'In person',
@@ -96,7 +67,11 @@ const modeLabels = {
       >
       <header class="mt-7 border-b border-paper/15 pb-10">
         <p class="text-[10px] uppercase tracking-[.17em] text-acid">
-          {{ item.kind }}<span v-if="item.edition"> · {{ item.edition }}</span>
+          {{
+            item.routeType === 'internship-pathway'
+              ? 'Scholarship · college internship pathway'
+              : item.kind
+          }}<span v-if="item.edition"> · {{ item.edition }}</span>
         </p>
         <h1 class="mt-5 max-w-4xl font-display text-4xl tracking-[-.055em] sm:text-6xl">
           {{ item.title }}
@@ -113,7 +88,16 @@ const modeLabels = {
             class="tactile inline-flex min-h-11 items-center rounded-full border border-acid/40 bg-acid/10 px-5 text-xs text-acid"
             >{{ item.kind === 'Internship' ? 'Official internship ↗' : 'Official call ↗' }}</a
           >
+          <a
+            v-if="item.submissionUrl && item.submissionUrl !== item.url"
+            :href="item.submissionUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="tactile inline-flex min-h-11 items-center rounded-full border border-paper/20 bg-paper/[.035] px-5 text-xs text-paper/80"
+            >{{ portalLabel }}</a
+          >
         </div>
+        <OpportunitySaveNotice />
       </header>
 
       <div class="grid gap-12 py-10 lg:grid-cols-[minmax(0,1fr)_17rem]">
@@ -125,6 +109,12 @@ const modeLabels = {
             </h2>
             <p v-if="next" class="mt-3 text-lg text-acid">
               {{ displayDate(next.date, next.timezone || 'UTC') }}
+              <span v-if="next.endDate && next.endDate !== next.date">
+                – {{ displayDate(next.endDate, next.timezone || 'UTC') }}</span
+              >
+              <span v-if="next.tentative" class="ml-2 text-xs text-paper/55"
+                >Projected · awaiting confirmation</span
+              >
             </p>
             <p class="mt-3 text-sm leading-6 text-paper/55">
               {{
@@ -132,6 +122,12 @@ const modeLabels = {
                 item.lifecycleEvidence ||
                 'No current deadline has been confirmed. Check the official source before planning around a date.'
               }}
+            </p>
+            <p
+              v-if="next?.conflict"
+              class="mt-3 rounded-2xl bg-acid/[.04] px-4 py-3 text-xs leading-6 text-paper/65"
+            >
+              <span class="text-acid/80">Dates need confirmation.</span> {{ next.conflict }}
             </p>
             <p v-if="next?.originalTimezone || next?.precision" class="mt-2 text-xs text-paper/38">
               {{
@@ -141,6 +137,26 @@ const modeLabels = {
                   : next.timezone)
               }}
             </p>
+            <dl
+              v-if="entryCosts.length"
+              class="mt-5 grid gap-3 sm:grid-cols-2"
+              aria-label="Entry costs"
+            >
+              <div v-for="entry in entryCosts" :key="entry.key" class="cost-fact">
+                <dt class="text-[10px] uppercase tracking-[.14em] text-paper/40">
+                  {{ entry.label }}
+                </dt>
+                <dd class="mt-2 text-sm leading-6 text-paper/70">{{ entry.value }}</dd>
+                <a
+                  v-if="entry.evidence"
+                  :href="entry.evidence.url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="mt-2 inline-block text-xs text-acid/75 hover:text-acid"
+                  >Source ↗</a
+                >
+              </div>
+            </dl>
           </section>
 
           <section aria-labelledby="requirements">
@@ -161,7 +177,10 @@ const modeLabels = {
             </p>
           </section>
 
-          <InternshipInformation v-if="item.kind === 'Internship' || item.internship" :item="item" />
+          <InternshipInformation
+            v-if="item.kind === 'Internship' || item.internship"
+            :item="item"
+          />
 
           <section aria-labelledby="timeline">
             <h2 id="timeline" class="font-display text-2xl">Edition timeline</h2>
@@ -178,7 +197,13 @@ const modeLabels = {
                 <p class="text-sm text-paper/80">{{ point.label }}</p>
                 <p class="mt-1 text-xs text-acid/80">
                   {{ displayDate(point.date, point.timezone || 'UTC')
-                  }}<span v-if="point.superseded" class="text-paper/40"> · superseded</span>
+                  }}<span v-if="point.endDate && point.endDate !== point.date">
+                    – {{ displayDate(point.endDate, point.timezone || 'UTC') }}</span
+                  ><span v-if="point.tentative" class="text-paper/55"> · projected</span
+                  ><span v-if="point.superseded" class="text-paper/40"> · superseded</span>
+                </p>
+                <p v-if="point.conflict" class="mt-2 text-xs leading-5 text-paper/55">
+                  Dates need confirmation: {{ point.conflict }}
                 </p>
                 <details class="mt-2 text-xs text-paper/45">
                   <summary class="cursor-pointer">Evidence and source</summary>
@@ -198,19 +223,20 @@ const modeLabels = {
             </p>
           </section>
 
-          <section aria-labelledby="costs">
-            <h2 id="costs" class="font-display text-2xl">Costs and participation</h2>
-            <dl class="mt-5 grid gap-4 sm:grid-cols-2">
-              <div
-                v-for="entry in costEntries"
-                :key="entry.key"
-                class="border-t border-paper/12 pt-3"
-              >
+          <section
+            v-if="participationCosts.length || item.participationModes?.length"
+            aria-labelledby="costs"
+          >
+            <h2 id="costs" class="font-display text-2xl">
+              {{ participationCosts.length ? 'Costs and participation' : 'Participation' }}
+            </h2>
+            <dl v-if="participationCosts.length" class="mt-5 grid gap-4 sm:grid-cols-2">
+              <div v-for="entry in participationCosts" :key="entry.key" class="cost-fact">
                 <dt class="text-[10px] uppercase tracking-[.14em] text-paper/38">
                   {{ entry.label }}
                 </dt>
                 <dd class="mt-2 text-sm leading-6 text-paper/62">
-                  {{ entry.value || 'Unknown — not verified by the reviewed sources' }}
+                  {{ entry.value }}
                 </dd>
                 <a
                   v-if="entry.evidence"
@@ -222,21 +248,17 @@ const modeLabels = {
                 >
               </div>
             </dl>
-            <div class="mt-6 border-t border-paper/12 pt-4">
+            <div v-if="item.participationModes?.length" class="mt-6">
               <p class="text-[10px] uppercase tracking-[.14em] text-paper/38">
                 Participation modes
               </p>
               <p v-if="item.participationModes?.length" class="mt-2 text-sm text-paper/62">
                 {{ item.participationModes.map((mode) => modeLabels[mode]).join(' · ') }}
               </p>
-              <p v-else class="mt-2 text-sm text-paper/45">
-                Attendance format has not been verified. Online submission does not imply remote
-                presentation.
-              </p>
             </div>
             <p class="mt-5 text-xs leading-5 text-paper/40">
-              “Unknown” never means free. Amounts and attendance obligations can change by edition;
-              confirm them with the organizer before committing.
+              Only reviewed costs are shown. Omitted items are not a promise of free participation;
+              confirm current fees and attendance obligations before committing.
             </p>
           </section>
 
@@ -291,5 +313,22 @@ const modeLabels = {
   inset: 0;
   pointer-events: none;
   background: radial-gradient(60% 45% at 85% 0%, rgba(74, 113, 125, 0.11), transparent 72%);
+}
+.cost-fact {
+  padding: 1rem 1.1rem;
+  border-radius: 1rem;
+  background: rgb(244 241 233 / 2.5%);
+  transition:
+    background-color 320ms ease,
+    box-shadow 420ms ease;
+}
+.cost-fact:hover {
+  background: rgb(244 241 233 / 4%);
+  box-shadow: 0 0 24px rgb(196 178 238 / 3%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .cost-fact {
+    transition: none;
+  }
 }
 </style>

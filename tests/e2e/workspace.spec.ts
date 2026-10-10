@@ -25,6 +25,10 @@ test('member dashboard restricts discovery and builds only assigned personal pro
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.route('**/api/workspace**', (route) => {
     const path = new URL(route.request().url()).pathname
+    if (path === '/api/workspace/plan')
+      return route.fulfill({
+        json: { pursuits: [], tasks: [], activities: [], events: [], capacityHours: null },
+      })
     if (path === '/api/workspace') return route.fulfill({ json: data })
     if (path === '/api/workspace/mailboxes')
       return route.fulfill({ json: { items: [], providers: { gmail: false, outlook: false } } })
@@ -35,19 +39,21 @@ test('member dashboard restricts discovery and builds only assigned personal pro
     requests.push({ path, body: null })
     return route.fulfill({ json: { items: [] } })
   })
-  await page.goto('/dashboard')
-  await expect(page.getByRole('heading', { name: 'Saved & planned', exact: true })).toBeVisible()
+  await page.goto('/dashboard?section=queue')
+  await expect(
+    page.getByRole('heading', { name: 'Research relationships', exact: true }),
+  ).toBeVisible()
   const nav = page.getByRole('navigation', { name: 'Dashboard sections' })
   await expect(nav.getByRole('button', { name: 'Discovery', exact: true })).toHaveCount(0)
-  await expect(nav.getByRole('button', { name: 'Research runs', exact: true })).toHaveCount(0)
+  await expect(nav.getByRole('button', { name: 'Source management', exact: true })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Assign connection', exact: true })).toHaveCount(0)
-  await page.getByRole('button', { name: 'Draft a personal proposal', exact: true }).click()
-  await expect(page.getByRole('button', { name: 'Shape my proposal', exact: true })).toBeEnabled()
+  await page.getByRole('button', { name: /Robotics Research Group/ }).click()
+  await expect(page.getByRole('button', { name: 'Shape a proposal', exact: true })).toBeEnabled()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(
     true,
   )
   await page.screenshot({ path: `/tmp/member-builder-${info.project.name}.png`, fullPage: true })
-  await page.getByRole('button', { name: 'Shape my proposal', exact: true }).click()
+  await page.getByRole('button', { name: 'Shape a proposal', exact: true }).click()
   expect(requests.find((r) => r.path === '/api/workspace/planner')?.body).toMatchObject({
     targetId,
     kind: 'student',
@@ -64,10 +70,12 @@ test('member dashboard restricts discovery and builds only assigned personal pro
   ).toBe(false)
   data.targets = []
   await page.reload()
-  await expect(
-    page.getByRole('button', { name: 'Draft a personal proposal', exact: true }),
-  ).toHaveCount(0)
-  await expect(page.getByText(/Connections assigned by an officer will appear here/)).toBeVisible()
+  await page
+    .getByRole('navigation', { name: 'Dashboard sections' })
+    .getByRole('button', { name: /Research/ })
+    .click()
+  await expect(page.getByRole('button', { name: 'Shape a proposal', exact: true })).toHaveCount(0)
+  await expect(page.getByText(/No candidates match these filters/)).toBeVisible()
 })
 
 test('officers assign and revoke reviewed connections for enrolled members', async ({ page }) => {
@@ -77,6 +85,10 @@ test('officers assign and revoke reviewed connections for enrolled members', asy
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.route('**/api/workspace**', (route) => {
     const path = new URL(route.request().url()).pathname
+    if (path === '/api/workspace/plan')
+      return route.fulfill({
+        json: { pursuits: [], tasks: [], activities: [], events: [], capacityHours: null },
+      })
     if (path === '/api/workspace') return route.fulfill({ json: data })
     if (path === '/api/workspace/mailboxes')
       return route.fulfill({ json: { items: [], providers: {} } })
@@ -93,7 +105,7 @@ test('officers assign and revoke reviewed connections for enrolled members', asy
     }
     return route.fulfill({ json: { items: [] } })
   })
-  await page.goto('/dashboard')
+  await page.goto('/dashboard?section=queue')
   await page.getByRole('button', { name: /Robotics Research Group/ }).click()
   await page.getByLabel('Member email', { exact: true }).fill('member@example.org')
   await page.getByRole('button', { name: 'Assign connection', exact: true }).click()
@@ -277,14 +289,18 @@ test('private studio presents evidence, unknown priority and all sections withou
           health: { note: 'Configured worker required before execution.' },
         },
       })
+    if (path === '/api/workspace/plan')
+      return route.fulfill({
+        json: { pursuits: [], tasks: [], activities: [], events: [], capacityHours: null },
+      })
     if (path === '/api/workspace') return route.fulfill({ json: data })
     return route.fulfill({ status: 503, json: { statusMessage: 'Test route not configured' } })
   })
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
-  await page.goto('/workspace')
+  await page.goto('/workspace?section=queue')
   await expect(
-    page.getByRole('heading', { name: 'Partnership discovery', exact: true }),
+    page.getByRole('heading', { name: 'Research relationships', exact: true }),
   ).toBeVisible()
   await page.getByRole('button', { name: /Robotics Research Group/ }).click()
   await expect(page.getByText('Evidence, not assumptions', { exact: true })).toBeVisible()
@@ -294,10 +310,9 @@ test('private studio presents evidence, unknown priority and all sections withou
   for (const label of [
     'Your profile',
     'Society',
-    'Saved & planned',
-    'Research runs',
+    'Source management',
     'Connections',
-    'Proposals',
+    'Draft review',
   ]) {
     await page
       .getByRole('navigation', { name: 'Dashboard sections' })
@@ -338,13 +353,17 @@ test('mail sending requires separate approval and final confirmation', async ({ 
       return route.fulfill({
         json: { configured: true, authenticated: true, officer: data.member },
       })
+    if (path === '/api/workspace/plan')
+      return route.fulfill({
+        json: { pursuits: [], tasks: [], activities: [], events: [], capacityHours: null },
+      })
     if (path === '/api/workspace') return route.fulfill({ json: data })
     return route.fulfill({ status: 503, json: { statusMessage: 'Test route not configured' } })
   })
   await page.goto('/workspace')
   await page
     .getByRole('navigation', { name: 'Dashboard sections' })
-    .getByRole('button', { name: 'Proposals', exact: true })
+    .getByRole('button', { name: 'Draft review', exact: true })
     .click()
   await page.getByRole('button', { name: /Robotics discussion with Matrix Fellows/ }).click()
   await expect(page.getByRole('button', { name: 'Review & send' })).toBeDisabled()

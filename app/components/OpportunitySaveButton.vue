@@ -1,10 +1,11 @@
 <script setup lang="ts">
 const props = defineProps<{ id: string; compact?: boolean }>()
-const { ready, available, toggle, isSaved } = useSavedOpportunities()
+const { ready, available, pending, owner, error, toggle, isSaved } = useSavedOpportunities()
 const saved = computed(() => isSaved(props.id))
 const burst = ref(0)
 const springing = ref(false)
 const action = ref<'save' | 'remove'>('save')
+const failed = ref(false)
 const particles = [
   ['-24px', '-17px', '0ms'],
   ['-8px', '-26px', '18ms'],
@@ -19,7 +20,11 @@ const particles = [
 async function activate() {
   if (!ready.value || !available.value) return
   action.value = saved.value ? 'remove' : 'save'
-  toggle(props.id)
+  failed.value = false
+  if (!(await toggle(props.id))) {
+    failed.value = true
+    return
+  }
   burst.value++
   springing.value = false
   await nextTick()
@@ -30,16 +35,18 @@ async function activate() {
 <template>
   <button
     type="button"
-    :disabled="!ready || !available"
+    :disabled="!ready || !available || pending"
     :aria-pressed="saved"
     :aria-label="
       !available
         ? 'Saving unavailable'
         : saved
           ? 'Remove saved opportunity'
-          : 'Save opportunity on this device'
+          : owner
+            ? 'Save opportunity to your account'
+            : 'Save opportunity on this device'
     "
-    :title="available ? 'Saved only in this browser' : 'Browser storage is unavailable'"
+    :title="error || (owner ? 'Saved to your account' : 'Saved only in this browser')"
     class="save-control"
     :class="{
       'save-control--saved': saved,
@@ -53,9 +60,9 @@ async function activate() {
       <span class="save-control__mark" aria-hidden="true" />
       <span v-if="!compact" class="save-control__labels" aria-hidden="true">
         <span :class="{ 'save-control__label--visible': !saved && available }">Save</span>
-        <span :class="{ 'save-control__label--visible': saved && available }"
-          >Saved on this device</span
-        >
+        <span :class="{ 'save-control__label--visible': saved && available }">{{
+          owner ? 'Saved to account' : 'Saved on this device'
+        }}</span>
         <span :class="{ 'save-control__label--visible': !available }">Saving unavailable</span>
       </span>
     </span>
@@ -68,9 +75,22 @@ async function activate() {
       />
     </span>
   </button>
+  <span v-if="failed && error" role="alert" class="save-error"
+    >{{ error }} <button type="button" @click="activate">Retry</button></span
+  >
 </template>
 
 <style scoped>
+.save-error {
+  max-width: 16rem;
+  color: var(--color-paper);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.save-error button {
+  color: var(--color-acid);
+  text-decoration: underline;
+}
 .save-control {
   position: relative;
   isolation: isolate;

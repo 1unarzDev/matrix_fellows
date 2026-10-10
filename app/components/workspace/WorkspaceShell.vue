@@ -1,13 +1,21 @@
 <script setup lang="ts">
-withDefaults(defineProps<{ title?: string; subtitle?: string; variant?: 'dashboard' | 'auth' }>(), {
-  variant: 'dashboard',
-})
+withDefaults(
+  defineProps<{
+    title?: string
+    subtitle?: string
+    skipLabel?: string
+    variant?: 'dashboard' | 'auth'
+  }>(),
+  {
+    variant: 'dashboard',
+  },
+)
 </script>
 
 <template>
   <div class="workspace-shell" :class="{ 'workspace-shell--auth': variant === 'auth' }">
     <a href="#workspace-main" class="workspace-skip">{{
-      variant === 'auth' ? 'Skip to sign-in' : 'Skip to dashboard'
+      skipLabel || (variant === 'auth' ? 'Skip to sign-in' : 'Skip to dashboard')
     }}</a>
     <div class="workspace-glow" aria-hidden="true" />
     <ScienceAccent v-if="variant !== 'auth'" theme="astronomy" />
@@ -22,8 +30,7 @@ withDefaults(defineProps<{ title?: string; subtitle?: string; variant?: 'dashboa
       <slot name="header" />
     </header>
     <main id="workspace-main" class="workspace-main" tabindex="-1">
-      <div v-if="variant !== 'auth'" class="workspace-heading">
-        <p class="workspace-eyebrow">Research grows through connection</p>
+      <div v-if="variant !== 'auth'" class="workspace-heading workspace-heading--utility">
         <h1>{{ title }}</h1>
         <p v-if="subtitle">{{ subtitle }}</p>
       </div>
@@ -174,16 +181,27 @@ withDefaults(defineProps<{ title?: string; subtitle?: string; variant?: 'dashboa
 .workspace-main {
   max-width: 1440px;
   margin: auto;
-  padding: 44px clamp(20px, 4vw, 60px) 90px;
+  padding: 16px clamp(20px, 4vw, 60px) 90px;
   position: relative;
 }
 .workspace-heading {
   margin-bottom: 30px;
   max-width: 800px;
 }
+.workspace-heading--utility {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 .workspace-heading h1 {
   font-family: Manrope, sans-serif;
-  font-size: clamp(32px, 4vw, 52px);
+  font-size: clamp(24px, 3vw, 32px);
   line-height: 1.1;
   letter-spacing: -0.055em;
   margin: 12px 0 16px;

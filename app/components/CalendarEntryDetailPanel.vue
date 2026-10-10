@@ -34,7 +34,7 @@ const dateContext = computed(() => {
           {{ entry.state === 'tentative' ? 'Projected · awaiting confirmation' : entry.kind === 'deadline' ? 'Verified deadline' : 'Verified event date' }}
         </p>
         <p v-if="entry.saved" class="calendar-detail__saved">
-          <span aria-hidden="true" /> Saved on this device
+          <span aria-hidden="true" /> Saved opportunity
         </p>
         <time :datetime="occurrenceDate || entry.date" class="text-[10px] tracking-[.08em] text-paper/42">{{ dateContext }}</time>
       </div>

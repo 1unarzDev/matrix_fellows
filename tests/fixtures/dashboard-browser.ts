@@ -210,22 +210,30 @@ export async function setup(page: Page, conflict = false) {
       return json({
         url: body.url,
         title: 'Synthetic source reference',
-        kind: 'unverified-reference',
-        item: null,
-        source: { url: body.url, retrievedAt: null, label: 'User supplied' },
-        notice: 'This reference has not been fetched or verified.',
+        kind: 'personal',
+        disposition: 'personal',
+        item: { ...opportunity, id: 'personal:synthetic-source', title: 'Synthetic source reference', url: body.url },
+        candidate: { ...opportunity, id: 'personal:synthetic-source', title: 'Synthetic source reference', url: body.url },
+        reason: 'A bounded opportunity for your own dashboard.',
+        confidence: 0.72,
+        source: { url: body.url, retrievedAt: stamp, label: 'Bounded source review' },
+        notice: 'This opportunity stays private to your dashboard.',
       })
     }
     if (path === '/api/workspace/capture') {
       if (method === 'GET') return json({ references })
-      const reference = {
-        ...body,
-        id: 'synthetic-reference',
-        verification: 'user-supplied',
-        createdAt: stamp,
-      }
-      references.push(reference)
-      return json(reference)
+      return json({
+        url: body.url,
+        title: 'Synthetic source reference',
+        kind: 'personal',
+        disposition: 'personal',
+        item: { ...opportunity, id: 'personal:synthetic-source', title: 'Synthetic source reference', url: body.url },
+        candidate: { ...opportunity, id: 'personal:synthetic-source', title: 'Synthetic source reference', url: body.url },
+        reason: 'A bounded opportunity for your own dashboard.',
+        confidence: 0.72,
+        source: { url: body.url, retrievedAt: stamp, label: 'Bounded source review' },
+        notice: 'This opportunity stays private to your dashboard.',
+      })
     }
     if (path === '/api/workspace/mailboxes')
       return json({ items: [], providers: { gmail: false, outlook: false } })

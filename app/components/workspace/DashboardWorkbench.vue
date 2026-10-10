@@ -373,10 +373,16 @@ async function loadCatalog(page = 1, search = query.value) {
       },
       signal: catalogAbort.signal,
     })
+    const personal = savedMode
+      ? { items: [] as Opportunity[] }
+      : await $fetch<{ items: Opportunity[] }>('/api/workspace/capture/personal', {
+          query: { q: search },
+          signal: catalogAbort.signal,
+        })
     if (version !== catalogRequestVersion) return
     if (result.unavailable)
       throw new Error('Catalog is temporarily unavailable. Try again or open the public catalog.')
-    catalog.value = result.items
+    catalog.value = [...personal.items, ...result.items]
     catalogSource.value = savedMode ? 'saved' : 'all'
     savedCollectionInfo.value = savedMode
       ? {

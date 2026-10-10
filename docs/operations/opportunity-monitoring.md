@@ -47,6 +47,26 @@ After a validated extraction, a new fetch with the same normalized document hash
 
 ## Discovery and agent integration
 
+### Member URL intake
+
+The dashboard's **Add an opportunity URL** action performs a bounded public-page
+inspection after normalizing and validating the URL. It first opens an existing
+published catalog record when the canonical URL is known. Otherwise the page is
+classified into one of three dispositions: a small actionable opportunity is
+stored in `dashboard_personal_opportunities` for the submitting member, a
+research or mentoring route is written as an unpublished `opportunity_discoveries`
+row for officer review, or an editorial/media/irrelevant link is rejected with a
+reason and no opportunity or task is created. The intake and source snapshot are
+retained in `dashboard_opportunity_intakes` for deduplication and audit.
+
+Personal records use the same opportunity inspector, saves, pursuits, dates and
+task linkage as catalog records, but remain member-scoped and are never queried
+by the public catalog. Shared candidates use the existing discovery review and
+publication gates; member submission cannot publish a catalog row. Fetches follow
+at most two redirects, allow only readable HTML/plain text, cap the response at
+240 KB and time out after six seconds. Source text is treated as untrusted data.
+
+
 Weekly Sunday 11:00 UTC discovery inspects the official MIT Admissions summer-program directory and follows at most three relevant links on the reviewed host allowlist. New discoveries need literal positive high-school eligibility evidence and a deduplication check; they enter the normal two-observation confirmation process before publication. This is deliberately bounded discovery, not an unrestricted web crawler. Add more first-party hubs in `workers/catalog.ts`; new domains need explicit vetting before joining the allowlist.
 
 External authorized agents can use these HTTPS endpoints on `matrix-fellows-opportunities.lunarzdev.workers.dev`:

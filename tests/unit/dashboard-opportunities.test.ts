@@ -2,10 +2,12 @@ import { expect, it } from 'vitest'
 import {
   captureInputSchema,
   capturePreview,
+  classifyOpportunityCapture,
   normalizeCaptureUrl,
   opportunityDecisionSchema,
 } from '../../shared/utils/dashboard-opportunities'
 import type { Opportunity } from '../../shared/types/content'
+import cases from '../fixtures/opportunity-capture-cases.json'
 it('normalizes public links without guessing contact routes or fetching sources', () => {
   expect(normalizeCaptureUrl('https://example.edu/program/?utm_source=news#apply')).toBe(
     'https://example.edu/program',
@@ -59,6 +61,33 @@ it('known catalog preview preserves historical cycle instead of claiming a fresh
   expect(preview.item?.edition).toBe('2024')
   expect(preview.source.retrievedAt).toBeNull()
   expect(preview.notice).toContain('does not reverify')
+})
+it.each(cases)('triages $id with the intended disposition', (fixture) => {
+  const result = classifyOpportunityCapture({ url: fixture.url, title: fixture.title, text: fixture.pageText })
+  expect(result.disposition).toBe(
+    fixture.expectedDisposition === 'catalog'
+      ? 'shared-review'
+      : fixture.expectedDisposition === 'reject'
+        ? 'rejected'
+        : fixture.expectedDisposition,
+  )
+})
+it('keeps a narrow real contest personal instead of treating it as shared', () => {
+  const result = classifyOpportunityCapture({
+    url: 'https://member.example.org/math-sprint-2027',
+    title: 'Arlington Math Sprint',
+    text: 'A 90-minute local mathematics contest for grades 9-12. Register by March 1. One Saturday, $25 team fee, no research project, mentoring, or reusable club pathway.',
+  })
+  expect(result.disposition).toBe('personal')
+})
+it('keeps concrete source dates for the personal timeline', () => {
+  const result = classifyOpportunityCapture({
+    url: 'https://member.example.org/math-sprint-2027',
+    title: 'Arlington Math Sprint',
+    text: 'Register by March 1, 2027. The contest is held April 10, 2027 for grades 9-12.',
+  })
+  expect(result.deadline).toBe('2027-03-01')
+  expect(result.eventDate).toBe('2027-04-10')
 })
 it('supports TEXT catalog IDs, private pass reasons, and versioned undo', () => {
   expect(

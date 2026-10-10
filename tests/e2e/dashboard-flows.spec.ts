@@ -64,7 +64,7 @@ test('fixture: newer profile typing stays unsaved until its own submission', asy
   await expect(name).toHaveValue('Synthetic newer name')
 })
 
-test('fixture: inspector Back, simplified actions and honest private URL capture', async ({
+test('fixture: inspector Back, simplified actions and personal URL capture', async ({
   page,
 }) => {
   const state = await setup(page)
@@ -78,20 +78,11 @@ test('fixture: inspector Back, simplified actions and honest private URL capture
   expect(state.plan.tasks).toHaveLength(0)
   await page.getByRole('button', { name: '+ Add opportunity URL', exact: true }).click()
   await page.getByLabel('Official opportunity URL').fill('https://example.edu/synthetic-program')
-  await page.getByRole('button', { name: 'Preview reference', exact: true }).click()
-  await expect(page.getByRole('dialog')).toContainText('Private · unverified reference')
-  await page.getByLabel('Reference name').fill('Synthetic program to verify')
-  await page.getByRole('button', { name: 'Save private reference', exact: true }).click()
-  await expect(
-    page.getByRole('dialog').getByRole('link', { name: /Synthetic program to verify/ }),
-  ).toBeVisible()
-  await page.keyboard.press('Escape')
-  await page.reload()
-  await page.getByRole('button', { name: '+ Add opportunity URL', exact: true }).click()
-  await expect(
-    page.getByRole('dialog').getByRole('link', { name: /Synthetic program to verify/ }),
-  ).toBeVisible()
-  expect(state.references).toHaveLength(1)
+  await page.getByRole('button', { name: 'Inspect link', exact: true }).click()
+  await expect(page.getByRole('dialog')).toContainText('Personal opportunity')
+  await page.getByRole('button', { name: 'Save to my opportunities', exact: true }).click()
+  await expect(page.getByRole('dialog')).toContainText('Synthetic source reference')
+  expect(state.references).toHaveLength(0)
   expect(state.plan.tasks).toHaveLength(0)
 })
 

@@ -57,43 +57,24 @@ async function save() {
   busy.value = true
   error.value = ''
   try {
-    if (disposition === 'personal') {
-      const result = await $fetch<{ item?: Opportunity }>('/api/workspace/capture/personal', {
-        method: 'POST',
-        body: {
-          url: preview.value.url,
-          title: title.value || preview.value.title,
-          candidate: preview.value.candidate,
-        },
-      })
-      const item = result.item || preview.value.candidate
+    const result = await $fetch<OpportunityCapturePreview>('/api/workspace/capture', {
+      method: 'POST',
+      body: { url: preview.value.url },
+    })
+    if (result.item) {
       open.value = false
-      if (item) emit('inspect', item)
+      emit('inspect', result.item)
       emit('saved', 'Saved to your opportunities. It remains private to your dashboard.')
-    } else if (disposition === 'shared-review') {
-      await $fetch('/api/workspace/capture', {
-        method: 'POST',
-        body: { url: preview.value.url },
-      })
-      references.value = (
-        await $fetch<{ references: OpportunityReference[] }>('/api/workspace/capture')
-      ).references
-      emit('saved', 'Sent for officer review. It will enter the shared catalog only if approved.')
-      preview.value = null
-      url.value = ''
-      title.value = ''
     } else {
-      await $fetch('/api/workspace/capture', {
-        method: 'POST',
-        body: { url: preview.value.url, title: title.value },
-      })
-      references.value = (
-        await $fetch<{ references: OpportunityReference[] }>('/api/workspace/capture')
-      ).references
+      emit(
+        'saved',
+        result.disposition === 'shared-review'
+          ? 'Sent for officer review. It will enter the shared catalog only if approved.'
+          : 'This source was recorded for review.',
+      )
       preview.value = null
       url.value = ''
       title.value = ''
-      emit('saved', 'Private URL reference saved. Its facts still need verification.')
     }
   } catch (e: any) {
     error.value =
@@ -127,7 +108,7 @@ function previewDisposition(value: OpportunityCapturePreview | null) {
           placeholder="https://…"
           required /></label
       ><button class="capture-button" :disabled="busy">
-        {{ busy ? 'Checking…' : 'Preview reference' }}
+        {{ busy ? 'Inspecting source…' : 'Inspect link' }}
       </button>
     </form>
     <p v-if="error" class="capture-error" role="alert">{{ error }}</p>
@@ -136,12 +117,10 @@ function previewDisposition(value: OpportunityCapturePreview | null) {
         {{ dispositionLabel(previewDisposition(preview)) }}
       </p>
       <p>{{ preview.notice }}</p>
-      <label v-if="previewDisposition(preview) === 'personal' || previewDisposition(preview) === 'reference'"
-        >Opportunity name<input v-model="title" maxlength="240" required
-      /></label>
-      <h3 v-else-if="preview.item || preview.candidate">
+      <h3 v-if="preview.item || preview.candidate">
         {{ (preview.item || preview.candidate)?.title }}
       </h3>
+      <h3 v-else>{{ preview.title }}</h3>
       <p v-if="preview.reason" class="capture-reason">{{ preview.reason }}</p>
       <a :href="preview.url" target="_blank" rel="noopener noreferrer">Open original source ↗</a>
       <p class="capture-muted">
@@ -150,7 +129,7 @@ function previewDisposition(value: OpportunityCapturePreview | null) {
       <button
         v-if="previewDisposition(preview) !== 'rejected'"
         class="capture-button"
-        :disabled="busy || ((previewDisposition(preview) === 'personal' || previewDisposition(preview) === 'reference') && !title.trim())"
+        :disabled="busy"
         @click="save"
       >
         {{

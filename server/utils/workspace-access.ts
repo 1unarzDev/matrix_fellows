@@ -27,13 +27,22 @@ export async function assertWorkspaceTarget(
 
 export async function assertWorkspaceOpportunity(event: H3Event, id?: string | null) {
   if (!id) return
-  const { data, error } = await workspaceAuthStorage(event)
+  const db = workspaceAuthStorage(event)
+  const { data, error } = await db
     .from('opportunities')
     .select('id')
     .eq('id', id)
     .eq('published', true)
     .eq('suppressed', false)
     .maybeSingle()
-  if (error || !data)
+  if (error) throw createError({ statusCode: 503, statusMessage: 'Opportunity access is unavailable.' })
+  if (data) return
+  const personal = await db
+    .from('dashboard_personal_opportunities')
+    .select('id')
+    .eq('id', id)
+    .eq('user_id', (event.context?.workspaceActor as { userId: string } | undefined)?.userId || '')
+    .maybeSingle()
+  if (personal.error || !personal.data)
     throw createError({ statusCode: 403, statusMessage: 'Choose a published opportunity.' })
 }

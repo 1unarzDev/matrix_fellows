@@ -67,6 +67,18 @@ export default defineEventHandler(async (event) => {
         if (item.success) byId.set(row.id, item.data)
       }
   }
+  for (let offset = 0; offset < chunks.length; offset += 4) {
+    const results = await Promise.all(
+      chunks.slice(offset, offset + 4).map((chunk) =>
+        db.from('dashboard_personal_opportunities').select('id,data').eq('user_id', member.userId).in('id', chunk),
+      ),
+    )
+    for (const result of results)
+      for (const row of workspaceResult(result)) {
+        const item = opportunitySchema.safeParse({ ...row.data, id: row.id, published: true })
+        if (item.success) byId.set(row.id, item.data)
+      }
+  }
   const needle = q.toLocaleLowerCase('en-US')
   const items = ids
     .map((id) => byId.get(id))

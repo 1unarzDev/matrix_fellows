@@ -682,6 +682,54 @@ it('source pagination beyond forty preserves snapshot review and retries only fa
   await transport.db.query("update outreach_members set role='officer' where user_id=$1", [a])
 })
 
+it('selected relationship history pages beyond two hundred events without exposing another officer notes', async () => {
+  const relationships = (
+    await transport.db.query<any>(
+      "insert into outreach_relationships(identity_key,target_id,owner_id) values('journey-history-owned',$1,$2),('journey-history-noise',$1,$2),('journey-history-private',$1,$3) returning id,identity_key",
+      [targetId, a, b],
+    )
+  ).rows
+  const owned = relationships.find((r) => r.identity_key === 'journey-history-owned')!.id
+  const noise = relationships.find((r) => r.identity_key === 'journey-history-noise')!.id
+  const privateId = relationships.find((r) => r.identity_key === 'journey-history-private')!.id
+  for (const [id, actor, label, days] of [
+    [owned, a, 'older-owned', 10],
+    [noise, a, 'recent-noise', 0],
+    [privateId, b, 'PRIVATE-OTHER-OFFICER', 0],
+  ] as const)
+    await transport.db.query(
+      "insert into outreach_relationship_events(relationship_id,kind,note,actor_id,occurred_at) select $1,'reply',$3||'-'||n,$2,now()-($4::integer*interval '1 day')-(n*interval '1 minute') from generate_series(1,205)n",
+      [id, actor, label, days],
+    )
+  const overview = await ok(a, '/relationships')
+  expect(overview.events).toHaveLength(200)
+  expect(overview.eventHasMore).toBe(true)
+  expect(overview.eventCoverage).toBe('bounded-overview')
+  const notes: string[] = []
+  for (let page = 0; page < 5; page++) {
+    const history = await ok(a, `/relationships?relationshipId=${owned}&eventPage=${page}`)
+    expect(history.eventCoverage).toBe('selected-relationship')
+    expect(history.eventPage).toBe(page)
+    expect(history.events).toHaveLength(page === 4 ? 5 : 50)
+    expect(history.eventHasMore).toBe(page < 4)
+    expect(
+      history.events.every(
+        (e: any) => e.relationship_id === owned && e.note.startsWith('older-owned-'),
+      ),
+    ).toBe(true)
+    notes.push(...history.events.map((e: any) => e.note))
+  }
+  expect(new Set(notes).size).toBe(205)
+  expect(notes).toContain('older-owned-205')
+  const other = await ok(a, `/relationships?relationshipId=${privateId}&eventPage=0`)
+  expect(other.events).toEqual([])
+  expect(other.eventHasMore).toBe(false)
+  expect(other.eventCoverage).toBe('private-or-unavailable')
+  expect(JSON.stringify(other)).not.toContain('PRIVATE-OTHER-OFFICER')
+  expect((await request(member, `/relationships?relationshipId=${owned}`)).status).toBe(403)
+  expect((await request(a, '/relationships?relationshipId=not-an-identity')).status).toBe(400)
+})
+
 it.runIf(Boolean(process.env.RESEARCH_BROWSER_BASE_URL))(
   'opt-in browser: profile link and local officer revision persist through actual HTTP handlers and PostgreSQL',
   async () => {

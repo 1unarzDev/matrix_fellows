@@ -2,7 +2,20 @@
 const props = defineProps<{ targetId?: string; officer: boolean }>()
 const emit = defineEmits<{ followup: [relationshipId: string] }>()
 const page = ref(0)
-const query = computed(() => ({ page: page.value, targetId: props.targetId }))
+const selected = ref('')
+const eventPage = ref(0)
+watch(selected, () => {
+  eventPage.value = 0
+})
+watch([page, () => props.targetId], () => {
+  selected.value = ''
+  eventPage.value = 0
+})
+const query = computed(() => ({
+  page: page.value,
+  targetId: props.targetId,
+  ...(selected.value ? { relationshipId: selected.value, eventPage: eventPage.value } : {}),
+}))
 const { data, refresh } = await useFetch<any>('/api/workspace/relationships', {
   immediate: props.officer,
   query,
@@ -13,16 +26,34 @@ const kind = ref('reply'),
   error = ref(''),
   saving = ref(false)
 const newOwner = ref('')
-const officers = ref<{id:string;label:string}[]>([])
-onMounted(async()=>{ if(props.officer) { try { const roster=await $fetch<{officers:{id:string;label:string}[]}>('/api/workspace/officers');officers.value=roster.officers || [] }catch{} } })
+const officers = ref<{ id: string; label: string }[]>([])
+onMounted(async () => {
+  if (props.officer) {
+    try {
+      const roster = await $fetch<{ officers: { id: string; label: string }[] }>(
+        '/api/workspace/officers',
+      )
+      officers.value = roster.officers || []
+    } catch {}
+  }
+})
 async function handoff() {
- if(!current.value || !newOwner.value) return
- saving.value=true;error.value=''
- try { await $fetch(`/api/workspace/relationships/${current.value.id}/handoff`,{method:'POST',body:{ownerId:newOwner.value}});newOwner.value='';await refresh() }
- catch(e:any){error.value=e.data?.statusMessage || 'Relationship handoff could not be completed.'}
- finally{saving.value=false}
+  if (!current.value || !newOwner.value) return
+  saving.value = true
+  error.value = ''
+  try {
+    await $fetch(`/api/workspace/relationships/${current.value.id}/handoff`, {
+      method: 'POST',
+      body: { ownerId: newOwner.value },
+    })
+    newOwner.value = ''
+    await refresh()
+  } catch (e: any) {
+    error.value = e.data?.statusMessage || 'Relationship handoff could not be completed.'
+  } finally {
+    saving.value = false
+  }
 }
-const selected = ref('')
 const relationships = computed(() => data.value?.relationships || [])
 const current = computed(() => relationships.value.find((r: any) => r.id === selected.value))
 async function record() {
@@ -41,6 +72,7 @@ async function record() {
       },
     })
     note.value = ''
+    eventPage.value = 0
     await refresh()
   } catch (e: any) {
     error.value = e.data?.statusMessage || 'Could not record the outcome.'
@@ -69,19 +101,48 @@ async function record() {
       {{ current.next_action || 'None recorded' }} {{ current.next_action_date }}
     </p>
     <button
-      v-if="current && current.owner_id === data?.actorId && !current.suppressed && !['declined', 'closed'].includes(current.stage)"
+      v-if="
+        current &&
+        current.owner_id === data?.actorId &&
+        !current.suppressed &&
+        !['declined', 'closed'].includes(current.stage)
+      "
       type="button"
       class="rounded border px-3 py-2"
       @click="emit('followup', current.id)"
     >
       Prepare a follow-up for review
     </button>
-    <form v-if="current && current.owner_id === data?.actorId" class="space-y-3" @submit.prevent="handoff">
-      <label>Handoff relationship to<select v-model="newOwner" class="block w-full rounded border p-2"><option value="">Choose an active officer</option><option v-for="officer in officers.filter(o=>o.id!==data?.actorId)" :key="officer.id" :value="officer.id">{{ officer.label }}</option></select></label>
-      <p>Mailbox authorization stays with its original owner. The next message needs the new sender's own mailbox and approval.</p>
-      <button :disabled="saving || !newOwner" class="rounded border px-3 py-2">Hand off relationship</button>
+    <form
+      v-if="current && current.owner_id === data?.actorId"
+      class="space-y-3"
+      @submit.prevent="handoff"
+    >
+      <label
+        >Handoff relationship to<select v-model="newOwner" class="block w-full rounded border p-2">
+          <option value="">Choose an active officer</option>
+          <option
+            v-for="officer in officers.filter((o) => o.id !== data?.actorId)"
+            :key="officer.id"
+            :value="officer.id"
+          >
+            {{ officer.label }}
+          </option>
+        </select></label
+      >
+      <p>
+        Mailbox authorization stays with its original owner. The next message needs the new sender's
+        own mailbox and approval.
+      </p>
+      <button :disabled="saving || !newOwner" class="rounded border px-3 py-2">
+        Hand off relationship
+      </button>
     </form>
-    <form v-if="(!current && targetId) || current?.owner_id === data?.actorId" class="space-y-3" @submit.prevent="record">
+    <form
+      v-if="(!current && targetId) || current?.owner_id === data?.actorId"
+      class="space-y-3"
+      @submit.prevent="record"
+    >
       <label class="block"
         >Outcome
         <select v-model="kind" class="block w-full rounded border p-2">
@@ -120,7 +181,16 @@ async function record() {
         {{ saving ? 'Saving…' : 'Record outcome' }}
       </button>
     </form>
-    <ul v-if="current" class="space-y-2">
+    <p v-if="current && current.owner_id !== data?.actorId" class="text-sm">
+      Event notes are private to the assigned officer. Shared ownership and next-action information
+      remains visible.
+    </p>
+    <p v-if="current && current.owner_id === data?.actorId" class="text-sm" aria-live="polite">
+      Showing event page {{ eventPage + 1 }} for this relationship, up to
+      {{ data?.eventPageSize || 50 }} events per page.
+      {{ data?.eventHasMore ? 'Older events are available.' : 'No older events on this page.' }}
+    </p>
+    <ul v-if="current && data?.eventCoverage === 'selected-relationship'" class="space-y-2">
       <li
         v-for="e in (data?.events || []).filter((e: any) => e.relationship_id === selected)"
         :key="e.id"
@@ -128,6 +198,14 @@ async function record() {
         {{ e.kind }} · {{ new Date(e.occurred_at).toLocaleDateString() }} — {{ e.note }}
       </li>
     </ul>
+    <div
+      v-if="current && current.owner_id === data?.actorId"
+      class="flex gap-2"
+      aria-label="Relationship event pages"
+    >
+      <button v-if="eventPage > 0" type="button" @click="eventPage--">Newer events</button>
+      <button v-if="data?.eventHasMore" type="button" @click="eventPage++">Older events</button>
+    </div>
     <div class="flex gap-2">
       <button v-if="page > 0" type="button" @click="page--">Previous relationships</button
       ><button v-if="data?.hasMore" type="button" @click="page++">Next relationships</button>

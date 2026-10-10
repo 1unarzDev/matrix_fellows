@@ -91,10 +91,11 @@ const query = ref(typeof route.query.q === 'string' ? route.query.q : '')
 const status = ref('active')
 const discipline = ref('all')
 const lens = ref<'nearby' | 'remote' | 'travel'>('nearby')
+const reachableLocations = ref('Arlington')
 const fitPreferences = computed(() => ({
   lens: lens.value,
   interests: data.value?.profiles.find((p) => p.id === profileId.value)?.interests || [],
-  reachableLocations: ['Arlington'],
+  reachableLocations: reachableLocations.value.split(',').map(v=>v.trim()).filter(Boolean),
 }))
 const selectedId = ref(typeof route.query.target === 'string' ? route.query.target : '')
 watch([selectedId, query, discipline, lens], () => {
@@ -132,6 +133,36 @@ async function loadSharedProfiles() {
   } catch { sharedProfiles.value = []; sharedProfileTotal.value = 0 }
 }
 const proposalStyle = ref('conversation')
+const selectedProjectId = ref('')
+const projectChoices = ref<{id:string;title:string}[]>([])
+const selectedContribution = ref('')
+const matchPreview = ref<any>(null)
+const officers = ref<{id:string;label:string}[]>([])
+async function loadProjects() {
+  selectedProjectId.value = ''; matchPreview.value = null
+  if (!canDiscover.value || !profileId.value) { projectChoices.value=[]; return }
+  try { const result=await $fetch<{projects:{id:string;title:string}[]}>('/api/workspace/research-profile/projects',{query:{profileId:profileId.value}}); projectChoices.value=result.projects }
+  catch { projectChoices.value=[] }
+}
+watch(profileId, loadProjects)
+watch([selectedId,selectedProjectId,selectedContribution,scope],()=>{matchPreview.value=null})
+const contributionChoices = computed(()=> {
+ const acquisition=selected.value?.dossier.acquisition as any
+ return (acquisition?.publicAnalysis?.proposalOptions || []).map((option:any,index:number)=>({value:String(index),label:option.title}))
+})
+async function previewMatch() {
+ if(!selected.value) return
+ const result=await mutate<any>('/matches','POST',{targetId:selected.value.id,...(scope.value==='student'?{profileId:profileId.value}:{}),...(selectedProjectId.value?{projectId:selectedProjectId.value}:{}),...(selectedContribution.value!==''?{contributionOption:Number(selectedContribution.value)}:{})})
+ matchPreview.value=result?.items?.[0] || null
+ if(result && !matchPreview.value) notice.value='No practical match under the represented member’s saved access preferences. Review those constraints first.'
+}
+async function saveAccessPreferences() {
+ await mutate('/research-profile/preferences','POST',{lens:lens.value,reachableLocations:reachableLocations.value.split(',').map(v=>v.trim()).filter(Boolean)},'Access preferences saved.')
+}
+onMounted(async()=> {
+ try { const preference=await $fetch<{lens:'nearby'|'remote'|'travel';reachableLocations:string[]}>('/api/workspace/research-profile/preferences');lens.value=preference.lens;reachableLocations.value=preference.reachableLocations.join(', ') } catch {}
+ if(canDiscover.value) { try { const roster=await $fetch<{officers:{id:string;label:string}[]}>('/api/workspace/officers');officers.value=roster.officers } catch {} }
+})
 const unsaved = computed(() =>
   Boolean(
     changed.value ||
@@ -201,7 +232,10 @@ async function assignMember(email: string, action: 'assign' | 'revoke') {
   try {
     await $fetch('/api/workspace/assignments', {
       method: 'POST',
-      body: { targetId: selected.value.id, email: email.trim(), action },
+      body: { targetId: selected.value.id,
+      ...(matchPreview.value ? {matchId:matchPreview.value.id} : {}),
+      ...(selectedProjectId.value ? {projectId:selectedProjectId.value} : {}),
+      ...(selectedContribution.value !== '' ? {contributionOption:Number(selectedContribution.value)} : {}), email: email.trim(), action },
     })
     assignmentEmail.value = ''
     await loadAssignments()
@@ -1146,7 +1180,7 @@ onMounted(async () => {
                 >
                   <div class="candidate-top">
                     <span class="ws-chip">{{ target.kind }}</span
-                    ><span class="ws-chip">Student access unconfirmed</span>
+                    ><span class="ws-chip">Participation unconfirmed</span>
                   </div>
                   <h3>{{ target.name }}</h3>
                   <p>{{ target.organization }}</p>
@@ -1383,6 +1417,19 @@ onMounted(async () => {
                     <button v-if="sharedProfilePage > 0" class="ws-button" @click="sharedProfilePage--; loadSharedProfiles()">Previous profiles</button>
                     <button v-if="(sharedProfilePage + 1) * 25 < sharedProfileTotal" class="ws-button" @click="sharedProfilePage++; loadSharedProfiles()">More profiles</button>
                   </div>
+                  <ThemedSelect v-if="canDiscover && scope === 'student' && projectChoices.length" v-model="selectedProjectId" label="Relevant project" :options="[{value:'',label:'Shared contribution context'},...projectChoices.map(p=>({value:p.id,label:p.title}))]" />
+                  <ThemedSelect v-if="canDiscover && contributionChoices.length" v-model="selectedContribution" label="Research angle" :options="[{value:'',label:'Suggested supported angle'},...contributionChoices]" />
+                  <button v-if="canDiscover" class="ws-button" :disabled="busy || (scope === 'student' && !profileId)" @click="previewMatch">Review connection plan</button>
+                  <section v-if="matchPreview" aria-label="Selected connection plan">
+                    <h3>{{ matchPreview.plan.connection }}</h3>
+                    <p v-for="contact in matchPreview.coordination" :key="contact.id" class="ws-muted">Existing relationship: {{ contact.stage }} · assigned officer {{ contact.ownerId }}. Use its approved follow-up workflow rather than a competing cold approach.</p>
+                    <p class="ws-muted">History coverage: {{ matchPreview.historyStatus }}. Unresolved legacy contact may need manual review.</p>
+                    <p>{{ matchPreview.topicOverlap }}</p>
+                    <p>{{ matchPreview.plan.deliverable || matchPreview.plan.question }}</p>
+                    <p v-for="dimension in matchPreview.plan.dimensions" :key="dimension.dimension" class="ws-muted">{{ dimension.reason }}</p>
+                    <p v-for="unknown in matchPreview.plan.unknowns" :key="unknown" class="ws-muted">{{ unknown }}</p>
+                    <p class="ws-muted">{{ matchPreview.access.access }} access. This plan does not establish a recruiting need or commitment.</p>
+                  </section>
                   <ThemedSelect
                     v-if="canDiscover"
                     v-model="proposalStyle"
@@ -1398,7 +1445,7 @@ onMounted(async () => {
                     <button
                       v-if="canDiscover"
                       class="ws-button ws-button--primary"
-                      :disabled="busy || (scope === 'student' && !profileId)"
+                      :disabled="busy || !matchPreview || (scope === 'student' && !profileId)"
                       @click="plan()"
                     >
                       Shape a proposal<SiteIcon name="right" :size="14" /></button
@@ -1623,7 +1670,7 @@ onMounted(async () => {
                   </article>
                 </details>
                 <details v-if="proposal.status !== 'sent'" class="sample"><summary>Hand this draft to an appointed officer</summary>
-                  <label class="ws-field">New owner account ID<input v-model="handoffOwner" placeholder="Officer UUID" /></label>
+                  <ThemedSelect v-model="handoffOwner" label="New draft owner" :options="[{value:'',label:'Choose an active officer'},...officers.map(o=>({value:o.id,label:o.label}))]" />
                   <p class="ws-muted">Original authorship remains. Mailbox authorization never transfers.</p>
                   <button type="button" class="ws-button" :disabled="changed || busy || !handoffOwner" @click="handoffDraft">Hand off draft</button>
                 </details>
@@ -1771,7 +1818,11 @@ onMounted(async () => {
             </details>
           </template>
           <template v-else-if="tab === 'profiles'"
-            ><ResearchProfileOverview v-if="profileForm.id" :profile-id="profileForm.id" @updated="refresh" />
+            ><section class="ws-panel" aria-label="Practical participation preferences">
+              <ThemedSelect v-model="lens" label="Practical participation" :options="[{value:'nearby',label:'Nearby or remote'},{value:'remote',label:'Remote only'},{value:'travel',label:'Travel is practical'}]" />
+              <label class="ws-field">Reachable cities or campuses<input v-model="reachableLocations" placeholder="Arlington, Dallas" /></label>
+              <button class="ws-button" :disabled="busy" @click="saveAccessPreferences">Save access preferences</button>
+            </section><ResearchProfileOverview v-if="profileForm.id" :profile-id="profileForm.id" @updated="refresh" />
             <details class="ws-panel secondary-panel"><summary>Advanced profile editing</summary>
             <form @submit.prevent="saveProfile">
               <p class="ws-kicker">Your context changes the proposal</p>

@@ -6,7 +6,7 @@ const officer = '11111111-1111-4111-8111-111111111111', member = '22222222-2222-
 beforeAll(async () => {
  db = new PGlite()
  await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz);create function auth.uid()returns uuid language sql as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;insert into auth.users values('${officer}','officer@example.com',now()),('${member}','member@example.com',now());`)
- for (const name of ['023_outreach_workspace.sql','024_outreach_mail.sql','028_member_dashboard.sql','20261008005351_dashboard_canonical_plan.sql','20261009170000_research_profiles.sql','20261009172000_officer_relationships.sql','20261010015431_research_execution.sql','20261010020426_research_evidence_approval_guard.sql','20261010020659_research_matches_and_projection_guards.sql']) await db.exec(await readFile(new URL('../../supabase/migrations/'+name,import.meta.url),'utf8'))
+ for (const name of ['023_outreach_workspace.sql','024_outreach_mail.sql','028_member_dashboard.sql','20261008005351_dashboard_canonical_plan.sql','20261009170000_research_profiles.sql','20261009172000_officer_relationships.sql','20261010015431_research_execution.sql','20261010020426_research_evidence_approval_guard.sql','20261010020659_research_matches_and_projection_guards.sql','20261010023000_research_preferences.sql']) await db.exec(await readFile(new URL('../../supabase/migrations/'+name,import.meta.url),'utf8'))
  await db.exec(`insert into outreach_members(user_id,email,role)values('${officer}','officer@example.com','officer'),('${member}','member@example.com','member');`)
 })
 afterAll(async()=>db?.close())

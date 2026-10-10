@@ -33,7 +33,8 @@ export async function shareableResearchProfile(event: H3Event, profileId: string
   const inputHash = await hashText(JSON.stringify(packet))
   const db = workspaceStorage(event)
   const existing = workspaceResult(await db.from('research_profile_versions').select('id').eq('profile_id', profileId).eq('projection_kind', 'officer').eq('input_hash', inputHash).maybeSingle())
-  const versionId = existing?.id || workspaceResult(await db.from('research_profile_versions').insert({ profile_id: profileId, owner_id: packet.subjectUserId, projection_kind: 'officer', input_hash: inputHash, claim_ids: packet.claims.map(c => c.id), packet }).select('id').single()).id
+  const inserted = existing ? null : workspaceResult(await db.from('research_profile_versions').upsert({ profile_id: profileId, owner_id: packet.subjectUserId, projection_kind: 'officer', input_hash: inputHash, claim_ids: packet.claims.map(c => c.id), packet }, {onConflict:'profile_id,projection_kind,input_hash',ignoreDuplicates:true}).select('id').maybeSingle())
+  const versionId = existing?.id || inserted?.id || workspaceResult(await db.from('research_profile_versions').select('id').eq('profile_id',profileId).eq('projection_kind','officer').eq('input_hash',inputHash).single()).id
   return { ...packet, versionId }
 }
 

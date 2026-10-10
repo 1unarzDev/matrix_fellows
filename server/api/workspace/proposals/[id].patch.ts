@@ -1,3 +1,4 @@
+import { pruneRemovedDraftEvidence } from '#shared/utils/draft-evidence'
 import { shareableResearchProfile } from '../../../utils/research-profile'
 import { z } from 'zod'
 import { requireWorkspaceOfficer, assertWorkspaceOrigin } from '../../../utils/workspace-auth'
@@ -29,9 +30,14 @@ export default defineEventHandler(async (event) => {
       statusCode: 400,
       statusMessage: 'Society proposals cannot include a private member profile.',
     })
+  const current = workspaceResult(await db.from('outreach_proposals').select('body,evidence_claim_ids,proposal_plan,profile_id,target_id').eq('id',workspaceId(event)).eq('current_owner_id',member.userId).eq('revision',body.revision).maybeSingle())
+  if (!current) throw createError({statusCode:409,statusMessage:'This draft changed. Reload before editing.'})
+  if(current.profile_id !== (body.profileId || null) || current.target_id !== body.targetId)
+    throw createError({statusCode:409,statusMessage:'Rebuild the proposal to change its represented profile or target.'})
+  const evidence=pruneRemovedDraftEvidence(current.body,body.body,current.evidence_claim_ids || [],current.proposal_plan)
   const result = await db
     .from('outreach_proposals')
-    .update(proposalToRow(body))
+    .update({...proposalToRow(body),...evidence})
     .eq('id', workspaceId(event))
     .eq('revision', body.revision)
     .eq('current_owner_id', member.userId)

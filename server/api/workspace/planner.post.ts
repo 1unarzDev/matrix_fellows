@@ -11,7 +11,7 @@ import {
 import type { OutreachProfile } from '#shared/types/outreach'
 import { proposalStyles, tailorOutreachDraft } from '#shared/utils/outreach-tailoring'
 import { buildContributionPlan } from '#shared/utils/research-plan'
-import { shareableResearchProfile } from '../../utils/research-profile'
+import { shareableResearchProfile, draftProfileProjection } from '../../utils/research-profile'
 import { assertWorkspaceTarget } from '../../utils/workspace-access'
 
 export default defineEventHandler(async (event) => {
@@ -26,6 +26,8 @@ export default defineEventHandler(async (event) => {
         kind: z.enum(['society', 'student']),
         relationshipId: z.string().uuid().nullable().optional(),
         messageKind: z.enum(['cold', 'follow_up']).default('cold'),
+        matchId: z.uuid().optional(),
+        projectId: z.uuid().optional(),
         contributionOption: z.number().int().min(0).max(10).optional(),
         style: z.enum(proposalStyles).default('conversation'),
       })
@@ -71,57 +73,16 @@ export default defineEventHandler(async (event) => {
     const packet = await shareableResearchProfile(event, input.profileId)
     profileVersionId = packet.versionId
     consumedClaims = packet.claims
-    // A public artifact title never proves authorship. Only accepted, attributable
-    // contribution statements enter the work-sample projection.
-    const contributions = packet.claims.length
-      ? workspaceResult(
-          await db
-            .from('research_claims')
-            .select('id,statement,origin,support_state,artifact_id')
-            .in(
-              'id',
-              packet.claims.map((c) => c.id),
-            )
-            .eq('predicate', 'contribution')
-            .in('support_state', ['supported', 'self_reported']),
-        )
-      : []
-    const artifacts = contributions.length
-      ? workspaceResult(
-          await db
-            .from('research_artifacts')
-            .select('id,canonical_url,summary')
-            .in('id', contributions.map((c) => c.artifact_id).filter(Boolean)),
-        )
-      : []
-    const workSamples = contributions.flatMap((c) => {
-      const artifact = artifacts.find((a) => a.id === c.artifact_id)
-      return artifact
-        ? [
-            {
-              title: artifact.summary || 'Shared research work',
-              url: artifact.canonical_url,
-              contribution: c.statement,
-            },
-          ]
-        : []
-    })
-    profile = {
-      id: packet.profileId,
-      fullName: packet.displayName,
-      interests: packet.declaredInterests,
-      goals: packet.goals,
-      availability: packet.availability,
-      location: packet.location,
-      consentToShare: true,
-      skills: [],
-      workSamples,
-      education: '',
-      experience: '',
-      notes: '',
-    } as unknown as OutreachProfile
+    profile = await draftProfileProjection(event, packet, input.projectId)
+
   }
-  const plan = buildContributionPlan(target, profile, input.contributionOption)
+  let plan = buildContributionPlan(target, profile, input.contributionOption)
+  if (input.matchId) {
+    const match = workspaceResult(await db.from('outreach_matches').select('*').eq('id',input.matchId).eq('created_by',member.userId).maybeSingle())
+    if (!match || match.target_id !== target.id || match.profile_id !== (input.kind === 'student' ? input.profileId : null) || match.input_versions?.target !== target.updatedAt || match.input_versions?.profile !== profileVersionId || (match.input_versions?.project || null) !== (input.projectId || null))
+      throw createError({statusCode:409,statusMessage:'Match context changed. Review the connection again.'})
+    plan = match.plan
+  }
   const draft = tailorOutreachDraft({
     plan,
     target,
@@ -151,6 +112,8 @@ export default defineEventHandler(async (event) => {
           proposal_plan: {
             ...plan,
             contextVersion: 'proposal-context-v1',
+            matchId: input.matchId || null,
+            projectId: input.projectId || null,
             profileVersionId,
             memberClaims: consumedClaims,
             targetVersion: target.updatedAt,

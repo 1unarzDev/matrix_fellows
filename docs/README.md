@@ -4,6 +4,8 @@ This is the entry point for implementation, operations, design research, and
 validation. The repository root [README](../README.md) remains the shortest path
 to local setup and deployment; this index explains how the system works and why.
 
+Current adult-officer workflow and rollout: [research outreach activation](operations/research-outreach-activation.md), [completion evidence](quality/research-outreach-completion.md), and [independent review](quality/research-outreach-independent-review.md). Earlier dated reports describe their own release state.
+
 ## Start here
 
 | Goal                                        | Read                                                           |

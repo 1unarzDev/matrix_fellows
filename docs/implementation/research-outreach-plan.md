@@ -1,7 +1,7 @@
 # Research outreach implementation
 
 Started October 9, 2026. Base: `bc233597e7ec0a1cb075d2211fa02f559105d0b7`.
-Branch: `codex/research-outreach`. Existing uncommitted catalog/import/auth-email work is preserved and excluded from feature commits. Migrations 025–027 are present as untracked opportunity work; no remote migration ledger has been queried or changed.
+Branch: `codex/research-outreach`. Existing uncommitted catalog/import/auth-email work is preserved and excluded from feature commits. Migrations 025–027 are present as untracked opportunity work; the remote ledger was later queried read-only and includes those entries; no remote migrations were changed.
 
 The dashboard is for adults. Existing member/officer/admin roles remain authoritative; drafts, AI outreach, approval, send and new mailbox consent require live officer/admin checks. Members retain private profiles, research links and planning. No age-verification subsystem. Public historical school affiliations and opportunity eligibility remain factual.
 
@@ -23,4 +23,8 @@ Baseline unit tests running against the actual dirty checkout, using two workers
 - Checkout reconciled; no applicable AGENTS.md found in workspace or parent instructions.
 - Three clean feature worktrees created from recorded base; integration branch created without resetting user changes.
 - Supabase/Postgres skills loaded; current changelog and RLS documentation retrieved.
-- Pending: profile, research, proposal, relationship vertical slices and quality review.
+- Integrated identity/profile slice: verified bootstrap, primary profile, narrow join prefill, bounded artifact acquisition, source-backed candidate facts, explicit contribution attribution and corrections.
+- Integrated research slice: authoritative adapters, independent fenced stages, immutable source reviews, conservative resource reservations, coverage/freshness prioritization, persistent practical matching and officer review.
+- Integrated proposal slice: selected shared member/project/technical option, frozen match and consumed context, truthful officer representation, local/private revisions and sentence supports. Shared source analysis reaches the plan/writer.
+- Integrated relationship/send slice: owner-private officer drafts, preserved author, handoff with fresh mailbox approval, stable aliases, manual events/tasks, separately approved follow-ups and narrow demotion reconciliation. Independent review reproduced and repaired consumed-claim and alias duplicate failures.
+- Full UI/handler/PostgreSQL journey and final release gates recorded in the [completion report](../quality/research-outreach-completion.md). Live generation, OAuth and delivery remain separate activation checks.

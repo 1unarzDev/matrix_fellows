@@ -99,3 +99,12 @@ it('disabled membership cannot apply already acquired artifact context',async()=
  expect((await db.query<any>('select research_complete_artifact($1,$2,$3,$4) result',[other,aid,claim.claim_token,JSON.stringify({state:'ready',title:'A paper',summary:'Saved',text:'A paper',contentHash:'x',metadata:{}})])).rows[0].result).toBe(false)
  await db.query('update outreach_members set enabled=true where user_id=$1',[other])
 })
+it('links only still-active member contribution claims to acquired shared projects',async()=>{
+ await db.query('update research_acquisition_usage set requests=0 where owner_id=$1',[member])
+ const profile=(await db.query<any>('select primary_profile_id from outreach_members where user_id=$1',[member])).rows[0].primary_profile_id
+ const aid=(await db.query<any>("select research_add_artifact($1,$2,'https://github.com/test/contribution','repository','contributed','I wrote the simulation tests') id",[member,profile])).rows[0].id
+ const claim=(await db.query<any>('select research_claim_artifact($1,$2) claim',[member,aid])).rows[0].claim
+ await db.query('select research_complete_artifact($1,$2,$3,$4)',[member,aid,claim.claim_token,JSON.stringify({state:'ready',title:'Simulation',summary:'Saved',text:'Simulation',contentHash:'contribution',metadata:{}})])
+ const contribution=(await db.query<any>("select project_id,origin,support_state,adoption from research_claims where artifact_id=$1 and predicate='contribution'",[aid])).rows[0]
+ expect(contribution.project_id).toBeTruthy();expect(contribution).toMatchObject({origin:'member',support_state:'self_reported',adoption:'accepted'})
+})

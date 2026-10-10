@@ -108,6 +108,7 @@ declare a public.research_artifacts;pid uuid;sid uuid;begin
    insert into public.research_source_snapshots(artifact_id,owner_id,content_hash,text_content,metadata)values(a.id,p_user_id,p_result->>'contentHash',p_result->>'text',p_result->'metadata')returning id into sid;
    insert into public.research_claims(profile_id,owner_id,artifact_id,snapshot_id,project_id,statement,predicate,origin,support_state,adoption,provenance)values(a.profile_id,p_user_id,a.id,sid,pid,p_result->>'title','artifact_title','source','supported','candidate',jsonb_build_object('field','title','adapter',p_result->'metadata'->>'adapter'));
   end if;
+  update public.research_claims set project_id=pid where artifact_id=a.id and predicate='contribution' and withdrawn_at is null and adoption='accepted' and project_id is null;
   insert into public.research_project_contributors(project_id,profile_id,relationship,contribution)values(pid,a.profile_id,a.relationship,a.contribution)on conflict(project_id,profile_id)do update set relationship=excluded.relationship,contribution=excluded.contribution;
  end if;
  update public.research_artifacts set state=p_result->>'state',summary=coalesce(p_result->>'summary',''),project_id=coalesce(pid,project_id),error_code=p_result->>'errorCode',claim_token=null,lease_expires_at=null,updated_at=now()where id=a.id;

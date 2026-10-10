@@ -37,6 +37,56 @@ const storage = (env: Env) =>
     },
   })
 
+/**
+ * Bounded local context pass for officer supplied society notes. This keeps
+ * private correspondence in Supabase and produces reviewable, dated nodes
+ * without sending the raw thread to Gemini or executing uploaded files.
+ */
+function extractSocietyContext(source: Record<string, any>) {
+  const text = String(source.content_text || '').slice(0, 8000000)
+  const urls = [...new Set(text.match(/https:\/\/[^\s)>]+/gi) || [])].slice(0, 8)
+  const emailMatches = [...new Set(text.match(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/g) || [])]
+  const organization = (text.match(/\b(UTA|UT Arlington|University of Texas at Arlington|Stanford(?: University)?|UTD|UT Dallas|UT Southwestern|SMU|TCU|UNT)\b/i)?.[0] || source.relationship_hint || '').trim() || null
+  const personName = text.match(/(?:^|\n)\s*(?:from|to|cc):\s*([^<\n]+?)(?:\s*<[^>]+>)?\s*$/im)?.[1]?.trim() || null
+  const date = source.source_date || text.match(/\b(20\d{2}-\d{2}-\d{2})\b/)?.[1] || null
+  const projectUrl = urls.find(url => /github\.com|doi\.org|project|lab|research/i.test(url)) || null
+  const status = /\b(introduc|connected|meet|happy to connect|thank you for reaching out)\b/i.test(text) ? 'introduced' : 'possible'
+  const title = String(source.title || 'Society context').slice(0, 240)
+  const summaryParts = [
+    organization ? `Organization: ${organization}.` : '',
+    personName ? `Contact: ${personName}.` : '',
+    emailMatches.length ? `${emailMatches.length} contact address${emailMatches.length === 1 ? '' : 'es'} detected; recipient identity remains officer-reviewed.` : '',
+    projectUrl ? `Project link: ${projectUrl}` : '',
+  ].filter(Boolean)
+  return [{
+    kind: organization ? 'connection' : 'note', title,
+    summary: summaryParts.join(' ') || text.replace(/\s+/g, ' ').trim().slice(0, 900) || `Uploaded ${source.file_name || 'source file'} is ready for a richer agent pass.`,
+    organization, personName, chapter: source.chapter || null, connectionDate: date,
+    projectUrl, status, confidence: 'unreviewed', metadata: {
+      processor: 'local-society-context-v1', sourceKind: source.kind,
+      urlCount: urls.length, contactCount: emailMatches.length,
+      relationshipHint: source.relationship_hint || null,
+      fileName: source.file_name || null, mimeType: source.mime_type || null,
+      byteSize: source.byte_size || null,
+    },
+  }]
+}
+
+async function processSocietyContext(env: Env, db: ReturnType<typeof storage>) {
+  const claimed = await db.rpc('outreach_claim_society_context_jobs', { p_worker: 'outreach-cron', p_limit: 2 })
+  if (claimed.error) return
+  for (const job of claimed.data || []) {
+    try {
+      const source = await db.from('outreach_society_sources').select('*').eq('id', job.source_id).single()
+      if (source.error || !source.data) throw new Error('Society source is unavailable')
+      const result = { entries: extractSocietyContext(source.data), processor: 'local-society-context-v1' }
+      await db.rpc('outreach_finish_society_context_job', { p_id: job.id, p_claim_token: job.claim_token, p_result: result, p_error: null })
+    } catch (error) {
+      await db.rpc('outreach_finish_society_context_job', { p_id: job.id, p_claim_token: job.claim_token, p_result: {}, p_error: error instanceof Error ? error.message : 'Context extraction failed' })
+    }
+  }
+}
+
 export class OutreachResearchWorkflow extends WorkflowEntrypoint<Env, { job: ResearchJob }> {
   async run(event: WorkflowEvent<{ job: ResearchJob }>, step: WorkflowStep) {
     const { job } = event.payload
@@ -414,6 +464,7 @@ export default {
         const db = storage(env)
         const settings = await db.from('outreach_settings').select('*').eq('id', true).single()
         if (settings.error || settings.data.paused) return
+        await processSocietyContext(env, db)
         if (controller.cron === '0 16 * * 1,3,5') {
           const sources = await db
             .from('outreach_sources')
@@ -452,10 +503,14 @@ export default {
           const eligibleProfiles=(profiles.data || []).filter(profile=>subjects.has(profile.subject_user_id))
           const coverage=await db.from('outreach_targets').select('discipline').in('status',['ready','needs_review']).limit(250)
           const projectClaims=await db.from('research_claims').select('statement,owner_id').eq('adoption','accepted').eq('sharing_scope','officer').is('withdrawn_at',null).in('predicate',['project_question','project_method']).limit(100)
+          const societyEntries=await db.from('outreach_society_context_entries').select('title,summary,organization,chapter').eq('society_id',true).in('status',['introduced','connected','active']).order('updated_at',{ascending:false}).limit(100)
           const interests=uncoveredResearchInterests(
             eligibleProfiles.flatMap(profile=>profile.interests || []),
             (coverage.data || []).flatMap(target=>target.discipline || []),
-            (projectClaims.data || []).filter(claim=>subjects.has(claim.owner_id)).map(claim=>claim.statement),
+            [
+              ...(projectClaims.data || []).filter(claim=>subjects.has(claim.owner_id)).map(claim=>claim.statement),
+              ...(societyEntries.data || []).flatMap(entry => [entry.title, entry.summary, entry.organization, entry.chapter].filter(Boolean) as string[]),
+            ],
           )
           const provider = new CuratedDiscoveryProvider(
             all.map((source) => ({

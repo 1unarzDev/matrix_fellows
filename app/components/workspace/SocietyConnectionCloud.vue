@@ -70,40 +70,40 @@ async function submit() {
   busy.value = true
   notice.value = ''
   error.value = ''
-  try {
-    let body: FormData | Record<string, unknown>
-    if (file.value) {
-      const form = new FormData()
-      form.append('action', 'submit')
-      form.append('title', title.value)
-      form.append('sourceDate', sourceDate.value)
-      form.append('chapter', chapter.value)
-      form.append('relationshipHint', relationshipHint.value)
-      form.append('file', file.value)
-      body = form
-    } else {
-      body = {
-        action: 'submit',
-        title: title.value,
-        content: content.value,
-        sourceDate: sourceDate.value || null,
-        chapter: chapter.value || null,
-        relationshipHint: relationshipHint.value || null,
-      }
+  let body: FormData | Record<string, unknown>
+  if (file.value) {
+    const form = new FormData()
+    form.append('action', 'submit')
+    form.append('title', title.value)
+    form.append('sourceDate', sourceDate.value)
+    form.append('chapter', chapter.value)
+    form.append('relationshipHint', relationshipHint.value)
+    form.append('file', file.value)
+    body = form
+  } else {
+    body = {
+      action: 'submit',
+      title: title.value,
+      content: content.value,
+      sourceDate: sourceDate.value || null,
+      chapter: chapter.value || null,
+      relationshipHint: relationshipHint.value || null,
     }
-    await $fetch('/api/workspace/society-context', { method: 'POST', body })
-    notice.value = 'Added to the society constellation. Agent processing will continue in the background.'
-    resetForm()
-    await refresh()
-    window.setTimeout(() => {
-      open.value = false
-      notice.value = ''
-    }, 1200)
-  } catch (cause: any) {
-    error.value = cause?.data?.message || cause?.statusMessage || 'This source could not be added. Please retry.'
-  } finally {
-    busy.value = false
   }
+  notice.value = 'Added to the society constellation. Agent processing is running in the background.'
+  resetForm()
+  open.value = false
+  void (async () => {
+    try {
+      await $fetch('/api/workspace/society-context', { method: 'POST', body })
+      await refresh()
+    } catch (cause: any) {
+      error.value = cause?.data?.message || cause?.statusMessage || 'This source could not be added. Please retry.'
+    } finally {
+      busy.value = false
+      window.setTimeout(() => { if (!busy.value) notice.value = '' }, 2400)
+    }
+  })()
 }
 let pollTimer: ReturnType<typeof setTimeout> | undefined
 async function poll() {

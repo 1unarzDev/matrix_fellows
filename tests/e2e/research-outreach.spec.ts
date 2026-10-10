@@ -40,3 +40,21 @@ test('prefilled profile keeps research links separate from authorship and advanc
  await expect(page.getByText('Saved unsupported reference',{exact:true})).toBeVisible()
  expect(state.workspace.profiles[0]?.workSamples).toHaveLength(1)
 })
+
+test('research link shows an immediate processing state while the save is in flight',async({page})=>{
+ const state=await setup(page)
+ const profile:any={profile:{displayName:'Synthetic Chemistry Member',declaredInterests:['Chemistry'],goals:'Learn through questions'},artifacts:[],claims:[],providerStatus:'Local metadata'}
+ await page.route('**/api/workspace/research-profile',route=>route.fulfill({json:profile}))
+ await page.route('**/api/workspace/research-profile/artifacts',async route=>{
+  const body=route.request().postDataJSON()
+  profile.artifacts.push({id:'artifact',canonical_url:body.url,state:'pending',summary:'Processing source metadata…',relationship:'interest',project_id:null})
+  await new Promise(resolve=>setTimeout(resolve,700))
+  await route.fulfill({json:{id:'artifact'}})
+ })
+ await page.goto('/dashboard?section=profiles')
+ await page.getByLabel('Add your research',{exact:true}).fill('https://example.org/slow-paper.pdf')
+ await page.getByRole('button',{name:'Add research link',exact:true}).click()
+ await expect(page.getByText('Queued — source metadata is being gathered…',{exact:true})).toBeVisible()
+ await expect(page.getByRole('status')).toContainText('Research link queued')
+ expect(state.workspace.member.role).toBe('member')
+})

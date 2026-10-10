@@ -62,6 +62,15 @@ export default defineEventHandler(async (event) => {
   const society = societyFromRow(
     workspaceResult(await db.from('outreach_society').select('*').eq('id', true).single()),
   )
+  const societySignals = workspaceResult(
+    await db
+      .from('outreach_society_context_entries')
+      .select('id,kind,title,summary,organization,chapter,connection_date,project_url,status,confidence')
+      .eq('society_id', true)
+      .in('status', ['introduced', 'connected', 'active'])
+      .order('updated_at', { ascending: false })
+      .limit(24),
+  )
   let profile: OutreachProfile | undefined
   let profileVersionId: string | null = null
   let consumedClaims: { id: string; statement: string; origin: string; support: string }[] = []
@@ -122,6 +131,7 @@ export default defineEventHandler(async (event) => {
             memberClaims: consumedClaims,
             targetVersion: target.updatedAt,
             societyVersion: society.revision || society.updatedAt,
+            societySignals,
             voice:voice.preferences,
             societyContext: {name:society.name,accomplishments:society.accomplishments.filter(a=>draft.body.includes(a.description) && draft.body.includes(a.url || ''))},
             sentenceSupports: draft.body

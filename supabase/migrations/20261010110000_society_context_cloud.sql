@@ -93,3 +93,68 @@ before update on public.outreach_society_context_entries
 for each row execute function public.outreach_society_context_touch();
 
 commit;
+
+-- The society memory worker uses the same fenced, bounded-stage pattern as
+-- outreach research. Raw source material never enters a model prompt here;
+-- the first release performs a local structured extraction pass.
+create or replace function public.outreach_claim_society_context_jobs(p_worker text, p_limit integer default 2)
+returns setof public.outreach_society_context_jobs
+language plpgsql security definer set search_path = public as $$
+begin
+  return query
+  update public.outreach_society_context_jobs j
+  set status = 'running', attempts = j.attempts + 1,
+      claim_token = gen_random_uuid(), lease_until = now() + interval '5 minutes',
+      updated_at = now()
+  where j.id in (
+    select q.id
+    from public.outreach_society_context_jobs q
+    join public.outreach_society_sources s on s.id = q.source_id
+    where q.stage = 'extract'
+      and (q.status = 'queued' or (q.status = 'running' and q.lease_until < now()))
+      and q.attempts < 3 and s.processing_status in ('queued', 'processing')
+    order by q.created_at
+    for update of q skip locked
+    limit greatest(1, least(coalesce(p_limit, 2), 5))
+  )
+  returning j.*;
+end $$;
+
+create or replace function public.outreach_finish_society_context_job(
+  p_id uuid, p_claim_token uuid, p_result jsonb, p_error text default null
+) returns boolean
+language plpgsql security definer set search_path = public as $$
+declare j public.outreach_society_context_jobs; e jsonb;
+begin
+  select * into j from public.outreach_society_context_jobs
+  where id = p_id and claim_token = p_claim_token and status = 'running'
+    and lease_until > now() for update;
+  if not found then return false; end if;
+  if p_error is null then
+    for e in select value from jsonb_array_elements(coalesce(p_result->'entries', '[]'::jsonb)) loop
+      insert into public.outreach_society_context_entries(
+        source_id, kind, title, summary, organization, person_name, chapter,
+        connection_date, project_url, status, confidence, metadata, created_by
+      ) values (
+        j.source_id,
+        coalesce(nullif(e->>'kind',''), 'note'),
+        left(coalesce(nullif(e->>'title',''), 'Society context'), 240),
+        left(coalesce(e->>'summary',''), 4000), nullif(e->>'organization',''),
+        nullif(e->>'personName',''), nullif(e->>'chapter',''),
+        case when e->>'connectionDate' ~ '^\\d{4}-\\d{2}-\\d{2}$' then (e->>'connectionDate')::date else null end,
+        nullif(e->>'projectUrl',''), coalesce(nullif(e->>'status',''), 'possible'),
+        coalesce(nullif(e->>'confidence',''), 'unreviewed'), coalesce(e->'metadata','{}'::jsonb),
+        (select submitted_by from public.outreach_society_sources where id=j.source_id)
+      );
+    end loop;
+    update public.outreach_society_sources set processing_status='processed', processing_error=null, processed_at=now() where id=j.source_id;
+    update public.outreach_society_context_jobs set status='completed', result=p_result, error=null, claim_token=null, lease_until=null, updated_at=now() where id=j.id;
+  else
+    update public.outreach_society_sources set processing_status=case when j.attempts < 3 then 'processing' else 'failed' end, processing_error=left(p_error,1000) where id=j.source_id;
+    update public.outreach_society_context_jobs set status=case when j.attempts < 3 then 'queued' else 'failed' end, error=left(p_error,1000), claim_token=null, lease_until=null, available_at=now()+make_interval(mins=>greatest(1,j.attempts*2)), updated_at=now() where id=j.id;
+  end if;
+  return true;
+end $$;
+
+revoke all on function public.outreach_claim_society_context_jobs(text, integer), public.outreach_finish_society_context_job(uuid, uuid, jsonb, text) from public, anon, authenticated;
+grant execute on function public.outreach_claim_society_context_jobs(text, integer), public.outreach_finish_society_context_job(uuid, uuid, jsonb, text) to service_role;

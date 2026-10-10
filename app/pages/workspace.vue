@@ -1609,8 +1609,9 @@ onMounted(async () => {
                   {{
                     proposal.kind === 'society'
                       ? 'Matrix Fellows'
-                      : data.profiles.find((p) => p.id === proposal?.profileId)?.fullName ||
-                        'Your profile'
+                      : sharedProfiles.find((p) => p.profileId === proposal?.profileId)?.displayName ||
+                        data.profiles.find((p) => p.id === proposal?.profileId)?.fullName ||
+                        'Represented member'
                   }}
                 </p>
                 <p class="ws-muted">

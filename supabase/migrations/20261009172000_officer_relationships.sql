@@ -76,7 +76,8 @@ create or replace function public.outreach_approve_email(p_proposal_id uuid,p_re
 returns public.outreach_outbox language plpgsql security definer set search_path='' as $$
 declare proposal public.outreach_proposals; mailbox public.outreach_mailboxes; target public.outreach_targets; result public.outreach_outbox; relationship text;
 begin
- if not exists(select 1 from public.outreach_members where user_id=p_user_id and enabled and role in ('officer','admin')) then raise exception 'Officer access required';end if;
+ perform 1 from public.outreach_members where user_id=p_user_id and enabled and role in ('officer','admin') for update;
+ if not found then raise exception 'Officer access required';end if;
  select * into proposal from public.outreach_proposals where id=p_proposal_id for update;
  if not found or proposal.current_owner_id is distinct from p_user_id or proposal.revision<>p_revision or proposal.status not in ('draft','approved') then raise exception 'Proposal changed; reload before approval';end if;
  if (proposal.recipient,proposal.subject,proposal.body) is distinct from (p_recipient,p_subject,p_body) or p_fingerprint !~ '^[a-f0-9]{64}$' then raise exception 'Content changed';end if;
@@ -90,6 +91,7 @@ begin
   if proposal.relationship_id is null or not exists(select 1 from public.outreach_relationships r join public.outreach_relationship_aliases a on a.relationship_id=r.id where r.id=proposal.relationship_id and r.owner_id=p_user_id and not r.suppressed and r.stage not in ('declined','closed') and a.identity_key=coalesce(nullif((select dossier->>'labUrl' from public.outreach_targets where id=proposal.target_id),''),(select canonical_url from public.outreach_targets where id=proposal.target_id))) then raise exception 'Verified relationship owner required';end if;
  end if;
  if exists(select 1 from public.outreach_relationships r join public.outreach_relationship_aliases a on a.relationship_id=r.id join public.outreach_targets t on t.id=proposal.target_id where r.suppressed and (a.identity_key=t.canonical_url or a.identity_key=t.dossier->>'labUrl' or a.identity_key=lower(proposal.recipient))) then raise exception 'Relationship suppressed';end if;
+ if exists(select 1 from public.outreach_relationship_aliases a join public.outreach_suppressions ss on ss.canonical_url=a.identity_key where a.relationship_id in(select aa.relationship_id from public.outreach_relationship_aliases aa join public.outreach_targets tt on tt.id=proposal.target_id where aa.identity_key in(tt.canonical_url,tt.dossier->>'labUrl',lower(proposal.recipient))))then raise exception 'Relationship alias suppressed';end if;
  if proposal.kind='student' and (proposal.current_owner_id is distinct from p_user_id or not exists(select 1 from public.outreach_profiles where id=proposal.profile_id and consent_to_share)) then raise exception 'Your own consented student profile and proposal are required';end if;
  select * into mailbox from public.outreach_mailboxes where id=proposal.mailbox_id and enabled and owner_id=p_user_id for update;
  if not found or mailbox.email<>p_sender_email then raise exception 'Connect your own mailbox before approval';end if;
@@ -97,7 +99,7 @@ begin
  -- Serialize all approvals on the singleton to prevent two officers opening
  -- simultaneous approaches to the same verified lab/contact under different IDs.
  perform 1 from public.outreach_settings where id=true for update;
- if exists(select 1 from public.outreach_outbox o join public.outreach_proposals p on p.id=o.proposal_id where o.proposal_id<>p_proposal_id and (o.status in ('sending','sent','uncertain') or o.status='queued' and p.status='approved' and p.approved_revision=o.revision) and (o.relationship_key=relationship or lower(o.recipient)=lower(p_recipient)) and not (proposal.message_kind='follow_up' and p.relationship_id=proposal.relationship_id and o.status='sent')) then raise exception 'An outreach conversation already exists for this lab or contact';end if;
+ if exists(select 1 from public.outreach_outbox o join public.outreach_proposals p on p.id=o.proposal_id where o.proposal_id<>p_proposal_id and (o.status in ('sending','sent','uncertain') or o.status='queued' and p.status='approved' and p.approved_revision=o.revision) and (o.relationship_key=relationship or lower(o.recipient)=lower(p_recipient)) and not coalesce((proposal.message_kind='follow_up' and p.relationship_id=proposal.relationship_id and o.status='sent'),false)) then raise exception 'An outreach conversation already exists for this lab or contact';end if;
  update public.outreach_proposals set status='approved',approved_revision=p_revision,approved_fingerprint=p_fingerprint,approved_by=p_user_id,approved_at=now() where id=p_proposal_id;
  insert into public.outreach_outbox(proposal_id,revision,fingerprint,mailbox_id,recipient,subject,body,sender_email,relationship_key,created_by)
  values(p_proposal_id,p_revision,p_fingerprint,proposal.mailbox_id,p_recipient,p_subject,p_body,p_sender_email,relationship,p_user_id)
@@ -112,7 +114,8 @@ create or replace function public.outreach_claim_send(p_proposal_id uuid,p_revis
 returns public.outreach_outbox language plpgsql security definer set search_path='' as $$
 declare proposal public.outreach_proposals; result public.outreach_outbox;
 begin
- if not exists(select 1 from public.outreach_members where user_id=p_user_id and enabled and role in ('officer','admin')) then raise exception 'Officer access required';end if;
+ perform 1 from public.outreach_members where user_id=p_user_id and enabled and role in ('officer','admin') for update;
+ if not found then raise exception 'Officer access required';end if;
  select * into proposal from public.outreach_proposals where id=p_proposal_id for update;
  if not found or proposal.current_owner_id is distinct from p_user_id or proposal.status<>'approved' or proposal.revision<>p_revision or proposal.approved_revision<>p_revision or proposal.approved_fingerprint<>p_fingerprint or proposal.mailbox_id<>p_mailbox_id or proposal.approved_by<>p_user_id then raise exception 'Approve the exact email before sending';end if;
  if not exists(select 1 from public.outreach_targets where id=proposal.target_id and status in ('ready','contacted')) then raise exception 'Target is no longer ready';end if;
@@ -122,6 +125,7 @@ begin
   if proposal.relationship_id is null or not exists(select 1 from public.outreach_relationships r join public.outreach_relationship_aliases a on a.relationship_id=r.id where r.id=proposal.relationship_id and r.owner_id=p_user_id and not r.suppressed and r.stage not in ('declined','closed') and a.identity_key=coalesce(nullif((select dossier->>'labUrl' from public.outreach_targets where id=proposal.target_id),''),(select canonical_url from public.outreach_targets where id=proposal.target_id))) then raise exception 'Verified relationship owner required';end if;
  end if;
  if exists(select 1 from public.outreach_relationships r join public.outreach_relationship_aliases a on a.relationship_id=r.id join public.outreach_targets t on t.id=proposal.target_id where r.suppressed and (a.identity_key=t.canonical_url or a.identity_key=t.dossier->>'labUrl' or a.identity_key=lower(proposal.recipient))) then raise exception 'Relationship suppressed';end if;
+ if exists(select 1 from public.outreach_relationship_aliases a join public.outreach_suppressions ss on ss.canonical_url=a.identity_key where a.relationship_id in(select aa.relationship_id from public.outreach_relationship_aliases aa join public.outreach_targets tt on tt.id=proposal.target_id where aa.identity_key in(tt.canonical_url,tt.dossier->>'labUrl',lower(proposal.recipient))))then raise exception 'Relationship alias suppressed';end if;
  if proposal.kind='student' and (proposal.current_owner_id is distinct from p_user_id or not exists(select 1 from public.outreach_profiles where id=proposal.profile_id and consent_to_share)) then raise exception 'Student consent or ownership changed';end if;
  if not exists(select 1 from public.outreach_targets where id=proposal.target_id and lower(contact_email)=lower(proposal.recipient)) then raise exception 'Recipient changed; verify and approve again';end if;
  if not exists(select 1 from public.outreach_mailboxes where id=p_mailbox_id and enabled and owner_id=p_user_id) then raise exception 'Mailbox owner required';end if;

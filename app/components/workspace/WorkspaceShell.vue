@@ -94,7 +94,7 @@ withDefaults(
   width: min(64vw, 900px);
   height: min(64vw, 900px);
   pointer-events: none;
-  opacity: .54;
+  opacity: .38;
   transform: rotate(-17deg);
   filter: saturate(1.08) contrast(1.04);
   animation: quasar-drift 24s ease-in-out infinite alternate;
@@ -140,14 +140,14 @@ withDefaults(
   transform: rotate(-10deg);
 }
 .workspace-quasar__core::after { inset: 42%; border:0; background:radial-gradient(circle, #020307 0 44%, #fff5c9 46% 50%, #ffae57 53%, rgb(242 104 37 / 70%) 61%, transparent 74%); box-shadow:0 0 24px rgb(255 206 125 / 52%), 0 0 52px rgb(242 104 37 / 38%); filter:none; transform:none; }
-.workspace-quasar__jet { left: 48%; right: auto; width: 5px; height: 135%; top: -18%; mix-blend-mode:screen; background: linear-gradient(transparent, rgb(255 178 109 / 14%), #fff9dc 27%, rgb(255 177 91 / 74%) 50%, #fff9dc 73%, rgb(255 166 88 / 14%), transparent); box-shadow: 0 0 18px rgb(255 156 69 / 46%); filter: blur(1.5px); opacity: .66; transform: rotate(25deg); }
+.workspace-quasar__jet { left: 48%; right: auto; width: 5px; height: 135%; top: -18%; mix-blend-mode:screen; background: linear-gradient(transparent, rgb(255 178 109 / 14%), #fff9dc 27%, rgb(255 177 91 / 74%) 50%, #fff9dc 73%, rgb(255 166 88 / 14%), transparent); box-shadow: 0 0 18px rgb(255 156 69 / 46%); filter: blur(1.5px); opacity: .52; transform: rotate(25deg); }
 .workspace-quasar__jet--two { width: 2px; opacity: .4; transform: rotate(-25deg); }
 .workspace-quasar__stars { opacity: .68; background-image: radial-gradient(circle at 8% 18%, #fff 0 1px, transparent 1.6px), radial-gradient(circle at 19% 73%, #ffd8b0 0 1px, transparent 1.6px), radial-gradient(circle at 32% 12%, #fff 0 1px, transparent 1.4px), radial-gradient(circle at 43% 83%, #d7c0ff 0 1px, transparent 1.7px), radial-gradient(circle at 57% 13%, #fff 0 1px, transparent 1.4px), radial-gradient(circle at 68% 65%, #ffd8b0 0 1px, transparent 1.7px), radial-gradient(circle at 76% 21%, #fff 0 1px, transparent 1.5px), radial-gradient(circle at 89% 48%, #c9b4ff 0 1px, transparent 1.6px), radial-gradient(circle at 92% 86%, #fff 0 1px, transparent 1.4px); animation: quasar-shimmer 6s ease-in-out infinite alternate; }
 @keyframes quasar-spin { to { transform: rotate(374deg) scaleY(.32); } }
 @keyframes quasar-drift { from { transform: rotate(-17deg) translate3d(0,0,0) scale(.98); } to { transform: rotate(-12deg) translate3d(-2%,2%,0) scale(1.03); } }
 @keyframes quasar-halo { from { opacity:.55; transform:rotate(-7deg) scaleY(.28) scale(.96); } to { opacity:.9; transform:rotate(-3deg) scaleY(.32) scale(1.04); } }
 @keyframes quasar-shimmer { from { opacity: .28; transform: scale(.98); } to { opacity: .7; transform: scale(1.02); } }
-@media (max-width: 720px) { .workspace-quasar { top: 3vh; right: -42vw; width: 130vw; height: 130vw; opacity: .34; } }
+@media (max-width: 720px) { .workspace-quasar { top: 3vh; right: -42vw; width: 130vw; height: 130vw; opacity: .18; } }
 @media (prefers-reduced-motion: reduce) { .workspace-quasar,.workspace-quasar::before,.workspace-quasar__core,.workspace-quasar__stars { animation: none; } }
 .workspace-shell::before {
   content: '';

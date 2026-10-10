@@ -91,7 +91,6 @@ const visibleProposals = computed(() =>
 const initializedAccess = ref(false)
 const query = ref(typeof route.query.q === 'string' ? route.query.q : '')
 const status = ref('active')
-const discipline = ref('all')
 const lens = ref<'nearby' | 'remote' | 'travel'>('nearby')
 const reachableLocations = ref('Arlington')
 const fitPreferences = computed(() => ({
@@ -100,12 +99,11 @@ const fitPreferences = computed(() => ({
   reachableLocations: reachableLocations.value.split(',').map(v=>v.trim()).filter(Boolean),
 }))
 const selectedId = ref(typeof route.query.target === 'string' ? route.query.target : '')
-watch([selectedId, query, discipline, lens], () => {
+watch([selectedId, query, lens], () => {
   if (tab.value !== 'queue') return
   patchQuery({
     target: selectedId.value || undefined,
     q: query.value || undefined,
-    field: discipline.value,
     access: lens.value,
   })
 })
@@ -185,49 +183,21 @@ function unloadGuard(event: BeforeUnloadEvent) {
 onMounted(() => window.addEventListener('beforeunload', unloadGuard))
 onBeforeUnmount(() => window.removeEventListener('beforeunload', unloadGuard))
 const selected = computed(() => data.value?.targets.find((t) => t.id === selectedId.value))
-const assignedMembers = ref<
-  { targetId: string; userId: string; email: string; createdAt: string }[]
->([])
-const assignmentEmail = ref('')
-const assignmentError = ref('')
-const assignmentBusy = ref(false)
-async function loadAssignments() {
-  assignedMembers.value = []
-  assignmentError.value = ''
-  if (!canDiscover.value || !selected.value) return
-  const targetId = selected.value.id
-  try {
-    const result = await $fetch<{ assignments: typeof assignedMembers.value }>(
-      '/api/workspace/assignments',
-      { query: { targetId } },
-    )
-    if (selectedId.value === targetId) assignedMembers.value = result.assignments
-  } catch (e: any) {
-    if (selectedId.value === targetId)
-      assignmentError.value = e?.data?.statusMessage || 'Assignments could not be loaded.'
+const selectedDecision = ref<'ready' | 'deferred' | 'rejected'>('ready')
+watch(selectedId, () => { selectedDecision.value = 'ready' })
+async function updateSelectedStatus() {
+  if (!selected.value || busy.value) return
+  const messages = {
+    ready: 'Candidate kept in the active research queue.',
+    deferred: 'Candidate moved to your later list.',
+    rejected: 'Candidate removed from the active research queue.',
   }
-}
-watch(selectedId, () => {
-  assignmentEmail.value = ''
-  void loadAssignments()
-})
-async function assignMember(email: string, action: 'assign' | 'revoke') {
-  if (!canDiscover.value || !selected.value || assignmentBusy.value) return
-  assignmentBusy.value = true
-  assignmentError.value = ''
-  try {
-    await $fetch('/api/workspace/assignments', {
-      method: 'POST',
-      body: { targetId: selected.value.id,
- email: email.trim(), action },
-    })
-    assignmentEmail.value = ''
-    await loadAssignments()
-  } catch (e: any) {
-    assignmentError.value = e?.data?.statusMessage || 'This assignment could not be changed.'
-  } finally {
-    assignmentBusy.value = false
-  }
+  await mutate(
+    `/targets/${selected.value.id}`,
+    'PATCH',
+    { status: selectedDecision.value, expectedUpdatedAt: selected.value.updatedAt },
+    messages[selectedDecision.value],
+  )
 }
 const acquisition = computed(
   () =>
@@ -256,10 +226,6 @@ const acquisition = computed(
         }
       | undefined,
 )
-const disciplines = computed(() => [
-  'all',
-  ...new Set(data.value?.targets.flatMap((t) => t.disciplines) || []),
-])
 const targets = computed(() =>
   orderResearchTargets(
     (data.value?.targets || []).filter(
@@ -268,13 +234,23 @@ const targets = computed(() =>
           (status.value === 'active'
             ? !['deferred', 'rejected', 'contacted'].includes(t.status)
             : t.status === status.value)) &&
-        (discipline.value === 'all' || t.disciplines.includes(discipline.value)) &&
         `${t.name} ${t.organization} ${t.description}`
           .toLowerCase()
           .includes(query.value.toLowerCase()),
     ),
     fitPreferences.value,
   ),
+)
+watch(
+  [tab, targets],
+  () => {
+    // Put the officer in a useful review state as soon as the queue arrives.
+    // A deep link or an explicit selection always wins over this convenience default.
+    if (tab.value !== 'queue' || selectedId.value || !targets.value.length) return
+    const firstTarget = targets.value[0]
+    if (firstTarget) selectedId.value = firstTarget.id
+  },
+  { immediate: true },
 )
 const targetForm = reactive({
   id: '',
@@ -955,13 +931,6 @@ onMounted(async () => {
               </button>
             </div>
             <div class="queue-tools">
-              <label class="ws-field"
-                >Access preference<select v-model="lens">
-                  <option value="nearby">Nearby · Arlington</option>
-                  <option value="remote">Remote</option>
-                  <option value="travel">Summer or travel</option>
-                </select></label
-              >
               <label class="search"
                 ><SiteIcon name="search" :size="17" /><input
                   v-model="query"
@@ -979,12 +948,6 @@ onMounted(async () => {
                   { value: 'rejected', label: 'Not viable' },
                   { value: 'contacted', label: 'Contacted' },
                 ]"
-              /><ThemedSelect
-                v-model="discipline"
-                label="Research discipline"
-                :options="
-                  disciplines.map((d) => ({ value: d, label: d === 'all' ? 'All disciplines' : d }))
-                "
               />
             </div>
             <form v-if="editTarget" class="ws-panel target-form" @submit.prevent="saveTarget">
@@ -1174,7 +1137,7 @@ onMounted(async () => {
                   </p>
                   <div class="candidate-bottom">
                     <span>{{ target.location || 'Location unverified' }}</span
-                    ><span>{{ target.status.replaceAll('_', ' ') }}</span>
+                    ><span class="candidate-review">Review dossier <SiteIcon name="right" :size="12" /></span>
                   </div>
                 </button>
                 <div v-if="!targets.length" class="ws-empty">
@@ -1336,42 +1299,31 @@ onMounted(async () => {
                     :href="selected.canonicalUrl"
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="ws-button source-link"
-                    >Open official source<SiteIcon name="arrow" :size="14"
+                    class="evidence source-link"
+                    ><span>Open the official source</span><SiteIcon name="arrow" :size="14"
                   /></a>
                   <div class="ws-divider" />
-                  <h3>Compare proposal approaches</h3>
-                  <ol class="angle-list">
-                    <li v-for="angle in selected.dossier.proposalAngles || []" :key="angle">
-                      {{ angle }}
-                    </li>
-                  </ol>
-                  <p v-if="!selected.dossier.proposalAngles?.length" class="ws-muted">
-                    Choose a small, concrete ask that matches their work and your demonstrated
-                    skills. Drafting does not establish mentoring availability.
-                  </p>
-                  <ThemedSelect
-                    v-if="canDiscover"
-                    v-model="scope"
-                    label="Who is the connection for?"
-                    :options="[
-                      { value: 'society', label: 'Society partnership' },
-                      { value: 'student', label: 'Personal inquiry' },
-                    ]"
-                  /><ThemedSelect
-                    v-if="canDiscover && scope === 'student'"
-                    v-model="profileId"
-                    label="Research profile"
-                    :options="[{value: '', label: 'Choose a shared member profile'}, ...sharedProfiles.map((p) => ({ value: p.profileId, label: p.displayName }))]"
-                  />
-                  <div v-if="canDiscover && scope === 'student'" class="ws-actions">
-                    <span class="ws-muted">Only consenting profile projections are available.</span>
-                    <button v-if="sharedProfilePage > 0" class="ws-button" @click="sharedProfilePage--; loadSharedProfiles()">Previous profiles</button>
-                    <button v-if="(sharedProfilePage + 1) * 25 < sharedProfileTotal" class="ws-button" @click="sharedProfilePage++; loadSharedProfiles()">More profiles</button>
-                  </div>
-                  <ThemedSelect v-if="canDiscover && scope === 'student' && projectChoices.length" v-model="selectedProjectId" label="Relevant project" :options="[{value:'',label:'Shared contribution context'},...projectChoices.map(p=>({value:p.id,label:p.title}))]" />
-                  <ThemedSelect v-if="canDiscover && contributionChoices.length" v-model="selectedContribution" label="Research angle" :options="[{value:'',label:'Suggested supported angle'},...contributionChoices]" />
-                  <button v-if="canDiscover" class="ws-button" :disabled="busy || (scope === 'student' && !profileId)" @click="previewMatch">Review connection plan</button>
+                  <details class="research-next-step" :open="Boolean(matchPreview)">
+                    <summary><span>Next step</span><small>Shape one focused connection</small></summary>
+                    <p class="ws-muted">Choose the lightest honest path. The draft stays editable and nothing sends automatically.</p>
+                    <ThemedSelect
+                      v-if="canDiscover"
+                      v-model="scope"
+                      label="Connection type"
+                      :options="[
+                        { value: 'society', label: 'Matrix Fellows connection' },
+                        { value: 'student', label: 'Personal inquiry' },
+                      ]"
+                    /><ThemedSelect
+                      v-if="canDiscover && scope === 'student'"
+                      v-model="profileId"
+                      label="Represented profile"
+                      :options="[{value: '', label: 'Choose a consenting member'}, ...sharedProfiles.map((p) => ({ value: p.profileId, label: p.displayName }))]"
+                    />
+                    <ThemedSelect v-if="canDiscover && scope === 'student' && projectChoices.length" v-model="selectedProjectId" label="Relevant project" :options="[{value:'',label:'Use profile context'},...projectChoices.map(p=>({value:p.id,label:p.title}))]" />
+                    <ThemedSelect v-if="canDiscover && contributionChoices.length" v-model="selectedContribution" label="Supported angle" :options="[{value:'',label:'Let the plan choose'},...contributionChoices]" />
+                    <button v-if="canDiscover" class="ws-button ws-button--primary" :disabled="busy || (scope === 'student' && !profileId)" @click="previewMatch">Review the connection plan <SiteIcon name="right" :size="14" /></button>
+                  </details>
                   <section v-if="matchPreview" aria-label="Selected connection plan">
                     <h3>{{ matchPreview.plan.connection }}</h3>
                     <p v-for="contact in matchPreview.coordination" :key="contact.id" class="ws-muted">Prior outreach signal: {{ contact.stage }} · assigned officer {{ contact.ownerId }}. Review the existing message before preparing a new ask.</p>
@@ -1382,127 +1334,29 @@ onMounted(async () => {
                     <p v-for="unknown in matchPreview.plan.unknowns" :key="unknown" class="ws-muted">{{ unknown }}</p>
                     <p class="ws-muted">{{ matchPreview.access.access }} access. This plan does not establish a recruiting need or commitment.</p>
                   </section>
-                  <ThemedSelect
-                    v-if="canDiscover"
-                    v-model="proposalStyle"
-                    label="Proposal approach"
-                    :options="
-                      proposalStyles.map((value) => ({
-                        value,
-                        label: value.charAt(0).toUpperCase() + value.slice(1),
-                      }))
-                    "
-                  />
-                  <div class="ws-actions">
-                    <button
-                      v-if="canDiscover"
-                      class="ws-button ws-button--primary"
-                      :disabled="busy || !matchPreview || (scope === 'student' && !profileId)"
-                      @click="plan()"
-                    >
-                      Shape a proposal<SiteIcon name="right" :size="14" /></button
-                    ><button v-if="canDiscover" class="ws-button" @click="openTarget(selected)">
-                      Edit dossier
+                  <div v-if="canDiscover && matchPreview" class="research-dossier-actions">
+                    <ThemedSelect
+                      v-model="proposalStyle"
+                      label="Draft tone"
+                      :options="proposalStyles.map((value) => ({ value, label: value.charAt(0).toUpperCase() + value.slice(1) }))"
+                    />
+                    <button class="ws-button ws-button--primary" :disabled="busy || !matchPreview || (scope === 'student' && !profileId)" @click="plan()">
+                      Shape the draft<SiteIcon name="right" :size="14" />
                     </button>
-                  </div>
-                  <div v-if="canDiscover" class="ws-actions">
-                    <button
-                      class="ws-button"
-                      :disabled="busy"
-                      @click="
-                        mutate(
-                          `/targets/${selected.id}`,
-                          'PATCH',
-                          { status: 'ready', expectedUpdatedAt: selected.updatedAt },
-                          'Candidate marked ready.',
-                        )
-                      "
-                    >
-                      Mark ready</button
-                    ><button
-                      class="ws-button"
-                      :disabled="busy"
-                      @click="
-                        mutate(
-                          `/targets/${selected.id}`,
-                          'PATCH',
-                          { status: 'deferred', expectedUpdatedAt: selected.updatedAt },
-                          'Deferred for later.',
-                        )
-                      "
-                    >
-                      For later</button
-                    ><button
-                      class="ws-button ws-button--danger"
-                      :disabled="busy"
-                      @click="
-                        mutate(
-                          `/targets/${selected.id}`,
-                          'PATCH',
-                          { status: 'rejected', expectedUpdatedAt: selected.updatedAt },
-                          'Removed from the active queue.',
-                        )
-                      "
-                    >
-                      Not viable
-                    </button>
-                  </div>
-                  <section v-if="canDiscover" class="assignment-section">
-                    <h3>Assign a personal connection</h3>
-                    <p class="ws-muted">
-                      Share this reviewed connection with a specific enrolled member. Assignment
-                      lets a member explore the evidence. An officer prepares any inquiry; assignment
-                      does not grant draft access or promise mentoring.
-                    </p>
-                    <p v-if="selected.status !== 'ready'" class="ws-muted">
-                      Mark the candidate ready after reviewing contact evidence and fit before
-                      assigning them.
-                    </p>
-                    <div v-if="assignmentError" class="ws-alert ws-error" role="alert">
-                      {{ assignmentError }}
-                    </div>
-                    <form @submit.prevent="assignMember(assignmentEmail, 'assign')">
-                      <label class="ws-field"
-                        >Member email<input
-                          v-model="assignmentEmail"
-                          type="email"
-                          required
-                          autocomplete="off"
-                          placeholder="member@example.org"
-                          :disabled="assignmentBusy"
-                      /></label>
-                      <button
-                        class="ws-button"
-                        :disabled="
-                          assignmentBusy || selected.status !== 'ready' || !assignmentEmail.trim()
-                        "
-                      >
-                        Assign connection<SiteIcon name="plus" :size="14" />
-                      </button>
-                    </form>
-                    <TransitionGroup name="assignment" tag="div">
-                      <div
-                        v-for="assignment in assignedMembers"
-                        :key="assignment.userId"
-                        class="job-row"
-                      >
-                        <span class="ws-muted">{{ assignment.email }}</span>
-                        <button
-                          class="ws-button"
-                          :disabled="assignmentBusy"
-                          @click="assignMember(assignment.email, 'revoke')"
-                        >
-                          Revoke<span class="sr-only"> access for {{ assignment.email }}</span>
-                        </button>
+                    <details class="research-more-actions">
+                      <summary>More candidate actions</summary>
+                      <button class="ws-button" @click="openTarget(selected)">Edit evidence</button>
+                      <div class="research-status-action">
+                        <ThemedSelect v-model="selectedDecision" label="Queue status" :options="[{value:'ready',label:'Keep active'},{value:'deferred',label:'For later'},{value:'rejected',label:'Not viable'}]" />
+                        <button class="ws-button" :disabled="busy" @click="updateSelectedStatus">Update status</button>
                       </div>
-                    </TransitionGroup>
-                  </section>
+                    </details>
+                  </div>
                 </article>
                 <div v-else class="ws-empty dossier-empty">
                   <SiteIcon name="compass" :size="32" />
                   <p>
-                    Select a candidate to review their research, evidence, access, and possible
-                    partnership approaches.
+                    Choose a candidate to review its evidence and shape one clear next step.
                   </p>
                 </div></Transition
               >
@@ -2216,35 +2070,11 @@ onMounted(async () => {
   height: 1px;
   background: #ffffff16;
 }
-.assignment-section {
-  margin-top: 32px;
-  padding: 22px;
-  border-radius: 22px;
-  background: #b9a3ed06;
-}
 .personal-proposal > p {
   margin-block: 12px 20px;
 }
 .personal-proposal > :deep(.themed-select) {
   margin-block: 16px;
-}
-.assignment-section > h3 {
-  margin-bottom: 12px;
-}
-.assignment-section > p {
-  margin-bottom: 18px;
-}
-.assignment-enter-active,
-.assignment-leave-active,
-.assignment-move {
-  transition:
-    opacity 220ms ease,
-    transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-.assignment-enter-from,
-.assignment-leave-to {
-  opacity: 0;
-  transform: translateY(6px);
 }
 .acquisition-panel {
   padding: 20px;
@@ -2492,7 +2322,7 @@ onMounted(async () => {
 .candidate {
   text-align: left;
   width: 100%;
-  padding: 22px;
+  padding: 18px 20px;
   border: 1px solid #d5c9ed15;
   border-radius: 22px;
   background: #d5c9ed04;
@@ -2515,7 +2345,7 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 18px;
+  margin-bottom: 14px;
 }
 .score {
   font-size: 20px;
@@ -2548,6 +2378,18 @@ onMounted(async () => {
   font-size: 9px;
   color: #8f879b;
   margin-top: 20px;
+}
+.candidate-review {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #d8b977;
+  transition: gap 0.3s ease, color 0.3s ease;
+}
+.candidate:hover .candidate-review,
+.candidate:focus-visible .candidate-review {
+  gap: 8px;
+  color: #f0dba9;
 }
 .dossier {
   position: sticky;
@@ -2614,7 +2456,7 @@ onMounted(async () => {
 .dossier-empty {
   position: sticky;
   top: 24px;
-  min-height: 240px;
+  min-height: 180px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2722,11 +2564,29 @@ onMounted(async () => {
     grid-template-columns: 1fr;
   }
   .studio-nav {
-    position: static;
+    position: relative;
     display: flex;
     overflow: auto;
     padding-bottom: 8px;
     gap: 6px;
+    padding-right: 30px;
+    scrollbar-width: thin;
+    scrollbar-color: #d8b97766 transparent;
+  }
+  .studio-nav::after {
+    content: '›';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 8px;
+    display: grid;
+    width: 28px;
+    place-items: center;
+    border-radius: 10px 0 0 10px;
+    background: linear-gradient(90deg, transparent, rgb(17 19 22 / 76%) 58%);
+    color: #d8b977;
+    font-size: 15px;
+    pointer-events: none;
   }
   .studio-nav button {
     white-space: nowrap;
@@ -2781,5 +2641,6 @@ onMounted(async () => {
 </style>
 
 <style scoped>
+.research-next-step{margin-top:20px;padding:18px 20px;border:1px solid rgb(216 185 119 / 18%);border-radius:20px;background:linear-gradient(135deg,rgb(216 185 119 / 7%),rgb(185 163 237 / 5%));transition:border-color .35s,box-shadow .35s,transform .35s cubic-bezier(.22,1,.36,1)}.research-next-step[open]{border-color:rgb(216 185 119 / 34%);box-shadow:0 16px 42px rgb(9 8 16 / 18%)}.research-next-step:hover{border-color:rgb(216 185 119 / 32%)}.research-next-step>summary,.research-more-actions>summary{display:flex;align-items:center;justify-content:space-between;gap:14px;cursor:pointer;list-style:none;color:#efe7d6;font-size:13px;font-weight:550}.research-next-step>summary::-webkit-details-marker,.research-more-actions>summary::-webkit-details-marker{display:none}.research-next-step>summary:after,.research-more-actions>summary:after{content:'＋';color:#d8b977;font-size:16px;transition:transform .35s cubic-bezier(.22,1,.36,1)}.research-next-step[open]>summary:after,.research-more-actions[open]>summary:after{transform:rotate(45deg)}.research-next-step summary small{margin-left:auto;color:#aaa3b3;font-size:11px;font-weight:400}.research-next-step>.ws-muted{margin:12px 0 16px}.research-next-step :deep(.themed-select){margin-top:12px}.research-next-step>.ws-button{margin-top:15px}.research-dossier-actions{display:grid;gap:12px;margin-top:20px}.research-dossier-actions :deep(.themed-select){margin:0}.research-more-actions{margin-top:3px;padding-top:13px;border-top:1px solid #ffffff10}.research-more-actions>summary{font-size:11px;color:#aca5b5;font-weight:450}.research-more-actions .ws-button{margin-top:13px}.research-status-action{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:10px;margin-top:12px}.research-status-action :deep(.themed-select){margin:0}.research-action-status__orb{will-change:box-shadow}.source-link{margin-top:10px}.research-next-step,.research-dossier-actions,.research-more-actions{animation:research-flow-in .55s cubic-bezier(.22,1,.36,1) both}@keyframes research-flow-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@media(max-width:760px){.research-status-action{grid-template-columns:1fr}.research-next-step{padding:16px}.research-next-step summary small{display:none}}@media(prefers-reduced-motion:reduce){.research-next-step,.research-dossier-actions,.research-more-actions{animation:none}.research-next-step{transition:none}}
 .research-action-status{display:flex;align-items:center;gap:9px;margin:12px 0;padding:11px 14px;border:1px solid rgb(216 185 119 / 22%);border-radius:14px;color:#d9d1c2;background:linear-gradient(100deg,rgb(216 185 119 / 9%),rgb(185 163 237 / 6%));font-size:12px}.research-action-status--saved{border-color:rgb(146 218 177 / 26%);color:#c4e3cf}.research-action-status--failed{border-color:rgb(236 130 130 / 32%);color:#efb6b6}.research-action-status__orb{width:8px;height:8px;flex:0 0 8px;border-radius:50%;background:#d8b977;box-shadow:0 0 0 0 rgb(216 185 119 / 40%);animation:research-action-pulse 1.8s ease-out infinite}.research-action-status--saved .research-action-status__orb{background:#92dab1;animation:none}.research-action-status--failed .research-action-status__orb{background:#ec8282;animation:none}@keyframes research-action-pulse{0%{box-shadow:0 0 0 0 rgb(216 185 119 / 40%)}70%{box-shadow:0 0 0 8px rgb(216 185 119 / 0%)}100%{box-shadow:0 0 0 0 rgb(216 185 119 / 0%)}}.research-action-enter-active,.research-action-leave-active{transition:opacity .28s ease,transform .28s ease}.research-action-enter-from,.research-action-leave-to{opacity:0;transform:translateY(-6px)}@media (prefers-reduced-motion:reduce){.research-action-status__orb{animation:none}.research-action-enter-active,.research-action-leave-active{transition:none}}
 </style>

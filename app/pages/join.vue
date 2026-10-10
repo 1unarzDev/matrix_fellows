@@ -82,7 +82,7 @@ useHead({
           collaborators, next steps, and research opportunities.
         </p>
 
-        <div class="join-promises mt-9 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+        <div class="join-promises mt-9 grid gap-3 sm:grid-cols-3">
           <article class="join-promise">
             <span class="join-promise__icon" aria-hidden="true"
               ><SiteIcon name="compass" :size="17"
@@ -246,6 +246,7 @@ useHead({
   display: grid;
   place-items: center;
   flex: 0 0 1.5rem;
+  width: 1.5rem;
   height: 1.5rem;
 }
 .join-promise:hover {
@@ -304,9 +305,21 @@ useHead({
     box-shadow: 0 0 0 0.65rem rgb(197 192 235 / 0);
   }
 }
-@media (min-width: 1280px) and (max-width: 1535px) {
+@media (min-width: 1280px) {
   .join-intro h1 {
-    font-size: clamp(3rem, 4.6vw, 4.65rem);
+    font-size: clamp(3rem, 4.6vw, 4.15rem);
+  }
+  .join-promises {
+    margin-top: 1.25rem;
+    gap: 0.75rem;
+  }
+  .join-promise {
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem;
+  }
+  .join-privacy {
+    margin-top: 1.25rem;
   }
 }
 @media (max-width: 1279px) {

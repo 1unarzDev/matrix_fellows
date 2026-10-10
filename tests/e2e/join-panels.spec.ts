@@ -4,10 +4,15 @@ test('mobile join panels have readable individual surfaces without displacing th
   page,
 }, info) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
-  for (const width of [320, 360, 390, 430, 520, 600, 640, 768, 1024, 1180, 1279, 1280, 1440]) {
+  for (const width of [
+    320, 360, 390, 430, 520, 600, 640, 768, 1024, 1180, 1279, 1280, 1440, 1920,
+  ]) {
     await page.setViewportSize({ width, height: 1000 })
     await page.goto('/join')
     await expect(page.locator('[data-join-form-ready="true"]')).toBeVisible()
+    // Browser restoration after viewport changes can pin the sticky desktop intro.
+    // Compare the initial composition, not columns at different scroll offsets.
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }))
     const cards = page.locator('.join-promise')
     await expect(cards).toHaveCount(3)
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
@@ -53,6 +58,21 @@ test('mobile join panels have readable individual surfaces without displacing th
         .locator('.join-promise__icon')
         .evaluateAll((elements) => elements.map((el) => getComputedStyle(el).color))
       expect(new Set(colors).size).toBe(1)
+    } else {
+      const bottomDifference = await page.evaluate(() => {
+        const intro = document.querySelector('.join-intro')!.getBoundingClientRect()
+        const form = document.querySelector('#join-form')!.getBoundingClientRect()
+        return Math.abs(intro.bottom - form.bottom)
+      })
+      expect(bottomDifference).toBeLessThanOrEqual(20)
+      const bounds = await cards.evaluateAll((elements) =>
+        elements.map((el) => {
+          const box = el.getBoundingClientRect()
+          return { top: box.top, height: box.height }
+        }),
+      )
+      expect(Math.abs(bounds[0]!.top - bounds[2]!.top)).toBeLessThanOrEqual(1)
+      expect(Math.abs(bounds[0]!.height - bounds[2]!.height)).toBeLessThanOrEqual(1)
     }
     await page.screenshot({
       path: `/tmp/matrix-join-refinement/after-${width}-${info.project.name}.png`,

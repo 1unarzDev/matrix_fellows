@@ -500,7 +500,7 @@ watch(data, (value) => {
     })
     societyBaseline.value = JSON.stringify(societyForm)
   }
-  if (!profileId.value && p) profileId.value = p.id
+  if (!canDiscover.value && !profileId.value && p) profileId.value = p.id
 })
 async function saveProfile() {
   const snapshot = JSON.parse(JSON.stringify(profileForm))
@@ -1273,7 +1273,7 @@ onMounted(async () => {
                   <p class="ws-muted preserve">
                     {{
                       selected.dossier.eligibility ||
-                      'High-school access and mentoring availability remain unverified. Ask before proposing on-site work.'
+                      'Participation access and mentoring availability remain unverified. Ask before proposing on-site work.'
                     }}
                   </p>
                   <div v-if="selected.assessment.rationale" class="assessment">

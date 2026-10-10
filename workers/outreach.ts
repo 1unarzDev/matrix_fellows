@@ -1,3 +1,4 @@
+import { uncoveredResearchInterests, freshnessWindow } from '../shared/utils/discovery-priorities'
 import { WorkflowEntrypoint, type WorkflowEvent, type WorkflowStep } from 'cloudflare:workers'
 import { createClient } from '@supabase/supabase-js'
 import {
@@ -435,19 +436,27 @@ export default {
           for (const item of history.data || [])
             if (item.source_id && !latest.has(item.source_id))
               latest.set(item.source_id, item.updated_at)
-          const all = (sources.data || []).sort(
+          const all = freshnessWindow((sources.data || []).sort(
             (a, b) =>
               (latest.get(a.id) || '').localeCompare(latest.get(b.id) || '') ||
               a.id.localeCompare(b.id),
-          )
+          ),latest,controller.scheduledTime)
           const profiles = await db
             .from('outreach_profiles')
-            .select('interests')
+            .select('interests,subject_user_id')
             .eq('consent_to_share', true)
+            .not('subject_user_id','is',null)
             .limit(100)
-          const interests = [
-            ...new Set((profiles.data || []).flatMap((profile) => profile.interests || [])),
-          ]
+          const members=await db.from('outreach_members').select('user_id').eq('enabled',true).limit(250)
+          const subjects=new Set((members.data || []).map(row=>row.user_id))
+          const eligibleProfiles=(profiles.data || []).filter(profile=>subjects.has(profile.subject_user_id))
+          const coverage=await db.from('outreach_targets').select('discipline').in('status',['ready','needs_review']).limit(250)
+          const projectClaims=await db.from('research_claims').select('statement,owner_id').eq('adoption','accepted').eq('sharing_scope','officer').is('withdrawn_at',null).in('predicate',['project_question','project_method']).limit(100)
+          const interests=uncoveredResearchInterests(
+            eligibleProfiles.flatMap(profile=>profile.interests || []),
+            (coverage.data || []).flatMap(target=>target.discipline || []),
+            (projectClaims.data || []).filter(claim=>subjects.has(claim.owner_id)).map(claim=>claim.statement),
+          )
           const provider = new CuratedDiscoveryProvider(
             all.map((source) => ({
               url: source.url,

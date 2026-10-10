@@ -1,3 +1,4 @@
+import { stableResearchTopics } from '../shared/utils/research-topics'
 import type {
   DiscoveryProvider,
   ProviderCapability,
@@ -34,7 +35,7 @@ export class CuratedDiscoveryProvider implements DiscoveryProvider {
         source,
         index,
         relevant: source.fields.some((field) =>
-          input.interests.some((interest) => interest.toLowerCase() === field.toLowerCase()),
+          stableResearchTopics(input.interests).some(topic=>stableResearchTopics([field]).includes(topic)),
         ),
       }))
       .sort((a, b) => Number(b.relevant) - Number(a.relevant) || a.index - b.index)

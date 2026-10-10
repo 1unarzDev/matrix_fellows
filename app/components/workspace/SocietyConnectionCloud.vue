@@ -115,6 +115,9 @@ watch(pendingCount, (count) => {
   if (pollTimer) clearTimeout(pollTimer)
   if (count > 0) pollTimer = setTimeout(poll, 4000)
 }, { immediate: true })
+watch(() => props.officer, (allowed) => {
+  if (allowed && !data.value) void refresh()
+})
 onBeforeUnmount(() => { if (pollTimer) clearTimeout(pollTimer) })
 </script>
 

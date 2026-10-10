@@ -40,6 +40,7 @@ export class PostgresSupabaseTransport {
       '20261010025500_selected_society_context.sql',
       '20261010030000_officer_voice_preferences.sql',
       '20261010031000_provider_retry_metadata.sql',
+    '20261010033444_research_immutable_search_path.sql',
     ])
       await this.db.exec(
         await readFile(new URL('../../supabase/migrations/' + name, import.meta.url), 'utf8'),

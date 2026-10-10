@@ -73,3 +73,7 @@ Runtime version `09b5eba` includes the final represented-member display correcti
 The final full-suite setup initially duplicated the voice migration; loading each migration once repaired the test harness. The first isolated preview rebuild reused a symlinked Nuxt cache and failed prerender resolution; its own dependency installation repaired isolation. Tests were rerun against the successful production preview. Neither setup failure is recorded as a successful application check.
 
 Verification logs are local artifacts under `/tmp/msers-final-*.log`, with fixture browser outputs `/tmp/msers-final-browser-results` and persisted screenshots `/tmp/matrix-browser-persisted-profile.png` and `/tmp/matrix-browser-persisted-officer-draft.png`. They contain test fixtures, not production secret values. Feature commits preserve the separately dirty opportunity/catalog/auth-email work.
+
+## Authorized production rollout addendum
+
+The owner subsequently authorized deployment and three specific admin promotions. See the [October 9 rollout record](research-outreach-deployment-2026-10-09.md) for exact production version IDs, applied migrations, targeted roles, backup limitations and live checks. Research remains paused and AI disabled; provider generation, OAuth and real mail remain unverified. Include the subsequent `20261010033444_research_immutable_search_path.sql` after the eleven original migrations on any fresh rollout. Earlier local evidence and no-deployment statements above describe the pre-authorization state.

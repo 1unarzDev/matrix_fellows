@@ -118,7 +118,7 @@ export const termsOfService: LegalDocument = {
       title: 'Accounts and permissions',
       paragraphs: [
         'Provide accurate account information, protect your credentials, and use only an account or mailbox you are authorized to control. Tell us if you suspect unauthorized access. Google or Microsoft login establishes identity, not society authority.',
-        'Permissions depend on your assigned role and the relevant record. Ordinary members may send personal research inquiries through the integration only to contacts officers have assigned to them. Society outreach and discovery require officer authorization. AI features are reserved for authorized adult officers; being a member or signing in does not grant AI access.',
+        'Permissions depend on your assigned role and the relevant record. Drafts, personal inquiries, society outreach, discovery, approval, sending and new mailbox connections require appointed officer or admin authorization. Ordinary members may maintain their own research links and planning but cannot grant elevated roles. AI features are reserved for authorized adult officers; being a member or signing in does not grant AI access.',
       ],
     },
     {

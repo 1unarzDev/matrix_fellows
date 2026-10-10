@@ -1,3 +1,4 @@
+import { recordApprovedVoice } from '../../../../utils/officer-voice'
 import { z } from 'zod'
 import {
   requireWorkspaceOfficer,
@@ -84,5 +85,7 @@ export default defineEventHandler(async (event) => {
       statusMessage:
         'Approval failed. Ensure the target is reviewed and ready, with a consented profile for individual outreach.',
     })
-  return { ok: true, outboxId: outbox.id, revision, fingerprint }
+  let voiceNotice: string | undefined
+  try { await recordApprovedVoice(event,officer.userId,id,revision,proposal.body) } catch { voiceNotice='Approval saved; local voice suggestions could not be updated.' }
+  return { voiceNotice, ok: true, outboxId: outbox.id, revision, fingerprint }
 })

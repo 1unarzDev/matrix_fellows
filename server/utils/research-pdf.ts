@@ -8,7 +8,8 @@ export async function extractResearchPdf(bytes: Uint8Array, title = 'Research pa
   if (new TextDecoder().decode(bytes.slice(0, 5)) !== '%PDF-') throw new Error('invalid_pdf')
   const deadline = Date.now() + researchPdfLimits.milliseconds
   const { getDocument } = await getResolvedPDFJS()
-  const loadingTask = getDocument({ data: bytes, useWasm: false, useSystemFonts: false, disableFontFace: true, disableAutoFetch: true, disableStream: true, stopAtErrors: true, verbosity: 0 })
+  const options = { data: bytes, useWasm: false, isEvalSupported: false, enableXfa: false, useSystemFonts: false, disableFontFace: true, disableAutoFetch: true, disableStream: true, stopAtErrors: true, verbosity: 0 }
+  const loadingTask = getDocument(options)
   let timer: ReturnType<typeof setTimeout> | undefined
   const timeout = new Promise<never>((_, reject) => { timer = setTimeout(() => { void loadingTask.destroy(); reject(new Error('pdf_timeout')) }, Math.max(1, deadline - Date.now())) })
   try {

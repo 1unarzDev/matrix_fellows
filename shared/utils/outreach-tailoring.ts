@@ -1,3 +1,4 @@
+import type { OfficerVoicePreferences } from './officer-voice'
 import type { ContributionPlan } from './research-plan'
 import type { OutreachProfile, OutreachSociety, OutreachTarget } from '../types/outreach'
 
@@ -61,6 +62,7 @@ export function tailorOutreachDraft(input: {
   senderName?: string
   kind: 'society' | 'student'
   style: ProposalStyle
+  voice?: OfficerVoicePreferences
   plan?: ContributionPlan
 }) {
   const { target, society, profile, kind, style } = input
@@ -113,7 +115,7 @@ export function tailorOutreachDraft(input: {
   }
   const introduction =
     kind === 'student' && profile
-      ? `I’m ${input.senderName || '[REVIEW: officer name]'}, an officer with ${society.name}, writing on behalf of ${profile.fullName}. They have shared an interest in ${profile.interests.slice(0, 3).join(', ') || 'learning more about this research'}.`
+      ? `I’m ${input.senderName || '[REVIEW: officer name]'}, an officer with ${society.name}, writing on behalf of ${profile.fullName}. They have shared an interest in ${profile.interests.slice(0, input.voice?.length === 'short' ? 1 : 3).join(', ') || 'learning more about this research'}.`
       : `I’m ${input.senderName || '[REVIEW: officer name]'}, writing on behalf of ${society.name}.`
   const relevant =
     kind === 'student' && sample
@@ -124,7 +126,8 @@ Work sample: ${sample.sample.url}`
 ${accomplishments[0].item.url}`
         : ''
   // Availability is context to verify, never an automatically approved commitment.
-  const ask = plan?.question || asks[style]
+  const initialAsk = plan?.question || asks[style]
+  const ask = input.voice?.requestStyle === 'direct' ? initialAsk.replace('Would it be useful to explore a small pilot?', 'Could we discuss one bounded pilot?') : initialAsk
   const offer =
     plan?.mode === 'possible_contribution' && plan.deliverable
       ? `One possible starting point is ${plan.deliverable}. We would agree on scope and confirm participation before committing to work.`
@@ -137,7 +140,7 @@ ${accomplishments[0].item.url}`
         180,
       ),
     body: [
-      `Hello ${target.name},`,
+      input.voice?.opening === 'direct' ? '' : `${input.voice?.opening === 'formal' || input.voice?.formality === 'formal' ? 'Dear' : 'Hello'} ${target.name},`,
       introduction,
       observation,
       relevant,

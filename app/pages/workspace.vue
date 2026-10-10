@@ -235,9 +235,7 @@ async function assignMember(email: string, action: 'assign' | 'revoke') {
     await $fetch('/api/workspace/assignments', {
       method: 'POST',
       body: { targetId: selected.value.id,
-      ...(matchPreview.value ? {matchId:matchPreview.value.id} : {}),
-      ...(selectedProjectId.value ? {projectId:selectedProjectId.value} : {}),
-      ...(selectedContribution.value !== '' ? {contributionOption:Number(selectedContribution.value)} : {}), email: email.trim(), action },
+ email: email.trim(), action },
     })
     assignmentEmail.value = ''
     await loadAssignments()
@@ -536,6 +534,9 @@ async function plan(relationshipId?: string) {
     'POST',
     {
       targetId: selected.value.id,
+      ...(matchPreview.value ? {matchId:matchPreview.value.id} : {}),
+      ...(selectedProjectId.value ? {projectId:selectedProjectId.value} : {}),
+      ...(selectedContribution.value !== '' ? {contributionOption:Number(selectedContribution.value)} : {}),
       ...(relationshipId ? { relationshipId, messageKind: 'follow_up' } : {}),
       kind: scope.value,
       style: proposalStyle.value,
@@ -798,6 +799,17 @@ watch(tab, (value) => {
 })
 const historicalMailboxes = ref<any[]>([])
 const connecting = ref(false)
+const voicePreferences = reactive({length:'standard',formality:'neutral',opening:'greeting',requestStyle:'tentative'})
+const voiceNotice = ref('')
+async function loadVoice() {
+ if(!canDiscover.value) return
+ try { const result=await $fetch<any>('/api/workspace/voice');Object.assign(voicePreferences,result.preferences || {});voiceNotice.value=result.notice || '' }catch{voiceNotice.value='Local voice preferences are unavailable.'}
+}
+async function saveVoice() {
+ const result=await mutate<any>('/voice','PUT',{...voicePreferences},'Your local voice preferences are saved.')
+ if(result) voiceNotice.value=result.notice
+}
+watch(tab,value=>{if(value==='settings') void loadVoice()})
 const providers = ref({ gmail: false, outlook: false })
 async function loadMailboxes() {
   try {
@@ -2295,6 +2307,14 @@ onMounted(async () => {
               </p>
             </div>
             <p v-if="!canDiscover" class="ws-muted">New mailbox connections and drafts require appointed officer access. You can disconnect a historical connection here.</p>
+            <section v-if="canDiscover" class="ws-panel" aria-label="Your outreach voice">
+              <h3>Your outreach voice</h3><p class="ws-muted">{{ voiceNotice || 'Defaults are conservative. Three distinct approved edits can suggest your own style; private text stays local.' }}</p>
+              <ThemedSelect v-model="voicePreferences.length" label="Preferred length" :options="['short','standard','long']" />
+              <ThemedSelect v-model="voicePreferences.formality" label="Preferred formality" :options="['conversational','neutral','formal']" />
+              <ThemedSelect v-model="voicePreferences.opening" label="Preferred opening" :options="['direct','greeting','formal']" />
+              <ThemedSelect v-model="voicePreferences.requestStyle" label="Request style" :options="['direct','tentative','unknown']" />
+              <button class="ws-button" :disabled="busy" @click="saveVoice">Save my voice preferences</button>
+            </section>
             <RelationshipPanel v-if="canDiscover" :officer="canDiscover" />
             <div class="ws-panel account-panel">
               <h3>Access & safety</h3>

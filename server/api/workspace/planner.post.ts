@@ -1,3 +1,4 @@
+import { loadOfficerVoice } from '../../utils/officer-voice'
 import { z } from 'zod'
 import { requireWorkspaceOfficer, assertWorkspaceOrigin } from '../../utils/workspace-auth'
 import {
@@ -83,7 +84,9 @@ export default defineEventHandler(async (event) => {
       throw createError({statusCode:409,statusMessage:'Match context changed. Review the connection again.'})
     plan = match.plan
   }
+  const voice = await loadOfficerVoice(event, member.userId)
   const draft = tailorOutreachDraft({
+    voice:voice.preferences,
     plan,
     target,
     society,
@@ -119,6 +122,7 @@ export default defineEventHandler(async (event) => {
             memberClaims: consumedClaims,
             targetVersion: target.updatedAt,
             societyVersion: society.revision || society.updatedAt,
+            voice:voice.preferences,
             societyContext: {name:society.name,accomplishments:society.accomplishments.filter(a=>draft.body.includes(a.description) && draft.body.includes(a.url || ''))},
             sentenceSupports: draft.body
               .split(/\n\n/)

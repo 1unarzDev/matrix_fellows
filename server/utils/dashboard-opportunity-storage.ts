@@ -206,7 +206,7 @@ export async function captureOpportunity(event: H3Event, userId: string, rawUrl:
   if (preview.disposition === 'shared-review' && preview.candidate) {
     // The unpublished discovery row is visible only to editors and is picked
     // up by the existing review/import path. It never self-publishes.
-    const sourceId = 'member-submitted'
+    const sourceId = `member-submitted-${intake.id}`
     workspaceResult(await db.from('opportunity_source_registry').upsert({
       id: sourceId,
       name: 'Member-submitted opportunity links',

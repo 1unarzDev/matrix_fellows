@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import '~/assets/dashboard-controls.css'
 withDefaults(
   defineProps<{
     title?: string

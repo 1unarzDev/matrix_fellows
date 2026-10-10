@@ -113,6 +113,25 @@ it('reads the entire private saved collection independently from public search r
   expect(state.filters).toContainEqual(['opportunities', 'published', true])
   expect(state.filters).toContainEqual(['opportunities', 'suppressed', false])
 })
+it('applies shared catalog facets before pagination in the owned collection', async () => {
+  state.opportunities[1].overrides = {
+    discipline: 'Biology',
+    participationModes: ['remote-participation'],
+    costs: { compensation: 'Paid stipend', application: 'No application fee' },
+  }
+  state.query = {
+    discipline: 'Biology',
+    mode: 'remote-participation',
+    funding: 'paid',
+    free: 'true',
+    pageSize: '1',
+  }
+  const result = await handler({} as any)
+  expect(result.total).toBe(1)
+  expect(result.items.map((item: any) => item.id)).toEqual(['catalog:b'])
+  state.query = { ...state.query, discipline: 'Chemistry' }
+  expect((await handler({} as any)).total).toBe(0)
+})
 it('filters validated data plus overrides and pages without losing saved ownership', async () => {
   state.query = { q: 'Reviewed', page: 1, pageSize: 1 }
   const result = await handler({} as any)

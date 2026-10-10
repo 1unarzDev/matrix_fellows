@@ -1798,6 +1798,7 @@ onMounted(async () => {
               <div class="consent">
                 <AnimatedCheckbox
                   v-model="profileForm.consentToShare"
+                  outlined
                   label="Allow reviewed proposals to use my profile information."
                   description="Nothing is sent without exact-email approval."
                 />
@@ -1856,6 +1857,7 @@ onMounted(async () => {
                 <div v-if="canDiscover" class="consent">
                   <AnimatedCheckbox
                     v-model="a.verified"
+                    outlined
                     label="I reviewed this accomplishment against its supporting source."
                   />
                 </div>
@@ -1969,12 +1971,14 @@ onMounted(async () => {
                   <div class="consent">
                     <AnimatedCheckbox
                       v-model="research.settings.ai_enabled"
+                      outlined
                       label="Enable optional Gemini analysis on eligible public sources."
                     />
                   </div>
                   <div class="consent">
                     <AnimatedCheckbox
                       v-model="research.settings.terms_confirmed"
+                      outlined
                       label="I reviewed the API/data-use terms and confirmed this project's permitted free-tier use."
                     />
                   </div>
@@ -2025,12 +2029,14 @@ onMounted(async () => {
                     <div class="consent">
                       <AnimatedCheckbox
                         v-model="sourceForm.enabled"
+                        outlined
                         label="Enable this vetted discovery source."
                       />
                     </div>
                     <div class="consent">
                       <AnimatedCheckbox
                         v-model="sourceForm.aiReviewed"
+                        outlined
                         label="I reviewed this excerpt for source accuracy and absence of personal information."
                       />
                     </div>

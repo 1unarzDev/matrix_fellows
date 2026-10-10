@@ -53,3 +53,19 @@ Owner authorized committing, pushing and deploying the dashboard alongside the a
 - Join-form refinements are preceding commits, most recently `2fe7f3a`; desktop paired-column alignment and narrow layouts were verified separately.
 
 Provider activation and authenticated live persistence are not implied by a website deployment. No real outreach was sent.
+
+## Save feedback and controls refinement — October 9
+
+Cause reproduced with a 1,200 ms delayed save response: the icon and spring animation waited for persistence; the old UI failed a 250 ms feedback assertion. The collection now reflects intent immediately, confirms from the server, rolls back on failure, and protects against stale responses after an account change. Same-account refreshes cannot overwrite an in-flight intent. Saved-list refresh waits until persistence finishes. A pending indicator is not a successful persistence claim; failed confirmation offers Retry.
+
+Default card actions are now Details at left and the compact save control at right, with matching 44 px heights. New Pass actions and their dialog were removed; stored decisions and restoration of previously passed items remain accessible. Source verification is retained above the actions.
+
+Dashboard native checks are 22 px transparent outlined controls; profile/consent checks use the shared checkbox's 24 px outlined variant without changing the join form default. Task completion uses a 28 px outlined frame, animated SVG tick and 44 px hit target. Reduced-motion and keyboard behavior remain available.
+
+Discovery uses the public catalog's `OpportunityFilterFields` disclosures, removable filter chips, and a compact responsive panel. Participation filters use `participation` in dashboard URLs to avoid colliding with Discover/My plan's `mode`; requests use the public API's normal facet names. Owned saved collections apply those validated facets before pagination. Mobile search and action rows use a two-column grid.
+
+Verification: 336 unit checks passed; build and type checks passed; an index-only exported release built successfully. Captures and filter interaction recordings are in `/tmp/matrix-dashboard-controls` and `test-results/dashboard-controls-final`. Production-preview core paths, save rollback/retry, filtering/Back, reduced motion, task persistence, narrow layouts and density are fixture-tested. Join-panel regression: two passed. An intermediate development run failed a profile timing check while rebuilds were occurring; immutable-production checks subsequently passed. A separate card-alignment check read moving elements across separate browser calls; both bounds are now read atomically, preserving its alignment assertion.
+
+Final production-preview rerun after the mobile-grid correction: 30 passed (60 seconds), output `test-results/dashboard-controls-release`; all source and fixture handlers remained unchanged during the run. Delayed-response save checks passed on both desktop and mobile. Screenshot passes covered the card footer, filter panel, selected transparent checks, profile consent and completed-task controls.
+
+No provider sends, live account writes or migrations were performed. Next: physical-device interaction review and authorized live-account persistence verification; do not infer physical-device performance from these Chromium emulations.

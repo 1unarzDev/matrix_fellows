@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import DashboardDialog from './DashboardDialog.vue'
 import DashboardUrlCapture from './DashboardUrlCapture.vue'
+import DashboardTaskToggle from './DashboardTaskToggle.vue'
 import type {
   OpportunityDecision,
   OpportunityCapturePreview,
@@ -10,6 +11,13 @@ import type { Opportunity, OpportunitySearchResult } from '#shared/types/content
 import { getTimeline } from '#shared/utils/opportunity-lifecycle'
 import type { DashboardPlan, PlanTask, PlanActivity, PlanDate } from '#shared/types/dashboard'
 import { planWorkload, publishedTimezone } from '#shared/utils/dashboard-planning'
+import {
+  opportunityDisciplines,
+  opportunityKinds,
+  opportunityStages,
+  opportunityStatuses,
+  opportunityFilterLabels,
+} from '#shared/data/opportunity-filters'
 
 const props = defineProps<{
   workspace: OutreachWorkspace
@@ -74,8 +82,39 @@ onBeforeUnmount(() => {
 const includeClosed = ref(queryText('past') === '1')
 const savedOnly = ref(queryText('saved') === '1')
 const showPassed = ref(queryText('passed') === '1')
-const passCandidate = ref<Opportunity | null>(null)
-const passReason = ref('')
+const filtersOpen = ref(false)
+const filterKeys = Object.keys(opportunityFilterLabels)
+const filterRouteKey = (key: string) => (key === 'mode' ? 'participation' : key)
+const filterValues = (key: string) => {
+  const value = route.query[filterRouteKey(key)]
+  return (Array.isArray(value) ? value : value ? [value] : []).map(String)
+}
+const filterSelected = (key: string, value: string) => filterValues(key).includes(value)
+function toggleFilter(key: string, value: string) {
+  const values = filterValues(key)
+  queryPatch({
+    [filterRouteKey(key)]: values.includes(value)
+      ? values.filter((v) => v !== value)
+      : [...values, value],
+  })
+}
+const activeFilters = computed(() =>
+  filterKeys.flatMap((key) =>
+    filterValues(key).map((value) => ({
+      key,
+      value,
+      label: opportunityFilterLabels[key]?.[value] || value,
+      id: `${key}:${value}`,
+    })),
+  ),
+)
+function clearFilters() {
+  queryPatch(Object.fromEntries(filterKeys.map((key) => [filterRouteKey(key), undefined])))
+}
+watch(
+  () => filterKeys.map((key) => filterValues(key).join('|')).join(';'),
+  () => void loadCatalog(1),
+)
 const lastDecision = ref<OpportunityDecision | null>(null)
 const { data: decisionData, refresh: refreshDecisions } = useFetch<{
   decisions: OpportunityDecision[]
@@ -155,9 +194,9 @@ watch(
 )
 watch(savedOnly, () => void loadCatalog(1))
 watch(
-  () => saves.value.join('|'),
+  () => [saves.value.join('|'), savedOpportunities.pending.value] as const,
   () => {
-    if (savedOnly.value) void loadCatalog(1)
+    if (savedOnly.value && !savedOpportunities.pending.value) void loadCatalog(1)
   },
 )
 const tasks = computed(() => ledger.value?.tasks || [])
@@ -352,7 +391,12 @@ async function loadCatalog(page = 1, search = query.value) {
         unavailableCount?: number
       }
     >(endpoint as string, {
-      query: { q: search, page, pageSize: 30 },
+      query: {
+        q: search,
+        page,
+        pageSize: 30,
+        ...Object.fromEntries(filterKeys.map((key) => [key, filterValues(key)])),
+      },
       signal: catalogAbort.signal,
     })
     if (version !== catalogRequestVersion) return
@@ -381,7 +425,7 @@ const results = computed(() =>
     ? []
     : catalog.value.filter(
         (o) =>
-          (includeClosed.value || actionable(o)) &&
+          (includeClosed.value || filterValues('status').length > 0 || actionable(o)) &&
           (showPassed.value ||
             !decisions.value.some((d) => d.opportunityId === o.id && d.decision === 'pass')),
       ),
@@ -431,7 +475,6 @@ async function decideOpportunity(item: Opportunity, decision: 'pass' | 'clear', 
       body: { opportunityId: item.id, decision, reason, expectedVersion: previous?.version || 0 },
     })
     await refreshDecisions()
-    passCandidate.value = null
     notice.value =
       decision === 'pass'
         ? 'Passed for now. Existing plans and tasks are unchanged.'
@@ -441,10 +484,6 @@ async function decideOpportunity(item: Opportunity, decision: 'pass' | 'clear', 
   } finally {
     busy.value = false
   }
-}
-function beginPass(item: Opportunity) {
-  passCandidate.value = item
-  passReason.value = ''
 }
 async function undoPass() {
   if (!lastDecision.value || lastDecision.value.decision !== 'pass') return
@@ -906,14 +945,12 @@ function calendarFacts(date: string) {
           <button class="wb-text" @click="openPlan">Open plan ↗</button>
         </div>
         <div v-for="task in nextActions" :key="task.id" class="wb-task">
-          <button
-            class="wb-check"
-            :aria-label="`Complete ${task.title}`"
+          <DashboardTaskToggle
+            :checked="task.status === 'done'"
+            :label="`Complete ${task.title}`"
             :disabled="busy"
-            @click="completeTask(task)"
-          >
-            ○</button
-          ><button class="wb-task-title" @click="openTask(task)">
+            @toggle="completeTask(task)"
+          /><button class="wb-task-title" @click="openTask(task)">
             <strong>{{ task.title }}</strong
             ><span>{{ taskReason(task) }}</span></button
           ><span class="wb-muted">{{
@@ -971,14 +1008,36 @@ function calendarFacts(date: string) {
             type="search"
             placeholder="Search fields, programs, or calls"
           /><button class="wb-button" :disabled="catalogPending">Search</button
-          ><label class="wb-toggle"
+          ><button type="button" class="wb-button" @click="filtersOpen = true">
+            <SiteIcon name="filter" :size="15" />Filters<span v-if="activeFilters.length">
+              · {{ activeFilters.length }}</span
+            >
+          </button>
+          <label class="wb-toggle"
             ><input v-model="includeClosed" type="checkbox" />Include past cycles</label
           >
           <label class="wb-toggle"><input v-model="savedOnly" type="checkbox" />Saved only</label>
-          <label class="wb-toggle"
-            ><input v-model="showPassed" type="checkbox" />Include passed</label
+          <label class="wb-toggle" v-if="decisions.some((decision) => decision.decision === 'pass')"
+            ><input v-model="showPassed" type="checkbox" />Include previously passed</label
           >
         </form>
+        <TransitionGroup
+          name="wb-filter-chip"
+          tag="div"
+          class="wb-filter-chips"
+          aria-label="Active opportunity filters"
+        >
+          <button
+            v-for="filter in activeFilters"
+            :key="filter.id"
+            type="button"
+            class="wb-filter-chip"
+            :aria-label="`Remove ${filter.label} filter`"
+            @click="toggleFilter(filter.key, filter.value)"
+          >
+            {{ filter.label }}<SiteIcon name="close" :size="12" aria-hidden="true" />
+          </button>
+        </TransitionGroup>
         <p v-if="savedOnly" class="wb-muted">
           Searching your saved opportunities. Past cycles and passed records remain hidden unless
           you include them.
@@ -1012,19 +1071,20 @@ function calendarFacts(date: string) {
             @inspect="inspectOpportunity(item)"
           >
             <template #actions>
-              <OpportunitySaveButton :id="item.id" compact />
-              <button type="button" class="wb-inspect" @click="inspectOpportunity(item)">
-                Inspect sources <SiteIcon name="right" :size="14" aria-hidden="true" />
-              </button>
-              <button
-                v-if="decisions.some((d) => d.opportunityId === item.id && d.decision === 'pass')"
-                class="wb-text"
-                :disabled="busy"
-                @click="decideOpportunity(item, 'clear')"
-              >
-                Undo pass
-              </button>
-              <button v-else class="wb-text" :disabled="busy" @click="beginPass(item)">Pass</button>
+              <div class="wb-card-actions">
+                <button type="button" class="wb-inspect" @click="inspectOpportunity(item)">
+                  Details <SiteIcon name="right" :size="14" aria-hidden="true" />
+                </button>
+                <button
+                  v-if="decisions.some((d) => d.opportunityId === item.id && d.decision === 'pass')"
+                  class="wb-text"
+                  :disabled="busy"
+                  @click="decideOpportunity(item, 'clear')"
+                >
+                  Undo pass
+                </button>
+                <OpportunitySaveButton :id="item.id" compact />
+              </div>
             </template>
           </OpportunityCard>
         </div>
@@ -1078,14 +1138,12 @@ function calendarFacts(date: string) {
             class="wb-task"
             :class="{ 'wb-done': task.status === 'done' }"
           >
-            <button
-              class="wb-check"
-              :aria-label="`${task.status === 'done' ? 'Reopen' : 'Complete'} ${task.title}`"
+            <DashboardTaskToggle
+              :checked="task.status === 'done'"
+              :label="`${task.status === 'done' ? 'Reopen' : 'Complete'} ${task.title}`"
               :disabled="busy"
-              @click="completeTask(task)"
-            >
-              {{ task.status === 'done' ? '✓' : '○' }}</button
-            ><button class="wb-task-title" @click="openTask(task)">
+              @toggle="completeTask(task)"
+            /><button class="wb-task-title" @click="openTask(task)">
               <strong>{{ task.title }}</strong
               ><span>{{ taskReason(task) }}</span></button
             ><span class="wb-muted">{{
@@ -1335,14 +1393,12 @@ function calendarFacts(date: string) {
           </button>
         </div>
         <div v-for="task in activityTasks(currentActivity.id)" :key="task.id" class="wb-task">
-          <button
-            class="wb-check"
+          <DashboardTaskToggle
+            :checked="task.status === 'done'"
             :disabled="busy"
-            :aria-label="`Toggle completion: ${task.title}`"
-            @click="completeTask(task)"
-          >
-            {{ task.status === 'done' ? '✓' : '○' }}</button
-          ><button class="wb-task-title" @click="openTask(task)">
+            :label="`Toggle completion: ${task.title}`"
+            @toggle="completeTask(task)"
+          /><button class="wb-task-title" @click="openTask(task)">
             <strong>{{ task.title }}</strong
             ><span>{{ taskReason(task) }}</span>
           </button>
@@ -1522,30 +1578,26 @@ function calendarFacts(date: string) {
       >
     </DashboardDialog>
     <DashboardDialog
-      v-if="passCandidate && section === 'opportunities'"
-      title="Pass on this opportunity"
-      @close="passCandidate = null"
-      ><form
-        class="wb-form"
-        @submit.prevent="decideOpportunity(passCandidate!, 'pass', passReason)"
-      >
-        <p>{{ passCandidate.title }}</p>
-        <label
-          >Reason <span class="wb-muted">optional</span
-          ><textarea
-            v-model="passReason"
-            rows="3"
-            maxlength="1000"
-            placeholder="For example, travel requirements or not relevant to my work."
-          />
-        </label>
-        <p class="wb-muted">
-          This changes your discovery shortlist only. It will not delete an existing application,
-          completed work, or tasks. You can undo it.
-        </p>
-        <p v-if="error" class="wb-message wb-error" role="alert">{{ error }}</p>
-        <button class="wb-button wb-primary" :disabled="busy">Pass for now</button>
-      </form></DashboardDialog
+      v-if="filtersOpen && section === 'opportunities'"
+      title="Opportunity filters"
+      compact
+      @close="filtersOpen = false"
+      ><div class="wb-filter-panel">
+        <OpportunityFilterFields
+          :disciplines="opportunityDisciplines"
+          :kinds="opportunityKinds"
+          :stages="opportunityStages"
+          :statuses="opportunityStatuses"
+          :selected="filterSelected"
+          @toggle="toggleFilter"
+        />
+        <div class="wb-filter-footer">
+          <button type="button" class="wb-button" @click="clearFilters">Clear filters</button>
+          <button type="button" class="wb-button wb-primary" @click="filtersOpen = false">
+            Show results
+          </button>
+        </div>
+      </div></DashboardDialog
     >
     <DashboardDialog
       v-if="taskEditor"
@@ -1911,17 +1963,6 @@ function calendarFacts(date: string) {
 .wb-task:first-of-type {
   margin-top: 14px;
 }
-.wb-check {
-  flex-shrink: 0;
-  width: 44px;
-  height: 44px;
-  border: 1px solid #ffffff17;
-  border-radius: 50%;
-  background: #ffffff02;
-  cursor: pointer;
-  color: var(--wb-gold);
-  font-size: 21px;
-}
 .wb-task-title {
   text-align: left;
   display: flex;
@@ -2004,7 +2045,7 @@ function calendarFacts(date: string) {
   gap: 10px;
   margin-bottom: 20px;
 }
-.workbench input,
+.workbench input:not([type='checkbox']),
 .workbench textarea,
 .workbench select {
   border: 1px solid #ffffff1b;
@@ -2018,7 +2059,7 @@ function calendarFacts(date: string) {
   max-width: 100%;
   color-scheme: dark;
 }
-.wb-form input,
+.wb-form input:not([type='checkbox']),
 .wb-form textarea,
 .wb-form select {
   border: 1px solid #ffffff1b;
@@ -2042,9 +2083,9 @@ function calendarFacts(date: string) {
   border-radius: 10px;
 }
 .wb-form .wb-acknowledgement input {
-  width: 20px;
-  height: 20px;
-  min-height: 20px;
+  width: 22px;
+  height: 22px;
+  min-height: 22px;
   padding: 0;
   flex-shrink: 0;
   accent-color: var(--wb-gold);
@@ -2080,10 +2121,81 @@ function calendarFacts(date: string) {
   font-size: 11px;
   color: var(--wb-muted);
   white-space: nowrap;
+  min-height: 44px;
 }
 .wb-toggle input {
-  min-height: unset;
-  accent-color: var(--wb-gold);
+  margin: 0;
+}
+.wb-filter-panel {
+  max-width: 420px;
+  margin: 0 auto;
+}
+.wb-filter-footer {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 18px 0;
+  border-top: 1px solid var(--wb-line);
+  background: #191a22;
+}
+.wb-filter-chips {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.wb-filter-chips:has(button) {
+  margin-top: 16px;
+}
+.wb-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 1px solid rgb(228 199 151 / 24%);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgb(244 241 233 / 4%), rgb(196 178 238 / 3%));
+  color: var(--wb-ink);
+  font-size: 12px;
+  transition:
+    border-color 220ms ease,
+    color 220ms ease;
+}
+.wb-filter-chip:hover {
+  border-color: var(--wb-gold);
+  color: var(--wb-gold);
+}
+.wb-filter-chip-enter-active,
+.wb-filter-chip-move {
+  transition:
+    opacity 200ms ease,
+    transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.wb-filter-chip-leave-active {
+  position: absolute;
+  pointer-events: none;
+  transition:
+    opacity 160ms ease,
+    transform 220ms ease;
+}
+.wb-filter-chip-enter-from {
+  opacity: 0;
+  transform: translateY(5px);
+}
+.wb-filter-chip-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .wb-filter-chip-enter-active,
+  .wb-filter-chip-leave-active,
+  .wb-filter-chip-move {
+    transition: none;
+    transform: none;
+  }
 }
 .wb-results {
   display: grid;
@@ -2096,9 +2208,28 @@ function calendarFacts(date: string) {
   align-items: center;
   gap: 10px;
   min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--wb-line);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 2%);
   color: var(--wb-gold);
   font-size: 12px;
-  transition: color 180ms ease;
+  transition:
+    color 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+.wb-card-actions {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.wb-inspect:hover {
+  border-color: color-mix(in srgb, var(--wb-gold) 40%, transparent);
+  background: color-mix(in srgb, var(--wb-gold) 5%, transparent);
 }
 .wb-inspect svg {
   transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
@@ -2388,11 +2519,20 @@ function calendarFacts(date: string) {
     padding: 19px;
   }
   .wb-search {
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .wb-search > input {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+  .wb-search > .wb-button {
+    width: 100%;
+    justify-content: center;
   }
   .wb-toggle {
-    width: 100%;
-    padding: 5px;
+    width: auto;
+    padding: 0;
   }
   .wb-task > .wb-muted {
     display: none;

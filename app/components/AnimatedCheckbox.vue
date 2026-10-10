@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const props = withDefaults(
-  defineProps<{ modelValue: boolean; label: string; description?: string }>(),
+  defineProps<{ modelValue: boolean; label: string; description?: string; outlined?: boolean }>(),
   { description: '' },
 )
 const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>()
@@ -8,7 +8,11 @@ const id = useId()
 </script>
 
 <template>
-  <label :for="id" class="animated-check group relative flex cursor-pointer items-start gap-3.5">
+  <label
+    :for="id"
+    class="animated-check group relative flex cursor-pointer items-start gap-3.5"
+    :class="{ 'animated-check--outlined': outlined }"
+  >
     <input
       :id="id"
       class="peer absolute left-0 top-0 z-10 h-5 w-5 cursor-pointer opacity-0"
@@ -117,6 +121,42 @@ const id = useId()
   }
   .peer:checked + .animated-check__control .animated-check__particles i {
     animation: none;
+  }
+}
+.animated-check--outlined .animated-check__control {
+  width: 24px;
+  height: 24px;
+  border-width: 1.5px;
+  border-color: color-mix(in srgb, var(--color-paper) 45%, transparent);
+  color: var(--color-acid);
+  background: transparent;
+  transition:
+    border-color 220ms ease,
+    box-shadow 260ms ease,
+    transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.animated-check--outlined .peer:checked + .animated-check__control {
+  background: transparent;
+  border-color: var(--color-acid);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--color-acid) 8%, transparent);
+  transform: none;
+}
+.animated-check--outlined .animated-check__tick {
+  transition:
+    opacity 180ms ease,
+    transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.animated-check--outlined .animated-check__tick :deep(svg) {
+  width: 17px;
+  height: 17px;
+}
+.animated-check--outlined .animated-check__particles {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animated-check--outlined .animated-check__control,
+  .animated-check--outlined .animated-check__tick {
+    transition: none;
   }
 }
 </style>

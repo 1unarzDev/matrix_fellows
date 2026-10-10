@@ -104,7 +104,7 @@ test('dashboard catalog shares featured panels, rounded navigation and responsiv
     await page.goto('/dashboard?section=opportunities')
     await expect(page.locator('.opportunity-card--featured')).toBeVisible()
     await expect(page.getByText('Next useful checkpoint', { exact: true })).toBeVisible()
-    await expect(page.getByRole('button', { name: /Inspect sources/ })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Details', exact: true })).toBeVisible()
     await expect(page.getByRole('button', { name: /Jump to/ })).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'Legacy saved work', exact: true })).toHaveCount(
       0,

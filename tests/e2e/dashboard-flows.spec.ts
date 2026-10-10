@@ -9,9 +9,9 @@ test('fixture: saved discovery does not depend on the current public page', asyn
     route.fulfill({ json: { items: [], page: 1, pageCount: 1, total: 0 } }),
   )
   await page.goto('/dashboard?section=opportunities')
-  await expect(page.getByRole('button', { name: /Inspect sources/ })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Details', exact: true })).toHaveCount(0)
   await page.getByRole('checkbox', { name: 'Saved only', exact: true }).check()
-  await expect(page.getByRole('button', { name: /Inspect sources/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Details', exact: true })).toBeVisible()
   expect(state.plan.tasks).toHaveLength(0)
 })
 
@@ -71,24 +71,17 @@ test('fixture: newer profile typing stays unsaved until its own submission', asy
   await expect(name).toHaveValue('Synthetic newer name')
 })
 
-test('fixture: inspector Back, reversible Pass and honest private URL capture', async ({
+test('fixture: inspector Back, simplified actions and honest private URL capture', async ({
   page,
 }) => {
   const state = await setup(page)
   await page.goto('/dashboard?section=opportunities')
-  await page.getByRole('button', { name: /Inspect sources/ }).click()
+  await page.getByRole('button', { name: 'Details', exact: true }).click()
   await expect(page.getByRole('dialog')).toBeVisible()
   await page.goBack()
   await expect(page.getByRole('dialog')).toHaveCount(0)
-  await page.getByRole('button', { name: 'Pass', exact: true }).click()
-  await page
-    .getByRole('dialog')
-    .getByLabel('Reason', { exact: false })
-    .fill('Synthetic travel constraint')
-  await page.getByRole('button', { name: 'Pass for now', exact: true }).click()
-  await expect(page.getByRole('button', { name: /Inspect sources/ })).toHaveCount(0)
-  await page.getByRole('button', { name: 'Undo pass', exact: true }).click()
-  await expect(page.getByRole('button', { name: /Inspect sources/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Pass', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Details', exact: true })).toBeVisible()
   expect(state.plan.tasks).toHaveLength(0)
   await page.getByRole('button', { name: '+ Add opportunity URL', exact: true }).click()
   await page.getByLabel('Official opportunity URL').fill('https://example.edu/synthetic-program')
@@ -119,7 +112,7 @@ test('fixture: save, reviewed pursuit, canonical views, reload, and contribution
     page.getByRole('button', { name: 'Remove saved opportunity', exact: true }),
   ).toHaveAttribute('aria-pressed', 'true')
   expect(state.plan.tasks).toHaveLength(0)
-  await page.getByRole('button', { name: 'Inspect sources', exact: false }).click()
+  await page.getByRole('button', { name: 'Details', exact: true }).click()
   await expect(page.getByRole('dialog')).toContainText('Feb 15, 2027')
   await page.getByRole('button', { name: 'Pursue', exact: false }).click()
   const review = page.getByRole('dialog')

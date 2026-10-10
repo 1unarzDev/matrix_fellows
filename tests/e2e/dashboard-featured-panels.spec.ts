@@ -41,9 +41,11 @@ test('featured discovery panels preserve selection, saving, motion and narrow la
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(
       true,
     )
-    const first = (await cards.nth(0).boundingBox())!
-    const second = (await cards.nth(1).boundingBox())!
-    expect(width > 1050 ? Math.abs(first.y - second.y) < 2 : second.y > first.y).toBe(true)
+    // Read both positions in one frame: the entrance transform can move between separate calls.
+    const positions = await cards.evaluateAll((elements) =>
+      elements.slice(0, 2).map((element) => element.getBoundingClientRect().y),
+    )
+    expect(width > 1050 ? Math.abs(positions[0]! - positions[1]!) < 2 : positions[1]! > positions[0]!).toBe(true)
     await page.screenshot({
       path: `/tmp/matrix-featured-panels/populated-${width}-${info.project.name}.png`,
       fullPage: true,
@@ -62,7 +64,7 @@ test('featured discovery panels preserve selection, saving, motion and narrow la
   await expect(page.getByRole('dialog')).toHaveCount(0)
   await page.emulateMedia({ reducedMotion: 'reduce' })
   expect(await card.evaluate((el) => getComputedStyle(el).transitionDuration)).toBe('0s')
-  await card.getByRole('button', { name: /Inspect sources/ }).focus()
+  await card.getByRole('button', { name: 'Details', exact: true }).focus()
   await page.keyboard.press('Enter')
   await expect(page.getByRole('dialog')).toBeVisible()
 })

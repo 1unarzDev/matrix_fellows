@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const props = defineProps<{ title: string }>()
+const props = defineProps<{ title: string; compact?: boolean }>()
 const emit = defineEmits<{ close: [] }>()
 const dialog = ref<HTMLDialogElement | null>(null)
 let previousFocus: HTMLElement | null = null
@@ -32,6 +32,7 @@ function backdrop(event: MouseEvent) {
     ><dialog
       ref="dialog"
       class="dashboard-dialog"
+      :class="{ 'dashboard-dialog--compact': compact }"
       aria-labelledby="dashboard-dialog-title"
       @cancel.prevent="emit('close')"
       @click="backdrop"
@@ -66,6 +67,9 @@ function backdrop(event: MouseEvent) {
 .dashboard-dialog::backdrop {
   background: #080910a8;
   backdrop-filter: blur(5px);
+}
+.dashboard-dialog--compact {
+  width: min(540px, calc(100% - 32px));
 }
 .dashboard-dialog header {
   display: flex;

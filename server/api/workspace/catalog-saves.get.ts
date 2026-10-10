@@ -3,11 +3,13 @@ import { requireWorkspaceMember } from '../../utils/workspace-auth'
 import { workspaceStorage, workspaceResult } from '../../utils/workspace-storage'
 import { opportunitySchema } from '#shared/utils/validation'
 import type { Opportunity } from '#shared/types/content'
+import { parseOpportunitySearch } from '../../utils/opportunity-search'
+import { matchesOpportunityFilters } from '#shared/utils/opportunity-filters'
 const querySchema = z.object({
   idsOnly: z.enum(['1']).optional(),
   q: z.string().trim().max(200).default(''),
   page: z.coerce.number().int().min(1).max(1000).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(24),
+  pageSize: z.coerce.number().int().min(1).max(50).default(24),
 })
 const SAVE_LIMIT = 500
 /** Independent saved collection, not an intersection with the public search page.
@@ -21,6 +23,12 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Check the saved-opportunity search.' })
   const { q, page, pageSize } = parsed.data,
     db = workspaceStorage(event)
+  let filters
+  try {
+    filters = parseOpportunitySearch(event)
+  } catch {
+    throw createError({ statusCode: 400, statusMessage: 'Check the saved-opportunity filters.' })
+  }
   const savedResult = await db
     .from('outreach_catalog_saves')
     .select('opportunity_id,created_at', { count: 'exact' })
@@ -63,6 +71,7 @@ export default defineEventHandler(async (event) => {
   const items = ids
     .map((id) => byId.get(id))
     .filter((item): item is Opportunity => !!item)
+    .filter((item) => matchesOpportunityFilters(item, filters))
     .filter(
       (item) =>
         !needle ||

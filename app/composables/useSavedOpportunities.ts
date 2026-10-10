@@ -26,6 +26,7 @@ export function useSavedOpportunities() {
     }
   }
   function setAccount(userId: string, accountIds: string[]) {
+    if (pending.value && owner.value === userId) return
     if (owner.value !== userId) generation.value++
     owner.value = userId
     ids.value = [...accountIds]
@@ -100,8 +101,16 @@ export function useSavedOpportunities() {
     const userId = owner.value
     const version = generation.value
     const saved = ids.value.includes(id)
+    const previous = [...ids.value]
+    const next = saved ? previous.filter((value) => value !== id) : [...previous, id]
+    if (!userId && next.length > 500) {
+      error.value = 'This browser holds 500 saves. Remove one or sign in to use your account collection.'
+      return false
+    }
     pending.value = true
     error.value = ''
+    // Reflect the intent immediately; persistence failure restores only this collection version.
+    ids.value = next
     try {
       if (userId) {
         const result = await $fetch<{ opportunityIds?: string[] }>(
@@ -114,21 +123,17 @@ export function useSavedOpportunities() {
           },
         )
         if (owner.value !== userId || generation.value !== version) return false
-        ids.value = result.opportunityIds || ids.value.filter((value) => value !== id)
+        ids.value = result.opportunityIds || next
       } else {
-        const next = saved ? ids.value.filter((value) => value !== id) : [...ids.value, id]
-        if (next.length > 500) {
-          error.value =
-            'This browser holds 500 saves. Remove one or sign in to use your account collection.'
-          return false
-        }
         localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
         guestIds.value = next
         ids.value = next
       }
       return true
     } catch {
-      error.value = 'Your save could not be updated. Nothing was changed; try again.'
+      if (owner.value !== userId || generation.value !== version) return false
+      ids.value = previous
+      error.value = 'Your save could not be confirmed. Previous selection restored; try again.'
       return false
     } finally {
       pending.value = false

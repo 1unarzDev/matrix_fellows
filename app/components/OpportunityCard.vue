@@ -304,7 +304,8 @@ onMounted(() => {
       </div>
     </div>
     <div
-      class="flex flex-wrap items-center justify-between gap-4 border-t border-paper/10 px-6 py-5 sm:px-7"
+      class="flex flex-wrap gap-4 border-t border-paper/10 px-6 py-5 sm:px-7"
+      :class="inspect ? 'flex-col items-stretch' : 'items-center justify-between'"
     >
       <div class="text-[9px] leading-relaxed text-paper/35">
         <p v-if="!item.monitoring || item.monitoring.lastSuccessAt">

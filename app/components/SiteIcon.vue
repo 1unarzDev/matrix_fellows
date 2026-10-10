@@ -20,6 +20,7 @@ defineProps<{
     | 'warning'
     | 'check'
     | 'dashboard'
+    | 'filter'
   size?: number
 }>()
 </script>
@@ -36,7 +37,12 @@ defineProps<{
     stroke-linejoin="round"
     aria-hidden="true"
   >
-    <g v-if="name === 'dashboard'">
+    <g v-if="name === 'filter'">
+      <path d="M4 7h16M4 17h16" />
+      <circle cx="9" cy="7" r="2" fill="var(--color-ink)" />
+      <circle cx="15" cy="17" r="2" fill="var(--color-ink)" />
+    </g>
+    <g v-else-if="name === 'dashboard'">
       <rect x="3" y="3" width="7" height="7" rx="1.5" />
       <rect x="14" y="3" width="7" height="11" rx="1.5" />
       <rect x="3" y="14" width="7" height="7" rx="1.5" />

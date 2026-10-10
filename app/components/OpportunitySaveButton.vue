@@ -18,17 +18,19 @@ const particles = [
 ] as const
 
 async function activate() {
-  if (!ready.value || !available.value) return
+  if (!ready.value || !available.value || pending.value) return
   action.value = saved.value ? 'remove' : 'save'
   failed.value = false
-  if (!(await toggle(props.id))) {
-    failed.value = true
-    return
-  }
+  const result = toggle(props.id)
   burst.value++
   springing.value = false
   await nextTick()
   springing.value = true
+  if (!(await result)) {
+    failed.value = true
+    springing.value = false
+    burst.value = 0
+  }
 }
 </script>
 
@@ -37,6 +39,7 @@ async function activate() {
     type="button"
     :disabled="!ready || !available || pending"
     :aria-pressed="saved"
+    :aria-busy="pending"
     :aria-label="
       !available
         ? 'Saving unavailable'
@@ -46,12 +49,16 @@ async function activate() {
             ? 'Save opportunity to your account'
             : 'Save opportunity on this device'
     "
-    :title="error || (owner ? 'Saved to your account' : 'Saved only in this browser')"
+    :title="
+      error ||
+      (pending ? 'Updating save…' : owner ? 'Saved to your account' : 'Saved only in this browser')
+    "
     class="save-control"
     :class="{
       'save-control--saved': saved,
       'save-control--compact': compact,
       'save-control--springing': springing,
+      'save-control--pending': pending,
     }"
     :data-action="action"
     @click="activate"
@@ -59,9 +66,11 @@ async function activate() {
     <span class="save-control__surface" @animationend.self="springing = false">
       <span class="save-control__mark" aria-hidden="true" />
       <span v-if="!compact" class="save-control__labels" aria-hidden="true">
-        <span :class="{ 'save-control__label--visible': !saved && available }">Save</span>
+        <span :class="{ 'save-control__label--visible': !saved && available }">{{
+          pending ? 'Removing…' : 'Save'
+        }}</span>
         <span :class="{ 'save-control__label--visible': saved && available }">{{
-          owner ? 'Saved to account' : 'Saved on this device'
+          pending ? 'Saving…' : owner ? 'Saved to account' : 'Saved on this device'
         }}</span>
         <span :class="{ 'save-control__label--visible': !available }">Saving unavailable</span>
       </span>
@@ -132,6 +141,10 @@ async function activate() {
 .save-control:disabled {
   cursor: not-allowed;
   opacity: 0.45;
+}
+.save-control--pending:disabled {
+  cursor: progress;
+  opacity: 1;
 }
 
 .save-control--saved {

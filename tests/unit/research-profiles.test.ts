@@ -129,8 +129,8 @@ it('privacy withdrawal succeeds while an already submitted immutable outcome rem
  expect((await db.query<any>('select withdrawn_at,sharing_scope from research_claims where id=$1',[claim])).rows[0].withdrawn_at).toBeTruthy()
  expect((await db.query<any>('select status from outreach_outbox where proposal_id=$1',[proposal])).rows[0].status).toBe('uncertain')
 })
-it('PDFs remain explicit references until a page-aware parser is available',async()=>{
+it('Unsupported PDF hosts remain explicit references',async()=>{
  let called=false
- const result=await acquireResearchArtifact('https://www.uta.edu/research/paper.pdf',async()=>{called=true;return new Response('%PDF binary')})
+ const result=await acquireResearchArtifact('https://portfolio.example/research/paper.pdf',async()=>{called=true;return new Response('%PDF binary')})
  expect(result.state).toBe('reference');expect(called).toBe(false)
 })

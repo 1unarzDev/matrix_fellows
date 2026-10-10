@@ -12,7 +12,7 @@ export async function processResearchArtifact(event: H3Event, artifactId: string
     const acquired = await acquireResearchArtifact(artifact.canonical_url)
     result = { ...acquired, contentHash: await hashText(acquired.text + JSON.stringify(acquired.metadata)) }
   } catch (error) {
-    const allowed = ['too_large', 'not_found', 'access_unavailable', 'invalid_metadata', 'empty_source', 'unsupported_content']
+    const allowed = ['too_large', 'not_found', 'access_unavailable', 'invalid_metadata', 'empty_source', 'unsupported_content', 'invalid_pdf', 'too_many_pages', 'pdf_timeout', 'pdf_no_text', 'too_much_pdf_text']
     const message = error instanceof Error && allowed.includes(error.message) ? error.message : 'acquisition_unavailable'
     result = { state: 'failed', errorCode: message, summary: 'The link is saved. Acquisition is unavailable; you can retry or describe your contribution locally.' }
   }

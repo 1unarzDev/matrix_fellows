@@ -12,6 +12,13 @@ export const proposalStyles = [
   'collaboration',
 ] as const
 export type ProposalStyle = (typeof proposalStyles)[number]
+export interface SocietyConnectionSignal {
+  title?: string | null
+  summary?: string | null
+  organization?: string | null
+  chapter?: string | null
+  status?: string | null
+}
 const stop = new Set([
   'research',
   'project',
@@ -32,7 +39,7 @@ const words = (value: string) =>
   new Set(
     value
       .toLowerCase()
-      .match(/[a-z][a-z0-9-]{3,}/g)
+      .match(/[a-z][a-z0-9-]{2,}/g)
       ?.filter((word) => !stop.has(word)) || [],
   )
 function matchScore(value: string, context: Set<string>) {
@@ -64,6 +71,7 @@ export function tailorOutreachDraft(input: {
   style: ProposalStyle
   voice?: OfficerVoicePreferences
   plan?: ContributionPlan
+  societySignals?: SocietyConnectionSignal[]
 }) {
   const { target, society, profile, kind, style } = input
   const context = words(
@@ -92,6 +100,19 @@ export function tailorOutreachDraft(input: {
     .sort((a, b) => b.score - a.score)[0]?.item
   const affiliation = profile?.affiliations?.find((item) => matchScore(item, context) > 0)
   const plan = input.plan
+  const societyConnection = (input.societySignals || [])
+    .filter((signal) => ['introduced', 'connected', 'active'].includes(signal.status || ''))
+    .map((signal) => ({
+      signal,
+      score: matchScore(
+        [signal.title, signal.summary, signal.organization, signal.chapter]
+          .filter(Boolean)
+          .join(' '),
+        context,
+      ),
+    }))
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score)[0]?.signal
   const support = plan?.evidence[0]
   const observation = support
     ? `I noticed this description of your research: “${support.quote}” (${support.url}).`
@@ -125,6 +146,10 @@ Work sample: ${sample.sample.url}`
         ? `Relevant society work: ${accomplishments[0].item.description}
 ${accomplishments[0].item.url}`
         : ''
+  const societyConnectionNote =
+    kind === 'society' && societyConnection?.organization
+      ? `We have been building an early ${societyConnection.status === 'active' ? 'active ' : ''}connection with ${societyConnection.organization}; this context is included for a focused conversation, not as a claim about your current availability.`
+      : ''
   // Availability is context to verify, never an automatically approved commitment.
   const initialAsk = plan?.question || asks[style]
   const ask = input.voice?.requestStyle === 'direct' ? initialAsk.replace('Would it be useful to explore a small pilot?', 'Could we discuss one bounded pilot?') : initialAsk
@@ -144,6 +169,7 @@ ${accomplishments[0].item.url}`
       introduction,
       observation,
       relevant,
+      societyConnectionNote,
       achievement
         ? `They report this past result: ${achievement.description}\n${achievement.url}`
         : '',

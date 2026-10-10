@@ -103,6 +103,7 @@ export default defineEventHandler(async (event) => {
     senderName: member.email,
     kind: input.kind,
     style: input.style,
+    societySignals,
   })
   consumedClaims = consumedClaims.filter(claim => draft.body.includes(claim.statement))
   const proposal = proposalFromRow(

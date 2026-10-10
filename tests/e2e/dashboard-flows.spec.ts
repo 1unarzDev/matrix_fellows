@@ -29,29 +29,18 @@ test('fixture: first-run profile edits receive navigation protection', async ({ 
   await expect(page.getByLabel('Full name', { exact: true })).toHaveValue('Synthetic first profile')
 })
 
-test('fixture: society edits survive unrelated refresh and newer typing during save', async ({
-  page,
-}) => {
+test('fixture: society context queues immediately and grows the connection cloud', async ({ page }) => {
   const state = await setup(page)
   state.workspace.member.role = 'officer'
   await page.goto('/dashboard?section=society')
-  const description = page.getByLabel('Concise introduction', { exact: true })
-  await description.fill('Synthetic unsaved society description')
-  const navigation = page.getByRole('navigation', { name: 'Dashboard sections' })
-  await navigation.getByRole('button', { name: 'Your profile', exact: true }).click()
-  await page.locator('summary').filter({hasText:'Advanced profile editing'}).click()
-  await page.getByRole('button', { name: 'Save my profile', exact: true }).click()
-  await expect(page.getByText('Saved.', { exact: true })).toBeVisible()
-  await navigation.getByRole('button', { name: 'Society', exact: true }).click()
-  await expect(description).toHaveValue('Synthetic unsaved society description')
-  await page.getByRole('button', { name: 'Save reviewed profile', exact: true }).click()
-  await expect.poll(() => state.writes.some((w) => w.path === '/api/workspace/society')).toBe(true)
-  await description.fill('Synthetic newer society description')
-  await expect(
-    page.getByText('Submitted society profile saved. Your newer edits still need saving.'),
-  ).toBeVisible()
-  await expect(description).toHaveValue('Synthetic newer society description')
-  expect(state.workspace.society.description).toBe('Synthetic unsaved society description')
+  await expect(page.getByRole('heading', { name: /expanding constellation/i })).toBeVisible()
+  await page.getByRole('button', { name: 'Add context', exact: true }).click()
+  await page.getByLabel('A short title').fill('UTA introduction')
+  await page.getByLabel('Email chain, notes, or context').fill('From: Dr. Ada Lovelace <ada@uta.edu>')
+  await page.getByRole('button', { name: 'Add to constellation', exact: true }).click()
+  await expect(page.getByText(/queued without blocking this page/i)).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'New memory' })).toBeHidden()
+  await expect(page.getByRole('heading', { name: 'UTA introduction', exact: true })).toBeVisible()
 })
 
 test('fixture: newer profile typing stays unsaved until its own submission', async ({ page }) => {

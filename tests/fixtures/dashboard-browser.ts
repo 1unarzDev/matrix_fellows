@@ -139,6 +139,7 @@ export async function setup(page: Page, conflict = false) {
   const writes: any[] = []
   const decisions: any[] = []
   const references: any[] = []
+  const societyContext = { sources: [] as any[], entries: [] as any[], pendingCount: 0 }
   let draftPatches = 0
   await page.route('**/api/opportunities**', (route) =>
     route.fulfill({ json: { items: [opportunity], page: 1, pageCount: 1, total: 1 } }),
@@ -154,6 +155,37 @@ export async function setup(page: Page, conflict = false) {
     if (path === '/api/workspace/research-profile') return json({profile:{displayName:workspace.profiles[0]?.fullName || '',declaredInterests:workspace.profiles[0]?.interests || [],goals:workspace.profiles[0]?.goals || ''},artifacts:[],claims:[],providerStatus:'Local metadata'})
     if (path === '/api/workspace/officers') return json({officers:[]})
     if (path === '/api/workspace/research-profile/preferences') return json({lens:'nearby',reachableLocations:['Arlington']})
+    if (path === '/api/workspace/society-context') {
+      if (method === 'GET') return json(societyContext)
+      const source = {
+        id: `society-source-${societyContext.sources.length + 1}`,
+        title: body?.title || 'Synthetic context',
+        kind: 'text',
+        status: 'queued',
+        createdAt: stamp,
+      }
+      societyContext.sources.unshift(source)
+      societyContext.pendingCount = 1
+      await new Promise((resolve) => setTimeout(resolve, 650))
+      source.status = 'processed'
+      societyContext.entries.unshift({
+        id: `society-entry-${societyContext.entries.length + 1}`,
+        sourceId: source.id,
+        kind: 'connection',
+        title: source.title,
+        summary: 'Synthetic connection context',
+        organization: 'UTA',
+        chapter: 'DFW',
+        connectionDate: '2026-10-10',
+        status: 'introduced',
+        confidence: 'unreviewed',
+        sourceCount: 1,
+        createdAt: stamp,
+        updatedAt: stamp,
+      })
+      societyContext.pendingCount = 0
+      return json({ ok: true, queued: true, sourceId: source.id })
+    }
     if (path === `/api/workspace/profiles/${owner}` && method === 'PATCH') {
       await new Promise((resolve) => setTimeout(resolve, 650))
       Object.assign(workspace.profiles[0]!, body, { updatedAt: new Date().toISOString() })

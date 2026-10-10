@@ -62,3 +62,21 @@ it('uses only verified society facts and never fabricates scholarly reading', ()
   expect(draft.body).not.toContain('World-leading')
   expect(draft.body).toContain('add one verified research-specific observation')
 })
+it('uses a reviewed society connection as draft context when it matches the target', () => {
+  const draft = tailorOutreachDraft({
+    target: { ...target, organization: 'UTA' } as OutreachTarget,
+    society,
+    senderName: 'Officer',
+    kind: 'society',
+    style: 'conversation',
+    societySignals: [
+      {
+        title: 'UTA introduction',
+        organization: 'UTA',
+        status: 'introduced',
+      },
+    ],
+  })
+  expect(draft.body).toContain('building an early connection with UTA')
+  expect(draft.body).toContain('not as a claim about your current availability')
+})

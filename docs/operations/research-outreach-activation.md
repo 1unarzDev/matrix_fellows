@@ -57,3 +57,5 @@ The next owner action is to authorize the reviewed schema/application/Worker rol
 ## Authorized production rollout addendum
 
 The owner subsequently authorized deployment and three specific admin promotions. See the [October 9 rollout record](../quality/research-outreach-deployment-2026-10-09.md) for exact production version IDs, applied migrations, targeted roles, backup limitations and live checks. Research remains paused and AI disabled; provider generation, OAuth and real mail remain unverified. Include the subsequent `20261010033444_research_immutable_search_path.sql` after the eleven original migrations on any fresh rollout. Earlier local evidence and no-deployment statements above describe the pre-authorization state.
+
+Include `20261010034959_research_bootstrap_auth_fields.sql` after the immutable-helper migration. The invoker bootstrap requires only column-level service-role reads of confirmed account ID/email/confirmation time. Preserve this restricted grant and test bootstrap as the application role, rather than only as the database owner.

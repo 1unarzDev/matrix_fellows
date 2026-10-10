@@ -20,6 +20,7 @@ beforeAll(async () => {
     '20261010020426_research_evidence_approval_guard.sql',
     '20261010020659_research_matches_and_projection_guards.sql','20261010023000_research_preferences.sql','20261010024500_relationship_alias_duplicate_guard.sql','20261010025500_selected_society_context.sql','20261010030000_officer_voice_preferences.sql','20261010031000_provider_retry_metadata.sql',
     '20261010033444_research_immutable_search_path.sql',
+    '20261010034959_research_bootstrap_auth_fields.sql',
   ])
     await db.exec(
       await readFile(new URL('../../supabase/migrations/' + file, import.meta.url), 'utf8'),

@@ -23,7 +23,7 @@
           "evidence": [
             {
               "url": "https://www.uta.edu/research/fixture-0",
-              "quote": "The project evaluates robotics methods using reproducible public benchmarks.",
+              "quote": "Our robotic grasp experiment measures repeatability with a physical gripper in the Arlington lab.",
               "claim": "Research topic",
               "retrievedAt": "2026-10-09",
               "confidence": "verified"
@@ -33,7 +33,7 @@
             "pages": [
               {
                 "url": "https://www.uta.edu/research/fixture-0",
-                "text": "The project evaluates robotics methods using reproducible public benchmarks.",
+                "text": "Our robotic grasp experiment measures repeatability with a physical gripper in the Arlington lab.",
                 "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
               }
             ],
@@ -43,12 +43,12 @@
               ],
               "proposalOptions": [
                 {
-                  "title": "Robotics benchmark evaluation",
-                  "task": "compare one public baseline on a small benchmark subset",
-                  "deliverable": "a short reproducible comparison with limitations",
-                  "quote": "The project evaluates robotics methods using reproducible public benchmarks.",
+                  "title": "Gripper repeatability",
+                  "task": "review the public calibration protocol and identify one reproducibility question",
+                  "deliverable": "a one-page calibration checklist for discussion",
+                  "quote": "Our robotic grasp experiment measures repeatability with a physical gripper in the Arlington lab.",
                   "supervisionQuestions": [
-                    "Is the public benchmark a useful starting point?"
+                    "Would this scope be useful, and what access is permitted?"
                   ]
                 }
               ],
@@ -95,18 +95,18 @@
     "plan": {
       "schemaVersion": "contribution-plan-v1",
       "mode": "possible_contribution",
-      "connection": "Robotics benchmark evaluation",
-      "deliverable": "a short reproducible comparison with limitations",
-      "question": "Would a small pilot of compare one public baseline on a small benchmark subset be a useful starting point?",
+      "connection": "Gripper repeatability",
+      "deliverable": "a one-page calibration checklist for discussion",
+      "question": "Would it be useful to explore a small pilot? A possible scope is to review the public calibration protocol and identify one reproducibility question.",
       "evidence": [
         {
           "url": "https://www.uta.edu/research/fixture-0",
-          "quote": "The project evaluates robotics methods using reproducible public benchmarks.",
+          "quote": "Our robotic grasp experiment measures repeatability with a physical gripper in the Arlington lab.",
           "snapshotHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         }
       ],
       "unknowns": [
-        "Is the public benchmark a useful starting point?",
+        "Would this scope be useful, and what access is permitted?",
         "Participation and supervision are unconfirmed.",
         "Current member availability must be confirmed before promising work."
       ],
@@ -115,7 +115,7 @@
         {
           "dimension": "research",
           "state": "supported",
-          "reason": "Specific connection: Robotics benchmark evaluation"
+          "reason": "Specific connection: Gripper repeatability"
         },
         {
           "dimension": "participation",
@@ -149,7 +149,7 @@
     },
     "after": {
       "subject": "Feedback pilot — Robotics",
-      "body": "Hello Fixture research group 1,\n\nI’m Jordan Officer, an officer with Matrix Fellows, writing on behalf of Alex Example. They have shared an interest in Robotics.\n\nI noticed this description of your research: “The project evaluates robotics methods using reproducible public benchmarks.” (https://www.uta.edu/research/fixture-0).\n\nThey describe their contribution to Robotics work sample as: evaluated a grasp simulation\nWork sample: https://github.com/example/work\n\nOne possible starting point is a short reproducible comparison with limitations. We would agree on scope and confirm participation before committing to work.\n\nWould a small pilot of compare one public baseline on a small benchmark subset be a useful starting point?\n\nThank you,\nJordan Officer",
+      "body": "Hello Fixture research group 1,\n\nI’m Jordan Officer, an officer with Matrix Fellows, writing on behalf of Alex Example. They have shared an interest in Robotics.\n\nI noticed this description of your research: “Our robotic grasp experiment measures repeatability with a physical gripper in the Arlington lab.” (https://www.uta.edu/research/fixture-0).\n\nThey describe their contribution to Robotics work sample as: evaluated a grasp simulation\nWork sample: https://github.com/example/work\n\nOne possible starting point is a one-page calibration checklist for discussion. We would agree on scope and confirm participation before committing to work.\n\nWould it be useful to explore a small pilot? A possible scope is to review the public calibration protocol and identify one reproducibility question.\n\nThank you,\nJordan Officer",
       "notices": [
         "Local draft uses a source-supported model contribution suggestion; the lab need and participation remain unconfirmed.",
         "Confirm every factual claim and resolve REVIEW placeholders before approval.",
@@ -181,7 +181,7 @@
           "evidence": [
             {
               "url": "https://www.uta.edu/research/fixture-1",
-              "quote": "The project evaluates computer vision methods using reproducible public benchmarks.",
+              "quote": "The vision project publishes an image-corruption benchmark and baseline evaluation code.",
               "claim": "Research topic",
               "retrievedAt": "2026-10-09",
               "confidence": "verified"
@@ -191,7 +191,7 @@
             "pages": [
               {
                 "url": "https://www.uta.edu/research/fixture-1",
-                "text": "The project evaluates computer vision methods using reproducible public benchmarks.",
+                "text": "The vision project publishes an image-corruption benchmark and baseline evaluation code.",
                 "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
               }
             ],
@@ -201,12 +201,12 @@
               ],
               "proposalOptions": [
                 {
-                  "title": "Computer vision benchmark evaluation",
-                  "task": "compare one public baseline on a small benchmark subset",
-                  "deliverable": "a short reproducible comparison with limitations",
-                  "quote": "The project evaluates computer vision methods using reproducible public benchmarks.",
+                  "title": "Image-corruption robustness",
+                  "task": "reproduce one baseline on the public image-corruption subset",
+                  "deliverable": "a reproducible error table on one public subset",
+                  "quote": "The vision project publishes an image-corruption benchmark and baseline evaluation code.",
                   "supervisionQuestions": [
-                    "Is the public benchmark a useful starting point?"
+                    "Would this scope be useful, and what access is permitted?"
                   ]
                 }
               ],
@@ -253,18 +253,18 @@
     "plan": {
       "schemaVersion": "contribution-plan-v1",
       "mode": "possible_contribution",
-      "connection": "Computer vision benchmark evaluation",
-      "deliverable": "a short reproducible comparison with limitations",
-      "question": "Would a small pilot of compare one public baseline on a small benchmark subset be a useful starting point?",
+      "connection": "Image-corruption robustness",
+      "deliverable": "a reproducible error table on one public subset",
+      "question": "Would it be useful to explore a small pilot? A possible scope is to reproduce one baseline on the public image-corruption subset.",
       "evidence": [
         {
           "url": "https://www.uta.edu/research/fixture-1",
-          "quote": "The project evaluates computer vision methods using reproducible public benchmarks.",
+          "quote": "The vision project publishes an image-corruption benchmark and baseline evaluation code.",
           "snapshotHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         }
       ],
       "unknowns": [
-        "Is the public benchmark a useful starting point?",
+        "Would this scope be useful, and what access is permitted?",
         "Participation and supervision are unconfirmed.",
         "Current member availability must be confirmed before promising work."
       ],
@@ -273,7 +273,7 @@
         {
           "dimension": "research",
           "state": "supported",
-          "reason": "Specific connection: Computer vision benchmark evaluation"
+          "reason": "Specific connection: Image-corruption robustness"
         },
         {
           "dimension": "participation",
@@ -307,7 +307,7 @@
     },
     "after": {
       "subject": "Feedback pilot — Computer vision",
-      "body": "Hello Fixture research group 2,\n\nI’m Jordan Officer, an officer with Matrix Fellows, writing on behalf of Alex Example. They have shared an interest in Computer vision.\n\nI noticed this description of your research: “The project evaluates computer vision methods using reproducible public benchmarks.” (https://www.uta.edu/research/fixture-1).\n\nThey describe their contribution to Computer vision work sample as: implemented a public-data evaluation\nWork sample: https://github.com/example/work\n\nOne possible starting point is a short reproducible comparison with limitations. We would agree on scope and confirm participation before committing to work.\n\nWould a small pilot of compare one public baseline on a small benchmark subset be a useful starting point?\n\nThank you,\nJordan Officer",
+      "body": "Hello Fixture research group 2,\n\nI’m Jordan Officer, an officer with Matrix Fellows, writing on behalf of Alex Example. They have shared an interest in Computer vision.\n\nI noticed this description of your research: “The vision project publishes an image-corruption benchmark and baseline evaluation code.” (https://www.uta.edu/research/fixture-1).\n\nThey describe their contribution to Computer vision work sample as: implemented a public-data evaluation\nWork sample: https://github.com/example/work\n\nOne possible starting point is a reproducible error table on one public subset. We would agree on scope and confirm participation before committing to work.\n\nWould it be useful to explore a small pilot? A possible scope is to reproduce one baseline on the public image-corruption subset.\n\nThank you,\nJordan Officer",
       "notices": [
         "Local draft uses a source-supported model contribution suggestion; the lab need and participation remain unconfirmed.",
         "Confirm every factual claim and resolve REVIEW placeholders before approval.",
@@ -339,7 +339,7 @@
           "evidence": [
             {
               "url": "https://www.uta.edu/research/fixture-2",
-              "quote": "The project evaluates robotics methods using reproducible public benchmarks.",
+              "quote": "Our robot-learning tutorial compares imitation policies using an open simulation example.",
               "claim": "Research topic",
               "retrievedAt": "2026-10-09",
               "confidence": "verified"
@@ -349,7 +349,7 @@
             "pages": [
               {
                 "url": "https://www.uta.edu/research/fixture-2",
-                "text": "The project evaluates robotics methods using reproducible public benchmarks.",
+                "text": "Our robot-learning tutorial compares imitation policies using an open simulation example.",
                 "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
               }
             ],
@@ -359,12 +359,12 @@
               ],
               "proposalOptions": [
                 {
-                  "title": "Robotics benchmark evaluation",
-                  "task": "compare one public baseline on a small benchmark subset",
-                  "deliverable": "a short reproducible comparison with limitations",
-                  "quote": "The project evaluates robotics methods using reproducible public benchmarks.",
+                  "title": "Imitation-policy tutorial",
+                  "task": "read the open simulation tutorial and formulate one question",
+                  "deliverable": "a focused tutorial question",
+                  "quote": "Our robot-learning tutorial compares imitation policies using an open simulation example.",
                   "supervisionQuestions": [
-                    "Is the public benchmark a useful starting point?"
+                    "Would this scope be useful, and what access is permitted?"
                   ]
                 }
               ],
@@ -405,18 +405,18 @@
     "plan": {
       "schemaVersion": "contribution-plan-v1",
       "mode": "question",
-      "connection": "Robotics benchmark evaluation",
+      "connection": "Imitation-policy tutorial",
       "deliverable": "",
-      "question": "Would learning more about Robotics benchmark evaluation be a useful starting point?",
+      "question": "Which public paper or introductory resource would you recommend for understanding Imitation-policy tutorial?",
       "evidence": [
         {
           "url": "https://www.uta.edu/research/fixture-2",
-          "quote": "The project evaluates robotics methods using reproducible public benchmarks.",
+          "quote": "Our robot-learning tutorial compares imitation policies using an open simulation example.",
           "snapshotHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         }
       ],
       "unknowns": [
-        "Is the public benchmark a useful starting point?",
+        "Would this scope be useful, and what access is permitted?",
         "Participation and supervision are unconfirmed.",
         "Current member availability must be confirmed before promising work."
       ],
@@ -425,7 +425,7 @@
         {
           "dimension": "research",
           "state": "supported",
-          "reason": "Specific connection: Robotics benchmark evaluation"
+          "reason": "Specific connection: Imitation-policy tutorial"
         },
         {
           "dimension": "participation",
@@ -459,7 +459,7 @@
     },
     "after": {
       "subject": "Feedback pilot — Robotics",
-      "body": "Hello Fixture research group 3,\n\nI’m Jordan Officer, an officer with Matrix Fellows, writing on behalf of Alex Example. They have shared an interest in Robotics.\n\nI noticed this description of your research: “The project evaluates robotics methods using reproducible public benchmarks.” (https://www.uta.edu/research/fixture-2).\n\nWould learning more about Robotics benchmark evaluation be a useful starting point?\n\nThank you,\nJordan Officer",
+      "body": "Hello Fixture research group 3,\n\nI’m Jordan Officer, an officer with Matrix Fellows, writing on behalf of Alex Example. They have shared an interest in Robotics.\n\nI noticed this description of your research: “Our robot-learning tutorial compares imitation policies using an open simulation example.” (https://www.uta.edu/research/fixture-2).\n\nWhich public paper or introductory resource would you recommend for understanding Imitation-policy tutorial?\n\nThank you,\nJordan Officer",
       "notices": [
         "Local draft uses a source-supported model contribution suggestion; the lab need and participation remain unconfirmed.",
         "Confirm every factual claim and resolve REVIEW placeholders before approval.",
@@ -491,7 +491,7 @@
           "evidence": [
             {
               "url": "https://www.uta.edu/research/fixture-3",
-              "quote": "The project evaluates biology methods using reproducible public benchmarks.",
+              "quote": "The biology paper describes a reproducible protocol for measuring colony growth.",
               "claim": "Research topic",
               "retrievedAt": "2026-10-09",
               "confidence": "verified"
@@ -501,7 +501,7 @@
             "pages": [
               {
                 "url": "https://www.uta.edu/research/fixture-3",
-                "text": "The project evaluates biology methods using reproducible public benchmarks.",
+                "text": "The biology paper describes a reproducible protocol for measuring colony growth.",
                 "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
               }
             ],
@@ -511,12 +511,12 @@
               ],
               "proposalOptions": [
                 {
-                  "title": "Biology benchmark evaluation",
-                  "task": "compare one public baseline on a small benchmark subset",
-                  "deliverable": "a short reproducible comparison with limitations",
-                  "quote": "The project evaluates biology methods using reproducible public benchmarks.",
+                  "title": "Colony-growth protocol",
+                  "task": "review one protocol figure and ask about its interpretation",
+                  "deliverable": "one specific protocol question",
+                  "quote": "The biology paper describes a reproducible protocol for measuring colony growth.",
                   "supervisionQuestions": [
-                    "Is the public benchmark a useful starting point?"
+                    "Would this scope be useful, and what access is permitted?"
                   ]
                 }
               ],
@@ -557,18 +557,18 @@
     "plan": {
       "schemaVersion": "contribution-plan-v1",
       "mode": "question",
-      "connection": "Biology benchmark evaluation",
+      "connection": "Colony-growth protocol",
       "deliverable": "",
-      "question": "Would learning more about Biology benchmark evaluation be a useful starting point?",
+      "question": "Which public paper or introductory resource would you recommend for understanding Colony-growth protocol?",
       "evidence": [
         {
           "url": "https://www.uta.edu/research/fixture-3",
-          "quote": "The project evaluates biology methods using reproducible public benchmarks.",
+          "quote": "The biology paper describes a reproducible protocol for measuring colony growth.",
           "snapshotHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         }
       ],
       "unknowns": [
-        "Is the public benchmark a useful starting point?",
+        "Would this scope be useful, and what access is permitted?",
         "Participation and supervision are unconfirmed.",
         "Current member availability must be confirmed before promising work."
       ],
@@ -577,7 +577,7 @@
         {
           "dimension": "research",
           "state": "supported",
-          "reason": "Specific connection: Biology benchmark evaluation"
+          "reason": "Specific connection: Colony-growth protocol"
         },
         {
           "dimension": "participation",
@@ -611,12 +611,21 @@
     },
     "after": {
       "subject": "Feedback pilot — Biology",
-      "body": "Hello Fixture research group 4,\n\nI’m Jordan Officer, an officer with Matrix Fellows, writing on behalf of Alex Example. They have shared an interest in Biology.\n\nI noticed this description of your research: “The project evaluates biology methods using reproducible public benchmarks.” (https://www.uta.edu/research/fixture-3).\n\nWould learning more about Biology benchmark evaluation be a useful starting point?\n\nThank you,\nJordan Officer",
+      "body": "Hello Fixture research group 4,\n\nI’m Jordan Officer, an officer with Matrix Fellows, writing on behalf of Alex Example. They have shared an interest in Biology.\n\nI noticed this description of your research: “The biology paper describes a reproducible protocol for measuring colony growth.” (https://www.uta.edu/research/fixture-3).\n\nWhich public paper or introductory resource would you recommend for understanding Colony-growth protocol?\n\nThank you,\nJordan Officer",
       "notices": [
         "Local draft uses a source-supported model contribution suggestion; the lab need and participation remain unconfirmed.",
         "Confirm every factual claim and resolve REVIEW placeholders before approval.",
         "Local matching is a transparent drafting aid, not evidence of research eligibility or an acceptance probability."
       ]
+    },
+    "artifactEvidence": {
+      "type": "publication",
+      "relationship": "interest",
+      "authors": [
+        "Other Researcher"
+      ],
+      "memberAuthorship": "unconfirmed",
+      "contribution": "none"
     }
   },
   {
@@ -643,7 +652,7 @@
           "evidence": [
             {
               "url": "https://www.uta.edu/research/fixture-4",
-              "quote": "The project evaluates software testing methods using reproducible public benchmarks.",
+              "quote": "Our parser benchmark reports malformed-input failure cases with regression tests.",
               "claim": "Research topic",
               "retrievedAt": "2026-10-09",
               "confidence": "verified"
@@ -653,7 +662,7 @@
             "pages": [
               {
                 "url": "https://www.uta.edu/research/fixture-4",
-                "text": "The project evaluates software testing methods using reproducible public benchmarks.",
+                "text": "Our parser benchmark reports malformed-input failure cases with regression tests.",
                 "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
               }
             ],
@@ -663,12 +672,12 @@
               ],
               "proposalOptions": [
                 {
-                  "title": "Software testing benchmark evaluation",
-                  "task": "compare one public baseline on a small benchmark subset",
-                  "deliverable": "a short reproducible comparison with limitations",
-                  "quote": "The project evaluates software testing methods using reproducible public benchmarks.",
+                  "title": "Parser regression coverage",
+                  "task": "reproduce one malformed-input failure and propose a regression test",
+                  "deliverable": "one reproducible parser regression test",
+                  "quote": "Our parser benchmark reports malformed-input failure cases with regression tests.",
                   "supervisionQuestions": [
-                    "Is the public benchmark a useful starting point?"
+                    "Would this scope be useful, and what access is permitted?"
                   ]
                 }
               ],
@@ -715,18 +724,18 @@
     "plan": {
       "schemaVersion": "contribution-plan-v1",
       "mode": "possible_contribution",
-      "connection": "Software testing benchmark evaluation",
-      "deliverable": "a short reproducible comparison with limitations",
-      "question": "Would a small pilot of compare one public baseline on a small benchmark subset be a useful starting point?",
+      "connection": "Parser regression coverage",
+      "deliverable": "one reproducible parser regression test",
+      "question": "Would it be useful to explore a small pilot? A possible scope is to reproduce one malformed-input failure and propose a regression test.",
       "evidence": [
         {
           "url": "https://www.uta.edu/research/fixture-4",
-          "quote": "The project evaluates software testing methods using reproducible public benchmarks.",
+          "quote": "Our parser benchmark reports malformed-input failure cases with regression tests.",
           "snapshotHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         }
       ],
       "unknowns": [
-        "Is the public benchmark a useful starting point?",
+        "Would this scope be useful, and what access is permitted?",
         "Participation and supervision are unconfirmed.",
         "Current member availability must be confirmed before promising work."
       ],
@@ -735,7 +744,7 @@
         {
           "dimension": "research",
           "state": "supported",
-          "reason": "Specific connection: Software testing benchmark evaluation"
+          "reason": "Specific connection: Parser regression coverage"
         },
         {
           "dimension": "participation",
@@ -769,7 +778,7 @@
     },
     "after": {
       "subject": "Feedback pilot — Software testing",
-      "body": "Hello Fixture research group 5,\n\nI’m Jordan Officer, an officer with Matrix Fellows, writing on behalf of Alex Example. They have shared an interest in Software testing.\n\nI noticed this description of your research: “The project evaluates software testing methods using reproducible public benchmarks.” (https://www.uta.edu/research/fixture-4).\n\nThey describe their contribution to Software testing work sample as: wrote tests for one parser\nWork sample: https://github.com/example/work\n\nOne possible starting point is a short reproducible comparison with limitations. We would agree on scope and confirm participation before committing to work.\n\nWould a small pilot of compare one public baseline on a small benchmark subset be a useful starting point?\n\nThank you,\nJordan Officer",
+      "body": "Hello Fixture research group 5,\n\nI’m Jordan Officer, an officer with Matrix Fellows, writing on behalf of Alex Example. They have shared an interest in Software testing.\n\nI noticed this description of your research: “Our parser benchmark reports malformed-input failure cases with regression tests.” (https://www.uta.edu/research/fixture-4).\n\nThey describe their contribution to Software testing work sample as: wrote tests for one parser\nWork sample: https://github.com/example/work\n\nOne possible starting point is one reproducible parser regression test. We would agree on scope and confirm participation before committing to work.\n\nWould it be useful to explore a small pilot? A possible scope is to reproduce one malformed-input failure and propose a regression test.\n\nThank you,\nJordan Officer",
       "notices": [
         "Local draft uses a source-supported model contribution suggestion; the lab need and participation remain unconfirmed.",
         "Confirm every factual claim and resolve REVIEW placeholders before approval.",
@@ -779,7 +788,7 @@
   },
   {
     "id": "stale-affiliation",
-    "reviewNote": "Historical affiliation needs current review.",
+    "reviewNote": "Actual 2020 source and former affiliation; current contact/project status require new review.",
     "synthetic": true,
     "input": {
       "target": {
@@ -801,18 +810,20 @@
           "evidence": [
             {
               "url": "https://www.uta.edu/research/fixture-5",
-              "quote": "The project evaluates materials methods using reproducible public benchmarks.",
+              "quote": "In 2020, the materials team at Fixture Former Institution compared tensile measurements in a published dataset.",
               "claim": "Research topic",
-              "retrievedAt": "2026-10-09",
-              "confidence": "verified"
+              "retrievedAt": "2020-02-01",
+              "confidence": "verified",
+              "sourceDate": "2020-01-15"
             }
           ],
           "acquisition": {
             "pages": [
               {
                 "url": "https://www.uta.edu/research/fixture-5",
-                "text": "The project evaluates materials methods using reproducible public benchmarks.",
-                "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                "text": "In 2020, the materials team at Fixture Former Institution compared tensile measurements in a published dataset.",
+                "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "retrievedAt": "2020-02-01"
               }
             ],
             "publicAnalysis": {
@@ -821,16 +832,18 @@
               ],
               "proposalOptions": [
                 {
-                  "title": "Materials benchmark evaluation",
-                  "task": "compare one public baseline on a small benchmark subset",
-                  "deliverable": "a short reproducible comparison with limitations",
-                  "quote": "The project evaluates materials methods using reproducible public benchmarks.",
+                  "title": "Historical tensile measurements",
+                  "task": "reproduce a measurement comparison from the archived public dataset",
+                  "deliverable": "a documented archived-dataset comparison",
+                  "quote": "In 2020, the materials team at Fixture Former Institution compared tensile measurements in a published dataset.",
                   "supervisionQuestions": [
-                    "Is the public benchmark a useful starting point?"
+                    "Would this scope be useful, and what access is permitted?"
                   ]
                 }
               ],
-              "unknowns": []
+              "unknowns": [
+                "This archived source describes a 2020 affiliation. Current institution, contact and project activity are unknown."
+              ]
             }
           }
         },
@@ -873,18 +886,19 @@
     "plan": {
       "schemaVersion": "contribution-plan-v1",
       "mode": "possible_contribution",
-      "connection": "Materials benchmark evaluation",
-      "deliverable": "a short reproducible comparison with limitations",
-      "question": "Would a small pilot of compare one public baseline on a small benchmark subset be a useful starting point?",
+      "connection": "Historical tensile measurements",
+      "deliverable": "a documented archived-dataset comparison",
+      "question": "Would it be useful to explore a small pilot? A possible scope is to reproduce a measurement comparison from the archived public dataset.",
       "evidence": [
         {
           "url": "https://www.uta.edu/research/fixture-5",
-          "quote": "The project evaluates materials methods using reproducible public benchmarks.",
+          "quote": "In 2020, the materials team at Fixture Former Institution compared tensile measurements in a published dataset.",
           "snapshotHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         }
       ],
       "unknowns": [
-        "Is the public benchmark a useful starting point?",
+        "This archived source describes a 2020 affiliation. Current institution, contact and project activity are unknown.",
+        "Would this scope be useful, and what access is permitted?",
         "Participation and supervision are unconfirmed.",
         "Current member availability must be confirmed before promising work."
       ],
@@ -893,7 +907,7 @@
         {
           "dimension": "research",
           "state": "supported",
-          "reason": "Specific connection: Materials benchmark evaluation"
+          "reason": "Specific connection: Historical tensile measurements"
         },
         {
           "dimension": "participation",
@@ -927,7 +941,7 @@
     },
     "after": {
       "subject": "Feedback pilot — Materials",
-      "body": "Hello Fixture research group 6,\n\nI’m Jordan Officer, an officer with Matrix Fellows, writing on behalf of Alex Example. They have shared an interest in Materials.\n\nI noticed this description of your research: “The project evaluates materials methods using reproducible public benchmarks.” (https://www.uta.edu/research/fixture-5).\n\nThey describe their contribution to Materials work sample as: compared published measurements\nWork sample: https://github.com/example/work\n\nOne possible starting point is a short reproducible comparison with limitations. We would agree on scope and confirm participation before committing to work.\n\nWould a small pilot of compare one public baseline on a small benchmark subset be a useful starting point?\n\nThank you,\nJordan Officer",
+      "body": "Hello Fixture research group 6,\n\nI’m Jordan Officer, an officer with Matrix Fellows, writing on behalf of Alex Example. They have shared an interest in Materials.\n\nI noticed this description of your research: “In 2020, the materials team at Fixture Former Institution compared tensile measurements in a published dataset.” (https://www.uta.edu/research/fixture-5).\n\nThey describe their contribution to Materials work sample as: compared published measurements\nWork sample: https://github.com/example/work\n\nOne possible starting point is a documented archived-dataset comparison. We would agree on scope and confirm participation before committing to work.\n\nWould it be useful to explore a small pilot? A possible scope is to reproduce a measurement comparison from the archived public dataset.\n\nThank you,\nJordan Officer",
       "notices": [
         "Local draft uses a source-supported model contribution suggestion; the lab need and participation remain unconfirmed.",
         "Confirm every factual claim and resolve REVIEW placeholders before approval.",
@@ -1064,7 +1078,7 @@
   },
   {
     "id": "duplicate-lab",
-    "reviewNote": "Existing relationship warning belongs in coordination/approval.",
+    "reviewNote": "Actual existing relationship under an alias/other target ID. Writer-only fixture cannot prove transactional duplicate prevention.",
     "synthetic": true,
     "input": {
       "target": {
@@ -1086,7 +1100,7 @@
           "evidence": [
             {
               "url": "https://www.uta.edu/research/fixture-7",
-              "quote": "The project evaluates robotics methods using reproducible public benchmarks.",
+              "quote": "The robotics lab publishes simulator consistency checks for contact dynamics.",
               "claim": "Research topic",
               "retrievedAt": "2026-10-09",
               "confidence": "verified"
@@ -1096,7 +1110,7 @@
             "pages": [
               {
                 "url": "https://www.uta.edu/research/fixture-7",
-                "text": "The project evaluates robotics methods using reproducible public benchmarks.",
+                "text": "The robotics lab publishes simulator consistency checks for contact dynamics.",
                 "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
               }
             ],
@@ -1106,12 +1120,12 @@
               ],
               "proposalOptions": [
                 {
-                  "title": "Robotics benchmark evaluation",
-                  "task": "compare one public baseline on a small benchmark subset",
-                  "deliverable": "a short reproducible comparison with limitations",
-                  "quote": "The project evaluates robotics methods using reproducible public benchmarks.",
+                  "title": "Simulator consistency",
+                  "task": "reproduce one public consistency check and document a discrepancy",
+                  "deliverable": "one documented simulator check",
+                  "quote": "The robotics lab publishes simulator consistency checks for contact dynamics.",
                   "supervisionQuestions": [
-                    "Is the public benchmark a useful starting point?"
+                    "Would this scope be useful, and what access is permitted?"
                   ]
                 }
               ],
@@ -1158,18 +1172,18 @@
     "plan": {
       "schemaVersion": "contribution-plan-v1",
       "mode": "possible_contribution",
-      "connection": "Robotics benchmark evaluation",
-      "deliverable": "a short reproducible comparison with limitations",
-      "question": "Would a small pilot of compare one public baseline on a small benchmark subset be a useful starting point?",
+      "connection": "Simulator consistency",
+      "deliverable": "one documented simulator check",
+      "question": "Would it be useful to explore a small pilot? A possible scope is to reproduce one public consistency check and document a discrepancy.",
       "evidence": [
         {
           "url": "https://www.uta.edu/research/fixture-7",
-          "quote": "The project evaluates robotics methods using reproducible public benchmarks.",
+          "quote": "The robotics lab publishes simulator consistency checks for contact dynamics.",
           "snapshotHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         }
       ],
       "unknowns": [
-        "Is the public benchmark a useful starting point?",
+        "Would this scope be useful, and what access is permitted?",
         "Participation and supervision are unconfirmed.",
         "Current member availability must be confirmed before promising work."
       ],
@@ -1178,7 +1192,7 @@
         {
           "dimension": "research",
           "state": "supported",
-          "reason": "Specific connection: Robotics benchmark evaluation"
+          "reason": "Specific connection: Simulator consistency"
         },
         {
           "dimension": "participation",
@@ -1212,12 +1226,31 @@
     },
     "after": {
       "subject": "Feedback pilot — Robotics",
-      "body": "Hello Fixture research group 8,\n\nI’m Jordan Officer, an officer with Matrix Fellows, writing on behalf of Alex Example. They have shared an interest in Robotics.\n\nI noticed this description of your research: “The project evaluates robotics methods using reproducible public benchmarks.” (https://www.uta.edu/research/fixture-7).\n\nThey describe their contribution to Robotics work sample as: implemented simulator checks\nWork sample: https://github.com/example/work\n\nOne possible starting point is a short reproducible comparison with limitations. We would agree on scope and confirm participation before committing to work.\n\nWould a small pilot of compare one public baseline on a small benchmark subset be a useful starting point?\n\nThank you,\nJordan Officer",
+      "body": "Hello Fixture research group 8,\n\nI’m Jordan Officer, an officer with Matrix Fellows, writing on behalf of Alex Example. They have shared an interest in Robotics.\n\nI noticed this description of your research: “The robotics lab publishes simulator consistency checks for contact dynamics.” (https://www.uta.edu/research/fixture-7).\n\nThey describe their contribution to Robotics work sample as: implemented simulator checks\nWork sample: https://github.com/example/work\n\nOne possible starting point is one documented simulator check. We would agree on scope and confirm participation before committing to work.\n\nWould it be useful to explore a small pilot? A possible scope is to reproduce one public consistency check and document a discrepancy.\n\nThank you,\nJordan Officer",
       "notices": [
         "Local draft uses a source-supported model contribution suggestion; the lab need and participation remain unconfirmed.",
         "Confirm every factual claim and resolve REVIEW placeholders before approval.",
         "Local matching is a transparent drafting aid, not evidence of research eligibility or an acceptance probability."
       ]
+    },
+    "coordination": {
+      "relationshipId": "44444444-4444-4444-8444-444444444444",
+      "ownerId": "55555555-5555-4555-8555-555555555555",
+      "stage": "approached",
+      "aliases": [
+        "https://www.uta.edu/research/fixture-7",
+        "research@example.edu"
+      ],
+      "events": [
+        {
+          "kind": "external_email",
+          "source": "manual",
+          "occurredAt": "2026-10-01",
+          "note": "An officer already introduced the member to this lab."
+        }
+      ],
+      "previousTargetId": "66666666-6666-4666-8666-666666666666",
+      "messageKind": "cold"
     }
   },
   {
@@ -1244,7 +1277,7 @@
           "evidence": [
             {
               "url": "https://www.uta.edu/research/fixture-8",
-              "quote": "The project evaluates data science methods using reproducible public benchmarks.",
+              "quote": "The data science project provides a public notebook for assessing missing-value bias.",
               "claim": "Research topic",
               "retrievedAt": "2026-10-09",
               "confidence": "verified"
@@ -1254,7 +1287,7 @@
             "pages": [
               {
                 "url": "https://www.uta.edu/research/fixture-8",
-                "text": "The project evaluates data science methods using reproducible public benchmarks.",
+                "text": "The data science project provides a public notebook for assessing missing-value bias.",
                 "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
               }
             ],
@@ -1264,12 +1297,12 @@
               ],
               "proposalOptions": [
                 {
-                  "title": "Data science benchmark evaluation",
-                  "task": "compare one public baseline on a small benchmark subset",
-                  "deliverable": "a short reproducible comparison with limitations",
-                  "quote": "The project evaluates data science methods using reproducible public benchmarks.",
+                  "title": "Missing-value bias",
+                  "task": "evaluate one missing-value pattern using the public notebook",
+                  "deliverable": "one bounded sensitivity table",
+                  "quote": "The data science project provides a public notebook for assessing missing-value bias.",
                   "supervisionQuestions": [
-                    "Is the public benchmark a useful starting point?"
+                    "Would this scope be useful, and what access is permitted?"
                   ]
                 }
               ],
@@ -1316,18 +1349,18 @@
     "plan": {
       "schemaVersion": "contribution-plan-v1",
       "mode": "possible_contribution",
-      "connection": "Data science benchmark evaluation",
-      "deliverable": "a short reproducible comparison with limitations",
-      "question": "Would a small pilot of compare one public baseline on a small benchmark subset be a useful starting point?",
+      "connection": "Missing-value bias",
+      "deliverable": "one bounded sensitivity table",
+      "question": "Would it be useful to explore a small pilot? A possible scope is to evaluate one missing-value pattern using the public notebook.",
       "evidence": [
         {
           "url": "https://www.uta.edu/research/fixture-8",
-          "quote": "The project evaluates data science methods using reproducible public benchmarks.",
+          "quote": "The data science project provides a public notebook for assessing missing-value bias.",
           "snapshotHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         }
       ],
       "unknowns": [
-        "Is the public benchmark a useful starting point?",
+        "Would this scope be useful, and what access is permitted?",
         "Participation and supervision are unconfirmed.",
         "Current member availability must be confirmed before promising work."
       ],
@@ -1336,7 +1369,7 @@
         {
           "dimension": "research",
           "state": "supported",
-          "reason": "Specific connection: Data science benchmark evaluation"
+          "reason": "Specific connection: Missing-value bias"
         },
         {
           "dimension": "participation",
@@ -1370,7 +1403,7 @@
     },
     "after": {
       "subject": "Feedback pilot — Data science",
-      "body": "Hello Fixture research group 9,\n\nI’m Jordan Officer, an officer with Matrix Fellows, writing on behalf of Alex Example. They have shared an interest in Data science.\n\nI noticed this description of your research: “The project evaluates data science methods using reproducible public benchmarks.” (https://www.uta.edu/research/fixture-8).\n\nThey describe their contribution to Data science work sample as: built a small reproducible notebook\nWork sample: https://github.com/example/work\n\nOne possible starting point is a short reproducible comparison with limitations. We would agree on scope and confirm participation before committing to work.\n\nWould a small pilot of compare one public baseline on a small benchmark subset be a useful starting point?\n\nThank you,\nJordan Officer",
+      "body": "Hello Fixture research group 9,\n\nI’m Jordan Officer, an officer with Matrix Fellows, writing on behalf of Alex Example. They have shared an interest in Data science.\n\nI noticed this description of your research: “The data science project provides a public notebook for assessing missing-value bias.” (https://www.uta.edu/research/fixture-8).\n\nThey describe their contribution to Data science work sample as: built a small reproducible notebook\nWork sample: https://github.com/example/work\n\nOne possible starting point is one bounded sensitivity table. We would agree on scope and confirm participation before committing to work.\n\nWould it be useful to explore a small pilot? A possible scope is to evaluate one missing-value pattern using the public notebook.\n\nThank you,\nJordan Officer",
       "notices": [
         "Local draft uses a source-supported model contribution suggestion; the lab need and participation remain unconfirmed.",
         "Confirm every factual claim and resolve REVIEW placeholders before approval.",
@@ -1402,7 +1435,7 @@
           "evidence": [
             {
               "url": "https://www.uta.edu/research/fixture-9",
-              "quote": "The project evaluates biomedical imaging methods using reproducible public benchmarks.",
+              "quote": "Biomedical imaging validation requires an on-site scanner and restricted hospital images; no remote dataset is offered.",
               "claim": "Research topic",
               "retrievedAt": "2026-10-09",
               "confidence": "verified"
@@ -1412,7 +1445,7 @@
             "pages": [
               {
                 "url": "https://www.uta.edu/research/fixture-9",
-                "text": "The project evaluates biomedical imaging methods using reproducible public benchmarks.",
+                "text": "Biomedical imaging validation requires an on-site scanner and restricted hospital images; no remote dataset is offered.",
                 "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
               }
             ],
@@ -1422,12 +1455,12 @@
               ],
               "proposalOptions": [
                 {
-                  "title": "Biomedical imaging benchmark evaluation",
-                  "task": "compare one public baseline on a small benchmark subset",
-                  "deliverable": "a short reproducible comparison with limitations",
-                  "quote": "The project evaluates biomedical imaging methods using reproducible public benchmarks.",
+                  "title": "On-site scanner validation",
+                  "task": "review public validation guidance and ask whether a remote learning question is appropriate",
+                  "deliverable": "one question about permitted remote learning",
+                  "quote": "Biomedical imaging validation requires an on-site scanner and restricted hospital images; no remote dataset is offered.",
                   "supervisionQuestions": [
-                    "Is the public benchmark a useful starting point?"
+                    "Would this scope be useful, and what access is permitted?"
                   ]
                 }
               ],
@@ -1474,18 +1507,18 @@
     "plan": {
       "schemaVersion": "contribution-plan-v1",
       "mode": "possible_contribution",
-      "connection": "Biomedical imaging benchmark evaluation",
-      "deliverable": "a short reproducible comparison with limitations",
-      "question": "Would a small pilot of compare one public baseline on a small benchmark subset be a useful starting point?",
+      "connection": "On-site scanner validation",
+      "deliverable": "one question about permitted remote learning",
+      "question": "Would it be useful to explore a small pilot? A possible scope is to review public validation guidance and ask whether a remote learning question is appropriate.",
       "evidence": [
         {
           "url": "https://www.uta.edu/research/fixture-9",
-          "quote": "The project evaluates biomedical imaging methods using reproducible public benchmarks.",
+          "quote": "Biomedical imaging validation requires an on-site scanner and restricted hospital images; no remote dataset is offered.",
           "snapshotHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         }
       ],
       "unknowns": [
-        "Is the public benchmark a useful starting point?",
+        "Would this scope be useful, and what access is permitted?",
         "Participation and supervision are unconfirmed.",
         "Current member availability must be confirmed before promising work."
       ],
@@ -1494,7 +1527,7 @@
         {
           "dimension": "research",
           "state": "supported",
-          "reason": "Specific connection: Biomedical imaging benchmark evaluation"
+          "reason": "Specific connection: On-site scanner validation"
         },
         {
           "dimension": "participation",
@@ -1528,7 +1561,7 @@
     },
     "after": {
       "subject": "Feedback pilot — Biomedical imaging",
-      "body": "Hello Fixture research group 10,\n\nI’m Jordan Officer, an officer with Matrix Fellows, writing on behalf of Alex Example. They have shared an interest in Biomedical imaging.\n\nI noticed this description of your research: “The project evaluates biomedical imaging methods using reproducible public benchmarks.” (https://www.uta.edu/research/fixture-9).\n\nThey describe their contribution to Biomedical imaging work sample as: evaluated image metrics\nWork sample: https://github.com/example/work\n\nOne possible starting point is a short reproducible comparison with limitations. We would agree on scope and confirm participation before committing to work.\n\nWould a small pilot of compare one public baseline on a small benchmark subset be a useful starting point?\n\nThank you,\nJordan Officer",
+      "body": "Hello Fixture research group 10,\n\nI’m Jordan Officer, an officer with Matrix Fellows, writing on behalf of Alex Example. They have shared an interest in Biomedical imaging.\n\nI noticed this description of your research: “Biomedical imaging validation requires an on-site scanner and restricted hospital images; no remote dataset is offered.” (https://www.uta.edu/research/fixture-9).\n\nThey describe their contribution to Biomedical imaging work sample as: evaluated image metrics\nWork sample: https://github.com/example/work\n\nOne possible starting point is one question about permitted remote learning. We would agree on scope and confirm participation before committing to work.\n\nWould it be useful to explore a small pilot? A possible scope is to review public validation guidance and ask whether a remote learning question is appropriate.\n\nThank you,\nJordan Officer",
       "notices": [
         "Local draft uses a source-supported model contribution suggestion; the lab need and participation remain unconfirmed.",
         "Confirm every factual claim and resolve REVIEW placeholders before approval.",
@@ -1560,7 +1593,7 @@
           "evidence": [
             {
               "url": "https://www.uta.edu/research/fixture-10",
-              "quote": "The project evaluates astronomy methods using reproducible public benchmarks.",
+              "quote": "The astronomy group explains how public light curves reveal periodic signals.",
               "claim": "Research topic",
               "retrievedAt": "2026-10-09",
               "confidence": "verified"
@@ -1570,7 +1603,7 @@
             "pages": [
               {
                 "url": "https://www.uta.edu/research/fixture-10",
-                "text": "The project evaluates astronomy methods using reproducible public benchmarks.",
+                "text": "The astronomy group explains how public light curves reveal periodic signals.",
                 "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
               }
             ],
@@ -1580,12 +1613,12 @@
               ],
               "proposalOptions": [
                 {
-                  "title": "Astronomy benchmark evaluation",
-                  "task": "compare one public baseline on a small benchmark subset",
-                  "deliverable": "a short reproducible comparison with limitations",
-                  "quote": "The project evaluates astronomy methods using reproducible public benchmarks.",
+                  "title": "Light-curve periodicity",
+                  "task": "study the introductory light-curve example",
+                  "deliverable": "one question about periodicity",
+                  "quote": "The astronomy group explains how public light curves reveal periodic signals.",
                   "supervisionQuestions": [
-                    "Is the public benchmark a useful starting point?"
+                    "Would this scope be useful, and what access is permitted?"
                   ]
                 }
               ],
@@ -1626,18 +1659,18 @@
     "plan": {
       "schemaVersion": "contribution-plan-v1",
       "mode": "question",
-      "connection": "Astronomy benchmark evaluation",
+      "connection": "Light-curve periodicity",
       "deliverable": "",
-      "question": "Would learning more about Astronomy benchmark evaluation be a useful starting point?",
+      "question": "Which public paper or introductory resource would you recommend for understanding Light-curve periodicity?",
       "evidence": [
         {
           "url": "https://www.uta.edu/research/fixture-10",
-          "quote": "The project evaluates astronomy methods using reproducible public benchmarks.",
+          "quote": "The astronomy group explains how public light curves reveal periodic signals.",
           "snapshotHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         }
       ],
       "unknowns": [
-        "Is the public benchmark a useful starting point?",
+        "Would this scope be useful, and what access is permitted?",
         "Participation and supervision are unconfirmed.",
         "Current member availability must be confirmed before promising work."
       ],
@@ -1646,7 +1679,7 @@
         {
           "dimension": "research",
           "state": "supported",
-          "reason": "Specific connection: Astronomy benchmark evaluation"
+          "reason": "Specific connection: Light-curve periodicity"
         },
         {
           "dimension": "participation",
@@ -1680,7 +1713,7 @@
     },
     "after": {
       "subject": "Feedback pilot — Astronomy",
-      "body": "Hello Fixture research group 11,\n\nI’m Jordan Officer, an officer with Matrix Fellows, writing on behalf of Alex Example. They have shared an interest in Astronomy.\n\nI noticed this description of your research: “The project evaluates astronomy methods using reproducible public benchmarks.” (https://www.uta.edu/research/fixture-10).\n\nWould learning more about Astronomy benchmark evaluation be a useful starting point?\n\nThank you,\nJordan Officer",
+      "body": "Hello Fixture research group 11,\n\nI’m Jordan Officer, an officer with Matrix Fellows, writing on behalf of Alex Example. They have shared an interest in Astronomy.\n\nI noticed this description of your research: “The astronomy group explains how public light curves reveal periodic signals.” (https://www.uta.edu/research/fixture-10).\n\nWhich public paper or introductory resource would you recommend for understanding Light-curve periodicity?\n\nThank you,\nJordan Officer",
       "notices": [
         "Local draft uses a source-supported model contribution suggestion; the lab need and participation remain unconfirmed.",
         "Confirm every factual claim and resolve REVIEW placeholders before approval.",
@@ -1712,7 +1745,7 @@
           "evidence": [
             {
               "url": "https://www.uta.edu/research/fixture-11",
-              "quote": "The project evaluates robotics methods using reproducible public benchmarks.",
+              "quote": "The robotics project documents collision-detection error cases in an open simulator.",
               "claim": "Research topic",
               "retrievedAt": "2026-10-09",
               "confidence": "verified"
@@ -1722,7 +1755,7 @@
             "pages": [
               {
                 "url": "https://www.uta.edu/research/fixture-11",
-                "text": "The project evaluates robotics methods using reproducible public benchmarks.",
+                "text": "The robotics project documents collision-detection error cases in an open simulator.",
                 "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
               }
             ],
@@ -1732,12 +1765,12 @@
               ],
               "proposalOptions": [
                 {
-                  "title": "Robotics benchmark evaluation",
-                  "task": "compare one public baseline on a small benchmark subset",
-                  "deliverable": "a short reproducible comparison with limitations",
+                  "title": "Collision-detection errors",
+                  "task": "reproduce one public error case",
+                  "deliverable": "one reproducible simulator error report",
                   "quote": "Invented supporting excerpt absent from source",
                   "supervisionQuestions": [
-                    "Is the public benchmark a useful starting point?"
+                    "Would this scope be useful, and what access is permitted?"
                   ]
                 }
               ],
@@ -1790,7 +1823,7 @@
       "evidence": [
         {
           "url": "https://www.uta.edu/research/fixture-11",
-          "quote": "The project evaluates robotics methods using reproducible public benchmarks."
+          "quote": "The robotics project documents collision-detection error cases in an open simulator."
         }
       ],
       "unknowns": [
@@ -1836,7 +1869,7 @@
     },
     "after": {
       "subject": "Feedback pilot — Robotics",
-      "body": "Hello Fixture research group 12,\n\nI’m Jordan Officer, an officer with Matrix Fellows, writing on behalf of Alex Example. They have shared an interest in Robotics.\n\nI noticed this description of your research: “The project evaluates robotics methods using reproducible public benchmarks.” (https://www.uta.edu/research/fixture-11).\n\nThey describe their contribution to Robotics work sample as: tested a robot simulator\nWork sample: https://github.com/example/work\n\nIs there a public paper or introductory resource you would recommend for exploring Robotics?\n\nThank you,\nJordan Officer",
+      "body": "Hello Fixture research group 12,\n\nI’m Jordan Officer, an officer with Matrix Fellows, writing on behalf of Alex Example. They have shared an interest in Robotics.\n\nI noticed this description of your research: “The robotics project documents collision-detection error cases in an open simulator.” (https://www.uta.edu/research/fixture-11).\n\nThey describe their contribution to Robotics work sample as: tested a robot simulator\nWork sample: https://github.com/example/work\n\nIs there a public paper or introductory resource you would recommend for exploring Robotics?\n\nThank you,\nJordan Officer",
       "notices": [
         "Using local evidence-based drafting.",
         "Confirm every factual claim and resolve REVIEW placeholders before approval.",

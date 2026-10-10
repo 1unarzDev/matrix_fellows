@@ -33,6 +33,11 @@ export default defineEventHandler(async (event) => {
     sourceQuery.range(sourceOffset, sourceOffset + limit - 1),
     jobQuery.range(jobOffset, jobOffset + limit - 1),
   ])
+  const [usage,stages,coverage] = await Promise.all([
+    db.from('research_resource_usage').select('*').eq('day',new Date().toISOString().slice(0,10)).maybeSingle(),
+    db.from('research_stage_runs').select('stage,status,created_at,error').order('created_at',{ascending:false}).limit(60),
+    db.from('outreach_sources').select('id,enabled').limit(500),
+  ])
   const config = workspaceResult(settings)
   return {
     settings: config,
@@ -46,6 +51,10 @@ export default defineEventHandler(async (event) => {
       jobTotal: jobs.count,
     },
     health: {
+      usage:workspaceResult(usage),
+      stages:workspaceResult(stages),
+      coverage:workspaceResult(coverage),
+      coveragePartial:(coverage.data?.length || 0)>=500,
       note: 'Scheduling also requires the separately deployed outreach worker. Database controls cannot enable provider credentials or override its deployment safety switches.',
     },
   }

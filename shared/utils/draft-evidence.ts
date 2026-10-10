@@ -7,5 +7,5 @@ export function pruneRemovedDraftEvidence(previousBody:string,nextBody:string,cl
   const statement=plan?.memberClaims?.find((c:any)=>c.id===id)?.statement
   return mapped.length>0 && mapped.every(s=>s.sentence && previousBody.includes(s.sentence) && !nextBody.includes(s.sentence)) && (!statement || !nextBody.includes(statement))
  }))
- return {evidence_claim_ids:claimIds.filter(id=>!removed.has(id)),proposal_plan:{...plan,memberClaims:(plan?.memberClaims || []).filter((c:any)=>!removed.has(c.id)),sentenceSupports:supports.filter(s=>nextBody.includes(s.sentence)).map(s=>({...s,claimIds:s.claimIds.filter(id=>!removed.has(id))}))}}
+ return {evidence_claim_ids:claimIds.filter(id=>!removed.has(id)),proposal_plan:{...plan,memberClaims:(plan?.memberClaims || []).filter((c:any)=>!removed.has(c.id)),sentenceSupports:supports.map(s=>({...s,claimIds:s.claimIds.filter(id=>!removed.has(id))}))}}
 }

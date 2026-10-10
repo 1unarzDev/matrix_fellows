@@ -19,7 +19,7 @@ beforeAll(async () => {
     '20261009172000_officer_relationships.sql',
     '20261010015431_research_execution.sql',
     '20261010020426_research_evidence_approval_guard.sql',
-    '20261010020659_research_matches_and_projection_guards.sql','20261010023000_research_preferences.sql',
+    '20261010020659_research_matches_and_projection_guards.sql','20261010023000_research_preferences.sql','20261010024500_relationship_alias_duplicate_guard.sql',
   ])
     await db.exec(
       await readFile(new URL('../../supabase/migrations/' + f, import.meta.url), 'utf8'),
@@ -135,6 +135,12 @@ it('permits an owned explicit follow-up while rejecting competing cold outreach 
       [cold.id, 'f'.repeat(64), b],
     ),
   ).rejects.toThrow(/conversation already exists/)
+  const aliasTarget:any=(await db.query("insert into outreach_targets(name,kind,canonical_url,status,contact_email)values('Changed URL lab','lab','https://uta.edu/changed-lab','ready','changed@example.com')returning id")).rows[0]
+  await db.query("insert into outreach_relationship_aliases(relationship_id,identity_key)values($1,'https://uta.edu/changed-lab'),($1,'changed@example.com')",[old.relationship_id])
+  for(const supplied of [null,old.relationship_id]) {
+    const aliasCold:any=(await db.query("insert into outreach_proposals(target_id,kind,recipient,subject,body,created_by,mailbox_id,relationship_id)values($1,'society','changed@example.com','Cold','Alias approach',$2,$3,$4)returning id",[aliasTarget.id,b,mailbox.id,supplied])).rows[0]
+    await expect(db.query("select outreach_approve_email($1,1,$2,$3,'changed@example.com','Cold','Alias approach','b@example.com')",[aliasCold.id,'a'.repeat(64),b])).rejects.toThrow(/conversation already exists/)
+  }
   await db.query("update outreach_proposals set message_kind='follow_up' where id=$1", [cold.id])
   await expect(
     db.query(

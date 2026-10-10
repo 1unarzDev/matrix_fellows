@@ -161,7 +161,7 @@ async function saveAccessPreferences() {
 }
 onMounted(async()=> {
  try { const preference=await $fetch<{lens:'nearby'|'remote'|'travel';reachableLocations:string[]}>('/api/workspace/research-profile/preferences');lens.value=preference.lens;reachableLocations.value=preference.reachableLocations.join(', ') } catch {}
- if(canDiscover.value) { try { const roster=await $fetch<{officers:{id:string;label:string}[]}>('/api/workspace/officers');officers.value=roster.officers } catch {} }
+ if(canDiscover.value) { try { const roster=await $fetch<{officers:{id:string;label:string}[]}>('/api/workspace/officers');officers.value=roster.officers || [] } catch {} }
 })
 const unsaved = computed(() =>
   Boolean(
@@ -2223,13 +2223,17 @@ onMounted(async () => {
               </article>
               <article class="ws-panel">
                 <h3>Recent jobs</h3>
+                <p class="ws-muted">{{ research.health?.stages?.filter((s:any)=>s.status==='waiting_quota').length || 0 }} recent stages waiting for quota. Completed evidence is reused on retry.</p>
+                <p v-if="research.health?.usage" class="ws-muted">Today's reserved usage: {{ research.health.usage.source_requests }} source requests, {{ research.health.usage.source_bytes }} bytes, {{ research.health.usage.model_requests }} model requests and {{ research.health.usage.model_tokens }} tokens. Reservations include unknown-cost interrupted calls.</p>
+                <p class="ws-muted">{{ research.health?.coverage?.filter((s:any)=>s.enabled).length || 0 }} enabled sources in the displayed coverage inventory{{ research.health?.coveragePartial ? ' (partial)' : '' }}. Coverage is bounded; current openings still require review.</p>
                 <div v-for="job in research.jobs" :key="job.id" class="job-row">
                   <div>
                     <strong>{{ job.kind || 'Discovery' }}</strong
                     ><small>{{ job.created_at || job.createdAt }}</small>
                     <p v-if="job.error" class="ws-muted">{{ job.error }}</p>
                   </div>
-                  <span class="ws-chip">{{ job.status }}</span>
+                  <span class="ws-chip">{{ job.failure_kind === 'quota_wait' ? 'Waiting for quota' : job.status }}</span>
+                  <button v-if="data.member.role === 'admin' && job.status === 'failed'" class="ws-button" :disabled="researchBusy" @click="mutate('/research','POST',{action:'retry',jobId:job.id},'Stage retry queued.'); loadResearch()">Retry stage</button>
                 </div>
                 <div v-if="research.pagination" class="ws-actions">
                   <button class="ws-button" :disabled="jobOffset === 0" @click="jobOffset = Math.max(0, jobOffset - 40); loadResearch()">Previous jobs</button>

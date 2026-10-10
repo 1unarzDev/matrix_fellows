@@ -25,7 +25,7 @@ export default defineEventHandler(async event => {
   const subjectId = packet?.subjectUserId || actor.userId
   const preference = workspaceResult(await db.from('research_preferences').select('lens,reachable_locations').eq('user_id',subjectId).maybeSingle())
   const preferences = {lens:preference?.lens || 'nearby',reachableLocations:preference?.reachable_locations || ['Arlington'],interests:packet?.declaredInterests || []}
-  const ranked = targets.map(row=>({target:targetFromRow(row),fit:explainResearchFit(targetFromRow(row),preferences),overlap:stableResearchTopics(row.disciplines || []).filter(t=>topics.has(t)).length}))
+  const ranked = targets.map(row=>({target:targetFromRow(row),fit:explainResearchFit(targetFromRow(row),preferences),overlap:stableResearchTopics(row.discipline || []).filter(t=>topics.has(t)).length}))
     .filter(item=>item.fit.access!=='outside-preference')
     .sort((a,b)=>b.overlap-a.overlap || Number(a.fit.access==='unconfirmed')-Number(b.fit.access==='unconfirmed')).slice(0,5)
   const items=[]

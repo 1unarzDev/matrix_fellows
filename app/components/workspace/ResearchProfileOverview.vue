@@ -8,12 +8,12 @@ const busy = ref(false), message = ref('')
 const editingId = ref(''), editedStatement = ref('')
 let timer: ReturnType<typeof setTimeout> | undefined
 async function poll() {
-  if (data.value?.artifacts.some(a => ['pending', 'processing'].includes(a.state))) {
+  if (data.value?.artifacts.some(a => ['pending', 'processing'].includes(a.state) && a.error_code !== 'quota_waiting')) {
     await refresh()
     timer = setTimeout(poll, 3000)
   }
 }
-watch(() => data.value?.artifacts.some(a => ['pending', 'processing'].includes(a.state)), pending => { if (timer) clearTimeout(timer); if (pending) timer = setTimeout(poll, 3000) }, { immediate: true })
+watch(() => data.value?.artifacts.some(a => ['pending', 'processing'].includes(a.state) && a.error_code !== 'quota_waiting'), pending => { if (timer) clearTimeout(timer); if (pending) timer = setTimeout(poll, 3000) }, { immediate: true })
 onBeforeUnmount(() => { if (timer) clearTimeout(timer) })
 async function add() {
   busy.value = true; message.value = ''
@@ -42,7 +42,7 @@ async function retry(id: string) { busy.value = true; try { await $fetch('/api/w
       <button :disabled="busy || !url" type="submit">{{ busy ? 'Saving…' : 'Add research link' }}</button>
     </form>
     <p role="status">{{ message }}</p>
-    <ul v-if="data?.artifacts.length"><li v-for="artifact in data.artifacts" :key="artifact.id"><a :href="artifact.canonical_url" target="_blank" rel="noopener noreferrer">{{ artifact.canonical_url }}</a><p>{{ artifact.summary || 'Processing source metadata…' }}</p><small>{{ artifact.state }} · {{ artifact.relationship === 'interest' ? 'Interest only' : 'Contribution self-reported' }}</small><button v-if="artifact.state === 'failed'" :disabled="busy" @click="retry(artifact.id)">Retry acquisition</button></li></ul>
+    <ul v-if="data?.artifacts.length"><li v-for="artifact in data.artifacts" :key="artifact.id"><a :href="artifact.canonical_url" target="_blank" rel="noopener noreferrer">{{ artifact.canonical_url }}</a><p>{{ artifact.summary || 'Processing source metadata…' }}</p><small>{{ artifact.state }} · {{ artifact.relationship === 'interest' ? 'Interest only' : 'Contribution self-reported' }}</small><button v-if="(artifact.state === 'failed' && artifact.error_code !== 'attempts_exhausted') || artifact.error_code === 'quota_waiting'" :disabled="busy" @click="retry(artifact.id)">Retry acquisition</button></li></ul>
     <div v-for="claim in data?.claims.filter(c => !c.withdrawn_at && c.predicate === 'contribution')" :key="claim.id" class="research-claim"><p>{{ claim.statement }}</p><small>{{ claim.support_state === 'self_reported' ? 'Self-reported contribution' : claim.support_state }}</small><form v-if="editingId === claim.id" @submit.prevent="correct(claim, 'edit')"><label>Edit your contribution<textarea v-model="editedStatement" maxlength="1500" required /></label><button :disabled="busy">Save correction</button><button type="button" @click="editingId = ''">Cancel</button></form><div><button :disabled="busy" @click="editingId = claim.id; editedStatement = claim.statement">Edit</button><button :disabled="busy" @click="correct(claim, 'interest')">Only an interest</button><button :disabled="busy" @click="correct(claim, 'wrong_attribution')">Wrong attribution</button><button :disabled="busy" @click="correct(claim, claim.sharing_scope === 'officer' ? 'exclude' : 'share')">{{ claim.sharing_scope === 'officer' ? 'Exclude from society proposals' : 'Share with officers for proposals' }}</button></div></div>
     <p class="research-status">{{ data?.providerStatus }}</p>
     <p v-if="!data?.artifacts.length">No work sample is required. Your interests can support a thoughtful learning or feedback inquiry.</p>

@@ -108,3 +108,24 @@ it('links only still-active member contribution claims to acquired shared projec
  const contribution=(await db.query<any>("select project_id,origin,support_state,adoption from research_claims where artifact_id=$1 and predicate='contribution'",[aid])).rows[0]
  expect(contribution.project_id).toBeTruthy();expect(contribution).toMatchObject({origin:'member',support_state:'self_reported',adoption:'accepted'})
 })
+it('interrupted final attempts become an honest failure rather than a stranded processing state',async()=>{
+ const profile=(await db.query<any>('select primary_profile_id from outreach_members where user_id=$1',[member])).rows[0].primary_profile_id
+ const aid=(await db.query<any>("select research_add_artifact($1,$2,'https://github.com/test/interrupted','repository','interest','') id",[member,profile])).rows[0].id
+ await db.query("update research_artifacts set state='processing',attempts=3,lease_expires_at=now()-interval '1 minute'where id=$1",[aid])
+ expect((await db.query<any>('select research_claim_artifact($1,$2) claim',[member,aid])).rows[0].claim).toBeNull()
+ expect((await db.query<any>('select state,error_code from research_artifacts where id=$1',[aid])).rows[0]).toEqual({state:'failed',error_code:'attempts_exhausted'})
+})
+it('privacy withdrawal succeeds while an already submitted immutable outcome remains uncertain',async()=>{
+ await db.query("update outreach_members set role='officer'where user_id=$1",[member])
+ const profile=(await db.query<any>('select primary_profile_id from outreach_members where user_id=$1',[member])).rows[0].primary_profile_id
+ await db.query('update outreach_profiles set consent_to_share=true where id=$1',[profile])
+ const claim=(await db.query<any>("insert into research_claims(profile_id,owner_id,statement,predicate,origin,support_state,adoption,sharing_scope)values($1,$2,'I contributed tests','contribution','member','self_reported','accepted','officer')returning id",[profile,member])).rows[0].id
+ const target=(await db.query<any>("insert into outreach_targets(name,kind,canonical_url,status,contact_email)values('Lab','lab','https://uta.edu/privacy','ready','pi@example.com')returning id")).rows[0].id
+ const mailbox=(await db.query<any>("insert into outreach_mailboxes(owner_id,email)values($1,'member@example.com')returning id",[member])).rows[0].id
+ const proposal=(await db.query<any>("insert into outreach_proposals(target_id,profile_id,kind,recipient,subject,body,mailbox_id,created_by,evidence_claim_ids)values($1,$2,'student','pi@example.com','Subject','Body',$3,$4,array[$5::uuid])returning id",[target,profile,mailbox,member,claim])).rows[0].id
+ await db.query("update outreach_proposals set status='approved',approved_by=$1,approved_revision=1,approved_fingerprint='hash'where id=$2",[member,proposal])
+ await db.query("insert into outreach_outbox(proposal_id,revision,fingerprint,mailbox_id,status,created_by)values($1,1,'hash',$2,'uncertain',$3)",[proposal,mailbox,member])
+ await expect(db.query('update outreach_profiles set consent_to_share=false where id=$1',[profile])).resolves.toBeTruthy()
+ expect((await db.query<any>('select withdrawn_at,sharing_scope from research_claims where id=$1',[claim])).rows[0].withdrawn_at).toBeTruthy()
+ expect((await db.query<any>('select status from outreach_outbox where proposal_id=$1',[proposal])).rows[0].status).toBe('uncertain')
+})

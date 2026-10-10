@@ -11,7 +11,7 @@ export function classifyResearchLink(input: string) {
   }
   if (host === 'doi.org' && /^\/10\.\d{4,9}\/.+/.test(url.pathname)) { url.search = ''; return { url: url.href, kind: 'publication' as const } }
   // Institutional projects have an explicit adapter; arbitrary links are saved references.
-  return { url: url.href, kind: /(^|\.)(uta|utdallas|utsouthwestern|unt|tcu|smu)\.edu$/.test(host) ? 'page' as const : 'reference' as const }
+  return { url: url.href, kind: ['uta.edu', 'www.uta.edu', 'utdallas.edu', 'www.utdallas.edu', 'utsouthwestern.edu', 'www.utsouthwestern.edu', 'unt.edu', 'www.unt.edu', 'tcu.edu', 'www.tcu.edu', 'smu.edu', 'www.smu.edu'].includes(host) ? 'page' as const : 'reference' as const }
 }
 async function boundedRequest(url: string, fetcher: typeof fetch) {
   const response = await fetcher(url, { redirect: 'error', headers: { Accept: 'application/json,text/html', 'User-Agent': 'MatrixFellows-Research/1.0' }, signal: AbortSignal.timeout(8000) })

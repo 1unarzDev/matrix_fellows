@@ -85,15 +85,16 @@ create function public.research_claim_artifact(p_user_id uuid,p_artifact_id uuid
 declare a public.research_artifacts;used integer;cost integer;begin
  perform 1 from public.outreach_members where user_id=p_user_id and enabled for update;if not found then raise exception 'Enabled membership required';end if;
  select * into a from public.research_artifacts where id=p_artifact_id and owner_id=p_user_id for update;
+ if found and a.attempts>=3 and (a.state='failed' or (a.state='processing' and a.lease_expires_at<=now()))then update public.research_artifacts set state='failed',error_code='attempts_exhausted',summary='Acquisition attempt limit reached. The saved reference and your contribution remain available.'where id=a.id;return null;end if;
  if not found or a.attempts>=3 or a.state not in('pending','failed','processing') or (a.state='processing' and a.lease_expires_at>now())then return null;end if;
  if a.kind<>'reference' then
   insert into public.research_acquisition_usage(owner_id,usage_day)values(p_user_id,current_date)on conflict do nothing;
   select requests into used from public.research_acquisition_usage where owner_id=p_user_id and usage_day=current_date for update;
   cost:=case when a.kind='repository' then 2 else 1 end;
-  if used+cost>25 then return jsonb_build_object('quotaWaiting',true);end if;
+  if used+cost>25 then update public.research_artifacts set state='pending',error_code='quota_waiting',summary='Waiting for daily source quota; retry after UTC midnight.'where id=a.id;return jsonb_build_object('quotaWaiting',true);end if;
   update public.research_acquisition_usage set requests=requests+cost where owner_id=p_user_id and usage_day=current_date;
  end if;
- update public.research_artifacts set state='processing',claim_token=gen_random_uuid(),lease_expires_at=now()+interval '1 minute',attempts=attempts+1,updated_at=now()where id=a.id returning * into a;
+ update public.research_artifacts set state='processing',error_code=null,claim_token=gen_random_uuid(),lease_expires_at=now()+interval '1 minute',attempts=attempts+1,updated_at=now()where id=a.id returning * into a;
  return to_jsonb(a);
 end$$;
 create function public.research_complete_artifact(p_user_id uuid,p_artifact_id uuid,p_token uuid,p_result jsonb)returns boolean language plpgsql set search_path='' as $$

@@ -16,6 +16,7 @@ beforeAll(async () => {
     '20261009170000_research_profiles.sql',
     '20261009172000_officer_relationships.sql',
     '20261010015431_research_execution.sql',
+    '20261010020426_research_evidence_approval_guard.sql',
   ])
     await db.exec(
       await readFile(new URL('../../supabase/migrations/' + name, import.meta.url), 'utf8'),

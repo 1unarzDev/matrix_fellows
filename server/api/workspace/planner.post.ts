@@ -26,6 +26,7 @@ export default defineEventHandler(async (event) => {
         kind: z.enum(['society', 'student']),
         relationshipId: z.string().uuid().nullable().optional(),
         messageKind: z.enum(['cold', 'follow_up']).default('cold'),
+        contributionOption: z.number().int().min(0).max(10).optional(),
         style: z.enum(proposalStyles).default('conversation'),
       })
       .strict(),
@@ -120,7 +121,7 @@ export default defineEventHandler(async (event) => {
       notes: '',
     } as unknown as OutreachProfile
   }
-  const plan = buildContributionPlan(target, profile)
+  const plan = buildContributionPlan(target, profile, input.contributionOption)
   const draft = tailorOutreachDraft({
     plan,
     target,

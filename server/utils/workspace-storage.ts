@@ -128,6 +128,11 @@ export function proposalFromRow(row: any): OutreachProposal {
   return {
     id: row.id,
     targetId: row.target_id,
+    authorId: row.created_by,
+    ownerId: row.current_owner_id,
+    relationshipId: row.relationship_id,
+    messageKind: row.message_kind,
+    proposalPlan: row.proposal_plan,
     profileId: row.profile_id,
     kind: row.kind,
     recipient: row.recipient,

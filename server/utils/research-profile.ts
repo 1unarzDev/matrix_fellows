@@ -36,3 +36,24 @@ export async function shareableResearchProfile(event: H3Event, profileId: string
   const versionId = existing?.id || workspaceResult(await db.from('research_profile_versions').insert({ profile_id: profileId, owner_id: packet.subjectUserId, projection_kind: 'officer', input_hash: inputHash, claim_ids: packet.claims.map(c => c.id), packet }).select('id').single()).id
   return { ...packet, versionId }
 }
+
+/** Local allowlisted draft projection; contribution and project attribution stay explicit. */
+export async function draftProfileProjection(event: H3Event, packet: ResearchProfilePacket, projectId?: string) {
+  const db = workspaceStorage(event)
+  const contributions = packet.claims.length ? workspaceResult(await db.from('research_claims')
+    .select('id,statement,artifact_id,project_id').in('id', packet.claims.map(c => c.id))
+    .eq('predicate', 'contribution').in('support_state', ['supported','self_reported'])) : []
+  const selected = projectId ? contributions.filter(c => c.project_id === projectId) : contributions
+  const artifactIds = selected.flatMap(c => c.artifact_id ? [c.artifact_id] : [])
+  const artifacts = artifactIds.length ? workspaceResult(await db.from('research_artifacts')
+    .select('id,canonical_url,summary,project_id').in('id', artifactIds)) : []
+  return {
+    id: packet.profileId, fullName: packet.displayName, interests: packet.declaredInterests,
+    goals: packet.goals, availability: packet.availability, location: packet.location,
+    consentToShare: true, skills: [], updatedAt: '',
+    workSamples: selected.flatMap(c => {
+      const artifact = artifacts.find(a => a.id === c.artifact_id)
+      return artifact ? [{ title: artifact.summary || 'Shared research work', url: artifact.canonical_url, contribution: c.statement }] : []
+    }),
+  }
+}

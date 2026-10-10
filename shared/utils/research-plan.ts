@@ -75,7 +75,7 @@ export function buildContributionPlan(
     connection: selected?.title || target.disciplines[0] || 'your current research',
     deliverable: selected && demonstrated ? selected.deliverable : '',
     question: selected
-      ? `Would ${demonstrated ? `a small pilot of ${selected.task}` : `learning more about ${selected.title}`} be a useful starting point?`
+      ? `${demonstrated ? `Would it be useful to explore a small pilot? A possible scope is to ${selected.task.charAt(0).toLowerCase() + selected.task.slice(1)}.` : `Which public paper or introductory resource would you recommend for understanding ${selected.title}?`}`
       : `Is there a public paper or introductory resource you would recommend for exploring ${target.disciplines[0] || 'this research direction'}?`,
     evidence:
       page && selected

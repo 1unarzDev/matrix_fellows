@@ -84,3 +84,18 @@ it('stage results and quota totals are inaccessible to members and mutation RPCs
   await expect(reserve('forged', 'private')).rejects.toThrow('permission denied')
   await db.exec('reset role')
 })
+it('bounds queued refresh jobs without charging idempotent duplicate work', async () => {
+  await db.exec('update outreach_settings set job_queue_limit=2')
+  await db.exec(
+    "insert into outreach_jobs(work_key,kind,source_id)values('second','discover','source')",
+  )
+  await expect(
+    db.exec(
+      "insert into outreach_jobs(work_key,kind,source_id)values('third','discover','source')",
+    ),
+  ).rejects.toThrow('capacity')
+  await db.exec(
+    "insert into outreach_jobs(work_key,kind,source_id)values('second','discover','source') on conflict(work_key) do nothing",
+  )
+  expect((await db.query('select id from outreach_jobs')).rows).toHaveLength(2)
+})

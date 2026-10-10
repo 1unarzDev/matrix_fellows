@@ -51,6 +51,7 @@ begin
  select * into u from research_resource_usage where day=(now() at time zone 'UTC')::date for update;
  if u.source_requests+sr>cfg.source_request_limit or u.source_bytes+sb>cfg.source_byte_limit or u.model_requests+mr>cfg.model_request_limit or u.model_tokens+mt>cfg.model_token_limit then raise exception 'Research resource budget exhausted';end if;
  update research_resource_usage set source_requests=source_requests+sr,source_bytes=source_bytes+sb,model_requests=model_requests+mr,model_tokens=model_tokens+mt,updated_at=now() where day=u.day;
+ update research_stage_runs set status='submission_unknown',error='Prior claim ended before durable stage completion; reservation retained' where job_id=p_job and stage=p_stage and input_key=p_input_key and status='running' and claim_token<>p_claim;
  insert into research_stage_runs(job_id,stage,input_key,dependency_ids,metadata,attempt,claim_token,status,reservation) values(p_job,left(p_stage,120),left(p_input_key,300),p_dependencies,p_metadata,j.attempts,p_claim,'running',jsonb_build_object('sourceRequests',sr,'sourceBytes',sb,'modelRequests',mr,'modelTokens',mt)) returning * into r;
  return jsonb_build_object('cached',false,'id',r.id,'resumed',false);
 end $$;
@@ -59,6 +60,7 @@ returns boolean language plpgsql security definer set search_path=public as $$
 begin
  perform 1 from outreach_jobs where id=p_job and claim_token=p_claim and status='running' and lease_until>now() for update;
  if not found or (select paused from outreach_settings where id=true) then return false;end if;
+ if exists(select 1 from outreach_jobs j join outreach_sources s on s.id=j.source_id where j.id=p_job and not s.enabled) or exists(select 1 from outreach_jobs j join outreach_targets t on t.id=j.target_id where j.id=p_job and (t.status in ('deferred','rejected','contacted') or exists(select 1 from outreach_suppressions x where x.canonical_url=t.canonical_url))) then return false;end if;
  update research_stage_runs set status=case when p_error is null then 'completed' else 'failed' end,result=p_result,error=left(p_error,500),usage=p_usage,completed_at=now() where id=p_id and job_id=p_job and claim_token=p_claim and status='running';
  return found;
 end $$;
@@ -76,3 +78,15 @@ revoke all on public.outreach_matches from public,anon,authenticated;
 grant all on public.outreach_matches to service_role;
 grant select on public.outreach_matches to authenticated;
 create policy match_owner_read on public.outreach_matches for select to authenticated using(created_by=(select auth.uid()) and public.outreach_is_officer());
+
+-- Bound all waiting work, including repeated manual refreshes.
+alter table public.outreach_settings add column job_queue_limit integer not null default 60 check(job_queue_limit between 2 and 300);
+create function public.outreach_job_queue_guard() returns trigger language plpgsql set search_path=public as $$
+declare cfg outreach_settings;
+begin
+ if TG_OP='UPDATE' or new.status not in ('queued','running') or exists(select 1 from outreach_jobs where work_key=new.work_key) then return new;end if;
+ select * into cfg from outreach_settings where id=true for update;
+ if (select count(*) from outreach_jobs where status in ('queued','running'))>=cfg.job_queue_limit then raise exception 'Research job queue capacity exhausted';end if;
+ return new;
+end $$;
+create trigger outreach_jobs_queue_capacity before insert on public.outreach_jobs for each row execute function public.outreach_job_queue_guard();

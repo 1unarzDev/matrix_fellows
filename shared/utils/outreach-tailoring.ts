@@ -141,7 +141,9 @@ ${accomplishments[0].item.url}`
       introduction,
       observation,
       relevant,
-      achievement ? `${achievement.description}\n${achievement.url}` : '',
+      achievement
+        ? `They report this past result: ${achievement.description}\n${achievement.url}`
+        : '',
       offer,
       ask,
       `Thank you,\n${input.senderName || '[REVIEW: officer name]'}`,

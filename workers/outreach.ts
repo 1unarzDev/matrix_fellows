@@ -121,7 +121,16 @@ export class OutreachResearchWorkflow extends WorkflowEntrypoint<Env, { job: Res
       resource: 'source' | 'model' | 'local',
       execute: () => Promise<T>,
     ): Promise<T> => {
-      await currentContext()
+      const permission = await currentContext()
+      if (
+        resource === 'model' &&
+        (!permission.settings.ai_enabled ||
+          !permission.settings.terms_confirmed ||
+          !permission.source.ai_reviewed ||
+          permission.source.ai_snapshot_hash !== inputKey.split(':')[0] ||
+          (await hashKey(permission.source.ai_excerpt)) !== inputKey.split(':')[1])
+      )
+        throw new Error('Source model permission changed')
       const reserved = await db.rpc('outreach_reserve_stage', {
         p_job: job.id,
         p_claim: job.claim_token,
@@ -150,7 +159,16 @@ export class OutreachResearchWorkflow extends WorkflowEntrypoint<Env, { job: Res
         throw new Error('Interrupted research stage requires bounded job retry')
       try {
         const value = await execute()
-        await currentContext()
+        const permission = await currentContext()
+        if (
+          resource === 'model' &&
+          (!permission.settings.ai_enabled ||
+            !permission.settings.terms_confirmed ||
+            !permission.source.ai_reviewed ||
+            permission.source.ai_snapshot_hash !== inputKey.split(':')[0] ||
+            (await hashKey(permission.source.ai_excerpt)) !== inputKey.split(':')[1])
+        )
+          throw new Error('Source model permission changed')
         const saved = await db.rpc('outreach_finish_stage', {
           p_id: reserved.data.id,
           p_job: job.id,

@@ -12,3 +12,5 @@ The maintenance workflow is bounded and reviewable:
 Raw source text and derived entries remain service-role records. The officer API returns source metadata and derived context only; it does not return pasted email or note text. The worker can process this queue while opportunity discovery is paused, so a paused discovery schedule does not stall society memory maintenance.
 
 The current local processor is intentionally modest. It recognizes common DFW and Stanford organization names, explicit email headers, ISO dates, and public project links. Unsupported binary files remain honest metadata until a bounded parser is configured. Automatic mailbox reading and reply synchronization remain disconnected.
+
+Deploy migration `20261010110000_society_context_cloud.sql` before enabling the Society tab in a shared environment. Pause or drain the outreach worker during the migration, verify the three new tables and queue functions exist, then deploy the Nuxt application and outreach Worker. The migration is additive and does not rewrite historical relationship or mail records.

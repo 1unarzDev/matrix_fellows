@@ -11,14 +11,20 @@ const target = '33333333-3333-4333-8333-333333333333',
 beforeAll(async () => {
   db = new PGlite()
   await db.exec(
-    `create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create table auth.users(id uuid primary key);create function auth.uid() returns uuid language sql as $$select null::uuid$$;insert into auth.users values('${user}'),('${other}');`,
+    `create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz);create function auth.uid() returns uuid language sql as $$select null::uuid$$;insert into auth.users(id) values('${user}'),('${other}');`,
   )
-  for (const file of ['023_outreach_workspace.sql', '024_outreach_mail.sql'])
+  for (const file of [
+    '023_outreach_workspace.sql',
+    '024_outreach_mail.sql',
+    '028_member_dashboard.sql',
+    '20261008005351_dashboard_canonical_plan.sql',
+    '20261009172000_officer_relationships.sql',
+  ])
     await db.exec(
       await readFile(new URL(`../../supabase/migrations/${file}`, import.meta.url), 'utf8'),
     )
   await db.exec(
-    `insert into outreach_members(user_id,email) values('${user}','officer@example.com');insert into outreach_targets(id,name,kind,canonical_url,status,contact_email) values('${target}','Professor','pi','https://example.edu/lab','ready','researcher@example.edu');insert into outreach_mailboxes(id,owner_id,email) values('${mailbox}','${user}','officer@example.com');insert into outreach_proposals(id,target_id,kind,recipient,subject,body,mailbox_id) values('${proposal}','${target}','society','researcher@example.edu','Subject','Body','${mailbox}');`,
+    `insert into outreach_members(user_id,email,role) values('${user}','officer@example.com','officer');insert into outreach_targets(id,name,kind,canonical_url,status,contact_email) values('${target}','Professor','pi','https://example.edu/lab','ready','researcher@example.edu');insert into outreach_mailboxes(id,owner_id,email) values('${mailbox}','${user}','officer@example.com');insert into outreach_proposals(id,target_id,kind,recipient,subject,body,mailbox_id,created_by) values('${proposal}','${target}','society','researcher@example.edu','Subject','Body','${mailbox}','${user}');`,
   )
 })
 afterAll(async () => {
@@ -44,7 +50,7 @@ it('invalidates target-context approvals while allowing independent acquisition 
     [targetId],
   )
   await db.query(
-    "insert into outreach_proposals(id,target_id,kind,recipient,subject,body,mailbox_id) values($1,$2,'society','context@example.edu','Context subject','Context body',$3)",
+    "insert into outreach_proposals(id,target_id,kind,recipient,subject,body,mailbox_id,created_by) values($1,$2,'society','context@example.edu','Context subject','Context body',$3,'11111111-1111-4111-8111-111111111111')",
     [proposalId, targetId, mailbox],
   )
   await db.query(
@@ -143,7 +149,7 @@ it('blocks parallel approaches to the same contact and review placeholders', asy
   await approve()
   const next = '66666666-6666-4666-8666-666666666666'
   await db.exec(
-    `insert into outreach_proposals(id,target_id,kind,recipient,subject,body,mailbox_id) values('${next}','${target}','society','researcher@example.edu','Subject','Body','${mailbox}')`,
+    `insert into outreach_proposals(id,target_id,kind,recipient,subject,body,mailbox_id,created_by) values('${next}','${target}','society','researcher@example.edu','Subject','Body','${mailbox}','${user}')`,
   )
   await expect(
     db.query(

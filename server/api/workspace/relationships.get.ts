@@ -1,58 +1,77 @@
-import { requireWorkspaceMember } from '../../utils/workspace-auth'
+import { requireWorkspaceOfficer } from '../../utils/workspace-auth'
 import { workspaceResult, workspaceStorage } from '../../utils/workspace-storage'
-
-/** Coordination metadata only; never disclose other members' draft/reply bodies. */
+/** Shared coordination metadata, never unrelated private correspondence. */
 export default defineEventHandler(async (event) => {
-  const member = await requireWorkspaceMember(event)
+  setHeader(event, 'Cache-Control', 'no-store')
+  const actor = await requireWorkspaceOfficer(event)
   const db = workspaceStorage(event)
-  let assigned =
-    member.role === 'member'
-      ? workspaceResult(
-          await db.from('outreach_assignments').select('target_id').eq('user_id', member.userId),
-        ).map((r) => r.target_id)
-      : null
-  if (assigned?.length) {
-    const checks = await Promise.all(
-      assigned.map(async (id) => {
-        const result = await db.rpc('outreach_member_target_access', {
-          p_user_id: member.userId,
-          p_target_id: id,
-        })
-        return !result.error && result.data ? id : null
-      }),
+  const queryInput = getQuery(event)
+  const page = Math.max(0, Number(getQuery(event).page) || 0)
+  let query = db
+    .from('outreach_relationships')
+    .select('*')
+    .order('updated_at', { ascending: false })
+  if (typeof queryInput.targetId === 'string') {
+    const target = workspaceResult(
+      await db
+        .from('outreach_targets')
+        .select('canonical_url,contact_email,dossier')
+        .eq('id', queryInput.targetId)
+        .maybeSingle(),
     )
-    assigned = checks.filter((id): id is string => Boolean(id))
-  }
-  if (assigned && !assigned.length) return { items: [], replyReading: false }
-  let query = db.from('outreach_proposals').select('id,target_id,created_by').limit(500)
-  if (assigned) query = query.in('target_id', assigned)
-  const proposals = workspaceResult(await query)
-  if (!proposals.length) return { items: [], replyReading: false }
-  const rows = workspaceResult(
-    await db
-      .from('outreach_outbox')
-      .select('proposal_id,status,created_by,updated_at')
-      .in(
-        'proposal_id',
-        proposals.map((p) => p.id),
+    if (target) {
+      const aliases = workspaceResult(
+        await db
+          .from('outreach_relationship_aliases')
+          .select('relationship_id')
+          .in(
+            'identity_key',
+            [
+              target.canonical_url,
+              target.dossier?.labUrl,
+              target.contact_email?.toLowerCase(),
+            ].filter(Boolean),
+          ),
       )
-      .in('status', ['queued', 'sending', 'sent', 'uncertain'])
-      .limit(500),
-  )
-  if (!rows.length) return { items: [], replyReading: false }
-  const owners = workspaceResult(
-    await db
-      .from('outreach_members')
-      .select('user_id,email')
-      .in('user_id', [...new Set(rows.map((r) => r.created_by))]),
-  )
+      if (!aliases.length)
+        return {
+          relationships: [],
+          events: [],
+          items: [],
+          hasMore: false,
+          replyReading: false,
+          historyStatus: 'no-resolved-relationship',
+          notice: 'Historical unresolved approaches may still require coordination review.',
+        }
+      query = query.in(
+        'id',
+        aliases.map((a) => a.relationship_id),
+      )
+    }
+  }
+  const relationships = workspaceResult(await query.range(page * 50, page * 50 + 50))
+  const visible = relationships.slice(0, 50)
+  const ids = visible.filter((r) => r.owner_id === actor.userId).map((r) => r.id)
+  const events = ids.length
+    ? workspaceResult(
+        await db
+          .from('outreach_relationship_events')
+          .select('*')
+          .in('relationship_id', ids)
+          .order('occurred_at', { ascending: false })
+          .limit(200),
+      )
+    : []
   return {
+    relationships: visible,
+    events,
+    hasMore: relationships.length > 50,
     replyReading: false,
-    items: rows.map((r) => ({
-      targetId: proposals.find((p) => p.id === r.proposal_id)?.target_id,
-      ownerId: r.created_by,
-      owner: owners.find((o) => o.user_id === r.created_by)?.email || 'Society member',
-      status: r.status === 'sent' ? 'provider_accepted' : r.status,
+    items: visible.map((r) => ({
+      targetId: r.target_id,
+      ownerId: r.owner_id,
+      owner: 'Assigned officer',
+      status: r.stage,
       updatedAt: r.updated_at,
     })),
   }

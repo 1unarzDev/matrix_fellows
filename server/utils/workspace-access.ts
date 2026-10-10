@@ -12,7 +12,7 @@ export async function assertWorkspaceTarget(
   if (kind && kind !== 'student')
     throw createError({
       statusCode: 403,
-      statusMessage: 'Members may send personal research inquiries only.',
+      statusMessage: 'AI outreach and drafts require an appointed officer.',
     })
   const { data, error } = await workspaceAuthStorage(event).rpc('outreach_member_target_access', {
     p_user_id: member.userId,

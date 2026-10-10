@@ -4,6 +4,8 @@ const props = defineProps<{ profileId?: string }>()
 const emit = defineEmits<{ updated: [] }>()
 const { data, refresh } = await useFetch<{ profile: ResearchProfilePacket; artifacts: ResearchArtifact[]; claims: ResearchClaim[]; providerStatus: string }>('/api/workspace/research-profile')
 const url = ref(''), contribution = ref(''), relationship = ref<'interest' | 'created' | 'contributed'>('interest')
+const projectFacts = computed(() => data.value?.claims.filter(c => c.origin === 'source' && ['project_method', 'project_question'].includes(c.predicate) && !c.withdrawn_at && c.adoption !== 'rejected') || [])
+function sourceUrl(claim: ResearchClaim) { return data.value?.artifacts.find(a => a.id === claim.artifact_id)?.canonical_url }
 const busy = ref(false), message = ref('')
 const editingId = ref(''), editedStatement = ref('')
 let timer: ReturnType<typeof setTimeout> | undefined
@@ -44,6 +46,19 @@ async function retry(id: string) { busy.value = true; try { await $fetch('/api/w
     <p role="status">{{ message }}</p>
     <ul v-if="data?.artifacts.length"><li v-for="artifact in data.artifacts" :key="artifact.id"><a :href="artifact.canonical_url" target="_blank" rel="noopener noreferrer">{{ artifact.canonical_url }}</a><p>{{ artifact.summary || 'Processing source metadata…' }}</p><small>{{ artifact.state }} · {{ artifact.relationship === 'interest' ? 'Interest only' : 'Contribution self-reported' }}</small><button v-if="(artifact.state === 'failed' && artifact.error_code !== 'attempts_exhausted') || artifact.error_code === 'quota_waiting'" :disabled="busy" @click="retry(artifact.id)">Retry acquisition</button></li></ul>
     <div v-for="claim in data?.claims.filter(c => !c.withdrawn_at && c.predicate === 'contribution')" :key="claim.id" class="research-claim"><p>{{ claim.statement }}</p><small>{{ claim.support_state === 'self_reported' ? 'Self-reported contribution' : claim.support_state }}</small><form v-if="editingId === claim.id" @submit.prevent="correct(claim, 'edit')"><label>Edit your contribution<textarea v-model="editedStatement" maxlength="1500" required /></label><button :disabled="busy">Save correction</button><button type="button" @click="editingId = ''">Cancel</button></form><div><button :disabled="busy" @click="editingId = claim.id; editedStatement = claim.statement">Edit</button><button :disabled="busy" @click="correct(claim, 'interest')">Only an interest</button><button :disabled="busy" @click="correct(claim, 'wrong_attribution')">Wrong attribution</button><button :disabled="busy" @click="correct(claim, claim.sharing_scope === 'officer' ? 'exclude' : 'share')">{{ claim.sharing_scope === 'officer' ? 'Exclude from society proposals' : 'Share with officers for proposals' }}</button></div></div>
+    <section v-if="projectFacts.length" aria-labelledby="project-source-facts">
+      <h3 id="project-source-facts">What your linked projects describe</h3>
+      <p>These source statements describe the project. They do not establish your contribution or skill level.</p>
+      <div v-for="claim in projectFacts" :key="claim.id" class="research-claim">
+        <p><strong>{{ claim.predicate === 'project_question' ? 'Research question or goal' : 'Project method' }}</strong></p>
+        <blockquote>{{ claim.statement }}</blockquote>
+        <small>{{ claim.adoption === 'candidate' ? 'Suggested project fact' : 'Accepted project fact' }} · <a v-if="sourceUrl(claim)" :href="sourceUrl(claim)" target="_blank" rel="noopener noreferrer">{{ claim.provenance?.section || 'Source' }}</a> · snapshot {{ claim.snapshot_id?.slice(0, 8) }}</small>
+        <div><button v-if="claim.adoption === 'candidate'" :disabled="busy" @click="correct(claim, 'accept')">Keep project fact</button><button :disabled="busy" @click="correct(claim, 'reject')">Dismiss or correct attribution</button><button v-if="claim.adoption === 'accepted'" :disabled="busy" @click="correct(claim, claim.sharing_scope === 'officer' ? 'exclude' : 'share')">{{ claim.sharing_scope === 'officer' ? 'Exclude from society proposals' : 'Share project context with officers' }}</button></div>
+      </div>
+      <h3>Useful next steps</h3>
+      <p>Which method did you personally use, or which question would you like to explore? Add only your own contribution above.</p>
+      <p>A small reproduction, comparison, or focused feedback question can support an honest inquiry. Time, data access, and supervision remain unconfirmed.</p>
+    </section>
     <p class="research-status">{{ data?.providerStatus }}</p>
     <p v-if="!data?.artifacts.length">No work sample is required. Your interests can support a thoughtful learning or feedback inquiry.</p>
   </section>

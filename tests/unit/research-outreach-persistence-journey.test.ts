@@ -138,6 +138,20 @@ beforeAll(async () => {
   const app = createApp(),
     router = createRouter()
   const routes: [string, string, string][] = [
+    ['get', '/', 'index.get.ts'],
+    ['get', '/auth/session', 'auth/session.get.ts'],
+    ['get', '/research-profile/shared', 'research-profile/shared.get.ts'],
+    ['get', '/research-profile/projects', 'research-profile/projects.get.ts'],
+    ['get', '/officers', 'officers.get.ts'],
+    ['get', '/voice', 'voice/index.get.ts'],
+    ['put', '/voice', 'voice/index.put.ts'],
+    ['get', '/research', 'research.get.ts'],
+    ['post', '/research', 'research.post.ts'],
+    ['get', '/research/sources/:id', 'research/sources/[id].get.ts'],
+    ['get', '/mailboxes', 'mailboxes/index.get.ts'],
+    ['get', '/catalog-saves', 'catalog-saves.get.ts'],
+    ['get', '/assignments', 'assignments.get.ts'],
+    ['get', '/opportunity-decisions', 'opportunity-decisions/index.get.ts'],
     ['get', '/research-profile', 'research-profile/index.get.ts'],
     ['post', '/research-profile/artifacts', 'research-profile/artifacts.post.ts'],
     ['post', '/research-profile/corrections', 'research-profile/corrections.post.ts'],
@@ -163,6 +177,7 @@ beforeAll(async () => {
     const handler = (await import('../../server/api/workspace/' + file)).default
     ;(router as any)[method]('/api/workspace' + path, handler)
   }
+  router.get('/api/workspace', (await import('../../server/api/workspace/index.get.ts')).default)
   app.use(router)
   server = createServer(toNodeListener(app))
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
@@ -284,7 +299,17 @@ it('ordinary members cannot prepare/read/revise drafts; officers obtain a local-
             },
           ],
           acquisition: {
-            pages: [{ url: 'https://uta.edu/robot-lab', text: quote, hash: 'fixture-source-v1' }],
+            pages: [
+              {
+                url: 'https://uta.edu/robot-lab',
+                text: quote,
+                hash: 'fixture-source-v1',
+                retrievedAt: new Date().toISOString(),
+                title: 'Robotics laboratory',
+                contacts: ['pi@example.com'],
+                links: [],
+              },
+            ],
             publicAnalysis: {
               proposalOptions: [
                 {
@@ -342,6 +367,13 @@ it('ordinary members cannot prepare/read/revise drafts; officers obtain a local-
   ).rows[0]
   expect(stored.profile_version_id).toBeTruthy()
   expect(stored.evidence_claim_ids.length).toBeGreaterThan(0)
+  expect((await ok(a, '/research-profile/shared')).profiles.map((p: any) => p.id)).toContain(
+    profileId,
+  )
+  const aggregate = await ok(member, '')
+  expect(aggregate.primaryProfileId).toBe(profileId)
+  expect(aggregate.proposals).toEqual([])
+  expect(aggregate.mailboxes).toEqual([])
   expect(stored.proposal_plan.sentenceSupports).toBeTruthy()
   expect(stored.proposal_plan.matchId).toBe(matches.items[0].id)
   expect((await request(member, `/proposals/${proposal.id}/revisions`)).status).toBe(403)
@@ -586,3 +618,250 @@ it('member evidence withdrawal prevents unsent approval reuse without modifying 
     transport.providerRequests.filter((url) => url.includes('gmail.googleapis.com')),
   ).toHaveLength(2)
 })
+
+it('source pagination beyond forty preserves snapshot review and retries only failed dependent work', async () => {
+  await transport.db.exec(
+    `insert into outreach_sources(id,url,allowed_hosts,kind)select 'journey-source-'||lpad(n::text,3,'0'),'https://uta.edu/journey-source-'||n,array['uta.edu'],'directory'from generate_series(1,45)n`,
+  )
+  const source = 'journey-source-045'
+  const job: any = (
+    await transport.db.query(
+      "insert into outreach_jobs(work_key,kind,source_id,status,attempts,error)values('journey-retry-source','discover',$1,'failed',3,'Source unavailable fixture')returning id",
+      [source],
+    )
+  ).rows[0]
+  const hash = 'b'.repeat(64),
+    excerpt =
+      'The laboratory studies reproducible robot simulation benchmarks and public evaluation methods.'
+  await transport.db.query(
+    "insert into research_stage_runs(job_id,stage,input_key,attempt,claim_token,status,reservation,result)values($1,'acquire','fixture-source-version',1,$2,'completed','{}',$3)",
+    [
+      job.id,
+      crypto.randomUUID(),
+      JSON.stringify({ hash, text: excerpt, url: 'https://uta.edu/journey-source-45' }),
+    ],
+  )
+  const first = await ok(a, '/research?limit=40&sourceOffset=0'),
+    second = await ok(a, '/research?limit=40&sourceOffset=40')
+  expect(first.sources).toHaveLength(40)
+  expect(second.sources).toHaveLength(5)
+  expect(first.pagination.sourceTotal).toBe(45)
+  expect(second.pagination.sourceTotal).toBe(45)
+  expect(second.sources.some((s: any) => s.id === source)).toBe(true)
+  const detail = await ok(a, '/research/sources/' + source)
+  expect(detail.source.snapshot).toMatchObject({ hash, text: excerpt })
+  expect((await request(member, '/research/sources/' + source)).status).toBe(403)
+  await transport.db.query("update outreach_members set role='admin' where user_id=$1", [a])
+  await ok(a, '/research', 'POST', {
+    action: 'source',
+    sourceId: source,
+    enabled: true,
+    aiExcerpt: excerpt,
+    aiReviewed: true,
+    snapshotHash: hash,
+  })
+  expect(
+    (
+      await transport.db.query<any>(
+        'select ai_reviewed,ai_snapshot_hash from outreach_sources where id=$1',
+        [source],
+      )
+    ).rows[0],
+  ).toEqual({ ai_reviewed: true, ai_snapshot_hash: hash })
+  await transport.db.exec('update outreach_settings set paused=false where id=true')
+  await ok(a, '/research', 'POST', { action: 'retry', jobId: job.id })
+  expect(
+    (
+      await transport.db.query<any>('select status,attempts,error from outreach_jobs where id=$1', [
+        job.id,
+      ])
+    ).rows[0],
+  ).toEqual({ status: 'queued', attempts: 0, error: null })
+  expect((await ok(a, '/research/sources/' + source)).source.snapshot.hash).toBe(hash)
+  await transport.db.exec('update outreach_settings set paused=true where id=true')
+  await transport.db.query("update outreach_members set role='officer' where user_id=$1", [a])
+})
+
+it.runIf(Boolean(process.env.RESEARCH_BROWSER_BASE_URL))(
+  'opt-in browser: profile link and local officer revision persist through actual HTTP handlers and PostgreSQL',
+  async () => {
+    const { chromium } = await import('@playwright/test')
+    const browser = await chromium.launch({ headless: true })
+    const page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
+    page.setDefaultTimeout(10000)
+    let actor = member
+    const clientErrors: string[] = []
+    page.on('pageerror', (error) => clientErrors.push(error.message))
+    page.on('requestfailed', (request) =>
+      clientErrors.push(request.url() + ' ' + (request.failure()?.errorText || 'failed')),
+    )
+    page.on('console', (message) => {
+      if (message.type() === 'error') clientErrors.push(message.text())
+    })
+    const proxyErrors: string[] = [],
+      implementedRequests: string[] = [],
+      unrelatedFixtures: string[] = []
+    await page.route('**/api/**', async (route) => {
+      const incoming = route.request(),
+        url = new URL(incoming.url())
+      if (url.pathname.startsWith('/api/workspace')) {
+        const response = await nativeFetch(base + url.pathname + url.search, {
+          method: incoming.method(),
+          headers: {
+            origin: config.public.siteUrl,
+            cookie: `${WORKSPACE_COOKIE}=${cookies.get(actor) || ''}`,
+            'content-type': 'application/json',
+          },
+          ...(incoming.postData() ? { body: incoming.postData()! } : {}),
+        })
+        const body = await response.text()
+        implementedRequests.push(incoming.method() + ' ' + url.pathname)
+        if (response.status >= 400)
+          proxyErrors.push(response.status + ' ' + url.pathname + ' ' + body)
+        await route.fulfill({ status: response.status, contentType: 'application/json', body })
+      } else {
+        unrelatedFixtures.push(url.pathname)
+        await route.fulfill({ json: { items: [], page: 1, pageCount: 1, total: 0 } })
+      }
+    })
+    const preview = process.env.RESEARCH_BROWSER_BASE_URL!
+    try {
+      await page.goto(preview + '/dashboard?section=profiles')
+      await page.getByRole('heading', { name: 'Your research overview', exact: true }).waitFor()
+      expect(await page.locator('.research-overview').innerText()).toContain('Research Member')
+      await page
+        .getByLabel('Add your research', { exact: true })
+        .fill('https://github.com/team/browser-research')
+      await page.getByLabel(/^Your connection/).selectOption('contributed')
+      await page
+        .getByLabel('What was your contribution?', { exact: true })
+        .fill('Browser fixture: I wrote robot evaluation regression checks.')
+      await page.getByRole('button', { name: 'Add research link', exact: true }).click()
+      await page
+        .getByRole('link', { name: 'https://github.com/team/browser-research', exact: true })
+        .waitFor()
+      const claim = page
+        .locator('.research-claim')
+        .filter({ hasText: 'Browser fixture: I wrote robot evaluation regression checks.' })
+      await claim
+        .getByRole('button', { name: 'Share with officers for proposals', exact: true })
+        .click()
+      await claim
+        .getByRole('button', { name: 'Exclude from society proposals', exact: true })
+        .waitFor()
+      await page.reload()
+      await page
+        .getByRole('link', { name: 'https://github.com/team/browser-research', exact: true })
+        .waitFor()
+      expect(await claim.innerText()).toContain(
+        'Browser fixture: I wrote robot evaluation regression checks.',
+      )
+      const artifact: any = (
+        await transport.db.query(
+          "select id,state from research_artifacts where canonical_url='https://github.com/team/browser-research'",
+        )
+      ).rows[0]
+      expect(artifact.state).toBe('ready')
+      expect(
+        (
+          await transport.db.query(
+            'select id from research_source_snapshots where artifact_id=$1',
+            [artifact.id],
+          )
+        ).rows,
+      ).toHaveLength(1)
+      await page.screenshot({ path: '/tmp/matrix-browser-persisted-profile.png', fullPage: true })
+      actor = a
+      const target: any = (
+        await transport.db.query(
+          "select id from outreach_targets where canonical_url='https://uta.edu/robot-second'",
+        )
+      ).rows[0]
+      await page.goto(preview + '/dashboard?section=queue&target=' + target.id)
+      await page.getByRole('button', { name: /^Who is the connection for\?/ }).click()
+      await page.getByRole('option', { name: 'Personal inquiry', exact: true }).click()
+      await page.getByRole('button', { name: /^Research profile:/ }).click()
+      await page.getByRole('option', { name: 'Research Member', exact: true }).click()
+      await page.getByRole('button', { name: 'Review connection plan', exact: true }).click()
+      await page.getByRole('region', { name: 'Selected connection plan', exact: true }).waitFor()
+      await page.getByRole('button', { name: /^Shape a proposal/ }).click()
+      await page.getByRole('heading', { name: 'Draft review', exact: true }).waitFor()
+      await page.locator('.candidate-list .candidate').first().click()
+      await page.getByRole('heading', { name: 'Review your inquiry', exact: true }).waitFor()
+      const body = page.getByLabel('Email', { exact: true })
+      await page.getByRole('button', { name: 'Make the ask smaller', exact: true }).click()
+      await page.getByRole('region', { name: 'Proposed revision preview', exact: true }).waitFor()
+      expect(
+        await page.getByRole('region', { name: 'Proposed revision preview' }).innerText(),
+      ).toContain('Local editing')
+      await page.getByRole('button', { name: 'Use proposed edit', exact: true }).click()
+      const save = page.getByRole('button', { name: 'Save changes', exact: true })
+      if (await save.isEnabled()) await save.click()
+      await vi.waitFor(
+        async () => {
+          const rows = (
+            await transport.db.query<any>(
+              'select body from outreach_proposals where current_owner_id=$1 and target_id=$2 order by created_at desc limit 1',
+              [a, target.id],
+            )
+          ).rows
+          expect(rows[0]?.body).toContain('one focused question by email')
+        },
+        { timeout: 8000 },
+      )
+      const proposal: any = (
+        await transport.db.query(
+          'select id,body,revision,proposal_plan from outreach_proposals where current_owner_id=$1 and target_id=$2 order by created_at desc limit 1',
+          [a, target.id],
+        )
+      ).rows[0]
+      expect(proposal.body).toContain('one focused question by email')
+      expect(proposal.revision).toBeGreaterThan(1)
+      expect(proposal.proposal_plan.matchId).toBeTruthy()
+      await page.reload()
+      await page.getByRole('heading', { name: 'Draft review', exact: true }).waitFor()
+      await page.locator('.candidate-list .candidate').first().click()
+      await page.getByRole('heading', { name: 'Review your inquiry', exact: true }).waitFor()
+      expect(await body.inputValue()).toBe(proposal.body)
+      await page.screenshot({
+        path: '/tmp/matrix-browser-persisted-officer-draft.png',
+        fullPage: true,
+      })
+      expect(
+        implementedRequests.some((r) => r === 'POST /api/workspace/research-profile/artifacts'),
+      ).toBe(true)
+      expect(implementedRequests.some((r) => r === 'POST /api/workspace/planner')).toBe(true)
+      expect(implementedRequests.some((r) => r.startsWith('PATCH /api/workspace/proposals/'))).toBe(
+        true,
+      )
+      expect(proxyErrors, proxyErrors.join('\n')).toEqual([])
+      expect(
+        transport.providerRequests.filter((url) => url.includes('gmail.googleapis.com')),
+      ).toHaveLength(2)
+    } catch (error) {
+      await page
+        .screenshot({ path: '/tmp/matrix-browser-persistence-failure.png', fullPage: true })
+        .catch(() => {})
+      const detail = (
+        await page
+          .locator('body')
+          .innerText()
+          .catch(() => '')
+      ).slice(-3500)
+      throw new Error(
+        (error instanceof Error ? error.message : String(error)) +
+          '\nProxy errors: ' +
+          proxyErrors.join('\n') +
+          '\nClient errors: ' +
+          clientErrors.join('\n') +
+          '\nWorkspace requests: ' +
+          implementedRequests.join(', ') +
+          '\nVisible UI: ' +
+          detail,
+      )
+    } finally {
+      await browser.close()
+    }
+  },
+  60000,
+)

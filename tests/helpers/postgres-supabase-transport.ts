@@ -36,7 +36,10 @@ export class PostgresSupabaseTransport {
       '20261010020659_research_matches_and_projection_guards.sql',
       '20261010021349_research_project_enrichment.sql',
       '20261010023000_research_preferences.sql',
-      '20261010024500_relationship_alias_duplicate_guard.sql','20261010025500_selected_society_context.sql','20261010030000_officer_voice_preferences.sql','20261010031000_provider_retry_metadata.sql',
+      '20261010024500_relationship_alias_duplicate_guard.sql',
+      '20261010025500_selected_society_context.sql',
+      '20261010030000_officer_voice_preferences.sql',
+      '20261010031000_provider_retry_metadata.sql',
     ])
       await this.db.exec(
         await readFile(new URL('../../supabase/migrations/' + name, import.meta.url), 'utf8'),
@@ -83,7 +86,7 @@ export class PostgresSupabaseTransport {
         ')'
       )
     }
-    const field = this.q(column)
+    const field = column === 'outreach_members.enabled' ? 'm."enabled"' : this.q(column)
     if (filter.startsWith('not.'))
       return 'NOT (' + this.condition(column, filter.slice(4), params) + ')'
     const dot = filter.indexOf('.'),
@@ -212,16 +215,37 @@ export class PostgresSupabaseTransport {
             filters.map(([key, value]) => this.condition(key, value, params)).join(' AND ')
           : ''
       const selection = url.searchParams.get('select') || '*'
+      const joins: Record<string, { pattern: string; clause: string }> = {
+        outreach_profiles: {
+          pattern: 'outreach_members!outreach_members_primary_profile_id_fkey!inner(enabled)',
+          clause: ' JOIN public.outreach_members m ON m.primary_profile_id=outreach_profiles.id',
+        },
+        outreach_assignments: {
+          pattern: 'outreach_members!outreach_assignments_user_id_fkey(email)',
+          clause: ' JOIN public.outreach_members m ON m.user_id=outreach_assignments.user_id',
+        },
+      }
+      const join = joins[table]
+      const relational = join && selection.includes(join.pattern)
+      const plainSelection = relational ? selection.replace(',' + join.pattern, '') : selection
       const fields =
-        selection === '*'
+        plainSelection === '*'
           ? '*'
-          : selection
+          : plainSelection
               .split(',')
-              .map((field) => this.q(field))
+              .map((field) => (relational ? name + '.' : '') + this.q(field))
               .join(',')
+      const projectedFields =
+        fields +
+        (relational
+          ? ',jsonb_build_object(' +
+            (table === 'outreach_profiles' ? "'enabled',m.enabled" : "'email',m.email") +
+            ') as outreach_members'
+          : '')
+      const from = name + (relational ? join.clause : '')
       let sql = ''
       if (request.method === 'GET' || request.method === 'HEAD') {
-        sql = 'SELECT ' + fields + ' FROM ' + name + where()
+        sql = 'SELECT ' + projectedFields + ' FROM ' + from + where()
         const order = url.searchParams.get('order')
         if (order)
           sql +=
@@ -313,8 +337,27 @@ export class PostgresSupabaseTransport {
           },
           { status: 406 },
         )
+      let total = rows.length
+      if (request.headers.get('prefer')?.includes('count=exact')) {
+        const countParams: unknown[] = []
+        const countWhere = filters.length
+          ? ' WHERE ' +
+            filters.map(([key, value]) => this.condition(key, value, countParams)).join(' AND ')
+          : ''
+        total = Number(
+          (
+            await this.db.query<{ total: number }>(
+              'SELECT COUNT(*) total FROM ' + from + countWhere,
+              countParams,
+            )
+          ).rows[0]?.total || 0,
+        )
+      }
+      const offset = Number(url.searchParams.get('offset') || 0)
       return Response.json(singular ? rows[0] : rows, {
-        headers: { 'content-range': `0-${Math.max(0, rows.length - 1)}/${rows.length}` },
+        headers: {
+          'content-range': `${offset}-${Math.max(offset, offset + rows.length - 1)}/${total}`,
+        },
       })
     } catch (error) {
       this.errors.push(error instanceof Error ? error.message : String(error))

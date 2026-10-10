@@ -22,6 +22,7 @@ beforeAll(async () => {
     '20261009172000_officer_relationships.sql',
     '20261010015431_research_execution.sql',
     '20261010020426_research_evidence_approval_guard.sql',
+    '20261010020659_research_matches_and_projection_guards.sql',
   ])
     await db.exec(
       await readFile(new URL(`../../supabase/migrations/${file}`, import.meta.url), 'utf8'),
@@ -170,12 +171,12 @@ it('blocks parallel approaches to the same contact and review placeholders', asy
     ),
   ).rejects.toThrow(/placeholders/)
 })
-it('invalidates approved student messages when consent or skills change', async () => {
+it('invalidates approved student messages when the represented member withdraws consent', async () => {
   const person = '77777777-7777-4777-8777-777777777777'
   const studentProposal = '88888888-8888-4888-8888-888888888888'
   const studentTarget = '99999999-9999-4999-8999-999999999999'
   await db.exec(
-    `insert into outreach_profiles(id,full_name,consent_to_share,created_by) values('${person}','Student',true,'${user}');insert into outreach_targets(id,name,kind,canonical_url,status,contact_email) values('${studentTarget}','Second Professor','pi','https://example.edu/other','ready','second@example.edu');insert into outreach_proposals(id,target_id,profile_id,kind,recipient,subject,body,mailbox_id,created_by) values('${studentProposal}','${studentTarget}','${person}','student','second@example.edu','Subject','Body','${mailbox}','${user}');`,
+    `insert into outreach_profiles(id,full_name,consent_to_share,created_by,subject_user_id) values('${person}','Member',true,'${user}','${user}');insert into outreach_targets(id,name,kind,canonical_url,status,contact_email) values('${studentTarget}','Second Professor','pi','https://example.edu/other','ready','second@example.edu');insert into outreach_proposals(id,target_id,profile_id,kind,recipient,subject,body,mailbox_id,created_by) values('${studentProposal}','${studentTarget}','${person}','student','second@example.edu','Subject','Body','${mailbox}','${user}');`,
   )
   await db.query(
     `select * from outreach_approve_email($1,1,$2,$3,'second@example.edu','Subject','Body','officer@example.com')`,

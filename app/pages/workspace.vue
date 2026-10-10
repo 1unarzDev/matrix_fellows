@@ -526,6 +526,32 @@ const uncertainSends = ref<string[]>([])
 const savingDraft = ref(false)
 const draftSaveState = ref('')
 const draftConflict = ref(false)
+const revisionPreview = ref<{baseRevision:number;subject:string;body:string;notices:string[];buffer:string} | null>(null)
+const revising = ref(false)
+const handoffOwner = ref('')
+async function proposeRevision(action: 'shorten' | 'smaller_ask' | 'direct' | 'remove_claim', claimId?: string) {
+  if (!proposal.value || changed.value || revising.value) return
+  const current = proposal.value
+  const buffer = JSON.stringify(draft)
+  revising.value = true
+  try {
+    const result = await $fetch<Omit<NonNullable<typeof revisionPreview.value>, 'buffer'>>(`/api/workspace/proposals/${current.id}/revise`, {method:'POST',body:{revision:current.revision,action,...(claimId?{claimId}:{})}})
+    if (proposalId.value === current.id) revisionPreview.value = {...result,buffer}
+  } catch (cause: any) { draftSaveState.value = cause?.data?.statusMessage || 'The proposed revision is unavailable. Your edits are preserved.' }
+  finally { revising.value = false }
+}
+const revisionCanApply = computed(() => Boolean(revisionPreview.value && proposal.value?.revision === revisionPreview.value.baseRevision && JSON.stringify(draft) === revisionPreview.value.buffer))
+function applyRevisionPreview() {
+  if (!revisionCanApply.value || !revisionPreview.value) return
+  draft.subject = revisionPreview.value.subject
+  draft.body = revisionPreview.value.body
+  revisionPreview.value = null
+}
+async function handoffDraft() {
+  if (!proposal.value || changed.value || !handoffOwner.value) return
+  const result = await mutate(`/proposals/${proposal.value.id}/handoff`, 'POST', {ownerId:handoffOwner.value}, 'Draft handed off. The new owner must choose their mailbox and approve a fresh revision.')
+  if (result) { proposalId.value = ''; handoffOwner.value = '' }
+}
 const revisions = ref<{ revision: number; subject: string; body: string; created_at: string }[]>([])
 let autosaveTimer: ReturnType<typeof setTimeout> | undefined
 async function loadRevisions() {
@@ -556,6 +582,7 @@ function openProposal(p: OutreachProposal) {
     return
   clearTimeout(autosaveTimer)
   draftConflict.value = false
+  revisionPreview.value = null
   draftSaveState.value = ''
   revisions.value = []
   proposalId.value = p.id
@@ -1569,6 +1596,36 @@ onMounted(async () => {
                   </summary>
                   <h3>{{ revision.subject }}</h3>
                   <p class="preserve ws-muted">{{ revision.body }}</p>
+                </details>
+                <div class="ws-actions" v-if="proposal.status !== 'sent'">
+                  <button type="button" class="ws-button" :disabled="changed || revising" @click="proposeRevision('shorten')">Shorten</button>
+                  <button type="button" class="ws-button" :disabled="changed || revising" @click="proposeRevision('smaller_ask')">Make the ask smaller</button>
+                  <button type="button" class="ws-button" :disabled="changed || revising" @click="proposeRevision('direct')">Make it more direct</button>
+                </div>
+                <section v-if="revisionPreview" class="send-confirm" aria-label="Proposed revision preview">
+                  <h3>Proposed local edit</h3>
+                  <p v-for="message in revisionPreview.notices" :key="message" class="ws-muted">{{ message }}</p>
+                  <details><summary>Current message</summary><p class="preserve">{{ draft.body }}</p></details>
+                  <p class="preserve">{{ revisionPreview.body }}</p>
+                  <p v-if="!revisionCanApply" class="ws-muted">Your draft changed while this suggestion was prepared. Request a new preview to preserve your edits.</p>
+                  <button type="button" class="ws-button" :disabled="!revisionCanApply" @click="applyRevisionPreview">Use proposed edit</button>
+                  <button type="button" class="ws-button" @click="revisionPreview = null">Keep current text</button>
+                </section>
+                <details v-if="proposal.proposalPlan" class="sample">
+                  <summary>Selected plan and factual supports</summary>
+                  <p>{{ proposal.proposalPlan.connection }}</p>
+                  <p class="ws-muted">{{ proposal.proposalPlan.provenance === 'reviewed-model-analysis' ? 'Local draft informed by reviewed Gemini analysis' : 'Local evidence-based draft' }}</p>
+                  <p v-for="issue in proposal.proposalPlan.reviewIssues" :key="issue" class="ws-muted">{{ issue }}</p>
+                  <article v-for="support in proposal.proposalPlan.sentenceSupports" :key="support.sentence">
+                    <p>{{ support.sentence }}</p><small class="ws-muted">{{ support.classification }}</small>
+                    <a v-for="source in support.sources" :key="source.url + source.quote" :href="source.url" target="_blank" rel="noopener noreferrer">Source: {{ source.quote }}</a>
+                    <button v-for="claim in support.claimIds" :key="claim" type="button" class="ws-button" :disabled="changed || revising || proposal.status === 'sent'" @click="proposeRevision('remove_claim', claim)">Remove this claim</button>
+                  </article>
+                </details>
+                <details v-if="proposal.status !== 'sent'" class="sample"><summary>Hand this draft to an appointed officer</summary>
+                  <label class="ws-field">New owner account ID<input v-model="handoffOwner" placeholder="Officer UUID" /></label>
+                  <p class="ws-muted">Original authorship remains. Mailbox authorization never transfers.</p>
+                  <button type="button" class="ws-button" :disabled="changed || busy || !handoffOwner" @click="handoffDraft">Hand off draft</button>
                 </details>
                 <div class="ws-divider" />
                 <label class="ws-field"

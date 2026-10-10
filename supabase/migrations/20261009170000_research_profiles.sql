@@ -16,7 +16,7 @@ create table public.research_profile_versions(id uuid primary key default gen_ra
 create index research_versions_owner on public.research_profile_versions(owner_id);
 -- No historical profile is relabeled: created_by is authorship, not subject identity.
 create function public.ensure_member_research_profile(p_user_id uuid,p_email text) returns uuid language plpgsql set search_path='' as $$
-declare m public.outreach_members;pid uuid;j record;captured jsonb:='{}';begin
+declare m public.outreach_members;pid uuid;j record;join_id bigint:=null;captured jsonb:='{}';begin
  if not exists(select 1 from auth.users where id=p_user_id and email_confirmed_at is not null and lower(email)=lower(p_email))then raise exception 'Verified account required';end if;
  select * into m from public.outreach_members where user_id=p_user_id and enabled for update;
  if not found then raise exception 'Enabled membership required';end if;
@@ -28,11 +28,11 @@ declare m public.outreach_members;pid uuid;j record;captured jsonb:='{}';begin
  if to_regclass('public.join_responses') is not null then
   if (select count(*) from public.join_responses where lower(email)=lower(p_email))>1 then raise exception 'Ambiguous join association requires review';end if;
   execute 'select id,name,interests,goals,stage,to_jsonb(r)->>''interest_other'' interest_other from public.join_responses r where lower(email)=lower($1)' into j using p_email;
-  if j.id is not null then captured:=jsonb_build_object('name',j.name,'interests',j.interests,'goals',j.goals,'stage',j.stage,'interestOther',coalesce(j.interest_other,''));end if;
+  if j.id is not null then join_id:=j.id;captured:=jsonb_build_object('name',j.name,'interests',j.interests,'goals',j.goals,'stage',j.stage,'interestOther',coalesce(j.interest_other,''));end if;
  end if;
  insert into public.outreach_profiles(full_name,interests,goals,created_by,subject_user_id)values(coalesce(captured->>'name',split_part(p_email,'@',1)),coalesce(array(select jsonb_array_elements_text(captured->'interests')),'{}'),coalesce((select string_agg(value,'; ') from jsonb_array_elements_text(captured->'goals')),''),p_user_id,p_user_id)returning id into pid;
  update public.outreach_members set primary_profile_id=pid where user_id=p_user_id;
- insert into public.research_profile_imports(profile_id,subject_user_id,join_response_id,captured_fields)values(pid,p_user_id,case when captured='{}' then null else j.id end,captured);
+ insert into public.research_profile_imports(profile_id,subject_user_id,join_response_id,captured_fields)values(pid,p_user_id,join_id,captured);
  insert into public.research_claims(profile_id,owner_id,statement,predicate,origin,support_state,adoption,provenance)
  select pid,p_user_id,value::text,key,'join','self_reported','accepted',jsonb_build_object('internalSource','join','importVersion','join-research-v1','field',key,'value',value)from jsonb_each(captured);
  return pid;

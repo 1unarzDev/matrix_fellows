@@ -12,6 +12,16 @@ const kind = ref('reply'),
   due = ref(''),
   error = ref(''),
   saving = ref(false)
+const newOwner = ref('')
+const officers = ref<{id:string;label:string}[]>([])
+onMounted(async()=>{ if(props.officer) { try { const roster=await $fetch<{officers:{id:string;label:string}[]}>('/api/workspace/officers');officers.value=roster.officers || [] }catch{} } })
+async function handoff() {
+ if(!current.value || !newOwner.value) return
+ saving.value=true;error.value=''
+ try { await $fetch(`/api/workspace/relationships/${current.value.id}/handoff`,{method:'POST',body:{ownerId:newOwner.value}});newOwner.value='';await refresh() }
+ catch(e:any){error.value=e.data?.statusMessage || 'Relationship handoff could not be completed.'}
+ finally{saving.value=false}
+}
 const selected = ref('')
 const relationships = computed(() => data.value?.relationships || [])
 const current = computed(() => relationships.value.find((r: any) => r.id === selected.value))
@@ -59,14 +69,19 @@ async function record() {
       {{ current.next_action || 'None recorded' }} {{ current.next_action_date }}
     </p>
     <button
-      v-if="current && !current.suppressed && !['declined', 'closed'].includes(current.stage)"
+      v-if="current && current.owner_id === data?.actorId && !current.suppressed && !['declined', 'closed'].includes(current.stage)"
       type="button"
       class="rounded border px-3 py-2"
       @click="emit('followup', current.id)"
     >
       Prepare a follow-up for review
     </button>
-    <form v-if="targetId || current" class="space-y-3" @submit.prevent="record">
+    <form v-if="current && current.owner_id === data?.actorId" class="space-y-3" @submit.prevent="handoff">
+      <label>Handoff relationship to<select v-model="newOwner" class="block w-full rounded border p-2"><option value="">Choose an active officer</option><option v-for="officer in officers.filter(o=>o.id!==data?.actorId)" :key="officer.id" :value="officer.id">{{ officer.label }}</option></select></label>
+      <p>Mailbox authorization stays with its original owner. The next message needs the new sender's own mailbox and approval.</p>
+      <button :disabled="saving || !newOwner" class="rounded border px-3 py-2">Hand off relationship</button>
+    </form>
+    <form v-if="(!current && targetId) || current?.owner_id === data?.actorId" class="space-y-3" @submit.prevent="record">
       <label class="block"
         >Outcome
         <select v-model="kind" class="block w-full rounded border p-2">

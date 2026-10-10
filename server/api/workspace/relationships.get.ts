@@ -35,6 +35,7 @@ export default defineEventHandler(async (event) => {
       )
       if (!aliases.length)
         return {
+          actorId:actor.userId,
           relationships: [],
           events: [],
           items: [],
@@ -63,6 +64,7 @@ export default defineEventHandler(async (event) => {
       )
     : []
   return {
+    actorId:actor.userId,
     relationships: visible,
     events,
     hasMore: relationships.length > 50,

@@ -116,7 +116,7 @@ export function tailorOutreachDraft(input: {
       ? `I’m ${input.senderName || '[REVIEW: officer name]'}, an officer with ${society.name}, writing on behalf of ${profile.fullName}. They have shared an interest in ${profile.interests.slice(0, 3).join(', ') || 'learning more about this research'}.`
       : `I’m ${input.senderName || '[REVIEW: officer name]'}, writing on behalf of ${society.name}.`
   const relevant =
-    kind === 'student' && sample && sample.score > 0
+    kind === 'student' && sample
       ? `They describe their contribution to ${sample.sample.title} as: ${sample.sample.contribution}
 Work sample: ${sample.sample.url}`
       : accomplishments[0]

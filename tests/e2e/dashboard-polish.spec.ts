@@ -11,7 +11,7 @@ test('browser saves transfer explicitly, account saves stay private, and failure
   let searchCount = 0
   async function findFixture() {
     // Do not submit the progressive-enhancement form before hydration.
-    await expect(page.locator('.save-control').first()).toBeEnabled()
+    await expect(page.locator('[data-catalog-ready]')).toHaveAttribute('data-catalog-ready', 'true')
     await page
       .getByRole('searchbox', { name: 'Search opportunities', exact: true })
       .fill(`synthetic ${++searchCount}`)

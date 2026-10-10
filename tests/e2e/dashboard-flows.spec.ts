@@ -19,6 +19,7 @@ test('fixture: first-run profile edits receive navigation protection', async ({ 
   const state = await setup(page)
   state.workspace.profiles = []
   await page.goto('/dashboard?section=profiles')
+  await page.locator('summary').filter({hasText:'Advanced profile editing'}).click()
   await page.getByLabel('Full name', { exact: true }).fill('Synthetic first profile')
   const confirmation = page.waitForEvent('dialog')
   page.once('dialog', (dialog) => void dialog.dismiss())
@@ -38,6 +39,7 @@ test('fixture: society edits survive unrelated refresh and newer typing during s
   await description.fill('Synthetic unsaved society description')
   const navigation = page.getByRole('navigation', { name: 'Dashboard sections' })
   await navigation.getByRole('button', { name: 'Your profile', exact: true }).click()
+  await page.locator('summary').filter({hasText:'Advanced profile editing'}).click()
   await page.getByRole('button', { name: 'Save my profile', exact: true }).click()
   await expect(page.getByText('Saved.', { exact: true })).toBeVisible()
   await navigation.getByRole('button', { name: 'Society', exact: true }).click()
@@ -55,6 +57,7 @@ test('fixture: society edits survive unrelated refresh and newer typing during s
 test('fixture: newer profile typing stays unsaved until its own submission', async ({ page }) => {
   const state = await setup(page)
   await page.goto('/dashboard?section=profiles')
+  await page.locator('summary').filter({hasText:'Advanced profile editing'}).click()
   const name = page.getByLabel('Full name', { exact: true })
   await name.fill('Synthetic submitted name')
   await page.getByRole('button', { name: 'Save my profile', exact: true }).click()
@@ -68,6 +71,7 @@ test('fixture: newer profile typing stays unsaved until its own submission', asy
   await page.getByRole('button', { name: 'Save my profile', exact: true }).click()
   await expect.poll(() => state.workspace.profiles[0]?.fullName).toBe('Synthetic newer name')
   await page.reload()
+  await page.locator('summary').filter({hasText:'Advanced profile editing'}).click()
   await expect(name).toHaveValue('Synthetic newer name')
 })
 

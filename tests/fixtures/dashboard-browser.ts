@@ -151,6 +151,9 @@ export async function setup(page: Page, conflict = false) {
     if (method !== 'GET') writes.push({ path, body })
     if (path === '/api/workspace') return json(workspace)
     if (path === '/api/workspace/plan') return json(plan)
+    if (path === '/api/workspace/research-profile') return json({profile:{displayName:workspace.profiles[0]?.fullName || '',declaredInterests:workspace.profiles[0]?.interests || [],goals:workspace.profiles[0]?.goals || ''},artifacts:[],claims:[],providerStatus:'Local metadata'})
+    if (path === '/api/workspace/officers') return json({officers:[]})
+    if (path === '/api/workspace/research-profile/preferences') return json({lens:'nearby',reachableLocations:['Arlington']})
     if (path === `/api/workspace/profiles/${owner}` && method === 'PATCH') {
       await new Promise((resolve) => setTimeout(resolve, 650))
       Object.assign(workspace.profiles[0]!, body, { updatedAt: new Date().toISOString() })

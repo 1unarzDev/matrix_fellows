@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import ResearchProfileOverview from '~/components/workspace/ResearchProfileOverview.vue'
+import RelationshipPanel from '~/components/workspace/RelationshipPanel.vue'
 import AccountSecurity from '~/components/workspace/AccountSecurity.vue'
 import DashboardWorkbench from '../components/workspace/DashboardWorkbench.vue'
 import type { OutreachProfile, OutreachProposal, OutreachTarget } from '#shared/types/outreach'
@@ -40,6 +42,19 @@ const allSections = [
   { value: 'research', label: 'Source management', icon: 'globe' },
   { value: 'settings', label: 'Connections', icon: 'lock' },
 ] as const
+const sections = computed(() =>
+  canDiscover.value
+    ? allSections
+    : [
+        'today',
+        'queue',
+        'opportunities',
+        'activities',
+        'profiles',
+        'society',
+        'settings',
+      ].map((value) => allSections.find((section) => section.value === value)!),
+)
 const commandOpen = ref(false)
 const commandDialog = ref<HTMLDialogElement>()
 const sectionNav = ref<HTMLElement>()
@@ -70,19 +85,6 @@ function commandNavigate(section: string) {
   tab.value = section
   commandOpen.value = false
 }
-const sections = computed(() =>
-  canDiscover.value
-    ? allSections
-    : [
-        'today',
-        'queue',
-        'opportunities',
-        'activities',
-        'profiles',
-        'society',
-        'settings',
-      ].map((value) => allSections.find((section) => section.value === value)!),
-)
 const visibleProposals = computed(() =>
   canDiscover.value ? data.value?.proposals || [] : [],
 )

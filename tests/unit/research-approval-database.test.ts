@@ -6,7 +6,7 @@ const officer = '11111111-1111-4111-8111-111111111111', member = '22222222-2222-
 beforeAll(async () => {
  db = new PGlite()
  await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz);create function auth.uid()returns uuid language sql as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;insert into auth.users values('${officer}','officer@example.com',now()),('${member}','member@example.com',now());`)
- for (const name of ['023_outreach_workspace.sql','024_outreach_mail.sql','028_member_dashboard.sql','20261008005351_dashboard_canonical_plan.sql','20261009170000_research_profiles.sql','20261009172000_officer_relationships.sql','20261010015431_research_execution.sql','20261010020426_research_evidence_approval_guard.sql','20261010020659_research_matches_and_projection_guards.sql','20261010023000_research_preferences.sql','20261010024500_relationship_alias_duplicate_guard.sql']) await db.exec(await readFile(new URL('../../supabase/migrations/'+name,import.meta.url),'utf8'))
+ for (const name of ['023_outreach_workspace.sql','024_outreach_mail.sql','028_member_dashboard.sql','20261008005351_dashboard_canonical_plan.sql','20261009170000_research_profiles.sql','20261009172000_officer_relationships.sql','20261010015431_research_execution.sql','20261010020426_research_evidence_approval_guard.sql','20261010020659_research_matches_and_projection_guards.sql','20261010023000_research_preferences.sql','20261010024500_relationship_alias_duplicate_guard.sql','20261010025500_selected_society_context.sql']) await db.exec(await readFile(new URL('../../supabase/migrations/'+name,import.meta.url),'utf8'))
  await db.exec(`insert into outreach_members(user_id,email,role)values('${officer}','officer@example.com','officer'),('${member}','member@example.com','member');`)
 })
 afterAll(async()=>db?.close())
@@ -19,7 +19,7 @@ async function fixture() {
  const mailbox = (await db.query<{id:string}>("insert into outreach_mailboxes(owner_id,email)values($1,$2)returning id",[officer,crypto.randomUUID()+'@example.com'])).rows[0]!.id
  const email = (await db.query<{email:string}>('select email from outreach_mailboxes where id=$1',[mailbox])).rows[0]!.email
  const proposal = (await db.query<{id:string}>("insert into outreach_proposals(target_id,profile_id,kind,recipient,subject,body,mailbox_id,created_by,evidence_claim_ids)values($1,$2,'student',$6,'Subject','Body',$3,$4,array[$5]::uuid[])returning id",[target,profile,mailbox,officer,claim,recipient])).rows[0]!.id
- return {claim,proposal,mailbox,approve:()=>db.query("select outreach_approve_email($1,1,$2,$3,$5,'Subject','Body',$4)",[proposal,'a'.repeat(64),officer,email,recipient]),send:()=>db.query('select outreach_claim_send($1,1,$2,$3,$4)',[proposal,'a'.repeat(64),mailbox,officer])}
+ return {claim,proposal,mailbox,approve:(revision=1)=>db.query("select outreach_approve_email($1,$6,$2,$3,$5,'Subject','Body',$4)",[proposal,'a'.repeat(64),officer,email,recipient,revision]),send:()=>db.query('select outreach_claim_send($1,1,$2,$3,$4)',[proposal,'a'.repeat(64),mailbox,officer])}
 }
 it('withdrawal cannot be bypassed by approving the same evidence again',async()=>{
  const f=await fixture();await f.approve();await db.query("update research_claims set sharing_scope='private' where id=$1",[f.claim])
@@ -29,4 +29,14 @@ it('withdrawal cannot be bypassed by approving the same evidence again',async()=
 it('superseded attribution and disabled subjects are rejected at the transactional boundary',async()=>{
  const f=await fixture();await f.approve();await db.query("update research_claims set adoption='superseded' where id=$1",[f.claim]);await expect(f.send()).rejects.toThrow(/evidence is no longer valid/)
  const g=await fixture();await g.approve();await db.query('update outreach_members set enabled=false where user_id=$1',[member]);await expect(g.send()).rejects.toThrow(/inactive/);await db.query('update outreach_members set enabled=true where user_id=$1',[member])
+})
+it('unrelated society edits preserve approval while consumed organization facts prevent reuse',async()=>{
+ const f=await fixture()
+ await db.query("update outreach_proposals set proposal_plan=jsonb_build_object('societyContext',jsonb_build_object('name','Matrix Fellows','accomplishments','[]'::jsonb))where id=$1",[f.proposal])
+ await f.approve(2)
+ await db.query("update outreach_society set capabilities=array['Unrelated equipment statement']where id=true")
+ expect((await db.query<{status:string}>('select status from outreach_proposals where id=$1',[f.proposal])).rows[0]!.status).toBe('approved')
+ await db.query("update outreach_society set name='Corrected identity'where id=true")
+ expect((await db.query<{status:string}>('select status from outreach_proposals where id=$1',[f.proposal])).rows[0]!.status).toBe('draft')
+ await expect(f.approve(2)).rejects.toThrow(/society evidence changed/)
 })

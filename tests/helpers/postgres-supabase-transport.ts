@@ -34,7 +34,9 @@ export class PostgresSupabaseTransport {
       '20261010015431_research_execution.sql',
       '20261010020426_research_evidence_approval_guard.sql',
       '20261010020659_research_matches_and_projection_guards.sql',
+      '20261010021349_research_project_enrichment.sql',
       '20261010023000_research_preferences.sql',
+      '20261010024500_relationship_alias_duplicate_guard.sql','20261010025500_selected_society_context.sql',
     ])
       await this.db.exec(
         await readFile(new URL('../../supabase/migrations/' + name, import.meta.url), 'utf8'),

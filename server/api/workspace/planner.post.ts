@@ -92,6 +92,7 @@ export default defineEventHandler(async (event) => {
     kind: input.kind,
     style: input.style,
   })
+  consumedClaims = consumedClaims.filter(claim => draft.body.includes(claim.statement))
   const proposal = proposalFromRow(
     workspaceResult(
       await db
@@ -118,6 +119,7 @@ export default defineEventHandler(async (event) => {
             memberClaims: consumedClaims,
             targetVersion: target.updatedAt,
             societyVersion: society.revision || society.updatedAt,
+            societyContext: {name:society.name,accomplishments:society.accomplishments.filter(a=>draft.body.includes(a.description) && draft.body.includes(a.url || ''))},
             sentenceSupports: draft.body
               .split(/\n\n/)
               .map((sentence) => ({

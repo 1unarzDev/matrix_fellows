@@ -1,3 +1,4 @@
+import { providerRetryTime } from '../shared/utils/provider-retry'
 import { parse } from 'node-html-parser'
 import { z } from 'zod'
 import { canonicalizeOutreachUrl } from '../shared/utils/outreach'
@@ -213,8 +214,10 @@ export async function analyzePublicResearch(
       }),
     },
   )
-  if (response.status === 429) throw new Error('Free model quota exhausted; no paid fallback')
-  if (!response.ok) throw new Error(`Research model unavailable (${response.status})`)
+  const retryAt = providerRetryTime(response.headers.get('retry-after'))
+  const retryNote = retryAt ? `; retry_at=${retryAt}` : ''
+  if (response.status === 429) throw new Error('Free model quota exhausted; no paid fallback'+retryNote)
+  if (!response.ok) throw new Error(`Research model unavailable (${response.status})${retryNote}`)
   const body = (await response.json()) as {
     candidates?: { content?: { parts?: { text?: string }[] } }[]
   }

@@ -321,3 +321,50 @@ test('fixture: keyboard, reduced motion, 1024 layout and CPU-throttled input', a
     true,
   )
 })
+
+test('fixture: Today command center makes planning a magnetic, low-friction flow', async ({ page }) => {
+  const state = await setup(page)
+  state.plan.activities.push({
+    id: 'activity-orbit',
+    title: 'Spectroscopy notebook',
+    goal: 'Compare baseline spectra',
+    role: '',
+    milestone: 'Compare baseline spectra',
+    status: 'active',
+    contributions: [],
+    version: 1,
+    createdAt: '2026-10-01',
+    updatedAt: '2026-10-01',
+  })
+  await page.goto('/dashboard?section=today')
+
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible()
+  await expect(page.getByText(/weekly capacity/i)).toHaveCount(0)
+  await expect(page.locator('.day-rail')).toBeVisible()
+  await expect(page.locator('.day-panel__date')).toHaveText('Today')
+
+  const targetDate = new Date(`${dueDate}T12:00:00Z`)
+  targetDate.setUTCDate(targetDate.getUTCDate() + 2)
+  const targetDateKey = targetDate.toISOString().slice(0, 10)
+  const targetDay = targetDate.getUTCDate()
+  const selectedDay = page.locator(`.day-orbit[data-day="${targetDateKey}"]`)
+  await selectedDay.click()
+  await expect(page.locator('.day-panel__date')).toContainText(
+    targetDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'UTC' }),
+  )
+
+  await page.getByRole('button', { name: /Add a task/ }).first().click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog).toBeVisible()
+  await dialog.getByLabel('Task name').fill('Map an experiment')
+  await dialog.locator('.quick-calendar__day').filter({ hasText: String(targetDay) }).click()
+  await dialog.locator('button.quick-task-form__save').click()
+  await expect(dialog).toHaveCount(0)
+  const taskWrite = state.writes.find((write) => write.path === '/api/workspace/plan/tasks')
+  expect(taskWrite?.body.task).toMatchObject({ title: 'Map an experiment', dueDate: targetDateKey })
+  expect(taskWrite?.body.task.scheduledStart).toBeTruthy()
+  expect(taskWrite?.body.task.scheduledEnd).toBeTruthy()
+
+  await page.getByRole('button', { name: /Active · pause/ }).click()
+  await expect.poll(() => state.writes.filter((write) => write.path === '/api/workspace/plan/activities/activity-orbit').length).toBe(1)
+})

@@ -19,6 +19,7 @@ withDefaults(
       skipLabel || (variant === 'auth' ? 'Skip to sign-in' : 'Skip to dashboard')
     }}</a>
     <div class="workspace-glow" aria-hidden="true" />
+    <div v-if="variant !== 'auth'" class="workspace-quasar" aria-hidden="true"><span class="workspace-quasar__jet workspace-quasar__jet--one" /><span class="workspace-quasar__jet workspace-quasar__jet--two" /><span class="workspace-quasar__core" /><span class="workspace-quasar__stars" /></div>
     <ScienceAccent v-if="variant !== 'auth'" theme="astronomy" />
     <div v-if="$slots.background" class="workspace-background" aria-hidden="true">
       <slot name="background" />
@@ -84,6 +85,53 @@ withDefaults(
     radial-gradient(ellipse at 85% 5%, #8b68b619, transparent 45%),
     radial-gradient(ellipse at 5% 80%, #c2a76c0c, transparent 45%);
 }
+.workspace-quasar {
+  position: fixed;
+  z-index: -1;
+  top: -8vh;
+  right: -9vw;
+  width: min(76vw, 1040px);
+  height: min(76vw, 1040px);
+  pointer-events: none;
+  opacity: .42;
+  transform: rotate(-17deg);
+  filter: saturate(.82);
+  animation: quasar-drift 24s ease-in-out infinite alternate;
+}
+.workspace-quasar__core,
+.workspace-quasar__jet,
+.workspace-quasar__stars {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+.workspace-quasar__core {
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse at 48% 50%, #fff5cf 0 1%, #ffc875 3%, #eb873d 8%, rgb(208 90 42 / 35%) 17%, transparent 37%),
+    radial-gradient(ellipse at 50% 50%, transparent 25%, rgb(222 94 49 / 19%) 40%, transparent 64%);
+  box-shadow: 0 0 46px rgb(255 172 92 / 25%), 0 0 135px rgb(230 86 48 / 16%);
+  transform: rotate(14deg) scaleY(.32);
+  animation: quasar-spin 30s linear infinite;
+}
+.workspace-quasar__core::before,
+.workspace-quasar__core::after {
+  content: '';
+  position: absolute;
+  inset: 25%;
+  border-radius: 50%;
+  border: 1px solid rgb(255 198 116 / 23%);
+  box-shadow: 0 0 32px rgb(255 134 59 / 14%), inset 0 0 24px rgb(255 181 93 / 13%);
+}
+.workspace-quasar__core::after { inset: 33%; border-color: rgb(255 226 162 / 30%); transform: rotate(45deg) scaleX(1.8); }
+.workspace-quasar__jet { left: 48%; right: auto; width: 2px; height: 125%; top: -13%; background: linear-gradient(transparent, rgb(255 178 109 / 9%), #fff4c6, rgb(255 166 88 / 12%), transparent); filter: blur(1px); opacity: .5; transform: rotate(25deg); }
+.workspace-quasar__jet--two { width: 1px; opacity: .32; transform: rotate(-25deg); }
+.workspace-quasar__stars { opacity: .55; background-image: radial-gradient(circle at 12% 28%, #fff 0 1px, transparent 1.6px), radial-gradient(circle at 82% 21%, #ffd8b0 0 1px, transparent 1.6px), radial-gradient(circle at 74% 74%, #fff 0 1px, transparent 1.5px), radial-gradient(circle at 24% 77%, #e0b8ff 0 1px, transparent 1.7px), radial-gradient(circle at 57% 13%, #fff 0 1px, transparent 1.4px); animation: quasar-shimmer 6s ease-in-out infinite alternate; }
+@keyframes quasar-spin { to { transform: rotate(374deg) scaleY(.32); } }
+@keyframes quasar-drift { from { transform: rotate(-17deg) translate3d(0,0,0) scale(.98); } to { transform: rotate(-12deg) translate3d(-2%,2%,0) scale(1.03); } }
+@keyframes quasar-shimmer { from { opacity: .28; transform: scale(.98); } to { opacity: .7; transform: scale(1.02); } }
+@media (max-width: 720px) { .workspace-quasar { top: 3vh; right: -42vw; width: 130vw; height: 130vw; opacity: .28; } }
+@media (prefers-reduced-motion: reduce) { .workspace-quasar,.workspace-quasar__core,.workspace-quasar__stars { animation: none; } }
 .workspace-shell::before {
   content: '';
   position: fixed;

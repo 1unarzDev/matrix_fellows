@@ -3,6 +3,8 @@ const props = defineProps<{ title: string; compact?: boolean }>()
 const emit = defineEmits<{ close: [] }>()
 const dialog = ref<HTMLDialogElement | null>(null)
 let previousFocus: HTMLElement | null = null
+let closeTimer: ReturnType<typeof setTimeout> | null = null
+const closing = ref(false)
 onBeforeMount(() => {
   previousFocus = document.activeElement as HTMLElement
 })
@@ -10,11 +12,19 @@ onMounted(() => {
   dialog.value?.showModal()
 })
 onBeforeUnmount(() => dialog.value?.close())
+onBeforeUnmount(() => {
+  if (closeTimer) clearTimeout(closeTimer)
+})
 onUnmounted(() =>
   nextTick(() => {
     if (previousFocus?.isConnected) previousFocus.focus()
   }),
 )
+function close() {
+  if (closing.value) return
+  closing.value = true
+  closeTimer = setTimeout(() => emit('close'), 180)
+}
 function backdrop(event: MouseEvent) {
   if (!dialog.value || event.target !== dialog.value) return
   const bounds = dialog.value.getBoundingClientRect()
@@ -24,7 +34,7 @@ function backdrop(event: MouseEvent) {
     event.clientY < bounds.top ||
     event.clientY > bounds.bottom
   )
-    emit('close')
+    close()
 }
 </script>
 <template>
@@ -32,14 +42,14 @@ function backdrop(event: MouseEvent) {
     ><dialog
       ref="dialog"
       class="dashboard-dialog"
-      :class="{ 'dashboard-dialog--compact': compact }"
+      :class="{ 'dashboard-dialog--compact': compact, 'dashboard-dialog--closing': closing }"
       aria-labelledby="dashboard-dialog-title"
-      @cancel.prevent="emit('close')"
+      @cancel.prevent="close"
       @click="backdrop"
     >
       <header>
         <h2 id="dashboard-dialog-title">{{ props.title }}</h2>
-        <button aria-label="Close panel" @click="emit('close')">×</button>
+        <button aria-label="Close panel" @click="close">×</button>
       </header>
       <div class="dashboard-dialog-body"><slot /></div></dialog
   ></Teleport>
@@ -120,6 +130,11 @@ function backdrop(event: MouseEvent) {
     transform: none;
   }
 }
+@keyframes panel-out {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateY(10px) scale(.985); }
+}
+.dashboard-dialog--closing { animation: panel-out .18s ease-in forwards; pointer-events: none; }
 @media (max-width: 560px) {
   .dashboard-dialog {
     width: calc(100% - 16px);
@@ -138,6 +153,7 @@ function backdrop(event: MouseEvent) {
   .dashboard-dialog {
     animation: none;
   }
+  .dashboard-dialog--closing { animation: none; }
   .dashboard-dialog::backdrop {
     backdrop-filter: none;
   }

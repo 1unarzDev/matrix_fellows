@@ -100,3 +100,64 @@ it('bounds queued refresh jobs without charging idempotent duplicate work', asyn
   )
   expect((await db.query('select id from outreach_jobs')).rows).toHaveLength(2)
 })
+it('quota waits preserve completed evidence and admin retry retains charges with a fresh stage attempt', async () => {
+  const actor = '11111111-1111-4111-8111-111111111111'
+  await db.exec(
+    `insert into auth.users(id,email,email_confirmed_at)values('${actor}','admin@example.com',now());insert into outreach_members(user_id,email,role)values('${actor}','admin@example.com','admin');`,
+  )
+  await db.exec('update outreach_settings set model_request_limit=10,model_token_limit=100000')
+  const reservation = (
+    await db.query<{ value: any }>(
+      "select outreach_reserve_stage($1,$2,'analyze','hash','model') value",
+      [job, claim],
+    )
+  ).rows[0]!.value
+  await db.query(
+    "select outreach_finish_stage($1,$2,$3,'{}','Free model quota exhausted; no paid fallback')",
+    [reservation.id, job, claim],
+  )
+  expect(
+    (
+      await db.query<{ status: string }>('select status from research_stage_runs where id=$1', [
+        reservation.id,
+      ])
+    ).rows[0]!.status,
+  ).toBe('waiting_quota')
+  await db.query(
+    "select outreach_complete_job($1,$2,'{}','Free model quota exhausted; no paid fallback')",
+    [job, claim],
+  )
+  expect(
+    (
+      await db.query<{ failure_kind: string }>(
+        'select failure_kind from outreach_jobs where id=$1',
+        [job],
+      )
+    ).rows[0]!.failure_kind,
+  ).toBe('quota_wait')
+  const before = (await db.query('select model_requests from research_resource_usage')).rows
+  await expect(
+    db.query('select outreach_retry_job($1,$2)', [job, crypto.randomUUID()]),
+  ).rejects.toThrow('Administrator')
+  await db.query('select outreach_retry_job($1,$2)', [job, actor])
+  expect((await db.query('select model_requests from research_resource_usage')).rows).toEqual(
+    before,
+  )
+  const claimed = (
+    await db.query<{ claim_token: string }>("select * from outreach_claim_jobs('retry',1)")
+  ).rows[0]!
+  const next = (
+    await db.query<{ value: any }>(
+      "select outreach_reserve_stage($1,$2,'analyze','hash','model') value",
+      [job, claimed.claim_token],
+    )
+  ).rows[0]!.value
+  expect(next.resumed).toBe(false)
+  expect(
+    (
+      await db.query<{ attempt: number }>('select attempt from research_stage_runs where id=$1', [
+        next.id,
+      ])
+    ).rows[0]!.attempt,
+  ).toBe(2)
+})

@@ -158,7 +158,6 @@ export class OutreachResearchWorkflow extends WorkflowEntrypoint<Env, { job: Res
       if (reserved.data.resumed)
         throw new Error('Interrupted research stage requires bounded job retry')
       try {
-        const value = await execute()
         const permission = await currentContext()
         if (
           resource === 'model' &&
@@ -167,6 +166,17 @@ export class OutreachResearchWorkflow extends WorkflowEntrypoint<Env, { job: Res
             !permission.source.ai_reviewed ||
             permission.source.ai_snapshot_hash !== inputKey.split(':')[0] ||
             (await hashKey(permission.source.ai_excerpt)) !== inputKey.split(':')[1])
+        )
+          throw new Error('Source model permission changed')
+        const value = await execute()
+        const finalPermission = await currentContext()
+        if (
+          resource === 'model' &&
+          (!finalPermission.settings.ai_enabled ||
+            !finalPermission.settings.terms_confirmed ||
+            !finalPermission.source.ai_reviewed ||
+            finalPermission.source.ai_snapshot_hash !== inputKey.split(':')[0] ||
+            (await hashKey(finalPermission.source.ai_excerpt)) !== inputKey.split(':')[1])
         )
           throw new Error('Source model permission changed')
         const saved = await db.rpc('outreach_finish_stage', {

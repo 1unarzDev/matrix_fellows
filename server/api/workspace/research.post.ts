@@ -3,6 +3,7 @@ import { requireWorkspaceOfficer, assertWorkspaceOrigin } from '../../utils/work
 import { workspaceStorage, workspaceResult, workspaceBody } from '../../utils/workspace-storage'
 
 const schema = z.discriminatedUnion('action', [
+  z.object({ action: z.literal('retry'), jobId: z.string().uuid() }).strict(),
   z
     .object({
       action: z.enum(['run', 'pause', 'resume']),
@@ -50,7 +51,11 @@ export default defineEventHandler(async (event) => {
       statusCode: 403,
       statusMessage: 'Only workspace administrators can change research controls.',
     })
-  if (input.action === 'pause' || input.action === 'resume') {
+  if (input.action === 'retry') {
+    workspaceResult(
+      await db.rpc('outreach_retry_job', { p_job: input.jobId, p_actor: member.userId }),
+    )
+  } else if (input.action === 'pause' || input.action === 'resume') {
     workspaceResult(
       await db
         .from('outreach_settings')

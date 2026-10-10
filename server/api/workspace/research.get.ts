@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
   let jobQuery = db
     .from('outreach_jobs')
     .select(
-      'id,kind,status,attempts,error,created_at,updated_at,target_id,source_id,available_at',
+      'id,kind,status,attempts,error,created_at,updated_at,target_id,source_id,available_at,failure_kind',
       { count: 'exact' },
     )
     .order('created_at', { ascending: false })

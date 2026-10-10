@@ -14,7 +14,9 @@ beforeAll(async () => {
     '024_outreach_mail.sql',
     '028_member_dashboard.sql',
     '20261008005351_dashboard_canonical_plan.sql',
+    '20261009170000_research_profiles.sql',
     '20261009172000_officer_relationships.sql',
+    '20261010015431_research_execution.sql',
   ])
     await db.exec(
       await readFile(new URL('../../supabase/migrations/' + file, import.meta.url), 'utf8'),

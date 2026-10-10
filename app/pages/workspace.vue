@@ -120,6 +120,17 @@ watch(tab, async (value, previous) => {
 })
 const scope = ref('society')
 const profileId = ref('')
+const sharedProfiles = ref<{ profileId: string; displayName: string }[]>([])
+const sharedProfilePage = ref(0)
+const sharedProfileTotal = ref(0)
+async function loadSharedProfiles() {
+  if (!canDiscover.value) return
+  try {
+    const response = await $fetch<{ profiles: { id: string; fullName: string }[]; total: number }>('/api/workspace/research-profile/shared', { query: { page: sharedProfilePage.value } })
+    sharedProfiles.value = response.profiles.map(p => ({profileId: p.id, displayName: p.fullName}))
+    sharedProfileTotal.value = response.total
+  } catch { sharedProfiles.value = []; sharedProfileTotal.value = 0 }
+}
 const proposalStyle = ref('conversation')
 const unsaved = computed(() =>
   Boolean(
@@ -400,6 +411,13 @@ const profileBaseline = ref(JSON.stringify(profileForm))
 const profileExpectedUpdatedAt = ref('')
 const profileSaving = ref(false)
 const societyBaseline = ref('')
+const societyCapacity = ref<any>(null)
+async function loadSocietyCapacity() {
+  if (!canDiscover.value) return
+  try { societyCapacity.value = await $fetch('/api/workspace/society-capacity') }
+  catch { societyCapacity.value = { projects: [], note: 'Shared member capacity could not be loaded.' } }
+}
+watch(tab, value => { if (value === 'society') void loadSocietyCapacity() })
 const societyForm = reactive({
   name: 'Matrix Fellows',
   description: '',
@@ -807,6 +825,7 @@ onMounted(async () => {
   await loadMailboxes()
   if (canDiscover.value) {
     await loadRelationships()
+    await loadSharedProfiles()
   }
 })
 </script>
@@ -1330,8 +1349,13 @@ onMounted(async () => {
                     v-if="canDiscover && scope === 'student'"
                     v-model="profileId"
                     label="Research profile"
-                    :options="data.profiles.map((p) => ({ value: p.id, label: p.fullName }))"
+                    :options="[{value: '', label: 'Choose a shared member profile'}, ...sharedProfiles.map((p) => ({ value: p.profileId, label: p.displayName }))]"
                   />
+                  <div v-if="canDiscover && scope === 'student'" class="ws-actions">
+                    <span class="ws-muted">Only consenting profile projections are available.</span>
+                    <button v-if="sharedProfilePage > 0" class="ws-button" @click="sharedProfilePage--; loadSharedProfiles()">Previous profiles</button>
+                    <button v-if="(sharedProfilePage + 1) * 25 < sharedProfileTotal" class="ws-button" @click="sharedProfilePage++; loadSharedProfiles()">More profiles</button>
+                  </div>
                   <ThemedSelect
                     v-if="canDiscover"
                     v-model="proposalStyle"
@@ -1831,7 +1855,17 @@ onMounted(async () => {
             </form></details></template
           >
           <template v-else-if="tab === 'society'"
-            ><form class="ws-panel" @submit.prevent="saveSociety">
+            ><section v-if="canDiscover && societyCapacity" class="ws-panel">
+              <h2>Shared research capacity</h2>
+              <p class="ws-muted">{{ societyCapacity.note }}</p>
+              <article v-for="project in societyCapacity.projects" :key="project.id" class="sample">
+                <a :href="project.url" target="_blank" rel="noopener noreferrer">{{ project.title }}</a>
+                <p v-for="contribution in project.contributions" :key="contribution.claimId">
+                  {{ contribution.member }} — {{ contribution.statement }}
+                  <small class="ws-muted">{{ contribution.support }} · {{ contribution.availability }}</small>
+                </p>
+              </article>
+            </section><form class="ws-panel" @submit.prevent="saveSociety">
               <p class="ws-kicker">A credible shared introduction</p>
               <h2>What we can genuinely offer</h2>
               <p class="ws-muted">

@@ -15,6 +15,21 @@ import { buildContributionPlan } from '#shared/utils/research-plan'
 import { shareableResearchProfile, draftProfileProjection } from '../../utils/research-profile'
 import { assertWorkspaceTarget } from '../../utils/workspace-access'
 
+async function loadSocietySignals(db: ReturnType<typeof workspaceStorage>) {
+  const result = await db
+    .from('outreach_society_context_entries')
+    .select('id,kind,title,summary,organization,chapter,connection_date,project_url,status,confidence,updated_at')
+    .eq('society_id', true)
+    .in('status', ['introduced', 'connected', 'active'])
+    .order('updated_at', { ascending: false })
+    .limit(24)
+  // Keep a rollout with the additive migration pending usable. Once the
+  // migration exists this path is replaced by the real society context.
+  if (result.error && /outreach_society_context_entries|relation .* does not exist/i.test(String(result.error.message || result.error)))
+    return []
+  return workspaceResult(result)
+}
+
 export default defineEventHandler(async (event) => {
   assertWorkspaceOrigin(event)
   const member = await requireWorkspaceOfficer(event)
@@ -62,16 +77,7 @@ export default defineEventHandler(async (event) => {
   const society = societyFromRow(
     workspaceResult(await db.from('outreach_society').select('*').eq('id', true).single()),
   )
-  const societySignals = workspaceResult(
-    await db
-      .from('outreach_society_context_entries')
-      .select('id,kind,title,summary,organization,chapter,connection_date,project_url,status,confidence,updated_at')
-      .eq('society_id', true)
-      .eq('confidence', 'high')
-      .in('status', ['introduced', 'connected', 'active'])
-      .order('updated_at', { ascending: false })
-      .limit(24),
-  )
+  const societySignals = await loadSocietySignals(db)
   let profile: OutreachProfile | undefined
   let profileVersionId: string | null = null
   let consumedClaims: { id: string; statement: string; origin: string; support: string }[] = []
@@ -104,7 +110,6 @@ export default defineEventHandler(async (event) => {
     senderName: member.email,
     kind: input.kind,
     style: input.style,
-    societySignals,
   })
   consumedClaims = consumedClaims.filter(claim => draft.body.includes(claim.statement))
   const proposal = proposalFromRow(

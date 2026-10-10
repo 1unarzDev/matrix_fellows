@@ -7,7 +7,7 @@ The maintenance workflow is bounded and reviewable:
 1. Preserve the submitted source, source date, chapter hint, and submitting officer.
 2. Extract people, organizations, dates, project links, and connection signals locally. Uploaded files are treated as data and are never executed.
 3. Keep identity and project resolution conservative. The queue reserves separate resolve and project stages for later bounded adapters; the current processor records a source-backed candidate entry. A mention is retained as unreviewed context; it does not establish authorship, availability, recruiting, or a commitment.
-4. Project accepted society context into discovery interests and proposal packets. Drafts can reference an active or introduced connection when it matches the target, while keeping the statement qualified for officer review.
+4. Project society context into discovery interests and proposal packets. The context remains an internal planning signal; outbound drafts use only supported target, profile, and curated society facts so an unreviewed pasted thread cannot become a relationship claim.
 
 Raw source text and derived entries remain service-role records. The officer API returns source metadata and derived context only; it does not return pasted email or note text. The worker can process this queue while opportunity discovery is paused, so a paused discovery schedule does not stall society memory maintenance.
 

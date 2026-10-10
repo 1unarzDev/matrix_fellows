@@ -85,21 +85,27 @@ useHead({
 
         <div class="join-promises mt-9 grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
           <article class="join-promise">
-            <SiteIcon name="compass" :size="17" />
+            <span class="join-promise__icon" aria-hidden="true"
+              ><SiteIcon name="compass" :size="17"
+            /></span>
             <div>
               <h2>Find direction</h2>
               <p>Turn a broad interest into a clear next experiment.</p>
             </div>
           </article>
           <article class="join-promise">
-            <SiteIcon name="atom" :size="17" />
+            <span class="join-promise__icon" aria-hidden="true"
+              ><SiteIcon name="atom" :size="17"
+            /></span>
             <div>
               <h2>Build together</h2>
               <p>Meet students who want to question, test, and create.</p>
             </div>
           </article>
           <article class="join-promise">
-            <SiteIcon name="spark" :size="17" />
+            <span class="join-promise__icon" aria-hidden="true"
+              ><SiteIcon name="spark" :size="17"
+            /></span>
             <div>
               <h2>Go somewhere</h2>
               <p>Prepare for fairs, workshops, programs, and real experience.</p>
@@ -237,6 +243,9 @@ useHead({
     background-color 280ms ease,
     box-shadow 420ms ease;
 }
+.join-promise__icon {
+  display: contents;
+}
 .join-promise:hover {
   transform: translate3d(0, -4px, 0) scale(1.01);
   border-color: rgb(197 192 235 / 0.25);
@@ -310,7 +319,7 @@ useHead({
 }
 @media (max-width: 639px) {
   .join-main {
-    gap: 2rem;
+    gap: 1.5rem;
     padding-top: 2.25rem;
   }
   .join-kicker {
@@ -341,39 +350,76 @@ useHead({
     margin-top: 1.35rem;
     max-width: 22rem;
     font-size: 0.8125rem;
-    line-height: 1.7;
+    line-height: 1.65;
   }
   .join-promises {
-    margin-top: 1.5rem;
+    margin-top: 1.25rem;
     grid-template-columns: 1fr;
-    gap: 0;
-    overflow: hidden;
-    border: 1px solid rgb(244 241 233 / 0.1);
-    border-radius: 1.25rem;
-    background:
-      radial-gradient(circle at 8% 18%, rgb(197 192 235 / 0.045), transparent 34%),
-      rgb(244 241 233 / 0.015);
-    box-shadow: inset 0 1px rgb(255 255 255 / 0.025);
+    gap: 0.5rem;
   }
   .join-promise {
+    --promise-light: 197 192 235;
+    position: relative;
+    isolation: isolate;
+    align-items: center;
+    gap: 0.75rem;
     min-height: 0;
-    padding: 0.9rem 1rem;
-    border: 0;
-    border-radius: 0;
+    padding: 0.75rem;
+    border: 1px solid rgb(var(--promise-light) / 0.16);
+    border-radius: 1.125rem;
     text-align: left;
-    background: transparent;
-    box-shadow: none;
+    background:
+      radial-gradient(ellipse at 0% 0%, rgb(var(--promise-light) / 0.08), transparent 70%),
+      linear-gradient(120deg, rgb(244 241 233 / 0.035), rgb(244 241 233 / 0.012)),
+      rgb(17 22 23 / 0.65);
+    box-shadow:
+      inset 0 1px rgb(255 255 255 / 0.055),
+      0 8px 24px rgb(0 0 0 / 0.09);
   }
-  .join-promise:not(:last-child) {
-    border-bottom: 1px solid rgb(244 241 233 / 0.08);
+  .join-promise:nth-child(2) {
+    --promise-light: 166 210 207;
+  }
+  .join-promise:nth-child(3) {
+    --promise-light: 222 208 168;
+  }
+  .join-promise__icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 2.375rem;
+    height: 2.375rem;
+    border: 1px solid rgb(var(--promise-light) / 0.22);
+    border-radius: 50%;
+    color: rgb(var(--promise-light) / 0.95);
+    background: radial-gradient(
+      circle at 30% 15%,
+      rgb(var(--promise-light) / 0.12),
+      rgb(var(--promise-light) / 0.025)
+    );
+    box-shadow:
+      inset 0 1px rgb(255 255 255 / 0.06),
+      0 0 22px rgb(var(--promise-light) / 0.045);
+  }
+  .join-promise__icon svg {
+    width: 19px;
+    height: 19px;
+  }
+  .join-promise h2 {
+    font-size: 0.875rem;
+    font-weight: 500;
+    letter-spacing: -0.015em;
+    color: rgb(244 241 233 / 0.92);
+  }
+  .join-promise p {
+    margin-top: 0.3rem;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    color: rgb(244 241 233 / 0.6);
   }
   .join-promise:hover {
     transform: none;
-    background: rgb(197 192 235 / 0.025);
-    box-shadow: none;
   }
   .join-privacy {
-    margin-top: 1.25rem;
+    margin-top: 1rem;
     padding-inline: 0.15rem;
   }
 }

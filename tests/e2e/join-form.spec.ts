@@ -165,5 +165,7 @@ test('join surfaces use a transparent glass treatment on the page and in the mod
   })
   expect(embeddedSurface.rgba[3]).toBeGreaterThanOrEqual(80)
   expect(embeddedSurface.rgba[3]).toBeLessThanOrEqual(190)
-  expect(embeddedSurface.filter).toContain('blur(36px)')
+  // The existing phone treatment uses a cheaper blur than the desktop surface.
+  const mobile = await page.evaluate(() => matchMedia('(max-width: 639px)').matches)
+  expect(embeddedSurface.filter).toContain(mobile ? 'blur(28px)' : 'blur(36px)')
 })

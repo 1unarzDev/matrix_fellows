@@ -5,6 +5,8 @@ export function classifyResearchLink(input: string) {
   const host = url.hostname.toLowerCase()
   if (host === 'localhost' || /^[\d.]+$/.test(host) || host.includes(':') || !host.includes('.') || /\.(local|internal|localhost)$/.test(host)) throw new Error('Use a public research link.')
   url.hash = ''
+  // PDFs need a page-aware parser; retain them honestly as references until configured.
+  if (/\.pdf$/i.test(url.pathname)) return { url: url.href, kind: 'reference' as const }
   if (host === 'github.com' && /^\/[\w.-]+\/[\w.-]+\/?$/.test(url.pathname)) {
     url.search = ''; url.pathname = url.pathname.replace(/\/$/, '').replace(/\.git$/, '')
     return { url: url.href, kind: 'repository' as const }
@@ -36,7 +38,7 @@ export async function acquireResearchArtifact(input: string, fetcher: typeof fet
     try {
       const readme = JSON.parse(await boundedRequest('https://api.github.com/repos' + path + '/readme', fetcher))
       if (readme.encoding === 'base64' && typeof readme.content === 'string' && readme.size <= 10000) {
-        readmeText = atob(readme.content.replace(/\s/g, '')).slice(0, 8000)
+        readmeText = new TextDecoder().decode(Uint8Array.from(atob(readme.content.replace(/\s/g, '')), character => character.charCodeAt(0))).slice(0, 8000)
         readmePath = String(readme.path || 'README'); readmeVersion = String(readme.sha || '')
       }
     } catch { /* Metadata remains useful when a README is unavailable. */ }

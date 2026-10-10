@@ -149,7 +149,7 @@ test('join surfaces use a transparent glass treatment on the page and in the mod
   await page.goto('/join')
   await expect(
     page.getByText(
-      'Your response helps organizers understand the needs of society members and provides the student and parent or guardian information needed for participation approval.',
+      'Your response helps organizers support members and confirm participation with the student and parent or guardian details you provide.',
       { exact: true },
     ),
   ).toBeVisible()

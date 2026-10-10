@@ -64,9 +64,9 @@ useHead({
     <ScienceAccent theme="mechanics" />
 
     <main
-      class="join-main relative z-[1] mx-auto grid max-w-[90rem] gap-12 px-5 pb-24 pt-12 sm:px-8 lg:grid-cols-[minmax(17rem,.78fr)_minmax(34rem,1.22fr)] lg:items-start lg:gap-16 lg:px-12 lg:pt-20 xl:gap-24"
+      class="join-main relative z-[1] mx-auto grid max-w-[90rem] gap-12 px-5 pb-24 pt-12 sm:px-8 xl:grid-cols-[minmax(17rem,.78fr)_minmax(34rem,1.22fr)] xl:items-start xl:gap-24 xl:px-12 xl:pt-20"
     >
-      <section class="join-intro lg:sticky lg:top-28 lg:pt-4">
+      <section class="join-intro xl:sticky xl:top-28 xl:pt-4">
         <div class="join-kicker">
           <span class="join-kicker__pulse" aria-hidden="true" />
           <span>Martin High School Research Society</span>
@@ -78,12 +78,11 @@ useHead({
           <span class="join-title-accent">We’ll help you move it forward.</span>
         </h1>
         <p class="mt-7 max-w-xl text-sm leading-7 text-paper/58 sm:text-[15px]">
-          You do not need a polished idea or prior experience. Tell us what pulls at your curiosity,
-          and we’ll help you find people, practical next steps, and opportunities to make something
-          real.
+          No polished idea or prior experience needed. Share your curiosity—we’ll help you find
+          collaborators, next steps, and research opportunities.
         </p>
 
-        <div class="join-promises mt-9 grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+        <div class="join-promises mt-9 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
           <article class="join-promise">
             <span class="join-promise__icon" aria-hidden="true"
               ><SiteIcon name="compass" :size="17"
@@ -116,8 +115,8 @@ useHead({
         <div class="join-privacy mt-7 flex items-start gap-3">
           <span class="join-privacy__icon"><SiteIcon name="check" :size="14" /></span>
           <p>
-            Your response helps organizers understand the needs of society members and provides the
-            student and parent or guardian information needed for participation approval.
+            Your response helps organizers support members and confirm participation with the
+            student and parent or guardian details you provide.
           </p>
         </div>
       </section>
@@ -229,7 +228,7 @@ useHead({
 }
 .join-promise {
   display: flex;
-  min-height: 6.7rem;
+  min-height: 0;
   gap: 0.8rem;
   padding: 1rem;
   border: 1px solid rgb(244 241 233 / 0.1);
@@ -244,7 +243,10 @@ useHead({
     box-shadow 420ms ease;
 }
 .join-promise__icon {
-  display: contents;
+  display: grid;
+  place-items: center;
+  flex: 0 0 1.5rem;
+  height: 1.5rem;
 }
 .join-promise:hover {
   transform: translate3d(0, -4px, 0) scale(1.01);
@@ -255,14 +257,14 @@ useHead({
     0 0 22px rgb(197 192 235 / 0.035);
 }
 .join-promise h2 {
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   color: rgb(244 241 233 / 0.82);
 }
 .join-promise p {
   margin-top: 0.3rem;
-  font-size: 0.65rem;
-  line-height: 1.55;
-  color: rgb(244 241 233 / 0.42);
+  font-size: 0.75rem;
+  line-height: 1.65;
+  color: rgb(244 241 233 / 0.6);
 }
 .join-privacy {
   max-width: 31rem;
@@ -302,19 +304,84 @@ useHead({
     box-shadow: 0 0 0 0.65rem rgb(197 192 235 / 0);
   }
 }
-@media (max-width: 1023px) {
-  .join-intro {
-    text-align: center;
+@media (min-width: 1280px) and (max-width: 1535px) {
+  .join-intro h1 {
+    font-size: clamp(3rem, 4.6vw, 4.65rem);
   }
-  .join-kicker,
-  .join-privacy {
+}
+@media (max-width: 1279px) {
+  .join-main {
+    max-width: 48rem;
+    gap: 2.5rem;
+  }
+  .join-intro,
+  #join-form {
+    min-width: 0;
+    width: 100%;
+    max-width: 42rem;
     margin-inline: auto;
+    text-align: left;
+  }
+  .join-intro h1 {
+    max-width: none;
+    font-size: clamp(2rem, 7.8vw, 3.75rem);
+    line-height: 1.04;
+    letter-spacing: -0.055em;
+    text-wrap: balance;
+  }
+  .join-title-lead {
+    display: block;
   }
   .join-intro > p {
-    margin-inline: auto;
+    max-width: 42rem;
+    margin-top: 1.5rem;
+    font-size: 0.875rem;
+    line-height: 1.75;
+    text-wrap: pretty;
+  }
+  .join-promises {
+    gap: 0.75rem;
+    margin-top: 1.75rem;
+  }
+  .join-promise {
+    min-height: 0;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.875rem;
+    padding: 1.125rem;
+    border-color: rgb(244 241 233 / 0.09);
+    border-radius: 1rem;
+    color: var(--color-acid);
+    background: rgb(244 241 233 / 0.018);
+    box-shadow: inset 0 1px rgb(255 255 255 / 0.025);
+  }
+  .join-promise__icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 1.5rem;
+    height: 1.5rem;
+    color: var(--color-acid);
+  }
+  .join-promise__icon svg {
+    width: 20px;
+    height: 20px;
+  }
+  .join-promise h2 {
+    font-size: 0.875rem;
+    font-weight: 500;
+    letter-spacing: -0.015em;
+    color: rgb(244 241 233 / 0.92);
+  }
+  .join-promise p {
+    margin-top: 0.375rem;
+    font-size: 0.75rem;
+    line-height: 1.65;
+    color: rgb(244 241 233 / 0.6);
   }
   .join-privacy {
-    text-align: left;
+    max-width: none;
+    margin-top: 1.5rem;
   }
 }
 @media (max-width: 639px) {
@@ -324,8 +391,7 @@ useHead({
   }
   .join-kicker {
     gap: 0.5rem;
-    max-width: none;
-    white-space: nowrap;
+    max-width: 100%;
     font-size: 0.54rem;
     letter-spacing: 0.145em;
   }
@@ -335,92 +401,37 @@ useHead({
   }
   .join-intro h1 {
     margin-top: 1.4rem;
-    font-size: clamp(2.16rem, 10.8vw, 3rem);
-    line-height: 0.99;
-    letter-spacing: -0.058em;
-  }
-  .join-title-lead {
-    display: block;
-    white-space: nowrap;
-  }
-  .join-intro {
-    min-width: 0;
   }
   .join-intro > p {
     margin-top: 1.35rem;
-    max-width: 22rem;
     font-size: 0.8125rem;
-    line-height: 1.65;
+    line-height: 1.75;
   }
   .join-promises {
-    margin-top: 1.25rem;
+    margin-top: 1.5rem;
     grid-template-columns: 1fr;
-    gap: 0.5rem;
   }
   .join-promise {
-    --promise-light: 197 192 235;
-    position: relative;
-    isolation: isolate;
-    align-items: center;
-    gap: 0.75rem;
-    min-height: 0;
-    padding: 0.75rem;
-    border: 1px solid rgb(var(--promise-light) / 0.16);
-    border-radius: 1.125rem;
-    text-align: left;
-    background:
-      radial-gradient(ellipse at 0% 0%, rgb(var(--promise-light) / 0.08), transparent 70%),
-      linear-gradient(120deg, rgb(244 241 233 / 0.035), rgb(244 241 233 / 0.012)),
-      rgb(17 22 23 / 0.65);
-    box-shadow:
-      inset 0 1px rgb(255 255 255 / 0.055),
-      0 8px 24px rgb(0 0 0 / 0.09);
-  }
-  .join-promise:nth-child(2) {
-    --promise-light: 166 210 207;
-  }
-  .join-promise:nth-child(3) {
-    --promise-light: 222 208 168;
-  }
-  .join-promise__icon {
-    display: grid;
-    place-items: center;
-    flex: 0 0 2.375rem;
-    height: 2.375rem;
-    border: 1px solid rgb(var(--promise-light) / 0.22);
-    border-radius: 50%;
-    color: rgb(var(--promise-light) / 0.95);
-    background: radial-gradient(
-      circle at 30% 15%,
-      rgb(var(--promise-light) / 0.12),
-      rgb(var(--promise-light) / 0.025)
-    );
-    box-shadow:
-      inset 0 1px rgb(255 255 255 / 0.06),
-      0 0 22px rgb(var(--promise-light) / 0.045);
-  }
-  .join-promise__icon svg {
-    width: 19px;
-    height: 19px;
-  }
-  .join-promise h2 {
-    font-size: 0.875rem;
-    font-weight: 500;
-    letter-spacing: -0.015em;
-    color: rgb(244 241 233 / 0.92);
-  }
-  .join-promise p {
-    margin-top: 0.3rem;
-    font-size: 0.75rem;
-    line-height: 1.5;
-    color: rgb(244 241 233 / 0.6);
+    flex-direction: row;
+    gap: 1rem;
+    padding: 1rem;
   }
   .join-promise:hover {
     transform: none;
   }
   .join-privacy {
+    margin-top: 1.25rem;
+  }
+}
+@media (max-width: 359px) {
+  .join-main {
+    gap: 1.25rem;
+  }
+  .join-promise {
+    padding: 0.875rem;
+  }
+  .join-privacy {
     margin-top: 1rem;
-    padding-inline: 0.15rem;
   }
 }
 @media (prefers-reduced-motion: reduce) {

@@ -57,7 +57,7 @@ test('dedicated join page stays fluid and contained on narrow and reduced-motion
   ).toBe(true)
 })
 
-test('mobile join intro keeps a compact centered hierarchy above the form', async ({ page }) => {
+test('mobile join intro keeps a compact aligned hierarchy above the form', async ({ page }) => {
   for (const width of [320, 390, 430]) {
     await page.setViewportSize({ width, height: 844 })
     await page.goto('/join')
@@ -71,8 +71,8 @@ test('mobile join intro keeps a compact centered hierarchy above the form', asyn
     expect(kickerBox).not.toBeNull()
     expect(headingBox).not.toBeNull()
     expect(formBox).not.toBeNull()
-    expect(Math.abs(kickerBox!.x + kickerBox!.width / 2 - width / 2)).toBeLessThanOrEqual(1)
-    expect(Math.abs(headingBox!.x + headingBox!.width / 2 - width / 2)).toBeLessThanOrEqual(1)
+    expect(Math.abs(kickerBox!.x - headingBox!.x)).toBeLessThanOrEqual(1)
+    expect(Math.abs(headingBox!.x - formBox!.x)).toBeLessThanOrEqual(1)
     expect(kickerBox!.height).toBeLessThanOrEqual(16)
     expect(headingBox!.height).toBeLessThanOrEqual(145)
     expect(formBox!.y).toBeLessThanOrEqual(820)

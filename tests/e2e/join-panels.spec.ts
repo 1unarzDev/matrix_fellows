@@ -4,7 +4,7 @@ test('mobile join panels have readable individual surfaces without displacing th
   page,
 }, info) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
-  for (const width of [320, 360, 390, 430, 640, 1440]) {
+  for (const width of [320, 360, 390, 430, 520, 600, 640, 768, 1024, 1180, 1279, 1280, 1440]) {
     await page.setViewportSize({ width, height: 1000 })
     await page.goto('/join')
     await expect(page.locator('[data-join-form-ready="true"]')).toBeVisible()
@@ -25,17 +25,37 @@ test('mobile join panels have readable individual surfaces without displacing th
           }
         }),
       )
-      expect(boxes[1]!.top - boxes[0]!.bottom).toBeGreaterThanOrEqual(8)
-      expect(boxes[2]!.top - boxes[1]!.bottom).toBeGreaterThanOrEqual(8)
+      expect(boxes[1]!.top - boxes[0]!.bottom).toBeGreaterThanOrEqual(12)
+      expect(boxes[2]!.top - boxes[1]!.bottom).toBeGreaterThanOrEqual(12)
       for (const box of boxes) {
-        expect(box.iconWidth).toBeGreaterThanOrEqual(38)
+        expect(box.iconWidth).toBeGreaterThanOrEqual(24)
         expect(box.fontSize).toBeGreaterThanOrEqual(12)
         expect(box.radius).toBeGreaterThanOrEqual(16)
       }
       expect((await page.locator('#join-form').boundingBox())!.y).toBeLessThanOrEqual(820)
     }
+    if (width < 1280) {
+      const alignment = await page.locator('.join-intro').evaluate((el) => {
+        const title = el.querySelector('h1')!.getBoundingClientRect()
+        const description = el.querySelector(':scope > p')!.getBoundingClientRect()
+        const form = document.querySelector('#join-form')!.getBoundingClientRect()
+        return {
+          titleX: title.x,
+          descriptionX: description.x,
+          formX: form.x,
+          titleHeight: title.height,
+        }
+      })
+      expect(Math.abs(alignment.titleX - alignment.descriptionX)).toBeLessThanOrEqual(1)
+      expect(Math.abs(alignment.titleX - alignment.formX)).toBeLessThanOrEqual(1)
+      expect(alignment.titleHeight).toBeLessThanOrEqual(220)
+      const colors = await cards
+        .locator('.join-promise__icon')
+        .evaluateAll((elements) => elements.map((el) => getComputedStyle(el).color))
+      expect(new Set(colors).size).toBe(1)
+    }
     await page.screenshot({
-      path: `/tmp/matrix-join-panels/after-${width}-${info.project.name}.png`,
+      path: `/tmp/matrix-join-refinement/after-${width}-${info.project.name}.png`,
       fullPage: true,
       animations: 'disabled',
     })

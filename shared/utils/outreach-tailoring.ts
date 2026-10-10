@@ -18,6 +18,7 @@ export interface SocietyConnectionSignal {
   organization?: string | null
   chapter?: string | null
   status?: string | null
+  confidence?: string | null
 }
 const stop = new Set([
   'research',
@@ -101,7 +102,11 @@ export function tailorOutreachDraft(input: {
   const affiliation = profile?.affiliations?.find((item) => matchScore(item, context) > 0)
   const plan = input.plan
   const societyConnection = (input.societySignals || [])
-    .filter((signal) => ['introduced', 'connected', 'active'].includes(signal.status || ''))
+    .filter(
+      (signal) =>
+        ['introduced', 'connected', 'active'].includes(signal.status || '') &&
+        signal.confidence === 'high',
+    )
     .map((signal) => ({
       signal,
       score: matchScore(

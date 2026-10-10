@@ -9,7 +9,7 @@ export default defineEventHandler(async (event): Promise<SocietyContextResponse>
     db
       .from('outreach_society_sources')
       .select(
-        'id,title,kind,file_name,mime_type,byte_size,content_text,source_date,chapter,submitted_by,processing_status,processing_error,created_at,processed_at',
+        'id,title,kind,file_name,mime_type,byte_size,source_date,chapter,submitted_by,processing_status,processing_error,created_at,processed_at',
       )
       .eq('society_id', true)
       .order('created_at', { ascending: false })
@@ -38,7 +38,9 @@ export default defineEventHandler(async (event): Promise<SocietyContextResponse>
       fileName: row.file_name || null,
       mimeType: row.mime_type || null,
       byteSize: row.byte_size || null,
-      excerpt: String(row.content_text || '').replace(/\s+/g, ' ').trim().slice(0, 280),
+      // Source text can contain private correspondence. Keep it behind the
+      // service-role processing path; officers receive derived metadata only.
+      excerpt: '',
       sourceDate: row.source_date || null,
       chapter: row.chapter || null,
       submittedBy: row.submitted_by || null,

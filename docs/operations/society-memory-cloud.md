@@ -9,6 +9,6 @@ The maintenance workflow is bounded and reviewable:
 3. Keep identity and project resolution conservative. The queue reserves separate resolve and project stages for later bounded adapters; the current processor records a source-backed candidate entry. A mention is retained as unreviewed context; it does not establish authorship, availability, recruiting, or a commitment.
 4. Project accepted society context into discovery interests and proposal packets. Drafts can reference an active or introduced connection when it matches the target, while keeping the statement qualified for officer review.
 
-Raw source text and derived entries remain service-role records. The officer API returns bounded excerpts and context metadata. The worker can process this queue while opportunity discovery is paused, so a paused discovery schedule does not stall society memory maintenance.
+Raw source text and derived entries remain service-role records. The officer API returns source metadata and derived context only; it does not return pasted email or note text. The worker can process this queue while opportunity discovery is paused, so a paused discovery schedule does not stall society memory maintenance.
 
 The current local processor is intentionally modest. It recognizes common DFW and Stanford organization names, explicit email headers, ISO dates, and public project links. Unsupported binary files remain honest metadata until a bounded parser is configured. Automatic mailbox reading and reply synchronization remain disconnected.

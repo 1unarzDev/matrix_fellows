@@ -65,8 +65,9 @@ export default defineEventHandler(async (event) => {
   const societySignals = workspaceResult(
     await db
       .from('outreach_society_context_entries')
-      .select('id,kind,title,summary,organization,chapter,connection_date,project_url,status,confidence')
+      .select('id,kind,title,summary,organization,chapter,connection_date,project_url,status,confidence,updated_at')
       .eq('society_id', true)
+      .eq('confidence', 'high')
       .in('status', ['introduced', 'connected', 'active'])
       .order('updated_at', { ascending: false })
       .limit(24),

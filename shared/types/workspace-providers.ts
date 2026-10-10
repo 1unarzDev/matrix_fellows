@@ -9,6 +9,10 @@ export interface SourceSnapshot {
   text: string
   hash: string
   retrievedAt: string
+  contacts: string[]
+  entities: { name: string; canonical_url: string }[]
+  links: { name: string; canonical_url: string }[]
+  bytes: number
 }
 export interface DiscoveryProvider {
   status(): ProviderCapability
@@ -31,7 +35,13 @@ export interface ResearchModel {
     signal: AbortSignal
   }): Promise<{
     themes: string[]
-    proposals: { title: string; deliverable: string; supportingQuote: string }[]
+    proposalOptions: {
+      title: string
+      task: string
+      deliverable: string
+      quote: string
+      supervisionQuestions: string[]
+    }[]
     unknowns: string[]
   }>
 }
@@ -47,19 +57,14 @@ export interface ReviewedMail {
 }
 export interface WorkspaceMailProvider {
   status(): ProviderCapability
-  submit(
-    message: ReviewedMail,
-  ): Promise<{
+  submit(message: ReviewedMail): Promise<{
     status: 'provider_accepted' | 'failed_before_submission' | 'submission_unknown'
     receipt: string | null
   }>
 }
 export interface ReplySyncProvider {
   status(): ProviderCapability
-  sync(input: {
-    authorizedThreadIds: string[]
-    cursor: string | null
-  }): Promise<{
+  sync(input: { authorizedThreadIds: string[]; cursor: string | null }): Promise<{
     cursor: string | null
     replies: { id: string; threadId: string; receivedAt: string; body: string }[]
   }>

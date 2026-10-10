@@ -17,6 +17,7 @@
     "GEMINI_TERMS_CONFIRMED": "true",
     "GEMINI_FREE_PROJECT_CONFIRMED": "true",
     "GEMINI_MODEL": "gemini-2.5-flash",
+    "GEMINI_PROVIDER_MODE": "unpaid_public",
   },
   "observability": { "enabled": true },
 }

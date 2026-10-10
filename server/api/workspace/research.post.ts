@@ -30,6 +30,10 @@ const schema = z.discriminatedUnion('action', [
       enabled: z.boolean(),
       aiExcerpt: z.string().trim().max(12000),
       aiReviewed: z.boolean(),
+      snapshotHash: z
+        .string()
+        .regex(/^[a-f0-9]{64}$/)
+        .optional(),
     })
     .strict(),
 ])
@@ -65,6 +69,11 @@ export default defineEventHandler(async (event) => {
       await db.from('outreach_settings').update(input.settings).eq('id', true).select().single(),
     )
   } else if (input.action === 'source') {
+    if (input.aiReviewed && !input.snapshotHash)
+      throw createError({
+        statusCode: 422,
+        statusMessage: 'Review the acquired snapshot before enabling model analysis.',
+      })
     if (
       input.aiReviewed &&
       (input.aiExcerpt.length < 40 ||
@@ -84,6 +93,7 @@ export default defineEventHandler(async (event) => {
           enabled: input.enabled,
           ai_excerpt: input.aiExcerpt,
           ai_reviewed: input.aiReviewed,
+          ai_snapshot_hash: input.aiReviewed ? input.snapshotHash : null,
         })
         .eq('id', input.sourceId)
         .select()

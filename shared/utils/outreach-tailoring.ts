@@ -1,3 +1,4 @@
+import type { ContributionPlan } from './research-plan'
 import type { OutreachProfile, OutreachSociety, OutreachTarget } from '../types/outreach'
 
 export const proposalStyles = [
@@ -60,6 +61,7 @@ export function tailorOutreachDraft(input: {
   senderName?: string
   kind: 'society' | 'student'
   style: ProposalStyle
+  plan?: ContributionPlan
 }) {
   const { target, society, profile, kind, style } = input
   const context = words(
@@ -87,40 +89,50 @@ export function tailorOutreachDraft(input: {
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score)[0]?.item
   const affiliation = profile?.affiliations?.find((item) => matchScore(item, context) > 0)
-  const observation = evidence
-    ? `Your work caught our attention: “[REVIEW: add a specific observation supported by ${evidence.url}]”.`
-    : '[REVIEW: add one verified research-specific observation and its source].'
+  const plan = input.plan
+  const support = plan?.evidence[0]
+  const observation = support
+    ? `I noticed this description of your research: “${support.quote}” (${support.url}).`
+    : evidence?.quote
+      ? `I noticed this description of your research: “${evidence.quote}” (${evidence.url}).`
+      : '[REVIEW: add one verified research-specific observation and its source].'
   const asks: Record<ProposalStyle, string> = {
-    conversation:
-      'Would you consider a short conversation with our society about [REVIEW: specific research question]? We would prepare students and coordinate scheduling.',
+    conversation: 'Would you be open to a brief conversation about this research direction?',
     visit:
-      'Would an approved school visit focused on [REVIEW: relevant topic] be possible? We would first arrange the required school sponsorship, permissions and transport.',
+      'Would an introductory visit be possible? We would first confirm access requirements and practical arrangements.',
     feedback:
-      'Would you be open to a brief feedback session on [REVIEW: actual project and focused question]? We can send a one-page summary beforehand.',
+      'Would you be open to one focused question or brief feedback on a short project summary?',
     replication:
-      'We would like to reproduce [REVIEW: named baseline] using permitted public code/data and investigate [REVIEW: bounded question]. Would that scope be useful, and what supervision or eligibility requirements would apply?',
+      'Would a small replication using permitted public code and data be a useful starting point?',
     validation:
-      'We could pilot [REVIEW: bounded validation task] and return a reproducible error report with [REVIEW: quality checks]. Would this address a useful question for your group?',
+      'Would a bounded evaluation with a reproducible error report be useful? We would first agree on scope and permitted data.',
     annotation:
-      'If useful to your group, we could explore a small annotation pilot on permitted data, with your rubric, training and agreement checks. What task and supervision would make such a pilot worthwhile?',
+      'Would a small annotation pilot be useful? We would first establish a rubric, data permission and quality checks.',
     collaboration:
-      'Would you be willing to discuss [REVIEW: scoped contribution and deliverable] as a small collaboration? We would establish supervision, data permissions and contribution expectations before work begins.',
+      'Would you be open to discussing a small contribution and what supervision it would require?',
   }
   const introduction =
     kind === 'student' && profile
-      ? `${profile.introduction || `I’m ${profile.fullName}, involved with ${society.name}.`} My interests include ${profile.interests.slice(0, 3).join(', ') || '[REVIEW: research interests]'}.${affiliation ? ` Relevant affiliation: ${affiliation}.` : ''}`
-      : `I’m ${input.senderName || '[REVIEW: sender name]'}, writing on behalf of ${society.name}, a research society at Martin High School.`
+      ? `I’m ${input.senderName || '[REVIEW: officer name]'}, an officer with ${society.name}, writing on behalf of ${profile.fullName}. They have shared an interest in ${profile.interests.slice(0, 3).join(', ') || 'learning more about this research'}.`
+      : `I’m ${input.senderName || '[REVIEW: officer name]'}, writing on behalf of ${society.name}.`
   const relevant =
-    kind === 'student' && sample
-      ? `My work on ${sample.sample.title}: ${sample.sample.contribution}\nWork sample: ${sample.sample.url}`
+    kind === 'student' && sample && sample.score > 0
+      ? `They describe their contribution to ${sample.sample.title} as: ${sample.sample.contribution}
+Work sample: ${sample.sample.url}`
       : accomplishments[0]
-        ? `Relevant society work: ${accomplishments[0].item.description}\n${accomplishments[0].item.url}`
+        ? `Relevant society work: ${accomplishments[0].item.description}
+${accomplishments[0].item.url}`
         : ''
-  const availability =
-    kind === 'student' && profile?.availability ? `I can commit ${profile.availability}.` : ''
+  // Availability is context to verify, never an automatically approved commitment.
+  const ask = plan?.question || asks[style]
+  const offer =
+    plan?.mode === 'possible_contribution' && plan.deliverable
+      ? `One possible starting point is ${plan.deliverable}. We would agree on scope and confirm participation before committing to work.`
+      : ''
+
   return {
     subject:
-      `${style === 'visit' ? 'School research visit' : style === 'conversation' ? 'Research discussion' : `${style[0]!.toUpperCase()}${style.slice(1)} pilot`} — ${target.disciplines[0] || target.organization || target.name}`.slice(
+      `${style === 'visit' ? 'Research visit' : style === 'conversation' ? 'Research discussion' : `${style[0]!.toUpperCase()}${style.slice(1)} pilot`} — ${target.disciplines[0] || target.organization || target.name}`.slice(
         0,
         180,
       ),
@@ -130,14 +142,17 @@ export function tailorOutreachDraft(input: {
       observation,
       relevant,
       achievement ? `${achievement.description}\n${achievement.url}` : '',
-      availability,
-      asks[style],
-      `Thank you,\n${profile?.signature || profile?.fullName || input.senderName || '[REVIEW: sender name]'}`,
+      offer,
+      ask,
+      `Thank you,\n${input.senderName || '[REVIEW: officer name]'}`,
     ]
       .filter(Boolean)
       .join('\n\n'),
     notices: [
-      'Complete every REVIEW placeholder before approval; no reading or contribution is invented.',
+      plan?.provenance === 'reviewed-model-analysis'
+        ? 'Local draft uses a source-supported model contribution suggestion; the lab need and participation remain unconfirmed.'
+        : 'Using local evidence-based drafting.',
+      'Confirm every factual claim and resolve REVIEW placeholders before approval.',
       ...(sample && sample.score === 0
         ? [
             'The selected work sample has no detected topical overlap; choose a better artifact or explain its relevance.',

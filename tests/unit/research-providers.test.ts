@@ -37,12 +37,14 @@ it('source reader rejects private-network URLs before any request and follows no
     reader.read('https://www.uta.edu/research', ['www.uta.edu'], new AbortController().signal),
   ).rejects.toThrow('no redirect')
 })
-it('keys alone do not activate a model for an unapproved audience', async () => {
+it('keys alone do not activate a model without confirmed provider terms and mode', async () => {
   const fetcher = vi.fn()
   const model = new PublicGeminiResearchModel({
     key: 'synthetic-key',
     model: 'gemini-2.5-flash',
-    suitableAudienceAuthorized: false,
+    termsConfirmed: false,
+    mode: 'unpaid_public',
+    projectModeConfirmed: true,
     fetcher,
   })
   expect(model.status().state).toBe('unavailable')
@@ -53,6 +55,6 @@ it('keys alone do not activate a model for an unapproved audience', async () => 
       promptVersion: 'bounded-contribution-v1',
       signal: new AbortController().signal,
     }),
-  ).rejects.toThrow('audience')
+  ).rejects.toThrow('terms')
   expect(fetcher).not.toHaveBeenCalled()
 })

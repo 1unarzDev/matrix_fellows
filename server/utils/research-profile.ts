@@ -18,6 +18,8 @@ export async function researchProfilePacket(event: H3Event, profileId: string, o
   if (ownerId) query = query.eq('subject_user_id', ownerId)
   else query = query.eq('consent_to_share', true).not('subject_user_id', 'is', null)
   const profile = workspaceResult(await query.maybeSingle())
+  const membership = profile?.subject_user_id ? workspaceResult(await db.from('outreach_members').select('user_id').eq('user_id', profile.subject_user_id).eq('enabled', true).maybeSingle()) : null
+  if (!ownerId && !membership) throw createError({ statusCode: 404, statusMessage: 'A shared research profile is unavailable.' })
   if (!profile) throw createError({ statusCode: 404, statusMessage: 'A shared research profile is unavailable.' })
   let claimsQuery = db.from('research_claims').select('id,statement,origin,support_state,snapshot_id').eq('profile_id', profileId).eq('adoption', 'accepted').is('withdrawn_at', null).order('created_at').limit(100)
   if (!ownerId) claimsQuery = claimsQuery.eq('sharing_scope', 'officer')

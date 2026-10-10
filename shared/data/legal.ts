@@ -13,13 +13,13 @@ export interface LegalDocument {
 export const privacyPolicy: LegalDocument = {
   title: 'Privacy policy',
   description: 'What we collect, why we need it, and the choices you have.',
-  updated: 'October 7, 2026',
+  updated: 'October 9, 2026',
   sections: [
     {
       id: 'scope',
       title: 'Our approach',
       paragraphs: [
-        'Matrix Fellows operates this website and its member dashboard. This policy covers information we receive through the site, membership forms, accounts, research tools, and connected services. Matrix Fellows serves people with varied backgrounds and ages; individual programs can have their own eligibility requirements.',
+        'Matrix Fellows operates this website and its member dashboard. This policy covers information we receive through the site, membership forms, accounts, research tools, and connected services. The dashboard is intended for adults; school participation is a separate workflow and individual programs retain their own eligibility requirements.',
         'We use information to run the society and support members’ work, not to sell personal information or target advertising. External sites and services have their own privacy policies.',
       ],
     },
@@ -29,7 +29,7 @@ export const privacyPolicy: LegalDocument = {
       paragraphs: [
         'Accounts contain your email address, authentication identity, and information you choose to add. Google or Microsoft sign-in supplies basic identity information such as your name and email; signing in does not give us access to your inbox.',
         'The dashboard can store interests, skills, availability, location or travel preferences, work samples, profile claims, saved opportunities, applications, activities, tasks, schedules, contributions, and artifacts. Research tools can store target evidence, proposals, drafts, relationship records, and sending status. Include only information you are authorized to share.',
-        'The school membership form is a separate workflow. It requests name, student email, grade, student ID, interests, experience, goals, parent or guardian name and email, and a confirmation of parent permission; optional feedback may also be collected. That confirmation is a member’s attestation, not an independently verified parent signature.',
+        'A verified account may prefill its private research profile from a matching membership response using only name, interests, goals and self-reported experience. Administrative school and guardian fields are excluded from research enrichment and sharing. The school membership form is a separate workflow. It requests name, student email, grade, student ID, interests, experience, goals, parent or guardian name and email, and a confirmation of parent permission; optional feedback may also be collected. That confirmation is a member’s attestation, not an independently verified parent signature.',
       ],
     },
     {
@@ -61,7 +61,7 @@ export const privacyPolicy: LegalDocument = {
       id: 'mail',
       title: 'Optional mailbox connections',
       paragraphs: [
-        'Connecting a mailbox is separate from signing in. The connection screen identifies the permissions requested. When you review and authorize sending, the selected provider receives the sender, recipient, subject, message, and any supported attachments needed for that action. Connection credentials are held encrypted on the server, not exposed to other members.',
+        'Drafts, AI outreach and new mailbox connections are restricted to appointed officers and administrators. Connecting a mailbox is separate from signing in. The connection screen identifies the permissions requested. When you review and authorize sending, the selected provider receives the sender, recipient, subject, message, and any supported attachments needed for that action. Connection credentials are held encrypted on the server, not exposed to other members.',
         'Sending permission does not imply permission to read replies or your entire inbox. Reply synchronization is not currently active. Disconnecting removes the stored mailbox authorization; it does not erase messages already submitted to the provider or all application sending-history records. You can also revoke consent through the provider.',
       ],
     },
@@ -103,7 +103,7 @@ export const privacyPolicy: LegalDocument = {
 export const termsOfService: LegalDocument = {
   title: 'Terms of service',
   description: 'Clear expectations for using Matrix Fellows and its member tools.',
-  updated: 'October 7, 2026',
+  updated: 'October 9, 2026',
   sections: [
     {
       id: 'agreement',

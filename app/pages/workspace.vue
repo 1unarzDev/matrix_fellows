@@ -21,7 +21,7 @@ const { patchQuery } = useDashboardNavigation()
 const tab = computed({
   get: () =>
     typeof route.query.section === 'string' &&
-    allSections.some((section) => section.value === route.query.section)
+    sections.value.some((section) => section.value === route.query.section)
       ? route.query.section
       : route.query.section === 'saved'
         ? 'opportunities'
@@ -78,14 +78,13 @@ const sections = computed(() =>
         'queue',
         'opportunities',
         'activities',
-        'drafts',
         'profiles',
         'society',
         'settings',
       ].map((value) => allSections.find((section) => section.value === value)!),
 )
 const visibleProposals = computed(() =>
-  (data.value?.proposals || []).filter((p) => canDiscover.value || p.kind === 'student'),
+  canDiscover.value ? data.value?.proposals || [] : [],
 )
 const initializedAccess = ref(false)
 const query = ref(typeof route.query.q === 'string' ? route.query.q : '')
@@ -416,8 +415,8 @@ watch(data, (value) => {
       scope.value = 'student'
     }
   }
-  if (!canDiscover.value && tab.value === 'research') tab.value = 'today'
-  const p = value.profiles[0]
+  if (!canDiscover.value && ['research', 'drafts'].includes(String(route.query.section))) tab.value = 'today'
+  const p = value.profiles.find((profile) => profile.id === value.primaryProfileId) || value.profiles[0]
   if (p && !profileSaving.value && (!profileForm.id || profileForm.id !== p.id)) {
     Object.assign(profileForm, {
       id: p.id,
@@ -476,14 +475,15 @@ async function saveProfile() {
     profileSaving.value = false
   }
 }
-async function plan() {
-  if (!selected.value) return
+async function plan(relationshipId?: string) {
+  if (!canDiscover.value || !selected.value) return
   const result = await mutate(
     '/planner',
     'POST',
     {
       targetId: selected.value.id,
-      kind: canDiscover.value ? scope.value : 'student',
+      ...(relationshipId ? { relationshipId, messageKind: 'follow_up' } : {}),
+      kind: scope.value,
       style: proposalStyle.value,
       profileId: scope.value === 'student' ? profileId.value : null,
     },
@@ -638,9 +638,12 @@ async function sendDraft() {
 const research = ref<any>(null)
 const researchError = ref('')
 const researchBusy = ref(false)
+const sourceOffset = ref(0)
+const jobOffset = ref(0)
+const sourceFilter = ref('')
 async function loadResearch() {
   try {
-    research.value = await $fetch('/api/workspace/research')
+    research.value = await $fetch('/api/workspace/research', { query: { sourceOffset: sourceOffset.value, jobOffset: jobOffset.value, limit: 40, ...(sourceFilter.value ? { sourceId: sourceFilter.value } : {}) } })
   } catch (e: any) {
     researchError.value = e?.data?.statusMessage || 'Research settings unavailable.'
   }
@@ -676,13 +679,21 @@ async function researchAction(action: string) {
   }
 }
 const editingSource = ref('')
-const sourceForm = reactive({ enabled: false, aiExcerpt: '', aiReviewed: false })
-function openSource(source: any) {
+const sourceForm = reactive({ enabled: false, aiExcerpt: '', aiReviewed: false, snapshotHash: '' })
+async function openSource(source: any) {
+  try {
+    const detail = await $fetch<{ source: any }>(`/api/workspace/research/sources/${encodeURIComponent(source.id)}`)
+    source = detail.source
+  } catch (cause: any) {
+    researchError.value = cause?.data?.statusMessage || 'The source snapshot could not be loaded. Retry before reviewing.'
+    return
+  }
   editingSource.value = source.id
   Object.assign(sourceForm, {
     enabled: source.enabled,
     aiExcerpt: source.ai_excerpt || '',
     aiReviewed: source.ai_reviewed || false,
+    snapshotHash: source.snapshot?.hash || source.latest_snapshot_hash || source.last_hash || '',
   })
 }
 async function saveSource() {
@@ -704,14 +715,16 @@ async function saveSource() {
 watch(tab, (value) => {
   if (value === 'research' && canDiscover.value) void loadResearch()
 })
+const historicalMailboxes = ref<any[]>([])
 const connecting = ref(false)
 const providers = ref({ gmail: false, outlook: false })
 async function loadMailboxes() {
   try {
-    const response = await $fetch<{ providers: { gmail: boolean; outlook: boolean } }>(
+    const response = await $fetch<{ items: any[]; providers: { gmail: boolean; outlook: boolean } }>(
       '/api/workspace/mailboxes',
     )
     providers.value = response.providers
+    historicalMailboxes.value = response.items || []
   } catch {
     providers.value = { gmail: false, outlook: false }
   }
@@ -766,7 +779,7 @@ async function reconcile() {
   }
 }
 watch(tab, (value) => {
-  if (value === 'drafts') void loadOutbox()
+  if (value === 'drafts' && canDiscover.value) void loadOutbox()
 })
 async function saveSociety() {
   const snapshot = JSON.parse(JSON.stringify(societyForm))
@@ -792,7 +805,9 @@ async function saveSociety() {
 onMounted(async () => {
   await refresh()
   await loadMailboxes()
-  await loadRelationships()
+  if (canDiscover.value) {
+    await loadRelationships()
+  }
 })
 </script>
 
@@ -1131,6 +1146,7 @@ onMounted(async () => {
                     <span v-for="d in selected.disciplines" :key="d" class="ws-chip">{{ d }}</span>
                   </div>
                   <div class="ws-divider" />
+                  <RelationshipPanel v-if="canDiscover" :officer="canDiscover" :target-id="selected.id" @followup="plan" />
                   <section aria-label="Contact coordination">
                     <h3>Coordinate before contacting</h3>
                     <p v-if="relationshipError" class="ws-muted">{{ relationshipError }}</p>
@@ -1308,15 +1324,16 @@ onMounted(async () => {
                     label="Who is the connection for?"
                     :options="[
                       { value: 'society', label: 'Society partnership' },
-                      { value: 'student', label: 'My research profile' },
+                      { value: 'student', label: 'Personal inquiry' },
                     ]"
                   /><ThemedSelect
-                    v-if="scope === 'student'"
+                    v-if="canDiscover && scope === 'student'"
                     v-model="profileId"
                     label="Research profile"
                     :options="data.profiles.map((p) => ({ value: p.id, label: p.fullName }))"
                   />
                   <ThemedSelect
+                    v-if="canDiscover"
                     v-model="proposalStyle"
                     label="Proposal approach"
                     :options="
@@ -1328,9 +1345,10 @@ onMounted(async () => {
                   />
                   <div class="ws-actions">
                     <button
+                      v-if="canDiscover"
                       class="ws-button ws-button--primary"
                       :disabled="busy || (scope === 'student' && !profileId)"
-                      @click="plan"
+                      @click="plan()"
                     >
                       Shape a proposal<SiteIcon name="right" :size="14" /></button
                     ><button v-if="canDiscover" class="ws-button" @click="openTarget(selected)">
@@ -1383,8 +1401,8 @@ onMounted(async () => {
                     <h3>Assign a personal connection</h3>
                     <p class="ws-muted">
                       Share this reviewed connection with a specific enrolled member. Assignment
-                      permits a personal inquiry, not a society-wide proposal or a promise of
-                      mentoring.
+                      lets a member explore the evidence. An officer prepares any inquiry; assignment
+                      does not grant draft access or promise mentoring.
                     </p>
                     <p v-if="selected.status !== 'ready'" class="ws-muted">
                       Mark the candidate ready after reviewing contact evidence and fit before
@@ -1440,7 +1458,7 @@ onMounted(async () => {
               >
             </div>
           </template>
-          <template v-else-if="tab === 'drafts'"
+          <template v-else-if="tab === 'drafts' && canDiscover"
             ><div class="section-top">
               <div>
                 <h2>Draft review</h2>
@@ -1672,7 +1690,9 @@ onMounted(async () => {
             </details>
           </template>
           <template v-else-if="tab === 'profiles'"
-            ><form class="ws-panel" @submit.prevent="saveProfile">
+            ><ResearchProfileOverview v-if="profileForm.id" :profile-id="profileForm.id" @updated="refresh" />
+            <details class="ws-panel secondary-panel"><summary>Advanced profile editing</summary>
+            <form @submit.prevent="saveProfile">
               <p class="ws-kicker">Your context changes the proposal</p>
               <h2>Your research profile</h2>
               <p class="ws-muted">
@@ -1808,7 +1828,7 @@ onMounted(async () => {
                   Save my profile
                 </button>
               </div>
-            </form></template
+            </form></details></template
           >
           <template v-else-if="tab === 'society'"
             ><form class="ws-panel" @submit.prevent="saveSociety">
@@ -1834,7 +1854,7 @@ onMounted(async () => {
                   v-model="societyForm.capabilities"
                   :disabled="!canDiscover" /></label
               ><label class="ws-field"
-                >Adult sponsor / supervising contact<input
+                >Confirmed organizational contact<input
                   v-model="societyForm.sponsor"
                   :disabled="!canDiscover"
               /></label>
@@ -1987,6 +2007,10 @@ onMounted(async () => {
               </article>
               <article class="ws-panel">
                 <h3>Vetted discovery sources</h3>
+                <form class="ws-actions" @submit.prevent="sourceOffset = 0; jobOffset = 0; loadResearch()">
+                  <label class="ws-field">Find source by ID<input v-model="sourceFilter" placeholder="Registry or target source ID" /></label>
+                  <button class="ws-button">Filter sources</button>
+                </form>
                 <div v-for="source in research.sources" :key="source.id" class="job-row">
                   <a :href="source.url" target="_blank" rel="noopener noreferrer">{{
                     source.url
@@ -2004,6 +2028,11 @@ onMounted(async () => {
                   No vetted sources enabled. An administrator must configure sources before jobs can
                   run.
                 </p>
+                <div v-if="research.pagination" class="ws-actions">
+                  <button class="ws-button" :disabled="sourceOffset === 0" @click="sourceOffset = Math.max(0, sourceOffset - 40); loadResearch()">Previous sources</button>
+                  <span class="ws-muted">{{ sourceOffset + 1 }}–{{ sourceOffset + research.sources.length }} of {{ research.pagination.sourceTotal }}</span>
+                  <button class="ws-button" :disabled="sourceOffset + research.sources.length >= research.pagination.sourceTotal" @click="sourceOffset += 40; loadResearch()">Next sources</button>
+                </div>
                 <Transition name="ws-content"
                   ><form v-if="editingSource" class="send-confirm" @submit.prevent="saveSource">
                     <h3>Review research-only excerpt</h3>
@@ -2060,6 +2089,10 @@ onMounted(async () => {
                   </div>
                   <span class="ws-chip">{{ job.status }}</span>
                 </div>
+                <div v-if="research.pagination" class="ws-actions">
+                  <button class="ws-button" :disabled="jobOffset === 0" @click="jobOffset = Math.max(0, jobOffset - 40); loadResearch()">Previous jobs</button>
+                  <button class="ws-button" :disabled="jobOffset + research.jobs.length >= research.pagination.jobTotal" @click="jobOffset += 40; loadResearch()">Next jobs</button>
+                </div>
                 <p v-if="!research.jobs.length" class="ws-muted">
                   No research runs yet. Jobs will appear here after an approved source is queued.
                 </p>
@@ -2076,7 +2109,7 @@ onMounted(async () => {
                 Signing in does not connect a mailbox. Grant sending access separately, then choose
                 that mailbox for each proposal. Tokens stay server-side.
               </p>
-              <div v-for="mailbox in data.mailboxes" :key="mailbox.id" class="job-row">
+              <div v-for="mailbox in historicalMailboxes" :key="mailbox.id" class="job-row">
                 <div>
                   <h3>{{ mailbox.email }}</h3>
                   <span class="ws-muted"
@@ -2093,7 +2126,7 @@ onMounted(async () => {
                   Disconnect
                 </button>
               </div>
-              <div class="ws-actions">
+              <div v-if="canDiscover" class="ws-actions">
                 <button
                   class="ws-button ws-button--primary"
                   :disabled="connecting || !providers.gmail"
@@ -2113,6 +2146,8 @@ onMounted(async () => {
                 sending is shown only when the server integration is configured.
               </p>
             </div>
+            <p v-if="!canDiscover" class="ws-muted">New mailbox connections and drafts require appointed officer access. You can disconnect a historical connection here.</p>
+            <RelationshipPanel v-if="canDiscover" :officer="canDiscover" />
             <div class="ws-panel account-panel">
               <h3>Access & safety</h3>
               <p class="ws-muted">

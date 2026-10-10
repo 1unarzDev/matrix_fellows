@@ -5,9 +5,7 @@ A research society supporting members' projects, opportunities and shared connec
 ## Language
 
 **Member dashboard**:
-The personal space where a signed-in member maintains their profile, drafts,
-mailbox connections, saved opportunities and next steps.
-_Avoid_: Officer workspace
+The adult account space for research profiles, linked artifacts, saved opportunities and next steps. Drafts, AI outreach and new mailbox connections require an appointed officer or admin. Ordinary members cannot promote accounts. School-participation records remain separate; the dashboard adds no age-verification subsystem.
 
 **Discovery workspace**:
 The restricted research and review space for developing society connections with

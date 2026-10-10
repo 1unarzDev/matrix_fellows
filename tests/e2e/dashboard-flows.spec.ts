@@ -195,16 +195,17 @@ test('fixture: save, reviewed pursuit, canonical views, reload, and contribution
   await page.video()?.saveAs(`/tmp/matrix-dashboard-evidence/planning-${info.project.name}.webm`)
 })
 
-test('fixture: assigned research evidence, autosave preserves in-flight typing and reload', async ({
+test('fixture: officer research evidence, autosave preserves in-flight typing and reload', async ({
   page,
 }, info) => {
   const state = await setup(page)
+  state.workspace.member.role = 'officer'
   await page.goto('/dashboard?section=queue')
   await page.getByRole('button', { name: /Synthetic Arlington Chemistry Lab/ }).click()
   await expect(
     page.getByText('Spectroscopy methods; student availability unconfirmed.', { exact: true }),
   ).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Assign connection', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Assign connection', exact: true })).toBeVisible()
   await page
     .getByRole('navigation', { name: 'Dashboard sections' })
     .getByRole('button', { name: 'Draft review', exact: true })
@@ -237,6 +238,7 @@ test('fixture: revision conflict preserves manual buffer without retrying or sen
   page,
 }) => {
   const state = await setup(page, true)
+  state.workspace.member.role = 'officer'
   await page.goto('/dashboard?section=drafts')
   await page.getByRole('button', { name: /Synthetic inquiry about spectroscopy/ }).click()
   const editor = page.getByLabel('Email', { exact: true })

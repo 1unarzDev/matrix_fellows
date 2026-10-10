@@ -98,7 +98,8 @@ test('browser saves transfer explicitly, account saves stay private, and failure
 test('dashboard catalog shares featured panels, rounded navigation and responsive spacing', async ({
   page,
 }, info) => {
-  await setup(page)
+  const state = await setup(page)
+  state.workspace.member.role = 'officer'
   for (const width of [1440, 1024, 390, 320]) {
     await page.setViewportSize({ width, height: 960 })
     await page.goto('/dashboard?section=opportunities')

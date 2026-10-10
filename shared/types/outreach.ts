@@ -110,6 +110,7 @@ export interface OutreachSettings {
 }
 export interface OutreachWorkspace {
   member: OutreachMember
+  primaryProfileId?: string | null
   profiles: OutreachProfile[]
   society: OutreachSociety
   targets: OutreachTarget[]

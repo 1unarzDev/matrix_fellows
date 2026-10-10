@@ -433,8 +433,12 @@ export default {
       (async () => {
         const db = storage(env)
         const settings = await db.from('outreach_settings').select('*').eq('id', true).single()
-        if (settings.error || settings.data.paused) return
+        if (settings.error) return
+        // Society memory is an officer supplied maintenance queue. It remains
+        // useful while opportunity discovery is paused, so process it before
+        // honoring the discovery pause switch.
         await processSocietyContext(env, db)
+        if (settings.data.paused) return
         if (controller.cron === '0 16 * * 1,3,5') {
           const sources = await db
             .from('outreach_sources')

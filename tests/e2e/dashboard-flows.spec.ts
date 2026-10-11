@@ -464,6 +464,7 @@ test('fixture: Today command center makes planning a magnetic, low-friction flow
   await expect(page.getByText(/weekly capacity/i)).toHaveCount(0)
   await expect(page.locator('.day-rail')).toBeVisible()
   await expect(page.locator('.day-panel__date')).toHaveText('Today')
+  await expect(page.locator('.day-panel--empty .day-panel__items')).toHaveCSS('justify-content', 'center')
   await expect(page.locator('.day-rail')).toHaveCSS('touch-action', 'pan-y')
   const railBounds = await page.locator('.day-rail').evaluate((element) => ({
     clientWidth: element.clientWidth,

@@ -3866,8 +3866,12 @@ function calendarFacts(date: string) {
   grid-template-columns: repeat(5, minmax(200px, 1fr));
   gap: 14px;
   overflow-x: auto;
-  padding: 2px 2px 16px;
+  padding: 2px 2px 10px;
   scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+.wb-board::-webkit-scrollbar {
+  display: none;
 }
 .wb-board__lane {
   position: relative;

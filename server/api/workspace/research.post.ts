@@ -3,6 +3,7 @@ import { requireWorkspaceOfficer, assertWorkspaceOrigin } from '../../utils/work
 import { workspaceStorage, workspaceResult, workspaceBody } from '../../utils/workspace-storage'
 
 const schema = z.discriminatedUnion('action', [
+  z.object({ action: z.literal('retry'), jobId: z.string().uuid() }).strict(),
   z
     .object({
       action: z.enum(['run', 'pause', 'resume']),
@@ -30,6 +31,10 @@ const schema = z.discriminatedUnion('action', [
       enabled: z.boolean(),
       aiExcerpt: z.string().trim().max(12000),
       aiReviewed: z.boolean(),
+      snapshotHash: z
+        .string()
+        .regex(/^[a-f0-9]{64}$/)
+        .optional(),
     })
     .strict(),
 ])
@@ -46,7 +51,11 @@ export default defineEventHandler(async (event) => {
       statusCode: 403,
       statusMessage: 'Only workspace administrators can change research controls.',
     })
-  if (input.action === 'pause' || input.action === 'resume') {
+  if (input.action === 'retry') {
+    workspaceResult(
+      await db.rpc('outreach_retry_job', { p_job: input.jobId, p_actor: member.userId }),
+    )
+  } else if (input.action === 'pause' || input.action === 'resume') {
     workspaceResult(
       await db
         .from('outreach_settings')
@@ -65,6 +74,11 @@ export default defineEventHandler(async (event) => {
       await db.from('outreach_settings').update(input.settings).eq('id', true).select().single(),
     )
   } else if (input.action === 'source') {
+    if (input.aiReviewed && !input.snapshotHash)
+      throw createError({
+        statusCode: 422,
+        statusMessage: 'Review the acquired snapshot before enabling model analysis.',
+      })
     if (
       input.aiReviewed &&
       (input.aiExcerpt.length < 40 ||
@@ -84,6 +98,7 @@ export default defineEventHandler(async (event) => {
           enabled: input.enabled,
           ai_excerpt: input.aiExcerpt,
           ai_reviewed: input.aiReviewed,
+          ai_snapshot_hash: input.aiReviewed ? input.snapshotHash : null,
         })
         .eq('id', input.sourceId)
         .select()

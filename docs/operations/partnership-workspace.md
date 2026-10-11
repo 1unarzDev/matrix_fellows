@@ -1,28 +1,45 @@
 # Partnership workspace
 
-The private `/dashboard` (`/workspace` remains an alias) supports verified named
-members, separate from the shared-PIN content editor. Discovery and research
-remain officer/admin-only. Public membership responses are not an outreach profile source.
-Research discovers candidates and creates evidence/proposal suggestions; its
-code has no sending path. Every message requires its owner's exact approval and
-send confirmation. Members may send personal inquiries only to ready,
-unsuppressed contacts explicitly assigned by an officer. Assignment is rechecked
-at creation, editing, approval, and transactional send claim. Revocation blocks
-approved but unclaimed sends, not messages already submitted to a provider.
+The private `/dashboard` (`/workspace` remains an alias) is the adult member and
+research workspace. Verified members maintain their own private research profiles,
+links, corrections and planning. Controlled officer/admin appointment grants discovery,
+drafting, revisions, approval, sending and new mailbox connection privileges.
+All drafts remain private to their current authorized owner. Assigning a contact does
+not grant member drafting rights. Historical member correspondence is retained under
+restricted access; demoted owners can disconnect their mailbox and reconcile their
+own uncertain submission without regaining drafting or sending access.
+
+First verified entry idempotently creates a canonical self-profile and narrowly imports
+matching normalized join answers as self-reported name, interests and goals. No browser
+identity or email can select another response. Administrative school/guardian/feedback
+fields never enter enrichment. Legacy unresolved profiles remain separate. Research
+links produce immutable evidence, candidate project facts and separately attributable
+self-reported contributions. Shared officer projections require explicit member sharing;
+internal society capacity does not publish a member directory or become organization
+accomplishments. Source refresh does not overwrite corrections or editor text.
+
+Officer review selects a target/contact, shareable member/project and bounded research
+angle. A persisted match plan reaches the local writer, which uses reviewed technical
+Gemini analysis when available and labels local drafting accurately. Preview revisions
+preserve edits made in flight. Every message and follow-up requires an owner's exact
+approval and send confirmation from their own connected mailbox. Ownership handoff
+retains authorship, discards earlier approval and never transfers mailbox tokens.
+Manual relationship events and promises create canonical planner follow-up tasks.
+Automatic inbox reading remains disconnected.
+
 The pilot Worker uses a privileged Supabase service credential: it is not an
 isolated database principal. Protect it accordingly; a scoped research broker is
 required before allowing untrusted executable agent code.
 
 ## Configure identity and storage
 
-Apply the additive outreach migrations in filename order. Use named Supabase
+Use the reviewed ledger-specific migration procedure in the [activation brief](research-outreach-activation.md); do not issue a blanket migration push. Use named Supabase
 Auth accounts, enable email-confirmed member registration, and configure Google, Azure/Microsoft
 and email magic-link providers as credentials become available. Invite/pre-create the actual officers in
 Supabase Auth, then insert their UUID and exact confirmed email in
 `outreach_members`; role is `officer` or `admin`. This is not the legacy `editors`
 allowlist. Removing/disabling membership revokes subsequent workspace API access.
-Verified signup creates only a member; it does not approve club participation,
-parental permission, or officer access. Disabled accounts cannot re-enroll.
+Verified signup creates only a member; it does not appoint an officer. Disabled accounts cannot re-enroll.
 
 Allow the actual site origin's `/api/workspace/auth/callback` in Supabase redirect
 settings. Local tests need the localhost equivalent. Configure dependable Auth
@@ -67,8 +84,8 @@ Deploy independently using `npm run deploy:outreach`, after verifying credential
 and the worker dry run. The opportunity-import Worker is unchanged. Supply the
 outreach Worker's Supabase URL/service key; these never reach the browser.
 
-The deployed worker is enabled; the database pause switch starts paused. Cron schedules one rotated
-reviewed institutional directory on Monday/Wednesday/Friday at 16:00 UTC; a
+The deployed worker is enabled; the database pause switch starts paused. Cron prioritizes coverage gaps and source freshness across
+reviewed institutional directories on Monday/Wednesday/Friday at 16:00 UTC; a
 15-minute drain resumes durable queued research. Default review capacity is 45,
 new admissions at most 15/week, batch limit 5, concurrent leases 2, retries 3.
 Import the reviewed starter candidates from the workspace first. This also
@@ -80,8 +97,8 @@ survives rediscovery. Worker-owned acquisition snapshots never replace officer
 dossiers or ratings. Each external stage rechecks the live lease and permissions;
 Workflow step retries are disabled, with bounded database retries instead.
 
-Source acquisition is limited to reviewed exact HTTPS hosts inside UTA, UTD,
-UTSW and specific first-party faculty/lab sites. No redirects, arbitrary URL
+Target acquisition is limited to reviewed exact HTTPS institutional and faculty/lab hosts.
+Member artifacts use a separate bounded GitHub/DOI/GitHub Pages/institutional-PDF adapter policy. No redirects, arbitrary URL
 fetch endpoint, private-network hosts or general-purpose crawler. HTML is capped
 at 500 KiB, extracted text at 20,000 characters. Research acquires a target page
 and at most two relevant first-party linked pages, with public contact suggestions
@@ -95,15 +112,32 @@ Gemini is optional. To activate, explicitly set `OUTREACH_ENABLED=true`,
 `GEMINI_API_KEY`, and enable AI/terms in workspace settings. The owner has confirmed
 permitted use and configured free project `matrix-fellows` (number `175603254773`).
 No paid fallback is implemented.
+The current owner-specified adult dashboard supersedes earlier member-draft and
+student-audience release assumptions. The authoritative Worker configuration uses
+`GEMINI_PROVIDER_MODE=unpaid_public`, terms/free-project confirmations, database
+`paused`/`ai_enabled`/`terms_confirmed`, and snapshot-bound reviewed excerpts. The
+unwired `GEMINI_AUDIENCE_AUTHORIZED` gate is superseded; there is no parallel age
+permission or age-verification system. This operating scope does not certify every
+historical account's age or override Google's terms. Authorized-context mode has an
+adapter boundary but is not silently enabled or billed. Recheck provider terms at
+activation. No paid fallback is implemented.
 Free quota is availability, not a service-level guarantee. Quota exhaustion
 disables model execution; it does not rotate keys or enable billing.
 
 Only officer-reviewed `ai_excerpt` text with `ai_reviewed=true` can enter a model
 request, and it must match the acquired source. Review is mandatory: lexical
 filters alone cannot prove text contains no personal information. Never submit
-private officer/student profiles, researcher contact data, confidential projects,
+private member/officer profiles, researcher contact data, confidential projects,
 parent records, student IDs or raw pages to unpaid AI. Profiles tailor proposals
 locally. Google Search grounded output is not mined into the candidate database.
+
+Current enabled-source coverage and bounds are recorded in the
+[activation brief](research-outreach-activation.md). Source review and job lists are
+paginated, with snapshot detail by ID and fenced stage retry. Daily conservative
+resource reservations cap source requests/bytes and model requests/tokens; interrupted
+calls retain unknown-cost charges. Admission defaults remain 45 review targets,
+15/week, five/batch, two leases and three database-governed attempts. Search is not
+configured and does not silently use Google grounding as a candidate database.
 
 ## Verification and launch
 

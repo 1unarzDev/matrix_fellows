@@ -18,7 +18,8 @@ export function sortOpportunities(items: Opportunity[]): Opportunity[] {
   )
 }
 
-const HOMEPAGE_FEATURED_IDS = [
+/** Explicit editorial projection used by the homepage SSR query. */
+export const HOMEPAGE_FEATURED_IDS = [
   'davidson-fellows-2027:main',
   'isef-2027:main',
   'catalog:iros-2026-regular-paper',

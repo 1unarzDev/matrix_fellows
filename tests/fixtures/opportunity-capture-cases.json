@@ -1,0 +1,43 @@
+[
+  {
+    "id": "corl-agentic-robotics-workshop",
+    "url": "https://agentic-robotics-workshop.github.io/",
+    "title": "CoRL Workshop on Agentic Robotics",
+    "pageText": "Call for poster papers and hardware/software demonstrations in agentic robotics. Submission deadline and workshop date are listed by the organizers.",
+    "knownCatalogId": "catalog:corl-2026-agentic-robotics",
+    "expectedDisposition": "catalog",
+    "expectedReason": "A research contribution route with a concrete deadline and recipient value is useful across the society."
+  },
+  {
+    "id": "member-math-sprint",
+    "url": "https://member.example.org/math-sprint-2027",
+    "title": "Arlington Math Sprint",
+    "pageText": "A 90-minute local mathematics contest for grades 9-12. One Saturday, $25 team fee, no research project, mentoring, or reusable club pathway.",
+    "expectedDisposition": "personal",
+    "expectedReason": "A real, bounded competition can be useful to the submitting member without implying society-wide relevance."
+  },
+  {
+    "id": "middle-school-club",
+    "url": "https://parkviewmiddleschool.example.org/club",
+    "title": "Parkview Middle School Math Club",
+    "pageText": "A weekly after-school club for Parkview students in grades 6-8. No external application, research activity, or opportunity for Matrix Fellows members.",
+    "expectedDisposition": "reject",
+    "expectedReason": "This is a school club outside the intended opportunity scope; do not save it as a personal opportunity."
+  },
+  {
+    "id": "random-math-article",
+    "url": "https://example.org/articles/why-math-matters",
+    "title": "Why Mathematics Matters",
+    "pageText": "An editorial article explaining the value of mathematics. It has no application, participant action, deadline, or organizer route.",
+    "expectedDisposition": "reject",
+    "expectedReason": "Editorial content is not an actionable opportunity and should not create a task or catalog record."
+  },
+  {
+    "id": "random-youtube-video",
+    "url": "https://www.youtube.com/watch?v=fixture-opportunity",
+    "title": "Math Competition Highlights",
+    "pageText": "A recorded video. No official registration route, deadline, organizer instructions, or participant eligibility is supplied.",
+    "expectedDisposition": "reject",
+    "expectedReason": "A video is supporting media, not an opportunity source; retain no opportunity record from it."
+  }
+]

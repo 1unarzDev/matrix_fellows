@@ -23,12 +23,22 @@ export default defineEventHandler(async (event) => {
     .limit(100)
   if (error) throw createError({ statusCode: 503, statusMessage: 'Could not load your outbox.' })
   return {
-    items: (data || []).map((row) => ({
-      ...row,
-      status: row.status === 'sent' ? 'accepted' : row.status,
-      canReconcile:
-        row.status === 'uncertain' ||
-        (row.status === 'sending' && Date.parse(row.claimed_at) < Date.now() - 120000),
-    })),
+    items: (data || [])
+      .filter((row) => officer.role !== 'member' || ['sending', 'uncertain'].includes(row.status))
+      .map((row) => ({
+        ...(officer.role === 'member'
+          ? {
+              id: row.id,
+              mailbox_id: row.mailbox_id,
+              claimed_at: row.claimed_at,
+              created_at: row.created_at,
+              updated_at: row.updated_at,
+            }
+          : row),
+        status: row.status === 'sent' ? 'accepted' : row.status,
+        canReconcile:
+          row.status === 'uncertain' ||
+          (row.status === 'sending' && Date.parse(row.claimed_at) < Date.now() - 120000),
+      })),
   }
 })

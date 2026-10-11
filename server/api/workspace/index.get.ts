@@ -1,3 +1,4 @@
+import { ensureMemberResearchProfile } from '../../utils/research-profile'
 import { requireWorkspaceMember } from '../../utils/workspace-auth'
 import {
   workspaceStorage,
@@ -9,6 +10,7 @@ import {
 } from '../../utils/workspace-storage'
 export default defineEventHandler(async (event) => {
   const member = await requireWorkspaceMember(event)
+  const primaryProfile = await ensureMemberResearchProfile(event, member)
   const db = workspaceStorage(event)
   const officer = member.role !== 'member'
   const suppressions = officer
@@ -49,16 +51,16 @@ export default defineEventHandler(async (event) => {
     )
       .order('created_at', { ascending: false })
       .limit(250),
-    db
+    officer ? db
       .from('outreach_proposals')
       .select('*')
-      .eq('created_by', member.userId)
+      .eq('current_owner_id', member.userId)
       .order('updated_at', { ascending: false })
-      .limit(250),
-    db
+      .limit(250) : Promise.resolve({ data: [], error: null }),
+    officer ? db
       .from('outreach_mailboxes')
       .select('id,email,provider,owner_id,enabled')
-      .eq('owner_id', member.userId),
+      .eq('owner_id', member.userId) : Promise.resolve({ data: [], error: null }),
     db.from('outreach_saves').select('target_id').eq('user_id', member.userId),
     officer
       ? db
@@ -92,6 +94,7 @@ export default defineEventHandler(async (event) => {
   const cfg = workspaceResult(settings)
   return {
     member: { userId: member.userId, email: member.email, role: member.role },
+    primaryProfileId: primaryProfile.id,
     profiles: workspaceResult(profiles).map(profileFromRow),
     society: societyFromRow(workspaceResult(society)),
     targets: workspaceResult(targets)

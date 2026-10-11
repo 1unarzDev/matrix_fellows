@@ -23,14 +23,21 @@ beforeEach(() => {
   mocked.eq.mockReturnValue(mocked)
   mocked.in.mockReturnValue(mocked)
 })
-it('never fetches an unsupported URL and labels it unverified', async () => {
+it('fetches a bounded public page and classifies a personal opportunity', async () => {
   const fetcher = vi
     .spyOn(globalThis, 'fetch')
-    .mockRejectedValue(new Error('Unexpected network access'))
+    .mockResolvedValue(
+      new Response(
+        '<html><title>Arlington Math Sprint</title><body>Register for a 90-minute local mathematics contest for grades 9-12. One Saturday.</body></html>',
+        { status: 200, headers: { 'content-type': 'text/html' } },
+      ),
+    )
   mocked.limit.mockResolvedValue({ data: [], error: null })
   const preview = await previewCapturedOpportunity(event, 'https://example.edu/unknown')
-  expect(preview.kind).toBe('unverified-reference')
-  expect(fetcher).not.toHaveBeenCalled()
+  expect(preview.kind).toBe('personal')
+  expect(preview.disposition).toBe('personal')
+  expect(preview.item?.title).toBe('Arlington Math Sprint')
+  expect(fetcher).toHaveBeenCalledTimes(1)
   expect(mocked.eq).toHaveBeenCalledWith('published', true)
   expect(mocked.eq).toHaveBeenCalledWith('suppressed', false)
   fetcher.mockRestore()
@@ -71,5 +78,5 @@ it('returns typed existing source data without fresh verification or unsafe acqu
   expect(preview.item?.title).toBe('Reviewed title')
   expect(preview.item?.id).toBe('catalog:program')
   expect(preview.item?.verifiedAt).toBe('2024-01-01')
-  expect(preview.source.retrievedAt).toBeNull()
+  expect(preview.source.retrievedAt).toBe('2026-10-07T00:00:00Z')
 })

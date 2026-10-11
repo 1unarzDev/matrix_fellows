@@ -201,6 +201,9 @@ An opt-in diagnostic panel can save/copy that existing profile with the loaded
 Nuxt build ID and viewport/render state. It is absent on normal visits, performs
 serialization only on user action, and does not collect form answers or storage.
 Power mode remains a manually supplied condition, not an inferred measurement.
+The report also includes navigation timing and the bounded `matrix:` marks for
+static-content-ready, hydration, world import, layout, required assets,
+shader/framebuffer preparation, first valid scene frame, and visual handoff.
 
 ## Pausing, failure, and teardown
 
@@ -221,11 +224,20 @@ event/media listeners.
 
 ## Network and server performance
 
-- `/api/content` starts three Supabase reads concurrently, uses a 6-second fetch
-  timeout, and validates results. Validated successful aggregation is reused by a
-  Nitro cached function for 30 seconds with 120 seconds stale-while-revalidate;
-  the event is retained so edge refresh can attach to `waitUntil`. Successful
-  responses use `Cache-Control: public, max-age=30, stale-while-revalidate=120`.
+- `/api/content` is a versioned homepage projection: site content, meetings,
+  monitor health, and the six editorially featured opportunity IDs are read in
+  parallel. It never reads the full catalog for the homepage. Calendar opportunity
+  details are fetched separately by `/api/content-calendar`, limited to enabled
+  editorial selections, after the SSR meeting shell is usable.
+- Both public projections use a versioned Nitro miss-coalescing key plus an
+  explicit Cloudflare Cache API envelope keyed only by public projection
+  version, route, and Supabase source. Hits expose `X-Matrix-Cache` and `Age`
+  for verification. The response also carries `ETag`, `CDN-Cache-Control`, and
+  browser `Cache-Control`; conditional requests return 304 without serializing
+  another body. Successful content is fresh for 30 seconds (calendar detail
+  for 120 seconds) with a bounded stale revalidation window; failures remain
+  `no-store`. Cache API entries are per edge colo, while the CDN directives
+  allow Cloudflare's shared HTTP cache to serve the public response globally.
 - Failed public reads use local validated defaults and `no-store`, so a transient
   failure is not cached as healthy content.
 - The public HTML is server-rendered; essential copy is not delayed until a

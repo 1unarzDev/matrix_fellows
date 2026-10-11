@@ -1,5 +1,43 @@
 # Mobile rendering follow-up — 2026-09-22
 
+## Public startup and data-path follow-up — 2026-10-10
+
+The homepage/API regression was reproduced against the production Cloudflare
+Worker build before changing the public projection, then repeated against the
+rebuilt local Worker preview with the same Supabase-backed data. The earlier
+live probe had 3.7–5.9 s homepage TTFB and 4.6–8.3 s `/api/content` TTFB;
+those probes also returned Cloudflare 1102 errors after repeated traffic.
+
+| Route / condition | Before | After | Transfer bytes after |
+| ---------------- | -----: | ----: | -------------------: |
+| `/` cold request | 3.7–5.9 s TTFB | 78–330 ms TTFB | 207,531 HTML |
+| `/` warm request | 3.7–5.9 s TTFB range | 20–24 ms TTFB | 207,531 HTML |
+| `/api/content` cold request | 4.6–8.3 s TTFB | ~340–560 ms TTFB | 28,117 JSON |
+| `/api/content` warm request | 4.6–8.3 s TTFB range | 6–9 ms TTFB | 28,117 JSON |
+| `/api/content-calendar` cold / warm | included in the homepage request | ~310 ms / 5–7 ms TTFB | 50,364 JSON |
+
+The old API body was about 75,239 bytes: 5.2 KB of site content, 19.3 KB of
+opportunities, 3.6 KB of meetings, and 47.1 KB of calendar entries. The new
+critical body is 28,117 bytes and has no calendar entries; the separate
+calendar projection reads only enabled selected IDs. A conditional request
+returns `304` with the same versioned ETag (`homepage-v5-*`). The response
+uses `s-maxage`, `CDN-Cache-Control`, and stale-while-revalidate for successful
+public data, while failures are `no-store`. The Worker preview showed
+`CF-Cache-Status: HIT` for immutable assets and 304 validation for the API;
+the deployed hostname still needs a post-deploy edge trace to record `Age` and
+the CDN's API `cf-cache-status` across distinct worker isolates.
+
+| Browser condition | FCP | Static content / hydration | Required assets | Shader + framebuffer ready | First valid scene / handoff |
+| ----------------- | --: | -------------------------: | --------------: | -------------------------: | ---------------------------: |
+| Desktop, SwiftShader | 316 ms | 387 ms | — | 2.91 s | 2.96 s / — |
+| iPhone 13 emulation, 4× CPU, 150 ms RTT, 1.5 Mbps | 1.54 s | 2.11 s | 7.48 s | 8.86 s | 8.87 s / 10.84 s |
+
+The constrained run kept the complete static preview visible until the first
+valid scene frame. Its remaining limit is shader preparation under the severe
+4× CPU profile; no partial oasis or foreground pass is revealed. These are
+browser emulation measurements and do not substitute for physical Safari
+testing.
+
 This report records controlled lab measurements, not physical-iPhone results.
 The regression command is `npm run perf:mobile` against a production preview:
 a six-second `#research` → `#frontiers` scroll at an iPhone 13 viewport using
@@ -74,12 +112,14 @@ change targeted measured render-target bandwidth without simplifying the water.
 
 ## Server measurement
 
-The validated public-content aggregation now uses a Nitro cached function. In a
-fresh local Cloudflare Worker isolate, `/api/content` took 766 ms on the initial
-Supabase miss and roughly 4.5–5.5 ms on the next four requests. With content
-warm, homepage TTFB measured roughly 11–12 ms. Nitro's default storage is
-isolate-local memory, so this does not claim a global Cloudflare hit ratio.
-Failures remain `no-store` and are thrown outside the successful cache value.
+The validated public-content aggregation uses Nitro miss coalescing plus an
+explicit Cloudflare Cache API envelope. In a fresh local Cloudflare Worker
+isolate, `/api/content` took about 340–560 ms on the initial Supabase miss and
+roughly 6–9 ms on warm requests; the preview exposed `X-Matrix-Cache: MISS`
+then `HIT`, `Age`, and a 304 conditional response. Cache API entries are per
+colo; the response's `CDN-Cache-Control` and `s-maxage` directives are the
+global CDN strategy. Failures remain `no-store` and never enter the successful
+cache value.
 
 ## Remaining verification
 

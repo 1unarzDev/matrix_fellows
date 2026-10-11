@@ -19,6 +19,7 @@ test('fixture: first-run profile edits receive navigation protection', async ({ 
   const state = await setup(page)
   state.workspace.profiles = []
   await page.goto('/dashboard?section=profiles')
+  await page.locator('summary').filter({hasText:'Advanced profile editing'}).click()
   await page.getByLabel('Full name', { exact: true }).fill('Synthetic first profile')
   const confirmation = page.waitForEvent('dialog')
   page.once('dialog', (dialog) => void dialog.dismiss())
@@ -28,33 +29,24 @@ test('fixture: first-run profile edits receive navigation protection', async ({ 
   await expect(page.getByLabel('Full name', { exact: true })).toHaveValue('Synthetic first profile')
 })
 
-test('fixture: society edits survive unrelated refresh and newer typing during save', async ({
-  page,
-}) => {
+test('fixture: society context queues immediately and grows the connection cloud', async ({ page }) => {
   const state = await setup(page)
   state.workspace.member.role = 'officer'
   await page.goto('/dashboard?section=society')
-  const description = page.getByLabel('Concise introduction', { exact: true })
-  await description.fill('Synthetic unsaved society description')
-  const navigation = page.getByRole('navigation', { name: 'Dashboard sections' })
-  await navigation.getByRole('button', { name: 'Your profile', exact: true }).click()
-  await page.getByRole('button', { name: 'Save my profile', exact: true }).click()
-  await expect(page.getByText('Saved.', { exact: true })).toBeVisible()
-  await navigation.getByRole('button', { name: 'Society', exact: true }).click()
-  await expect(description).toHaveValue('Synthetic unsaved society description')
-  await page.getByRole('button', { name: 'Save reviewed profile', exact: true }).click()
-  await expect.poll(() => state.writes.some((w) => w.path === '/api/workspace/society')).toBe(true)
-  await description.fill('Synthetic newer society description')
-  await expect(
-    page.getByText('Submitted society profile saved. Your newer edits still need saving.'),
-  ).toBeVisible()
-  await expect(description).toHaveValue('Synthetic newer society description')
-  expect(state.workspace.society.description).toBe('Synthetic unsaved society description')
+  await expect(page.getByRole('heading', { name: /expanding constellation/i })).toBeVisible()
+  await page.getByRole('button', { name: 'Add context', exact: true }).click()
+  await page.getByLabel('A short title').fill('UTA introduction')
+  await page.getByLabel('Email chain, notes, or context').fill('From: Dr. Ada Lovelace <ada@uta.edu>')
+  await page.getByRole('button', { name: 'Add to constellation', exact: true }).click()
+  await expect(page.getByText(/queued without blocking this page/i)).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'New memory' })).toBeHidden()
+  await expect(page.getByRole('heading', { name: 'UTA introduction', exact: true })).toBeVisible()
 })
 
 test('fixture: newer profile typing stays unsaved until its own submission', async ({ page }) => {
   const state = await setup(page)
   await page.goto('/dashboard?section=profiles')
+  await page.locator('summary').filter({hasText:'Advanced profile editing'}).click()
   const name = page.getByLabel('Full name', { exact: true })
   await name.fill('Synthetic submitted name')
   await page.getByRole('button', { name: 'Save my profile', exact: true }).click()
@@ -68,10 +60,11 @@ test('fixture: newer profile typing stays unsaved until its own submission', asy
   await page.getByRole('button', { name: 'Save my profile', exact: true }).click()
   await expect.poll(() => state.workspace.profiles[0]?.fullName).toBe('Synthetic newer name')
   await page.reload()
+  await page.locator('summary').filter({hasText:'Advanced profile editing'}).click()
   await expect(name).toHaveValue('Synthetic newer name')
 })
 
-test('fixture: inspector Back, simplified actions and honest private URL capture', async ({
+test('fixture: inspector Back, simplified actions and personal URL capture', async ({
   page,
 }) => {
   const state = await setup(page)
@@ -85,20 +78,11 @@ test('fixture: inspector Back, simplified actions and honest private URL capture
   expect(state.plan.tasks).toHaveLength(0)
   await page.getByRole('button', { name: '+ Add opportunity URL', exact: true }).click()
   await page.getByLabel('Official opportunity URL').fill('https://example.edu/synthetic-program')
-  await page.getByRole('button', { name: 'Preview reference', exact: true }).click()
-  await expect(page.getByRole('dialog')).toContainText('Private · unverified reference')
-  await page.getByLabel('Reference name').fill('Synthetic program to verify')
-  await page.getByRole('button', { name: 'Save private reference', exact: true }).click()
-  await expect(
-    page.getByRole('dialog').getByRole('link', { name: /Synthetic program to verify/ }),
-  ).toBeVisible()
-  await page.keyboard.press('Escape')
-  await page.reload()
-  await page.getByRole('button', { name: '+ Add opportunity URL', exact: true }).click()
-  await expect(
-    page.getByRole('dialog').getByRole('link', { name: /Synthetic program to verify/ }),
-  ).toBeVisible()
-  expect(state.references).toHaveLength(1)
+  await page.getByRole('button', { name: 'Inspect link', exact: true }).click()
+  await expect(page.getByRole('dialog')).toContainText('Personal opportunity')
+  await page.getByRole('button', { name: 'Save to my opportunities', exact: true }).click()
+  await expect(page.getByRole('dialog')).toContainText('Synthetic source reference')
+  expect(state.references).toHaveLength(0)
   expect(state.plan.tasks).toHaveLength(0)
 })
 
@@ -195,16 +179,17 @@ test('fixture: save, reviewed pursuit, canonical views, reload, and contribution
   await page.video()?.saveAs(`/tmp/matrix-dashboard-evidence/planning-${info.project.name}.webm`)
 })
 
-test('fixture: assigned research evidence, autosave preserves in-flight typing and reload', async ({
+test('fixture: officer research evidence, autosave preserves in-flight typing and reload', async ({
   page,
 }, info) => {
   const state = await setup(page)
+  state.workspace.member.role = 'officer'
   await page.goto('/dashboard?section=queue')
   await page.getByRole('button', { name: /Synthetic Arlington Chemistry Lab/ }).click()
   await expect(
     page.getByText('Spectroscopy methods; student availability unconfirmed.', { exact: true }),
   ).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Assign connection', exact: true })).toHaveCount(0)
+  await expect(page.getByText('Next step', { exact: true })).toBeVisible()
   await page
     .getByRole('navigation', { name: 'Dashboard sections' })
     .getByRole('button', { name: 'Draft review', exact: true })
@@ -237,6 +222,7 @@ test('fixture: revision conflict preserves manual buffer without retrying or sen
   page,
 }) => {
   const state = await setup(page, true)
+  state.workspace.member.role = 'officer'
   await page.goto('/dashboard?section=drafts')
   await page.getByRole('button', { name: /Synthetic inquiry about spectroscopy/ }).click()
   const editor = page.getByLabel('Email', { exact: true })
@@ -314,4 +300,51 @@ test('fixture: keyboard, reduced motion, 1024 layout and CPU-throttled input', a
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(
     true,
   )
+})
+
+test('fixture: Today command center makes planning a magnetic, low-friction flow', async ({ page }) => {
+  const state = await setup(page)
+  state.plan.activities.push({
+    id: 'activity-orbit',
+    title: 'Spectroscopy notebook',
+    goal: 'Compare baseline spectra',
+    role: '',
+    milestone: 'Compare baseline spectra',
+    status: 'active',
+    contributions: [],
+    version: 1,
+    createdAt: '2026-10-01',
+    updatedAt: '2026-10-01',
+  })
+  await page.goto('/dashboard?section=today')
+
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible()
+  await expect(page.getByText(/weekly capacity/i)).toHaveCount(0)
+  await expect(page.locator('.day-rail')).toBeVisible()
+  await expect(page.locator('.day-panel__date')).toHaveText('Today')
+
+  const targetDate = new Date(`${dueDate}T12:00:00Z`)
+  targetDate.setUTCDate(targetDate.getUTCDate() + 2)
+  const targetDateKey = targetDate.toISOString().slice(0, 10)
+  const targetDay = targetDate.getUTCDate()
+  const selectedDay = page.locator(`.day-orbit[data-day="${targetDateKey}"]`)
+  await selectedDay.click()
+  await expect(page.locator('.day-panel__date')).toContainText(
+    targetDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'UTC' }),
+  )
+
+  await page.getByRole('button', { name: /Add a task/ }).first().click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog).toBeVisible()
+  await dialog.getByLabel('Task name').fill('Map an experiment')
+  await dialog.locator('.quick-calendar__day').filter({ hasText: String(targetDay) }).click()
+  await dialog.locator('button.quick-task-form__save').click()
+  await expect(dialog).toHaveCount(0)
+  const taskWrite = state.writes.find((write) => write.path === '/api/workspace/plan/tasks')
+  expect(taskWrite?.body.task).toMatchObject({ title: 'Map an experiment', dueDate: targetDateKey })
+  expect(taskWrite?.body.task.scheduledStart).toBeTruthy()
+  expect(taskWrite?.body.task.scheduledEnd).toBeTruthy()
+
+  await page.getByRole('button', { name: /Active · pause/ }).click()
+  await expect.poll(() => state.writes.filter((write) => write.path === '/api/workspace/plan/activities/activity-orbit').length).toBe(1)
 })

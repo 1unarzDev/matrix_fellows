@@ -73,6 +73,8 @@ export function createWorld(
     : String(gl.getParameter(gl.RENDERER))
   canvas.dataset.renderer = rendererName
   canvas.dataset.renderProfile = renderProfile
+  canvas.dataset.assetsReady = 'false'
+  canvas.dataset.framebuffersWarm = 'false'
   const frameProfiler = createFrameProfiler(gl, rendererName)
   const background = new THREE.Scene()
   const scene = new THREE.Scene()
@@ -974,6 +976,8 @@ export function createWorld(
     renderer.compileAsync(stormPreparation, screenCamera),
     oasisDressing.ready.then(async () => {
       if (disposed) return
+      canvas.dataset.assetsReady = 'true'
+      performance.mark('matrix:required-assets-ready')
       const palmParts = oasisDressing.getPalmPartCounts()
       canvas.dataset.palmTrunkParts = String(palmParts.trunk)
       canvas.dataset.palmFoliageParts = String(palmParts.foliage)
@@ -1074,17 +1078,20 @@ export function createWorld(
       if (disposed) return
       canvas.dataset.framebuffersWarm = 'true'
       canvas.dataset.compileState = 'ready'
+      performance.mark('matrix:shaders-framebuffers-ready')
     })
     .catch(() => {
-      // Some older drivers do not expose a reliable parallel-compile path.
-      // Rendering remains the functional fallback and will compile on demand.
+      // A compile/asset failure cannot satisfy the complete ready boundary.
+      // Keep the static atmosphere and SSR content; never compile on demand
+      // in a canvas that may be missing foreground dressing.
       canvas.dataset.compileState = 'fallback'
+      if (!disposed) onFailure()
     })
     .finally(() => {
       preparationSettled = true
       canvas.dataset.compileMs = (performance.now() - compileStarted).toFixed(1)
       if (disposed) releaseResources()
-      else frame = requestAnimationFrame(draw)
+      else if (canvas.dataset.compileState === 'ready') frame = requestAnimationFrame(draw)
     })
   function releaseResources() {
     // Three r180's async linker polls live WebGLProgram objects. Releasing

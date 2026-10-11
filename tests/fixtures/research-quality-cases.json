@@ -1,0 +1,1880 @@
+[
+  {
+    "id": "local-physical",
+    "reviewNote": "Local travel/access remain unconfirmed.",
+    "synthetic": true,
+    "input": {
+      "target": {
+        "id": "00000000-0000-4000-8000-000000000000",
+        "name": "Fixture research group 1",
+        "kind": "lab",
+        "organization": "Fixture institution",
+        "disciplines": [
+          "Robotics"
+        ],
+        "canonicalUrl": "https://www.uta.edu/research/fixture-0",
+        "contactEmail": "research@example.edu",
+        "location": "DFW",
+        "mode": "in_person",
+        "status": "ready",
+        "scope": "both",
+        "description": "Synthetic quality fixture; no asserted real opportunity.",
+        "dossier": {
+          "evidence": [
+            {
+              "url": "https://www.uta.edu/research/fixture-0",
+              "quote": "Our robotic grasp experiment measures repeatability with a physical gripper in the Arlington lab.",
+              "claim": "Research topic",
+              "retrievedAt": "2026-10-09",
+              "confidence": "verified"
+            }
+          ],
+          "acquisition": {
+            "pages": [
+              {
+                "url": "https://www.uta.edu/research/fixture-0",
+                "text": "Our robotic grasp experiment measures repeatability with a physical gripper in the Arlington lab.",
+                "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              }
+            ],
+            "publicAnalysis": {
+              "themes": [
+                "Robotics"
+              ],
+              "proposalOptions": [
+                {
+                  "title": "Gripper repeatability",
+                  "task": "review the public calibration protocol and identify one reproducibility question",
+                  "deliverable": "a one-page calibration checklist for discussion",
+                  "quote": "Our robotic grasp experiment measures repeatability with a physical gripper in the Arlington lab.",
+                  "supervisionQuestions": [
+                    "Would this scope be useful, and what access is permitted?"
+                  ]
+                }
+              ],
+              "unknowns": []
+            }
+          }
+        },
+        "assessment": {},
+        "createdAt": "2026-10-09",
+        "updatedAt": "2026-10-09"
+      },
+      "profile": {
+        "id": "11111111-1111-4111-8111-111111111111",
+        "fullName": "Alex Example",
+        "interests": [
+          "Robotics"
+        ],
+        "skills": [],
+        "availability": "",
+        "location": "Arlington",
+        "workSamples": [
+          {
+            "title": "Robotics work sample",
+            "url": "https://github.com/example/work",
+            "contribution": "evaluated a grasp simulation"
+          }
+        ],
+        "goals": "Learn through a focused question",
+        "consentToShare": true,
+        "updatedAt": "2026-10-09"
+      },
+      "society": {
+        "name": "Matrix Fellows",
+        "description": "Research community affiliated with Martin High School; adult officers manage this dashboard.",
+        "capabilities": [],
+        "accomplishments": [],
+        "sponsor": "",
+        "updatedAt": "2026-10-09"
+      },
+      "senderName": "Jordan Officer",
+      "kind": "student",
+      "style": "feedback"
+    },
+    "plan": {
+      "schemaVersion": "contribution-plan-v1",
+      "mode": "possible_contribution",
+      "connection": "Gripper repeatability",
+      "deliverable": "a one-page calibration checklist for discussion",
+      "question": "Would it be useful to explore a small pilot? A possible scope is to review the public calibration protocol and identify one reproducibility question.",
+      "evidence": [
+        {
+          "url": "https://www.uta.edu/research/fixture-0",
+          "quote": "Our robotic grasp experiment measures repeatability with a physical gripper in the Arlington lab.",
+          "snapshotHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "unknowns": [
+        "Would this scope be useful, and what access is permitted?",
+        "Participation and supervision are unconfirmed.",
+        "Current member availability must be confirmed before promising work."
+      ],
+      "provenance": "reviewed-model-analysis",
+      "dimensions": [
+        {
+          "dimension": "research",
+          "state": "supported",
+          "reason": "Specific connection: Gripper repeatability"
+        },
+        {
+          "dimension": "participation",
+          "state": "unknown",
+          "reason": "Physical access and travel need confirmation from Arlington."
+        },
+        {
+          "dimension": "contribution",
+          "state": "unknown",
+          "reason": "Member contribution statement is self-reported; review attribution and scope before making an offer."
+        },
+        {
+          "dimension": "supervision",
+          "state": "unknown",
+          "reason": "The recipient has not confirmed a need, supervision or recruiting availability."
+        },
+        {
+          "dimension": "freshness",
+          "state": "unknown",
+          "reason": "Retrieval time is recorded separately; current affiliation, openness and availability require review."
+        }
+      ]
+    },
+    "before": {
+      "subject": "Feedback pilot — Robotics",
+      "body": "Hello Fixture research group 1,\n\nI’m Alex Example, involved with Matrix Fellows. My interests include Robotics.\n\nYour work caught our attention: “[REVIEW: add a specific observation supported by https://www.uta.edu/research/fixture-0]”.\n\nMy work on Robotics work sample: evaluated a grasp simulation\nWork sample: https://github.com/example/work\n\nWould you be open to a brief feedback session on [REVIEW: actual project and focused question]? We can send a one-page summary beforehand.\n\nThank you,\nAlex Example",
+      "notices": [
+        "Complete every REVIEW placeholder before approval; no reading or contribution is invented.",
+        "Local matching is a transparent drafting aid, not evidence of research eligibility or an acceptance probability."
+      ]
+    },
+    "after": {
+      "subject": "Feedback pilot — Robotics",
+      "body": "Hello Fixture research group 1,\n\nI’m Jordan Officer, an officer with Matrix Fellows, writing on behalf of Alex Example. They have shared an interest in Robotics.\n\nI noticed this description of your research: “Our robotic grasp experiment measures repeatability with a physical gripper in the Arlington lab.” (https://www.uta.edu/research/fixture-0).\n\nThey describe their contribution to Robotics work sample as: evaluated a grasp simulation\nWork sample: https://github.com/example/work\n\nOne possible starting point is a one-page calibration checklist for discussion. We would agree on scope and confirm participation before committing to work.\n\nWould it be useful to explore a small pilot? A possible scope is to review the public calibration protocol and identify one reproducibility question.\n\nThank you,\nJordan Officer",
+      "notices": [
+        "Local draft uses a source-supported model contribution suggestion; the lab need and participation remain unconfirmed.",
+        "Confirm every factual claim and resolve REVIEW placeholders before approval.",
+        "Local matching is a transparent drafting aid, not evidence of research eligibility or an acceptance probability."
+      ]
+    }
+  },
+  {
+    "id": "remote-strong",
+    "reviewNote": "Remote fit can be useful without physical access.",
+    "synthetic": true,
+    "input": {
+      "target": {
+        "id": "00000000-0000-4000-8000-000000000001",
+        "name": "Fixture research group 2",
+        "kind": "lab",
+        "organization": "Fixture institution",
+        "disciplines": [
+          "Computer vision"
+        ],
+        "canonicalUrl": "https://www.uta.edu/research/fixture-1",
+        "contactEmail": "research@example.edu",
+        "location": "DFW",
+        "mode": "remote",
+        "status": "ready",
+        "scope": "both",
+        "description": "Synthetic quality fixture; no asserted real opportunity.",
+        "dossier": {
+          "evidence": [
+            {
+              "url": "https://www.uta.edu/research/fixture-1",
+              "quote": "The vision project publishes an image-corruption benchmark and baseline evaluation code.",
+              "claim": "Research topic",
+              "retrievedAt": "2026-10-09",
+              "confidence": "verified"
+            }
+          ],
+          "acquisition": {
+            "pages": [
+              {
+                "url": "https://www.uta.edu/research/fixture-1",
+                "text": "The vision project publishes an image-corruption benchmark and baseline evaluation code.",
+                "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              }
+            ],
+            "publicAnalysis": {
+              "themes": [
+                "Computer vision"
+              ],
+              "proposalOptions": [
+                {
+                  "title": "Image-corruption robustness",
+                  "task": "reproduce one baseline on the public image-corruption subset",
+                  "deliverable": "a reproducible error table on one public subset",
+                  "quote": "The vision project publishes an image-corruption benchmark and baseline evaluation code.",
+                  "supervisionQuestions": [
+                    "Would this scope be useful, and what access is permitted?"
+                  ]
+                }
+              ],
+              "unknowns": []
+            }
+          }
+        },
+        "assessment": {},
+        "createdAt": "2026-10-09",
+        "updatedAt": "2026-10-09"
+      },
+      "profile": {
+        "id": "11111111-1111-4111-8111-111111111111",
+        "fullName": "Alex Example",
+        "interests": [
+          "Computer vision"
+        ],
+        "skills": [],
+        "availability": "",
+        "location": "Remote",
+        "workSamples": [
+          {
+            "title": "Computer vision work sample",
+            "url": "https://github.com/example/work",
+            "contribution": "implemented a public-data evaluation"
+          }
+        ],
+        "goals": "Learn through a focused question",
+        "consentToShare": true,
+        "updatedAt": "2026-10-09"
+      },
+      "society": {
+        "name": "Matrix Fellows",
+        "description": "Research community affiliated with Martin High School; adult officers manage this dashboard.",
+        "capabilities": [],
+        "accomplishments": [],
+        "sponsor": "",
+        "updatedAt": "2026-10-09"
+      },
+      "senderName": "Jordan Officer",
+      "kind": "student",
+      "style": "feedback"
+    },
+    "plan": {
+      "schemaVersion": "contribution-plan-v1",
+      "mode": "possible_contribution",
+      "connection": "Image-corruption robustness",
+      "deliverable": "a reproducible error table on one public subset",
+      "question": "Would it be useful to explore a small pilot? A possible scope is to reproduce one baseline on the public image-corruption subset.",
+      "evidence": [
+        {
+          "url": "https://www.uta.edu/research/fixture-1",
+          "quote": "The vision project publishes an image-corruption benchmark and baseline evaluation code.",
+          "snapshotHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "unknowns": [
+        "Would this scope be useful, and what access is permitted?",
+        "Participation and supervision are unconfirmed.",
+        "Current member availability must be confirmed before promising work."
+      ],
+      "provenance": "reviewed-model-analysis",
+      "dimensions": [
+        {
+          "dimension": "research",
+          "state": "supported",
+          "reason": "Specific connection: Image-corruption robustness"
+        },
+        {
+          "dimension": "participation",
+          "state": "supported",
+          "reason": "Remote participation is recorded; specific tasks and eligibility still need confirmation."
+        },
+        {
+          "dimension": "contribution",
+          "state": "unknown",
+          "reason": "Member contribution statement is self-reported; review attribution and scope before making an offer."
+        },
+        {
+          "dimension": "supervision",
+          "state": "unknown",
+          "reason": "The recipient has not confirmed a need, supervision or recruiting availability."
+        },
+        {
+          "dimension": "freshness",
+          "state": "unknown",
+          "reason": "Retrieval time is recorded separately; current affiliation, openness and availability require review."
+        }
+      ]
+    },
+    "before": {
+      "subject": "Feedback pilot — Computer vision",
+      "body": "Hello Fixture research group 2,\n\nI’m Alex Example, involved with Matrix Fellows. My interests include Computer vision.\n\nYour work caught our attention: “[REVIEW: add a specific observation supported by https://www.uta.edu/research/fixture-1]”.\n\nMy work on Computer vision work sample: implemented a public-data evaluation\nWork sample: https://github.com/example/work\n\nWould you be open to a brief feedback session on [REVIEW: actual project and focused question]? We can send a one-page summary beforehand.\n\nThank you,\nAlex Example",
+      "notices": [
+        "Complete every REVIEW placeholder before approval; no reading or contribution is invented.",
+        "Local matching is a transparent drafting aid, not evidence of research eligibility or an acceptance probability."
+      ]
+    },
+    "after": {
+      "subject": "Feedback pilot — Computer vision",
+      "body": "Hello Fixture research group 2,\n\nI’m Jordan Officer, an officer with Matrix Fellows, writing on behalf of Alex Example. They have shared an interest in Computer vision.\n\nI noticed this description of your research: “The vision project publishes an image-corruption benchmark and baseline evaluation code.” (https://www.uta.edu/research/fixture-1).\n\nThey describe their contribution to Computer vision work sample as: implemented a public-data evaluation\nWork sample: https://github.com/example/work\n\nOne possible starting point is a reproducible error table on one public subset. We would agree on scope and confirm participation before committing to work.\n\nWould it be useful to explore a small pilot? A possible scope is to reproduce one baseline on the public image-corruption subset.\n\nThank you,\nJordan Officer",
+      "notices": [
+        "Local draft uses a source-supported model contribution suggestion; the lab need and participation remain unconfirmed.",
+        "Confirm every factual claim and resolve REVIEW placeholders before approval.",
+        "Local matching is a transparent drafting aid, not evidence of research eligibility or an acceptance probability."
+      ]
+    }
+  },
+  {
+    "id": "beginner",
+    "reviewNote": "No sample: truthful learning question.",
+    "synthetic": true,
+    "input": {
+      "target": {
+        "id": "00000000-0000-4000-8000-000000000002",
+        "name": "Fixture research group 3",
+        "kind": "lab",
+        "organization": "Fixture institution",
+        "disciplines": [
+          "Robotics"
+        ],
+        "canonicalUrl": "https://www.uta.edu/research/fixture-2",
+        "contactEmail": "research@example.edu",
+        "location": "DFW",
+        "mode": "remote",
+        "status": "ready",
+        "scope": "both",
+        "description": "Synthetic quality fixture; no asserted real opportunity.",
+        "dossier": {
+          "evidence": [
+            {
+              "url": "https://www.uta.edu/research/fixture-2",
+              "quote": "Our robot-learning tutorial compares imitation policies using an open simulation example.",
+              "claim": "Research topic",
+              "retrievedAt": "2026-10-09",
+              "confidence": "verified"
+            }
+          ],
+          "acquisition": {
+            "pages": [
+              {
+                "url": "https://www.uta.edu/research/fixture-2",
+                "text": "Our robot-learning tutorial compares imitation policies using an open simulation example.",
+                "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              }
+            ],
+            "publicAnalysis": {
+              "themes": [
+                "Robotics"
+              ],
+              "proposalOptions": [
+                {
+                  "title": "Imitation-policy tutorial",
+                  "task": "read the open simulation tutorial and formulate one question",
+                  "deliverable": "a focused tutorial question",
+                  "quote": "Our robot-learning tutorial compares imitation policies using an open simulation example.",
+                  "supervisionQuestions": [
+                    "Would this scope be useful, and what access is permitted?"
+                  ]
+                }
+              ],
+              "unknowns": []
+            }
+          }
+        },
+        "assessment": {},
+        "createdAt": "2026-10-09",
+        "updatedAt": "2026-10-09"
+      },
+      "profile": {
+        "id": "11111111-1111-4111-8111-111111111111",
+        "fullName": "Alex Example",
+        "interests": [
+          "Robotics"
+        ],
+        "skills": [],
+        "availability": "",
+        "location": "Arlington",
+        "workSamples": [],
+        "goals": "Learn through a focused question",
+        "consentToShare": true,
+        "updatedAt": "2026-10-09"
+      },
+      "society": {
+        "name": "Matrix Fellows",
+        "description": "Research community affiliated with Martin High School; adult officers manage this dashboard.",
+        "capabilities": [],
+        "accomplishments": [],
+        "sponsor": "",
+        "updatedAt": "2026-10-09"
+      },
+      "senderName": "Jordan Officer",
+      "kind": "student",
+      "style": "feedback"
+    },
+    "plan": {
+      "schemaVersion": "contribution-plan-v1",
+      "mode": "question",
+      "connection": "Imitation-policy tutorial",
+      "deliverable": "",
+      "question": "Which public paper or introductory resource would you recommend for understanding Imitation-policy tutorial?",
+      "evidence": [
+        {
+          "url": "https://www.uta.edu/research/fixture-2",
+          "quote": "Our robot-learning tutorial compares imitation policies using an open simulation example.",
+          "snapshotHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "unknowns": [
+        "Would this scope be useful, and what access is permitted?",
+        "Participation and supervision are unconfirmed.",
+        "Current member availability must be confirmed before promising work."
+      ],
+      "provenance": "reviewed-model-analysis",
+      "dimensions": [
+        {
+          "dimension": "research",
+          "state": "supported",
+          "reason": "Specific connection: Imitation-policy tutorial"
+        },
+        {
+          "dimension": "participation",
+          "state": "supported",
+          "reason": "Remote participation is recorded; specific tasks and eligibility still need confirmation."
+        },
+        {
+          "dimension": "contribution",
+          "state": "unknown",
+          "reason": "No demonstrated work is selected; start with a focused question."
+        },
+        {
+          "dimension": "supervision",
+          "state": "unknown",
+          "reason": "The recipient has not confirmed a need, supervision or recruiting availability."
+        },
+        {
+          "dimension": "freshness",
+          "state": "unknown",
+          "reason": "Retrieval time is recorded separately; current affiliation, openness and availability require review."
+        }
+      ]
+    },
+    "before": {
+      "subject": "Feedback pilot — Robotics",
+      "body": "Hello Fixture research group 3,\n\nI’m Alex Example, involved with Matrix Fellows. My interests include Robotics.\n\nYour work caught our attention: “[REVIEW: add a specific observation supported by https://www.uta.edu/research/fixture-2]”.\n\nWould you be open to a brief feedback session on [REVIEW: actual project and focused question]? We can send a one-page summary beforehand.\n\nThank you,\nAlex Example",
+      "notices": [
+        "Complete every REVIEW placeholder before approval; no reading or contribution is invented.",
+        "Local matching is a transparent drafting aid, not evidence of research eligibility or an acceptance probability."
+      ]
+    },
+    "after": {
+      "subject": "Feedback pilot — Robotics",
+      "body": "Hello Fixture research group 3,\n\nI’m Jordan Officer, an officer with Matrix Fellows, writing on behalf of Alex Example. They have shared an interest in Robotics.\n\nI noticed this description of your research: “Our robot-learning tutorial compares imitation policies using an open simulation example.” (https://www.uta.edu/research/fixture-2).\n\nWhich public paper or introductory resource would you recommend for understanding Imitation-policy tutorial?\n\nThank you,\nJordan Officer",
+      "notices": [
+        "Local draft uses a source-supported model contribution suggestion; the lab need and participation remain unconfirmed.",
+        "Confirm every factual claim and resolve REVIEW placeholders before approval.",
+        "Local matching is a transparent drafting aid, not evidence of research eligibility or an acceptance probability."
+      ]
+    }
+  },
+  {
+    "id": "ambiguous-paper",
+    "reviewNote": "Linking a paper does not establish authorship.",
+    "synthetic": true,
+    "input": {
+      "target": {
+        "id": "00000000-0000-4000-8000-000000000003",
+        "name": "Fixture research group 4",
+        "kind": "lab",
+        "organization": "Fixture institution",
+        "disciplines": [
+          "Biology"
+        ],
+        "canonicalUrl": "https://www.uta.edu/research/fixture-3",
+        "contactEmail": "research@example.edu",
+        "location": "DFW",
+        "mode": "remote",
+        "status": "ready",
+        "scope": "both",
+        "description": "Synthetic quality fixture; no asserted real opportunity.",
+        "dossier": {
+          "evidence": [
+            {
+              "url": "https://www.uta.edu/research/fixture-3",
+              "quote": "The biology paper describes a reproducible protocol for measuring colony growth.",
+              "claim": "Research topic",
+              "retrievedAt": "2026-10-09",
+              "confidence": "verified"
+            }
+          ],
+          "acquisition": {
+            "pages": [
+              {
+                "url": "https://www.uta.edu/research/fixture-3",
+                "text": "The biology paper describes a reproducible protocol for measuring colony growth.",
+                "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              }
+            ],
+            "publicAnalysis": {
+              "themes": [
+                "Biology"
+              ],
+              "proposalOptions": [
+                {
+                  "title": "Colony-growth protocol",
+                  "task": "review one protocol figure and ask about its interpretation",
+                  "deliverable": "one specific protocol question",
+                  "quote": "The biology paper describes a reproducible protocol for measuring colony growth.",
+                  "supervisionQuestions": [
+                    "Would this scope be useful, and what access is permitted?"
+                  ]
+                }
+              ],
+              "unknowns": []
+            }
+          }
+        },
+        "assessment": {},
+        "createdAt": "2026-10-09",
+        "updatedAt": "2026-10-09"
+      },
+      "profile": {
+        "id": "11111111-1111-4111-8111-111111111111",
+        "fullName": "Alex Example",
+        "interests": [
+          "Biology"
+        ],
+        "skills": [],
+        "availability": "",
+        "location": "Dallas",
+        "workSamples": [],
+        "goals": "Learn through a focused question",
+        "consentToShare": true,
+        "updatedAt": "2026-10-09"
+      },
+      "society": {
+        "name": "Matrix Fellows",
+        "description": "Research community affiliated with Martin High School; adult officers manage this dashboard.",
+        "capabilities": [],
+        "accomplishments": [],
+        "sponsor": "",
+        "updatedAt": "2026-10-09"
+      },
+      "senderName": "Jordan Officer",
+      "kind": "student",
+      "style": "feedback"
+    },
+    "plan": {
+      "schemaVersion": "contribution-plan-v1",
+      "mode": "question",
+      "connection": "Colony-growth protocol",
+      "deliverable": "",
+      "question": "Which public paper or introductory resource would you recommend for understanding Colony-growth protocol?",
+      "evidence": [
+        {
+          "url": "https://www.uta.edu/research/fixture-3",
+          "quote": "The biology paper describes a reproducible protocol for measuring colony growth.",
+          "snapshotHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "unknowns": [
+        "Would this scope be useful, and what access is permitted?",
+        "Participation and supervision are unconfirmed.",
+        "Current member availability must be confirmed before promising work."
+      ],
+      "provenance": "reviewed-model-analysis",
+      "dimensions": [
+        {
+          "dimension": "research",
+          "state": "supported",
+          "reason": "Specific connection: Colony-growth protocol"
+        },
+        {
+          "dimension": "participation",
+          "state": "supported",
+          "reason": "Remote participation is recorded; specific tasks and eligibility still need confirmation."
+        },
+        {
+          "dimension": "contribution",
+          "state": "unknown",
+          "reason": "No demonstrated work is selected; start with a focused question."
+        },
+        {
+          "dimension": "supervision",
+          "state": "unknown",
+          "reason": "The recipient has not confirmed a need, supervision or recruiting availability."
+        },
+        {
+          "dimension": "freshness",
+          "state": "unknown",
+          "reason": "Retrieval time is recorded separately; current affiliation, openness and availability require review."
+        }
+      ]
+    },
+    "before": {
+      "subject": "Feedback pilot — Biology",
+      "body": "Hello Fixture research group 4,\n\nI’m Alex Example, involved with Matrix Fellows. My interests include Biology.\n\nYour work caught our attention: “[REVIEW: add a specific observation supported by https://www.uta.edu/research/fixture-3]”.\n\nWould you be open to a brief feedback session on [REVIEW: actual project and focused question]? We can send a one-page summary beforehand.\n\nThank you,\nAlex Example",
+      "notices": [
+        "Complete every REVIEW placeholder before approval; no reading or contribution is invented.",
+        "Local matching is a transparent drafting aid, not evidence of research eligibility or an acceptance probability."
+      ]
+    },
+    "after": {
+      "subject": "Feedback pilot — Biology",
+      "body": "Hello Fixture research group 4,\n\nI’m Jordan Officer, an officer with Matrix Fellows, writing on behalf of Alex Example. They have shared an interest in Biology.\n\nI noticed this description of your research: “The biology paper describes a reproducible protocol for measuring colony growth.” (https://www.uta.edu/research/fixture-3).\n\nWhich public paper or introductory resource would you recommend for understanding Colony-growth protocol?\n\nThank you,\nJordan Officer",
+      "notices": [
+        "Local draft uses a source-supported model contribution suggestion; the lab need and participation remain unconfirmed.",
+        "Confirm every factual claim and resolve REVIEW placeholders before approval.",
+        "Local matching is a transparent drafting aid, not evidence of research eligibility or an acceptance probability."
+      ]
+    },
+    "artifactEvidence": {
+      "type": "publication",
+      "relationship": "interest",
+      "authors": [
+        "Other Researcher"
+      ],
+      "memberAuthorship": "unconfirmed",
+      "contribution": "none"
+    }
+  },
+  {
+    "id": "team-repository",
+    "reviewNote": "Do not credit all repository components.",
+    "synthetic": true,
+    "input": {
+      "target": {
+        "id": "00000000-0000-4000-8000-000000000004",
+        "name": "Fixture research group 5",
+        "kind": "lab",
+        "organization": "Fixture institution",
+        "disciplines": [
+          "Software testing"
+        ],
+        "canonicalUrl": "https://www.uta.edu/research/fixture-4",
+        "contactEmail": "research@example.edu",
+        "location": "DFW",
+        "mode": "remote",
+        "status": "ready",
+        "scope": "both",
+        "description": "Synthetic quality fixture; no asserted real opportunity.",
+        "dossier": {
+          "evidence": [
+            {
+              "url": "https://www.uta.edu/research/fixture-4",
+              "quote": "Our parser benchmark reports malformed-input failure cases with regression tests.",
+              "claim": "Research topic",
+              "retrievedAt": "2026-10-09",
+              "confidence": "verified"
+            }
+          ],
+          "acquisition": {
+            "pages": [
+              {
+                "url": "https://www.uta.edu/research/fixture-4",
+                "text": "Our parser benchmark reports malformed-input failure cases with regression tests.",
+                "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              }
+            ],
+            "publicAnalysis": {
+              "themes": [
+                "Software testing"
+              ],
+              "proposalOptions": [
+                {
+                  "title": "Parser regression coverage",
+                  "task": "reproduce one malformed-input failure and propose a regression test",
+                  "deliverable": "one reproducible parser regression test",
+                  "quote": "Our parser benchmark reports malformed-input failure cases with regression tests.",
+                  "supervisionQuestions": [
+                    "Would this scope be useful, and what access is permitted?"
+                  ]
+                }
+              ],
+              "unknowns": []
+            }
+          }
+        },
+        "assessment": {},
+        "createdAt": "2026-10-09",
+        "updatedAt": "2026-10-09"
+      },
+      "profile": {
+        "id": "11111111-1111-4111-8111-111111111111",
+        "fullName": "Alex Example",
+        "interests": [
+          "Software testing"
+        ],
+        "skills": [],
+        "availability": "",
+        "location": "Arlington",
+        "workSamples": [
+          {
+            "title": "Software testing work sample",
+            "url": "https://github.com/example/work",
+            "contribution": "wrote tests for one parser"
+          }
+        ],
+        "goals": "Learn through a focused question",
+        "consentToShare": true,
+        "updatedAt": "2026-10-09"
+      },
+      "society": {
+        "name": "Matrix Fellows",
+        "description": "Research community affiliated with Martin High School; adult officers manage this dashboard.",
+        "capabilities": [],
+        "accomplishments": [],
+        "sponsor": "",
+        "updatedAt": "2026-10-09"
+      },
+      "senderName": "Jordan Officer",
+      "kind": "student",
+      "style": "feedback"
+    },
+    "plan": {
+      "schemaVersion": "contribution-plan-v1",
+      "mode": "possible_contribution",
+      "connection": "Parser regression coverage",
+      "deliverable": "one reproducible parser regression test",
+      "question": "Would it be useful to explore a small pilot? A possible scope is to reproduce one malformed-input failure and propose a regression test.",
+      "evidence": [
+        {
+          "url": "https://www.uta.edu/research/fixture-4",
+          "quote": "Our parser benchmark reports malformed-input failure cases with regression tests.",
+          "snapshotHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "unknowns": [
+        "Would this scope be useful, and what access is permitted?",
+        "Participation and supervision are unconfirmed.",
+        "Current member availability must be confirmed before promising work."
+      ],
+      "provenance": "reviewed-model-analysis",
+      "dimensions": [
+        {
+          "dimension": "research",
+          "state": "supported",
+          "reason": "Specific connection: Parser regression coverage"
+        },
+        {
+          "dimension": "participation",
+          "state": "supported",
+          "reason": "Remote participation is recorded; specific tasks and eligibility still need confirmation."
+        },
+        {
+          "dimension": "contribution",
+          "state": "unknown",
+          "reason": "Member contribution statement is self-reported; review attribution and scope before making an offer."
+        },
+        {
+          "dimension": "supervision",
+          "state": "unknown",
+          "reason": "The recipient has not confirmed a need, supervision or recruiting availability."
+        },
+        {
+          "dimension": "freshness",
+          "state": "unknown",
+          "reason": "Retrieval time is recorded separately; current affiliation, openness and availability require review."
+        }
+      ]
+    },
+    "before": {
+      "subject": "Feedback pilot — Software testing",
+      "body": "Hello Fixture research group 5,\n\nI’m Alex Example, involved with Matrix Fellows. My interests include Software testing.\n\nYour work caught our attention: “[REVIEW: add a specific observation supported by https://www.uta.edu/research/fixture-4]”.\n\nMy work on Software testing work sample: wrote tests for one parser\nWork sample: https://github.com/example/work\n\nWould you be open to a brief feedback session on [REVIEW: actual project and focused question]? We can send a one-page summary beforehand.\n\nThank you,\nAlex Example",
+      "notices": [
+        "Complete every REVIEW placeholder before approval; no reading or contribution is invented.",
+        "Local matching is a transparent drafting aid, not evidence of research eligibility or an acceptance probability."
+      ]
+    },
+    "after": {
+      "subject": "Feedback pilot — Software testing",
+      "body": "Hello Fixture research group 5,\n\nI’m Jordan Officer, an officer with Matrix Fellows, writing on behalf of Alex Example. They have shared an interest in Software testing.\n\nI noticed this description of your research: “Our parser benchmark reports malformed-input failure cases with regression tests.” (https://www.uta.edu/research/fixture-4).\n\nThey describe their contribution to Software testing work sample as: wrote tests for one parser\nWork sample: https://github.com/example/work\n\nOne possible starting point is one reproducible parser regression test. We would agree on scope and confirm participation before committing to work.\n\nWould it be useful to explore a small pilot? A possible scope is to reproduce one malformed-input failure and propose a regression test.\n\nThank you,\nJordan Officer",
+      "notices": [
+        "Local draft uses a source-supported model contribution suggestion; the lab need and participation remain unconfirmed.",
+        "Confirm every factual claim and resolve REVIEW placeholders before approval.",
+        "Local matching is a transparent drafting aid, not evidence of research eligibility or an acceptance probability."
+      ]
+    }
+  },
+  {
+    "id": "stale-affiliation",
+    "reviewNote": "Actual 2020 source and former affiliation; current contact/project status require new review.",
+    "synthetic": true,
+    "input": {
+      "target": {
+        "id": "00000000-0000-4000-8000-000000000005",
+        "name": "Fixture research group 6",
+        "kind": "lab",
+        "organization": "Fixture institution",
+        "disciplines": [
+          "Materials"
+        ],
+        "canonicalUrl": "https://www.uta.edu/research/fixture-5",
+        "contactEmail": "research@example.edu",
+        "location": "DFW",
+        "mode": "in_person",
+        "status": "ready",
+        "scope": "both",
+        "description": "Synthetic quality fixture; no asserted real opportunity.",
+        "dossier": {
+          "evidence": [
+            {
+              "url": "https://www.uta.edu/research/fixture-5",
+              "quote": "In 2020, the materials team at Fixture Former Institution compared tensile measurements in a published dataset.",
+              "claim": "Research topic",
+              "retrievedAt": "2020-02-01",
+              "confidence": "verified",
+              "sourceDate": "2020-01-15"
+            }
+          ],
+          "acquisition": {
+            "pages": [
+              {
+                "url": "https://www.uta.edu/research/fixture-5",
+                "text": "In 2020, the materials team at Fixture Former Institution compared tensile measurements in a published dataset.",
+                "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "retrievedAt": "2020-02-01"
+              }
+            ],
+            "publicAnalysis": {
+              "themes": [
+                "Materials"
+              ],
+              "proposalOptions": [
+                {
+                  "title": "Historical tensile measurements",
+                  "task": "reproduce a measurement comparison from the archived public dataset",
+                  "deliverable": "a documented archived-dataset comparison",
+                  "quote": "In 2020, the materials team at Fixture Former Institution compared tensile measurements in a published dataset.",
+                  "supervisionQuestions": [
+                    "Would this scope be useful, and what access is permitted?"
+                  ]
+                }
+              ],
+              "unknowns": [
+                "This archived source describes a 2020 affiliation. Current institution, contact and project activity are unknown."
+              ]
+            }
+          }
+        },
+        "assessment": {},
+        "createdAt": "2026-10-09",
+        "updatedAt": "2026-10-09"
+      },
+      "profile": {
+        "id": "11111111-1111-4111-8111-111111111111",
+        "fullName": "Alex Example",
+        "interests": [
+          "Materials"
+        ],
+        "skills": [],
+        "availability": "",
+        "location": "Fort Worth",
+        "workSamples": [
+          {
+            "title": "Materials work sample",
+            "url": "https://github.com/example/work",
+            "contribution": "compared published measurements"
+          }
+        ],
+        "goals": "Learn through a focused question",
+        "consentToShare": true,
+        "updatedAt": "2026-10-09"
+      },
+      "society": {
+        "name": "Matrix Fellows",
+        "description": "Research community affiliated with Martin High School; adult officers manage this dashboard.",
+        "capabilities": [],
+        "accomplishments": [],
+        "sponsor": "",
+        "updatedAt": "2026-10-09"
+      },
+      "senderName": "Jordan Officer",
+      "kind": "student",
+      "style": "feedback"
+    },
+    "plan": {
+      "schemaVersion": "contribution-plan-v1",
+      "mode": "possible_contribution",
+      "connection": "Historical tensile measurements",
+      "deliverable": "a documented archived-dataset comparison",
+      "question": "Would it be useful to explore a small pilot? A possible scope is to reproduce a measurement comparison from the archived public dataset.",
+      "evidence": [
+        {
+          "url": "https://www.uta.edu/research/fixture-5",
+          "quote": "In 2020, the materials team at Fixture Former Institution compared tensile measurements in a published dataset.",
+          "snapshotHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "unknowns": [
+        "This archived source describes a 2020 affiliation. Current institution, contact and project activity are unknown.",
+        "Would this scope be useful, and what access is permitted?",
+        "Participation and supervision are unconfirmed.",
+        "Current member availability must be confirmed before promising work."
+      ],
+      "provenance": "reviewed-model-analysis",
+      "dimensions": [
+        {
+          "dimension": "research",
+          "state": "supported",
+          "reason": "Specific connection: Historical tensile measurements"
+        },
+        {
+          "dimension": "participation",
+          "state": "unknown",
+          "reason": "Physical access and travel need confirmation from Fort Worth."
+        },
+        {
+          "dimension": "contribution",
+          "state": "unknown",
+          "reason": "Member contribution statement is self-reported; review attribution and scope before making an offer."
+        },
+        {
+          "dimension": "supervision",
+          "state": "unknown",
+          "reason": "The recipient has not confirmed a need, supervision or recruiting availability."
+        },
+        {
+          "dimension": "freshness",
+          "state": "unknown",
+          "reason": "Retrieval time is recorded separately; current affiliation, openness and availability require review."
+        }
+      ]
+    },
+    "before": {
+      "subject": "Feedback pilot — Materials",
+      "body": "Hello Fixture research group 6,\n\nI’m Alex Example, involved with Matrix Fellows. My interests include Materials.\n\nYour work caught our attention: “[REVIEW: add a specific observation supported by https://www.uta.edu/research/fixture-5]”.\n\nMy work on Materials work sample: compared published measurements\nWork sample: https://github.com/example/work\n\nWould you be open to a brief feedback session on [REVIEW: actual project and focused question]? We can send a one-page summary beforehand.\n\nThank you,\nAlex Example",
+      "notices": [
+        "Complete every REVIEW placeholder before approval; no reading or contribution is invented.",
+        "Local matching is a transparent drafting aid, not evidence of research eligibility or an acceptance probability."
+      ]
+    },
+    "after": {
+      "subject": "Feedback pilot — Materials",
+      "body": "Hello Fixture research group 6,\n\nI’m Jordan Officer, an officer with Matrix Fellows, writing on behalf of Alex Example. They have shared an interest in Materials.\n\nI noticed this description of your research: “In 2020, the materials team at Fixture Former Institution compared tensile measurements in a published dataset.” (https://www.uta.edu/research/fixture-5).\n\nThey describe their contribution to Materials work sample as: compared published measurements\nWork sample: https://github.com/example/work\n\nOne possible starting point is a documented archived-dataset comparison. We would agree on scope and confirm participation before committing to work.\n\nWould it be useful to explore a small pilot? A possible scope is to reproduce a measurement comparison from the archived public dataset.\n\nThank you,\nJordan Officer",
+      "notices": [
+        "Local draft uses a source-supported model contribution suggestion; the lab need and participation remain unconfirmed.",
+        "Confirm every factual claim and resolve REVIEW placeholders before approval.",
+        "Local matching is a transparent drafting aid, not evidence of research eligibility or an acceptance probability."
+      ]
+    }
+  },
+  {
+    "id": "weak-evidence",
+    "reviewNote": "No supported source: review placeholder must remain.",
+    "synthetic": true,
+    "input": {
+      "target": {
+        "id": "00000000-0000-4000-8000-000000000006",
+        "name": "Fixture research group 7",
+        "kind": "lab",
+        "organization": "Fixture institution",
+        "disciplines": [
+          "Chemistry"
+        ],
+        "canonicalUrl": "https://www.uta.edu/research/fixture-6",
+        "contactEmail": "research@example.edu",
+        "location": "DFW",
+        "mode": "unknown",
+        "status": "ready",
+        "scope": "both",
+        "description": "Synthetic quality fixture; no asserted real opportunity.",
+        "dossier": {
+          "evidence": [],
+          "acquisition": {
+            "pages": [
+              {
+                "url": "https://www.uta.edu/research/fixture-6",
+                "text": "The project evaluates chemistry methods using reproducible public benchmarks.",
+                "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              }
+            ],
+            "publicAnalysis": {
+              "themes": [
+                "Chemistry"
+              ],
+              "proposalOptions": [],
+              "unknowns": []
+            }
+          }
+        },
+        "assessment": {},
+        "createdAt": "2026-10-09",
+        "updatedAt": "2026-10-09"
+      },
+      "profile": {
+        "id": "11111111-1111-4111-8111-111111111111",
+        "fullName": "Alex Example",
+        "interests": [
+          "Chemistry"
+        ],
+        "skills": [],
+        "availability": "",
+        "location": "Arlington",
+        "workSamples": [],
+        "goals": "Learn through a focused question",
+        "consentToShare": true,
+        "updatedAt": "2026-10-09"
+      },
+      "society": {
+        "name": "Matrix Fellows",
+        "description": "Research community affiliated with Martin High School; adult officers manage this dashboard.",
+        "capabilities": [],
+        "accomplishments": [],
+        "sponsor": "",
+        "updatedAt": "2026-10-09"
+      },
+      "senderName": "Jordan Officer",
+      "kind": "student",
+      "style": "feedback"
+    },
+    "plan": {
+      "schemaVersion": "contribution-plan-v1",
+      "mode": "question",
+      "connection": "Chemistry",
+      "deliverable": "",
+      "question": "Is there a public paper or introductory resource you would recommend for exploring Chemistry?",
+      "evidence": [],
+      "unknowns": [
+        "Participation and supervision are unconfirmed.",
+        "Current member availability must be confirmed before promising work."
+      ],
+      "provenance": "local-evidence",
+      "dimensions": [
+        {
+          "dimension": "research",
+          "state": "unknown",
+          "reason": "A current research source is needed."
+        },
+        {
+          "dimension": "participation",
+          "state": "unknown",
+          "reason": "Physical access and travel need confirmation from Arlington."
+        },
+        {
+          "dimension": "contribution",
+          "state": "unknown",
+          "reason": "No demonstrated work is selected; start with a focused question."
+        },
+        {
+          "dimension": "supervision",
+          "state": "unknown",
+          "reason": "The recipient has not confirmed a need, supervision or recruiting availability."
+        },
+        {
+          "dimension": "freshness",
+          "state": "unknown",
+          "reason": "Retrieval time is recorded separately; current affiliation, openness and availability require review."
+        }
+      ]
+    },
+    "before": {
+      "subject": "Feedback pilot — Chemistry",
+      "body": "Hello Fixture research group 7,\n\nI’m Alex Example, involved with Matrix Fellows. My interests include Chemistry.\n\n[REVIEW: add one verified research-specific observation and its source].\n\nWould you be open to a brief feedback session on [REVIEW: actual project and focused question]? We can send a one-page summary beforehand.\n\nThank you,\nAlex Example",
+      "notices": [
+        "Complete every REVIEW placeholder before approval; no reading or contribution is invented.",
+        "Local matching is a transparent drafting aid, not evidence of research eligibility or an acceptance probability."
+      ]
+    },
+    "after": {
+      "subject": "Feedback pilot — Chemistry",
+      "body": "Hello Fixture research group 7,\n\nI’m Jordan Officer, an officer with Matrix Fellows, writing on behalf of Alex Example. They have shared an interest in Chemistry.\n\n[REVIEW: add one verified research-specific observation and its source].\n\nIs there a public paper or introductory resource you would recommend for exploring Chemistry?\n\nThank you,\nJordan Officer",
+      "notices": [
+        "Using local evidence-based drafting.",
+        "Confirm every factual claim and resolve REVIEW placeholders before approval.",
+        "Local matching is a transparent drafting aid, not evidence of research eligibility or an acceptance probability."
+      ]
+    }
+  },
+  {
+    "id": "duplicate-lab",
+    "reviewNote": "Actual existing relationship under an alias/other target ID. Writer-only fixture cannot prove transactional duplicate prevention.",
+    "synthetic": true,
+    "input": {
+      "target": {
+        "id": "00000000-0000-4000-8000-000000000007",
+        "name": "Fixture research group 8",
+        "kind": "lab",
+        "organization": "Fixture institution",
+        "disciplines": [
+          "Robotics"
+        ],
+        "canonicalUrl": "https://www.uta.edu/research/fixture-7",
+        "contactEmail": "research@example.edu",
+        "location": "DFW",
+        "mode": "remote",
+        "status": "ready",
+        "scope": "both",
+        "description": "Synthetic quality fixture; no asserted real opportunity.",
+        "dossier": {
+          "evidence": [
+            {
+              "url": "https://www.uta.edu/research/fixture-7",
+              "quote": "The robotics lab publishes simulator consistency checks for contact dynamics.",
+              "claim": "Research topic",
+              "retrievedAt": "2026-10-09",
+              "confidence": "verified"
+            }
+          ],
+          "acquisition": {
+            "pages": [
+              {
+                "url": "https://www.uta.edu/research/fixture-7",
+                "text": "The robotics lab publishes simulator consistency checks for contact dynamics.",
+                "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              }
+            ],
+            "publicAnalysis": {
+              "themes": [
+                "Robotics"
+              ],
+              "proposalOptions": [
+                {
+                  "title": "Simulator consistency",
+                  "task": "reproduce one public consistency check and document a discrepancy",
+                  "deliverable": "one documented simulator check",
+                  "quote": "The robotics lab publishes simulator consistency checks for contact dynamics.",
+                  "supervisionQuestions": [
+                    "Would this scope be useful, and what access is permitted?"
+                  ]
+                }
+              ],
+              "unknowns": []
+            }
+          }
+        },
+        "assessment": {},
+        "createdAt": "2026-10-09",
+        "updatedAt": "2026-10-09"
+      },
+      "profile": {
+        "id": "11111111-1111-4111-8111-111111111111",
+        "fullName": "Alex Example",
+        "interests": [
+          "Robotics"
+        ],
+        "skills": [],
+        "availability": "",
+        "location": "Arlington",
+        "workSamples": [
+          {
+            "title": "Robotics work sample",
+            "url": "https://github.com/example/work",
+            "contribution": "implemented simulator checks"
+          }
+        ],
+        "goals": "Learn through a focused question",
+        "consentToShare": true,
+        "updatedAt": "2026-10-09"
+      },
+      "society": {
+        "name": "Matrix Fellows",
+        "description": "Research community affiliated with Martin High School; adult officers manage this dashboard.",
+        "capabilities": [],
+        "accomplishments": [],
+        "sponsor": "",
+        "updatedAt": "2026-10-09"
+      },
+      "senderName": "Jordan Officer",
+      "kind": "student",
+      "style": "feedback"
+    },
+    "plan": {
+      "schemaVersion": "contribution-plan-v1",
+      "mode": "possible_contribution",
+      "connection": "Simulator consistency",
+      "deliverable": "one documented simulator check",
+      "question": "Would it be useful to explore a small pilot? A possible scope is to reproduce one public consistency check and document a discrepancy.",
+      "evidence": [
+        {
+          "url": "https://www.uta.edu/research/fixture-7",
+          "quote": "The robotics lab publishes simulator consistency checks for contact dynamics.",
+          "snapshotHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "unknowns": [
+        "Would this scope be useful, and what access is permitted?",
+        "Participation and supervision are unconfirmed.",
+        "Current member availability must be confirmed before promising work."
+      ],
+      "provenance": "reviewed-model-analysis",
+      "dimensions": [
+        {
+          "dimension": "research",
+          "state": "supported",
+          "reason": "Specific connection: Simulator consistency"
+        },
+        {
+          "dimension": "participation",
+          "state": "supported",
+          "reason": "Remote participation is recorded; specific tasks and eligibility still need confirmation."
+        },
+        {
+          "dimension": "contribution",
+          "state": "unknown",
+          "reason": "Member contribution statement is self-reported; review attribution and scope before making an offer."
+        },
+        {
+          "dimension": "supervision",
+          "state": "unknown",
+          "reason": "The recipient has not confirmed a need, supervision or recruiting availability."
+        },
+        {
+          "dimension": "freshness",
+          "state": "unknown",
+          "reason": "Retrieval time is recorded separately; current affiliation, openness and availability require review."
+        }
+      ]
+    },
+    "before": {
+      "subject": "Feedback pilot — Robotics",
+      "body": "Hello Fixture research group 8,\n\nI’m Alex Example, involved with Matrix Fellows. My interests include Robotics.\n\nYour work caught our attention: “[REVIEW: add a specific observation supported by https://www.uta.edu/research/fixture-7]”.\n\nMy work on Robotics work sample: implemented simulator checks\nWork sample: https://github.com/example/work\n\nWould you be open to a brief feedback session on [REVIEW: actual project and focused question]? We can send a one-page summary beforehand.\n\nThank you,\nAlex Example",
+      "notices": [
+        "Complete every REVIEW placeholder before approval; no reading or contribution is invented.",
+        "Local matching is a transparent drafting aid, not evidence of research eligibility or an acceptance probability."
+      ]
+    },
+    "after": {
+      "subject": "Feedback pilot — Robotics",
+      "body": "Hello Fixture research group 8,\n\nI’m Jordan Officer, an officer with Matrix Fellows, writing on behalf of Alex Example. They have shared an interest in Robotics.\n\nI noticed this description of your research: “The robotics lab publishes simulator consistency checks for contact dynamics.” (https://www.uta.edu/research/fixture-7).\n\nThey describe their contribution to Robotics work sample as: implemented simulator checks\nWork sample: https://github.com/example/work\n\nOne possible starting point is one documented simulator check. We would agree on scope and confirm participation before committing to work.\n\nWould it be useful to explore a small pilot? A possible scope is to reproduce one public consistency check and document a discrepancy.\n\nThank you,\nJordan Officer",
+      "notices": [
+        "Local draft uses a source-supported model contribution suggestion; the lab need and participation remain unconfirmed.",
+        "Confirm every factual claim and resolve REVIEW placeholders before approval.",
+        "Local matching is a transparent drafting aid, not evidence of research eligibility or an acceptance probability."
+      ]
+    },
+    "coordination": {
+      "relationshipId": "44444444-4444-4444-8444-444444444444",
+      "ownerId": "55555555-5555-4555-8555-555555555555",
+      "stage": "approached",
+      "aliases": [
+        "https://www.uta.edu/research/fixture-7",
+        "research@example.edu"
+      ],
+      "events": [
+        {
+          "kind": "external_email",
+          "source": "manual",
+          "occurredAt": "2026-10-01",
+          "note": "An officer already introduced the member to this lab."
+        }
+      ],
+      "previousTargetId": "66666666-6666-4666-8666-666666666666",
+      "messageKind": "cold"
+    }
+  },
+  {
+    "id": "unknown-availability",
+    "reviewNote": "No time commitment may be promised.",
+    "synthetic": true,
+    "input": {
+      "target": {
+        "id": "00000000-0000-4000-8000-000000000008",
+        "name": "Fixture research group 9",
+        "kind": "lab",
+        "organization": "Fixture institution",
+        "disciplines": [
+          "Data science"
+        ],
+        "canonicalUrl": "https://www.uta.edu/research/fixture-8",
+        "contactEmail": "research@example.edu",
+        "location": "DFW",
+        "mode": "remote",
+        "status": "ready",
+        "scope": "both",
+        "description": "Synthetic quality fixture; no asserted real opportunity.",
+        "dossier": {
+          "evidence": [
+            {
+              "url": "https://www.uta.edu/research/fixture-8",
+              "quote": "The data science project provides a public notebook for assessing missing-value bias.",
+              "claim": "Research topic",
+              "retrievedAt": "2026-10-09",
+              "confidence": "verified"
+            }
+          ],
+          "acquisition": {
+            "pages": [
+              {
+                "url": "https://www.uta.edu/research/fixture-8",
+                "text": "The data science project provides a public notebook for assessing missing-value bias.",
+                "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              }
+            ],
+            "publicAnalysis": {
+              "themes": [
+                "Data science"
+              ],
+              "proposalOptions": [
+                {
+                  "title": "Missing-value bias",
+                  "task": "evaluate one missing-value pattern using the public notebook",
+                  "deliverable": "one bounded sensitivity table",
+                  "quote": "The data science project provides a public notebook for assessing missing-value bias.",
+                  "supervisionQuestions": [
+                    "Would this scope be useful, and what access is permitted?"
+                  ]
+                }
+              ],
+              "unknowns": []
+            }
+          }
+        },
+        "assessment": {},
+        "createdAt": "2026-10-09",
+        "updatedAt": "2026-10-09"
+      },
+      "profile": {
+        "id": "11111111-1111-4111-8111-111111111111",
+        "fullName": "Alex Example",
+        "interests": [
+          "Data science"
+        ],
+        "skills": [],
+        "availability": "",
+        "location": "Dallas",
+        "workSamples": [
+          {
+            "title": "Data science work sample",
+            "url": "https://github.com/example/work",
+            "contribution": "built a small reproducible notebook"
+          }
+        ],
+        "goals": "Learn through a focused question",
+        "consentToShare": true,
+        "updatedAt": "2026-10-09"
+      },
+      "society": {
+        "name": "Matrix Fellows",
+        "description": "Research community affiliated with Martin High School; adult officers manage this dashboard.",
+        "capabilities": [],
+        "accomplishments": [],
+        "sponsor": "",
+        "updatedAt": "2026-10-09"
+      },
+      "senderName": "Jordan Officer",
+      "kind": "student",
+      "style": "feedback"
+    },
+    "plan": {
+      "schemaVersion": "contribution-plan-v1",
+      "mode": "possible_contribution",
+      "connection": "Missing-value bias",
+      "deliverable": "one bounded sensitivity table",
+      "question": "Would it be useful to explore a small pilot? A possible scope is to evaluate one missing-value pattern using the public notebook.",
+      "evidence": [
+        {
+          "url": "https://www.uta.edu/research/fixture-8",
+          "quote": "The data science project provides a public notebook for assessing missing-value bias.",
+          "snapshotHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "unknowns": [
+        "Would this scope be useful, and what access is permitted?",
+        "Participation and supervision are unconfirmed.",
+        "Current member availability must be confirmed before promising work."
+      ],
+      "provenance": "reviewed-model-analysis",
+      "dimensions": [
+        {
+          "dimension": "research",
+          "state": "supported",
+          "reason": "Specific connection: Missing-value bias"
+        },
+        {
+          "dimension": "participation",
+          "state": "supported",
+          "reason": "Remote participation is recorded; specific tasks and eligibility still need confirmation."
+        },
+        {
+          "dimension": "contribution",
+          "state": "unknown",
+          "reason": "Member contribution statement is self-reported; review attribution and scope before making an offer."
+        },
+        {
+          "dimension": "supervision",
+          "state": "unknown",
+          "reason": "The recipient has not confirmed a need, supervision or recruiting availability."
+        },
+        {
+          "dimension": "freshness",
+          "state": "unknown",
+          "reason": "Retrieval time is recorded separately; current affiliation, openness and availability require review."
+        }
+      ]
+    },
+    "before": {
+      "subject": "Feedback pilot — Data science",
+      "body": "Hello Fixture research group 9,\n\nI’m Alex Example, involved with Matrix Fellows. My interests include Data science.\n\nYour work caught our attention: “[REVIEW: add a specific observation supported by https://www.uta.edu/research/fixture-8]”.\n\nMy work on Data science work sample: built a small reproducible notebook\nWork sample: https://github.com/example/work\n\nWould you be open to a brief feedback session on [REVIEW: actual project and focused question]? We can send a one-page summary beforehand.\n\nThank you,\nAlex Example",
+      "notices": [
+        "Complete every REVIEW placeholder before approval; no reading or contribution is invented.",
+        "Local matching is a transparent drafting aid, not evidence of research eligibility or an acceptance probability."
+      ]
+    },
+    "after": {
+      "subject": "Feedback pilot — Data science",
+      "body": "Hello Fixture research group 9,\n\nI’m Jordan Officer, an officer with Matrix Fellows, writing on behalf of Alex Example. They have shared an interest in Data science.\n\nI noticed this description of your research: “The data science project provides a public notebook for assessing missing-value bias.” (https://www.uta.edu/research/fixture-8).\n\nThey describe their contribution to Data science work sample as: built a small reproducible notebook\nWork sample: https://github.com/example/work\n\nOne possible starting point is one bounded sensitivity table. We would agree on scope and confirm participation before committing to work.\n\nWould it be useful to explore a small pilot? A possible scope is to evaluate one missing-value pattern using the public notebook.\n\nThank you,\nJordan Officer",
+      "notices": [
+        "Local draft uses a source-supported model contribution suggestion; the lab need and participation remain unconfirmed.",
+        "Confirm every factual claim and resolve REVIEW placeholders before approval.",
+        "Local matching is a transparent drafting aid, not evidence of research eligibility or an acceptance probability."
+      ]
+    }
+  },
+  {
+    "id": "physical-inaccessible",
+    "reviewNote": "Do not imply equipment/lab access.",
+    "synthetic": true,
+    "input": {
+      "target": {
+        "id": "00000000-0000-4000-8000-000000000009",
+        "name": "Fixture research group 10",
+        "kind": "lab",
+        "organization": "Fixture institution",
+        "disciplines": [
+          "Biomedical imaging"
+        ],
+        "canonicalUrl": "https://www.uta.edu/research/fixture-9",
+        "contactEmail": "research@example.edu",
+        "location": "DFW",
+        "mode": "in_person",
+        "status": "ready",
+        "scope": "both",
+        "description": "Synthetic quality fixture; no asserted real opportunity.",
+        "dossier": {
+          "evidence": [
+            {
+              "url": "https://www.uta.edu/research/fixture-9",
+              "quote": "Biomedical imaging validation requires an on-site scanner and restricted hospital images; no remote dataset is offered.",
+              "claim": "Research topic",
+              "retrievedAt": "2026-10-09",
+              "confidence": "verified"
+            }
+          ],
+          "acquisition": {
+            "pages": [
+              {
+                "url": "https://www.uta.edu/research/fixture-9",
+                "text": "Biomedical imaging validation requires an on-site scanner and restricted hospital images; no remote dataset is offered.",
+                "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              }
+            ],
+            "publicAnalysis": {
+              "themes": [
+                "Biomedical imaging"
+              ],
+              "proposalOptions": [
+                {
+                  "title": "On-site scanner validation",
+                  "task": "review public validation guidance and ask whether a remote learning question is appropriate",
+                  "deliverable": "one question about permitted remote learning",
+                  "quote": "Biomedical imaging validation requires an on-site scanner and restricted hospital images; no remote dataset is offered.",
+                  "supervisionQuestions": [
+                    "Would this scope be useful, and what access is permitted?"
+                  ]
+                }
+              ],
+              "unknowns": []
+            }
+          }
+        },
+        "assessment": {},
+        "createdAt": "2026-10-09",
+        "updatedAt": "2026-10-09"
+      },
+      "profile": {
+        "id": "11111111-1111-4111-8111-111111111111",
+        "fullName": "Alex Example",
+        "interests": [
+          "Biomedical imaging"
+        ],
+        "skills": [],
+        "availability": "",
+        "location": "Remote",
+        "workSamples": [
+          {
+            "title": "Biomedical imaging work sample",
+            "url": "https://github.com/example/work",
+            "contribution": "evaluated image metrics"
+          }
+        ],
+        "goals": "Learn through a focused question",
+        "consentToShare": true,
+        "updatedAt": "2026-10-09"
+      },
+      "society": {
+        "name": "Matrix Fellows",
+        "description": "Research community affiliated with Martin High School; adult officers manage this dashboard.",
+        "capabilities": [],
+        "accomplishments": [],
+        "sponsor": "",
+        "updatedAt": "2026-10-09"
+      },
+      "senderName": "Jordan Officer",
+      "kind": "student",
+      "style": "feedback"
+    },
+    "plan": {
+      "schemaVersion": "contribution-plan-v1",
+      "mode": "possible_contribution",
+      "connection": "On-site scanner validation",
+      "deliverable": "one question about permitted remote learning",
+      "question": "Would it be useful to explore a small pilot? A possible scope is to review public validation guidance and ask whether a remote learning question is appropriate.",
+      "evidence": [
+        {
+          "url": "https://www.uta.edu/research/fixture-9",
+          "quote": "Biomedical imaging validation requires an on-site scanner and restricted hospital images; no remote dataset is offered.",
+          "snapshotHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "unknowns": [
+        "Would this scope be useful, and what access is permitted?",
+        "Participation and supervision are unconfirmed.",
+        "Current member availability must be confirmed before promising work."
+      ],
+      "provenance": "reviewed-model-analysis",
+      "dimensions": [
+        {
+          "dimension": "research",
+          "state": "supported",
+          "reason": "Specific connection: On-site scanner validation"
+        },
+        {
+          "dimension": "participation",
+          "state": "unknown",
+          "reason": "Physical access and travel need confirmation from Remote."
+        },
+        {
+          "dimension": "contribution",
+          "state": "unknown",
+          "reason": "Member contribution statement is self-reported; review attribution and scope before making an offer."
+        },
+        {
+          "dimension": "supervision",
+          "state": "unknown",
+          "reason": "The recipient has not confirmed a need, supervision or recruiting availability."
+        },
+        {
+          "dimension": "freshness",
+          "state": "unknown",
+          "reason": "Retrieval time is recorded separately; current affiliation, openness and availability require review."
+        }
+      ]
+    },
+    "before": {
+      "subject": "Feedback pilot — Biomedical imaging",
+      "body": "Hello Fixture research group 10,\n\nI’m Alex Example, involved with Matrix Fellows. My interests include Biomedical imaging.\n\nYour work caught our attention: “[REVIEW: add a specific observation supported by https://www.uta.edu/research/fixture-9]”.\n\nMy work on Biomedical imaging work sample: evaluated image metrics\nWork sample: https://github.com/example/work\n\nWould you be open to a brief feedback session on [REVIEW: actual project and focused question]? We can send a one-page summary beforehand.\n\nThank you,\nAlex Example",
+      "notices": [
+        "Complete every REVIEW placeholder before approval; no reading or contribution is invented.",
+        "Local matching is a transparent drafting aid, not evidence of research eligibility or an acceptance probability."
+      ]
+    },
+    "after": {
+      "subject": "Feedback pilot — Biomedical imaging",
+      "body": "Hello Fixture research group 10,\n\nI’m Jordan Officer, an officer with Matrix Fellows, writing on behalf of Alex Example. They have shared an interest in Biomedical imaging.\n\nI noticed this description of your research: “Biomedical imaging validation requires an on-site scanner and restricted hospital images; no remote dataset is offered.” (https://www.uta.edu/research/fixture-9).\n\nThey describe their contribution to Biomedical imaging work sample as: evaluated image metrics\nWork sample: https://github.com/example/work\n\nOne possible starting point is one question about permitted remote learning. We would agree on scope and confirm participation before committing to work.\n\nWould it be useful to explore a small pilot? A possible scope is to review public validation guidance and ask whether a remote learning question is appropriate.\n\nThank you,\nJordan Officer",
+      "notices": [
+        "Local draft uses a source-supported model contribution suggestion; the lab need and participation remain unconfirmed.",
+        "Confirm every factual claim and resolve REVIEW placeholders before approval.",
+        "Local matching is a transparent drafting aid, not evidence of research eligibility or an acceptance probability."
+      ]
+    }
+  },
+  {
+    "id": "interest-only",
+    "reviewNote": "Curiosity supports a question, not capability.",
+    "synthetic": true,
+    "input": {
+      "target": {
+        "id": "00000000-0000-4000-8000-000000000010",
+        "name": "Fixture research group 11",
+        "kind": "lab",
+        "organization": "Fixture institution",
+        "disciplines": [
+          "Astronomy"
+        ],
+        "canonicalUrl": "https://www.uta.edu/research/fixture-10",
+        "contactEmail": "research@example.edu",
+        "location": "DFW",
+        "mode": "remote",
+        "status": "ready",
+        "scope": "both",
+        "description": "Synthetic quality fixture; no asserted real opportunity.",
+        "dossier": {
+          "evidence": [
+            {
+              "url": "https://www.uta.edu/research/fixture-10",
+              "quote": "The astronomy group explains how public light curves reveal periodic signals.",
+              "claim": "Research topic",
+              "retrievedAt": "2026-10-09",
+              "confidence": "verified"
+            }
+          ],
+          "acquisition": {
+            "pages": [
+              {
+                "url": "https://www.uta.edu/research/fixture-10",
+                "text": "The astronomy group explains how public light curves reveal periodic signals.",
+                "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              }
+            ],
+            "publicAnalysis": {
+              "themes": [
+                "Astronomy"
+              ],
+              "proposalOptions": [
+                {
+                  "title": "Light-curve periodicity",
+                  "task": "study the introductory light-curve example",
+                  "deliverable": "one question about periodicity",
+                  "quote": "The astronomy group explains how public light curves reveal periodic signals.",
+                  "supervisionQuestions": [
+                    "Would this scope be useful, and what access is permitted?"
+                  ]
+                }
+              ],
+              "unknowns": []
+            }
+          }
+        },
+        "assessment": {},
+        "createdAt": "2026-10-09",
+        "updatedAt": "2026-10-09"
+      },
+      "profile": {
+        "id": "11111111-1111-4111-8111-111111111111",
+        "fullName": "Alex Example",
+        "interests": [
+          "Astronomy"
+        ],
+        "skills": [],
+        "availability": "",
+        "location": "Arlington",
+        "workSamples": [],
+        "goals": "Learn through a focused question",
+        "consentToShare": true,
+        "updatedAt": "2026-10-09"
+      },
+      "society": {
+        "name": "Matrix Fellows",
+        "description": "Research community affiliated with Martin High School; adult officers manage this dashboard.",
+        "capabilities": [],
+        "accomplishments": [],
+        "sponsor": "",
+        "updatedAt": "2026-10-09"
+      },
+      "senderName": "Jordan Officer",
+      "kind": "student",
+      "style": "feedback"
+    },
+    "plan": {
+      "schemaVersion": "contribution-plan-v1",
+      "mode": "question",
+      "connection": "Light-curve periodicity",
+      "deliverable": "",
+      "question": "Which public paper or introductory resource would you recommend for understanding Light-curve periodicity?",
+      "evidence": [
+        {
+          "url": "https://www.uta.edu/research/fixture-10",
+          "quote": "The astronomy group explains how public light curves reveal periodic signals.",
+          "snapshotHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "unknowns": [
+        "Would this scope be useful, and what access is permitted?",
+        "Participation and supervision are unconfirmed.",
+        "Current member availability must be confirmed before promising work."
+      ],
+      "provenance": "reviewed-model-analysis",
+      "dimensions": [
+        {
+          "dimension": "research",
+          "state": "supported",
+          "reason": "Specific connection: Light-curve periodicity"
+        },
+        {
+          "dimension": "participation",
+          "state": "supported",
+          "reason": "Remote participation is recorded; specific tasks and eligibility still need confirmation."
+        },
+        {
+          "dimension": "contribution",
+          "state": "unknown",
+          "reason": "No demonstrated work is selected; start with a focused question."
+        },
+        {
+          "dimension": "supervision",
+          "state": "unknown",
+          "reason": "The recipient has not confirmed a need, supervision or recruiting availability."
+        },
+        {
+          "dimension": "freshness",
+          "state": "unknown",
+          "reason": "Retrieval time is recorded separately; current affiliation, openness and availability require review."
+        }
+      ]
+    },
+    "before": {
+      "subject": "Feedback pilot — Astronomy",
+      "body": "Hello Fixture research group 11,\n\nI’m Alex Example, involved with Matrix Fellows. My interests include Astronomy.\n\nYour work caught our attention: “[REVIEW: add a specific observation supported by https://www.uta.edu/research/fixture-10]”.\n\nWould you be open to a brief feedback session on [REVIEW: actual project and focused question]? We can send a one-page summary beforehand.\n\nThank you,\nAlex Example",
+      "notices": [
+        "Complete every REVIEW placeholder before approval; no reading or contribution is invented.",
+        "Local matching is a transparent drafting aid, not evidence of research eligibility or an acceptance probability."
+      ]
+    },
+    "after": {
+      "subject": "Feedback pilot — Astronomy",
+      "body": "Hello Fixture research group 11,\n\nI’m Jordan Officer, an officer with Matrix Fellows, writing on behalf of Alex Example. They have shared an interest in Astronomy.\n\nI noticed this description of your research: “The astronomy group explains how public light curves reveal periodic signals.” (https://www.uta.edu/research/fixture-10).\n\nWhich public paper or introductory resource would you recommend for understanding Light-curve periodicity?\n\nThank you,\nJordan Officer",
+      "notices": [
+        "Local draft uses a source-supported model contribution suggestion; the lab need and participation remain unconfirmed.",
+        "Confirm every factual claim and resolve REVIEW placeholders before approval.",
+        "Local matching is a transparent drafting aid, not evidence of research eligibility or an acceptance probability."
+      ]
+    }
+  },
+  {
+    "id": "model-unsupported-quote",
+    "reviewNote": "Invalid model quote must be excluded.",
+    "synthetic": true,
+    "input": {
+      "target": {
+        "id": "00000000-0000-4000-8000-000000000011",
+        "name": "Fixture research group 12",
+        "kind": "lab",
+        "organization": "Fixture institution",
+        "disciplines": [
+          "Robotics"
+        ],
+        "canonicalUrl": "https://www.uta.edu/research/fixture-11",
+        "contactEmail": "research@example.edu",
+        "location": "DFW",
+        "mode": "remote",
+        "status": "ready",
+        "scope": "both",
+        "description": "Synthetic quality fixture; no asserted real opportunity.",
+        "dossier": {
+          "evidence": [
+            {
+              "url": "https://www.uta.edu/research/fixture-11",
+              "quote": "The robotics project documents collision-detection error cases in an open simulator.",
+              "claim": "Research topic",
+              "retrievedAt": "2026-10-09",
+              "confidence": "verified"
+            }
+          ],
+          "acquisition": {
+            "pages": [
+              {
+                "url": "https://www.uta.edu/research/fixture-11",
+                "text": "The robotics project documents collision-detection error cases in an open simulator.",
+                "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              }
+            ],
+            "publicAnalysis": {
+              "themes": [
+                "Robotics"
+              ],
+              "proposalOptions": [
+                {
+                  "title": "Collision-detection errors",
+                  "task": "reproduce one public error case",
+                  "deliverable": "one reproducible simulator error report",
+                  "quote": "Invented supporting excerpt absent from source",
+                  "supervisionQuestions": [
+                    "Would this scope be useful, and what access is permitted?"
+                  ]
+                }
+              ],
+              "unknowns": []
+            }
+          }
+        },
+        "assessment": {},
+        "createdAt": "2026-10-09",
+        "updatedAt": "2026-10-09"
+      },
+      "profile": {
+        "id": "11111111-1111-4111-8111-111111111111",
+        "fullName": "Alex Example",
+        "interests": [
+          "Robotics"
+        ],
+        "skills": [],
+        "availability": "",
+        "location": "Arlington",
+        "workSamples": [
+          {
+            "title": "Robotics work sample",
+            "url": "https://github.com/example/work",
+            "contribution": "tested a robot simulator"
+          }
+        ],
+        "goals": "Learn through a focused question",
+        "consentToShare": true,
+        "updatedAt": "2026-10-09"
+      },
+      "society": {
+        "name": "Matrix Fellows",
+        "description": "Research community affiliated with Martin High School; adult officers manage this dashboard.",
+        "capabilities": [],
+        "accomplishments": [],
+        "sponsor": "",
+        "updatedAt": "2026-10-09"
+      },
+      "senderName": "Jordan Officer",
+      "kind": "student",
+      "style": "feedback"
+    },
+    "plan": {
+      "schemaVersion": "contribution-plan-v1",
+      "mode": "question",
+      "connection": "Robotics",
+      "deliverable": "",
+      "question": "Is there a public paper or introductory resource you would recommend for exploring Robotics?",
+      "evidence": [
+        {
+          "url": "https://www.uta.edu/research/fixture-11",
+          "quote": "The robotics project documents collision-detection error cases in an open simulator."
+        }
+      ],
+      "unknowns": [
+        "Participation and supervision are unconfirmed.",
+        "Current member availability must be confirmed before promising work."
+      ],
+      "provenance": "local-evidence",
+      "dimensions": [
+        {
+          "dimension": "research",
+          "state": "supported",
+          "reason": "Reviewed target evidence supplies a research question."
+        },
+        {
+          "dimension": "participation",
+          "state": "supported",
+          "reason": "Remote participation is recorded; specific tasks and eligibility still need confirmation."
+        },
+        {
+          "dimension": "contribution",
+          "state": "unknown",
+          "reason": "Member contribution statement is self-reported; review attribution and scope before making an offer."
+        },
+        {
+          "dimension": "supervision",
+          "state": "unknown",
+          "reason": "The recipient has not confirmed a need, supervision or recruiting availability."
+        },
+        {
+          "dimension": "freshness",
+          "state": "unknown",
+          "reason": "Retrieval time is recorded separately; current affiliation, openness and availability require review."
+        }
+      ]
+    },
+    "before": {
+      "subject": "Feedback pilot — Robotics",
+      "body": "Hello Fixture research group 12,\n\nI’m Alex Example, involved with Matrix Fellows. My interests include Robotics.\n\nYour work caught our attention: “[REVIEW: add a specific observation supported by https://www.uta.edu/research/fixture-11]”.\n\nMy work on Robotics work sample: tested a robot simulator\nWork sample: https://github.com/example/work\n\nWould you be open to a brief feedback session on [REVIEW: actual project and focused question]? We can send a one-page summary beforehand.\n\nThank you,\nAlex Example",
+      "notices": [
+        "Complete every REVIEW placeholder before approval; no reading or contribution is invented.",
+        "Local matching is a transparent drafting aid, not evidence of research eligibility or an acceptance probability."
+      ]
+    },
+    "after": {
+      "subject": "Feedback pilot — Robotics",
+      "body": "Hello Fixture research group 12,\n\nI’m Jordan Officer, an officer with Matrix Fellows, writing on behalf of Alex Example. They have shared an interest in Robotics.\n\nI noticed this description of your research: “The robotics project documents collision-detection error cases in an open simulator.” (https://www.uta.edu/research/fixture-11).\n\nThey describe their contribution to Robotics work sample as: tested a robot simulator\nWork sample: https://github.com/example/work\n\nIs there a public paper or introductory resource you would recommend for exploring Robotics?\n\nThank you,\nJordan Officer",
+      "notices": [
+        "Using local evidence-based drafting.",
+        "Confirm every factual claim and resolve REVIEW placeholders before approval.",
+        "Local matching is a transparent drafting aid, not evidence of research eligibility or an acceptance probability."
+      ]
+    }
+  }
+]

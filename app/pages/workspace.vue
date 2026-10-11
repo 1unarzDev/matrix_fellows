@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import ResearchProfileOverview from '~/components/workspace/ResearchProfileOverview.vue'
+import SocietyConnectionCloud from '~/components/workspace/SocietyConnectionCloud.vue'
 import AccountSecurity from '~/components/workspace/AccountSecurity.vue'
 import DashboardWorkbench from '../components/workspace/DashboardWorkbench.vue'
 import type { OutreachProfile, OutreachProposal, OutreachTarget } from '#shared/types/outreach'
@@ -21,7 +23,7 @@ const { patchQuery } = useDashboardNavigation()
 const tab = computed({
   get: () =>
     typeof route.query.section === 'string' &&
-    allSections.some((section) => section.value === route.query.section)
+    sections.value.some((section) => section.value === route.query.section)
       ? route.query.section
       : route.query.section === 'saved'
         ? 'opportunities'
@@ -40,6 +42,19 @@ const allSections = [
   { value: 'research', label: 'Source management', icon: 'globe' },
   { value: 'settings', label: 'Connections', icon: 'lock' },
 ] as const
+const sections = computed(() =>
+  canDiscover.value
+    ? allSections
+    : [
+        'today',
+        'queue',
+        'opportunities',
+        'activities',
+        'profiles',
+        'society',
+        'settings',
+      ].map((value) => allSections.find((section) => section.value === value)!),
+)
 const commandOpen = ref(false)
 const commandDialog = ref<HTMLDialogElement>()
 const sectionNav = ref<HTMLElement>()
@@ -70,40 +85,25 @@ function commandNavigate(section: string) {
   tab.value = section
   commandOpen.value = false
 }
-const sections = computed(() =>
-  canDiscover.value
-    ? allSections
-    : [
-        'today',
-        'queue',
-        'opportunities',
-        'activities',
-        'drafts',
-        'profiles',
-        'society',
-        'settings',
-      ].map((value) => allSections.find((section) => section.value === value)!),
-)
 const visibleProposals = computed(() =>
-  (data.value?.proposals || []).filter((p) => canDiscover.value || p.kind === 'student'),
+  canDiscover.value ? data.value?.proposals || [] : [],
 )
 const initializedAccess = ref(false)
 const query = ref(typeof route.query.q === 'string' ? route.query.q : '')
 const status = ref('active')
-const discipline = ref('all')
 const lens = ref<'nearby' | 'remote' | 'travel'>('nearby')
+const reachableLocations = ref('Arlington')
 const fitPreferences = computed(() => ({
   lens: lens.value,
   interests: data.value?.profiles.find((p) => p.id === profileId.value)?.interests || [],
-  reachableLocations: ['Arlington'],
+  reachableLocations: reachableLocations.value.split(',').map(v=>v.trim()).filter(Boolean),
 }))
 const selectedId = ref(typeof route.query.target === 'string' ? route.query.target : '')
-watch([selectedId, query, discipline, lens], () => {
+watch([selectedId, query, lens], () => {
   if (tab.value !== 'queue') return
   patchQuery({
     target: selectedId.value || undefined,
     q: query.value || undefined,
-    field: discipline.value,
     access: lens.value,
   })
 })
@@ -121,13 +121,53 @@ watch(tab, async (value, previous) => {
 })
 const scope = ref('society')
 const profileId = ref('')
+const sharedProfiles = ref<{ profileId: string; displayName: string }[]>([])
+const sharedProfilePage = ref(0)
+const sharedProfileTotal = ref(0)
+async function loadSharedProfiles() {
+  if (!canDiscover.value) return
+  try {
+    const response = await $fetch<{ profiles: { id: string; fullName: string }[]; total: number }>('/api/workspace/research-profile/shared', { query: { page: sharedProfilePage.value } })
+    sharedProfiles.value = response.profiles.map(p => ({profileId: p.id, displayName: p.fullName}))
+    sharedProfileTotal.value = response.total
+  } catch { sharedProfiles.value = []; sharedProfileTotal.value = 0 }
+}
 const proposalStyle = ref('conversation')
+const selectedProjectId = ref('')
+const projectChoices = ref<{id:string;title:string}[]>([])
+const selectedContribution = ref('')
+const matchPreview = ref<any>(null)
+const officers = ref<{id:string;label:string}[]>([])
+async function loadProjects() {
+  selectedProjectId.value = ''; matchPreview.value = null
+  if (!canDiscover.value || !profileId.value) { projectChoices.value=[]; return }
+  try { const result=await $fetch<{projects:{id:string;title:string}[]}>('/api/workspace/research-profile/projects',{query:{profileId:profileId.value}}); projectChoices.value=result.projects }
+  catch { projectChoices.value=[] }
+}
+watch(profileId, loadProjects)
+watch([selectedId,selectedProjectId,selectedContribution,scope],()=>{matchPreview.value=null})
+const contributionChoices = computed(()=> {
+ const acquisition=selected.value?.dossier.acquisition as any
+ return (acquisition?.publicAnalysis?.proposalOptions || []).map((option:any,index:number)=>({value:String(index),label:option.title}))
+})
+async function previewMatch() {
+ if(!selected.value) return
+ const result=await mutate<any>('/matches','POST',{targetId:selected.value.id,...(scope.value==='student'?{profileId:profileId.value}:{}),...(selectedProjectId.value?{projectId:selectedProjectId.value}:{}),...(selectedContribution.value!==''?{contributionOption:Number(selectedContribution.value)}:{})})
+ matchPreview.value=result?.items?.[0] || null
+ if(result && !matchPreview.value) notice.value='No practical match under the represented member’s saved access preferences. Review those constraints first.'
+}
+async function saveAccessPreferences() {
+ await mutate('/research-profile/preferences','POST',{lens:lens.value,reachableLocations:reachableLocations.value.split(',').map(v=>v.trim()).filter(Boolean)},'Access preferences saved.')
+}
+onMounted(async()=> {
+ try { const preference=await $fetch<{lens:'nearby'|'remote'|'travel';reachableLocations:string[]}>('/api/workspace/research-profile/preferences');lens.value=preference.lens;reachableLocations.value=preference.reachableLocations.join(', ') } catch {}
+ if(canDiscover.value) { try { const roster=await $fetch<{officers:{id:string;label:string}[]}>('/api/workspace/officers');officers.value=roster.officers || [] } catch {} }
+})
 const unsaved = computed(() =>
   Boolean(
     changed.value ||
     editTarget.value ||
-    (profileBaseline.value && JSON.stringify(profileForm) !== profileBaseline.value) ||
-    (societyBaseline.value && JSON.stringify(societyForm) !== societyBaseline.value),
+    (profileBaseline.value && JSON.stringify(profileForm) !== profileBaseline.value),
   ),
 )
 onBeforeRouteLeave(() => {
@@ -143,63 +183,21 @@ function unloadGuard(event: BeforeUnloadEvent) {
 onMounted(() => window.addEventListener('beforeunload', unloadGuard))
 onBeforeUnmount(() => window.removeEventListener('beforeunload', unloadGuard))
 const selected = computed(() => data.value?.targets.find((t) => t.id === selectedId.value))
-const relationshipHistory = ref<
-  { targetId: string; ownerId: string; owner: string; status: string; updatedAt: string }[]
->([])
-const relationshipError = ref('')
-async function loadRelationships() {
-  try {
-    relationshipHistory.value = (
-      await $fetch<{ items: typeof relationshipHistory.value }>('/api/workspace/relationships')
-    ).items
-    relationshipError.value = ''
-  } catch {
-    relationshipError.value =
-      'Contact history could not be checked. Ask an officer before starting another inquiry.'
+const selectedDecision = ref<'ready' | 'deferred' | 'rejected'>('ready')
+watch(selectedId, () => { selectedDecision.value = 'ready' })
+async function updateSelectedStatus() {
+  if (!selected.value || busy.value) return
+  const messages = {
+    ready: 'Candidate kept in the active research queue.',
+    deferred: 'Candidate moved to your later list.',
+    rejected: 'Candidate removed from the active research queue.',
   }
-}
-const assignedMembers = ref<
-  { targetId: string; userId: string; email: string; createdAt: string }[]
->([])
-const assignmentEmail = ref('')
-const assignmentError = ref('')
-const assignmentBusy = ref(false)
-async function loadAssignments() {
-  assignedMembers.value = []
-  assignmentError.value = ''
-  if (!canDiscover.value || !selected.value) return
-  const targetId = selected.value.id
-  try {
-    const result = await $fetch<{ assignments: typeof assignedMembers.value }>(
-      '/api/workspace/assignments',
-      { query: { targetId } },
-    )
-    if (selectedId.value === targetId) assignedMembers.value = result.assignments
-  } catch (e: any) {
-    if (selectedId.value === targetId)
-      assignmentError.value = e?.data?.statusMessage || 'Assignments could not be loaded.'
-  }
-}
-watch(selectedId, () => {
-  assignmentEmail.value = ''
-  void loadAssignments()
-})
-async function assignMember(email: string, action: 'assign' | 'revoke') {
-  if (!canDiscover.value || !selected.value || assignmentBusy.value) return
-  assignmentBusy.value = true
-  assignmentError.value = ''
-  try {
-    await $fetch('/api/workspace/assignments', {
-      method: 'POST',
-      body: { targetId: selected.value.id, email: email.trim(), action },
-    })
-    assignmentEmail.value = ''
-    await loadAssignments()
-  } catch (e: any) {
-    assignmentError.value = e?.data?.statusMessage || 'This assignment could not be changed.'
-  } finally {
-    assignmentBusy.value = false
-  }
+  await mutate(
+    `/targets/${selected.value.id}`,
+    'PATCH',
+    { status: selectedDecision.value, expectedUpdatedAt: selected.value.updatedAt },
+    messages[selectedDecision.value],
+  )
 }
 const acquisition = computed(
   () =>
@@ -228,10 +226,6 @@ const acquisition = computed(
         }
       | undefined,
 )
-const disciplines = computed(() => [
-  'all',
-  ...new Set(data.value?.targets.flatMap((t) => t.disciplines) || []),
-])
 const targets = computed(() =>
   orderResearchTargets(
     (data.value?.targets || []).filter(
@@ -240,13 +234,23 @@ const targets = computed(() =>
           (status.value === 'active'
             ? !['deferred', 'rejected', 'contacted'].includes(t.status)
             : t.status === status.value)) &&
-        (discipline.value === 'all' || t.disciplines.includes(discipline.value)) &&
         `${t.name} ${t.organization} ${t.description}`
           .toLowerCase()
           .includes(query.value.toLowerCase()),
     ),
     fitPreferences.value,
   ),
+)
+watch(
+  [tab, targets],
+  () => {
+    // Put the officer in a useful review state as soon as the queue arrives.
+    // A deep link or an explicit selection always wins over this convenience default.
+    if (tab.value !== 'queue' || selectedId.value || !targets.value.length) return
+    const firstTarget = targets.value[0]
+    if (firstTarget) selectedId.value = firstTarget.id
+  },
+  { immediate: true },
 )
 const targetForm = reactive({
   id: '',
@@ -400,14 +404,6 @@ const profileForm = reactive({
 const profileBaseline = ref(JSON.stringify(profileForm))
 const profileExpectedUpdatedAt = ref('')
 const profileSaving = ref(false)
-const societyBaseline = ref('')
-const societyForm = reactive({
-  name: 'Matrix Fellows',
-  description: '',
-  capabilities: '',
-  sponsor: '',
-  accomplishments: [] as { title: string; description: string; url?: string; verified: boolean }[],
-})
 watch(data, (value) => {
   if (!value) return
   if (!initializedAccess.value) {
@@ -416,8 +412,8 @@ watch(data, (value) => {
       scope.value = 'student'
     }
   }
-  if (!canDiscover.value && tab.value === 'research') tab.value = 'today'
-  const p = value.profiles[0]
+  if (!canDiscover.value && ['research', 'drafts'].includes(String(route.query.section))) tab.value = 'today'
+  const p = value.profiles.find((profile) => profile.id === value.primaryProfileId) || value.profiles[0]
   if (p && !profileSaving.value && (!profileForm.id || profileForm.id !== p.id)) {
     Object.assign(profileForm, {
       id: p.id,
@@ -437,17 +433,7 @@ watch(data, (value) => {
     profileBaseline.value = JSON.stringify(profileForm)
     profileExpectedUpdatedAt.value = p.updatedAt
   }
-  if (!societyBaseline.value || JSON.stringify(societyForm) === societyBaseline.value) {
-    Object.assign(societyForm, {
-      name: value.society.name,
-      description: value.society.description,
-      sponsor: value.society.sponsor,
-      capabilities: value.society.capabilities.join(', '),
-      accomplishments: value.society.accomplishments.map((a) => ({ ...a })),
-    })
-    societyBaseline.value = JSON.stringify(societyForm)
-  }
-  if (!profileId.value && p) profileId.value = p.id
+  if (!canDiscover.value && !profileId.value && p) profileId.value = p.id
 })
 async function saveProfile() {
   const snapshot = JSON.parse(JSON.stringify(profileForm))
@@ -477,13 +463,16 @@ async function saveProfile() {
   }
 }
 async function plan() {
-  if (!selected.value) return
+  if (!canDiscover.value || !selected.value) return
   const result = await mutate(
     '/planner',
     'POST',
     {
       targetId: selected.value.id,
-      kind: canDiscover.value ? scope.value : 'student',
+      ...(matchPreview.value ? {matchId:matchPreview.value.id} : {}),
+      ...(selectedProjectId.value ? {projectId:selectedProjectId.value} : {}),
+      ...(selectedContribution.value !== '' ? {contributionOption:Number(selectedContribution.value)} : {}),
+      kind: scope.value,
       style: proposalStyle.value,
       profileId: scope.value === 'student' ? profileId.value : null,
     },
@@ -508,6 +497,32 @@ const uncertainSends = ref<string[]>([])
 const savingDraft = ref(false)
 const draftSaveState = ref('')
 const draftConflict = ref(false)
+const revisionPreview = ref<{baseRevision:number;subject:string;body:string;notices:string[];buffer:string} | null>(null)
+const revising = ref(false)
+const handoffOwner = ref('')
+async function proposeRevision(action: 'shorten' | 'smaller_ask' | 'direct' | 'remove_claim', claimId?: string) {
+  if (!proposal.value || changed.value || revising.value) return
+  const current = proposal.value
+  const buffer = JSON.stringify(draft)
+  revising.value = true
+  try {
+    const result = await $fetch<Omit<NonNullable<typeof revisionPreview.value>, 'buffer'>>(`/api/workspace/proposals/${current.id}/revise`, {method:'POST',body:{revision:current.revision,action,...(claimId?{claimId}:{})}})
+    if (proposalId.value === current.id) revisionPreview.value = {...result,buffer}
+  } catch (cause: any) { draftSaveState.value = cause?.data?.statusMessage || 'The proposed revision is unavailable. Your edits are preserved.' }
+  finally { revising.value = false }
+}
+const revisionCanApply = computed(() => Boolean(revisionPreview.value && proposal.value?.revision === revisionPreview.value.baseRevision && JSON.stringify(draft) === revisionPreview.value.buffer))
+function applyRevisionPreview() {
+  if (!revisionCanApply.value || !revisionPreview.value) return
+  draft.subject = revisionPreview.value.subject
+  draft.body = revisionPreview.value.body
+  revisionPreview.value = null
+}
+async function handoffDraft() {
+  if (!proposal.value || changed.value || !handoffOwner.value) return
+  const result = await mutate(`/proposals/${proposal.value.id}/handoff`, 'POST', {ownerId:handoffOwner.value}, 'Draft handed off. The new owner must choose their mailbox and approve a fresh revision.')
+  if (result) { proposalId.value = ''; handoffOwner.value = '' }
+}
 const revisions = ref<{ revision: number; subject: string; body: string; created_at: string }[]>([])
 let autosaveTimer: ReturnType<typeof setTimeout> | undefined
 async function loadRevisions() {
@@ -538,6 +553,7 @@ function openProposal(p: OutreachProposal) {
     return
   clearTimeout(autosaveTimer)
   draftConflict.value = false
+  revisionPreview.value = null
   draftSaveState.value = ''
   revisions.value = []
   proposalId.value = p.id
@@ -638,80 +654,135 @@ async function sendDraft() {
 const research = ref<any>(null)
 const researchError = ref('')
 const researchBusy = ref(false)
+const researchActionState = ref<'idle' | 'queued' | 'saved' | 'failed'>('idle')
+const researchActionMessage = ref('')
+const sourceOffset = ref(0)
+const jobOffset = ref(0)
+const sourceFilter = ref('')
 async function loadResearch() {
   try {
-    research.value = await $fetch('/api/workspace/research')
+    research.value = await $fetch('/api/workspace/research', { query: { sourceOffset: sourceOffset.value, jobOffset: jobOffset.value, limit: 40, ...(sourceFilter.value ? { sourceId: sourceFilter.value } : {}) } })
   } catch (e: any) {
     researchError.value = e?.data?.statusMessage || 'Research settings unavailable.'
   }
 }
-async function researchAction(action: string) {
+function researchAction(action: string) {
+  if (researchBusy.value || !research.value) return
   researchBusy.value = true
   researchError.value = ''
-  try {
-    await $fetch('/api/workspace/research' as string, {
-      method: 'POST',
-      body: {
-        action,
-        ...(action === 'settings'
-          ? {
-              settings: {
-                weekly_limit: research.value.settings.weekly_limit,
-                batch_limit: research.value.settings.batch_limit,
-                queue_limit: research.value.settings.queue_limit,
-                concurrency: research.value.settings.concurrency,
-                ai_enabled: research.value.settings.ai_enabled,
-                terms_confirmed: research.value.settings.terms_confirmed,
-              },
-            }
-          : {}),
-      },
-    })
-    await loadResearch()
-  } catch (e: any) {
-    researchError.value =
-      e?.data?.message || e?.data?.statusMessage || 'The research action could not be completed.'
-  } finally {
-    researchBusy.value = false
+  researchActionState.value = 'queued'
+  researchActionMessage.value = action === 'run'
+    ? 'Research run queued. You can keep working while agents gather evidence.'
+    : action === 'settings'
+      ? 'Research limits saved locally. Syncing them in the background…'
+      : research.value.settings.paused ? 'Resuming the research schedule…' : 'Pausing the research schedule…'
+  const previousSettings = { ...research.value.settings }
+  const settings = action === 'settings'
+    ? {
+        weekly_limit: research.value.settings.weekly_limit,
+        batch_limit: research.value.settings.batch_limit,
+        queue_limit: research.value.settings.queue_limit,
+        concurrency: research.value.settings.concurrency,
+        ai_enabled: research.value.settings.ai_enabled,
+        terms_confirmed: research.value.settings.terms_confirmed,
+      }
+    : undefined
+  if (action === 'pause' || action === 'resume') research.value.settings.paused = action === 'pause'
+  if (action === 'run') {
+    const localJob = { id: `queued-${Date.now()}`, kind: 'Discovery', status: 'queued', created_at: new Date().toISOString(), error: null }
+    research.value.jobs = [localJob, ...(research.value.jobs || [])]
   }
+  void (async () => {
+    try {
+      await $fetch('/api/workspace/research' as string, {
+        method: 'POST',
+        body: { action, ...(settings ? { settings } : {}) },
+      })
+      researchActionState.value = 'saved'
+      researchActionMessage.value = action === 'run' ? 'Research run accepted. New evidence will appear here when ready.' : 'Research settings updated.'
+      await loadResearch()
+    } catch (e: any) {
+      if (action === 'pause' || action === 'resume' || action === 'settings') Object.assign(research.value!.settings, previousSettings)
+      if (action === 'run') research.value!.jobs = research.value!.jobs.filter((job: any) => !String(job.id).startsWith('queued-'))
+      researchActionState.value = 'failed'
+      researchActionMessage.value = ''
+      researchError.value = e?.data?.message || e?.data?.statusMessage || 'The research action could not be completed.'
+    } finally {
+      researchBusy.value = false
+    }
+  })()
 }
 const editingSource = ref('')
-const sourceForm = reactive({ enabled: false, aiExcerpt: '', aiReviewed: false })
-function openSource(source: any) {
+const sourceForm = reactive({ enabled: false, aiExcerpt: '', aiReviewed: false, snapshotHash: '' })
+async function openSource(source: any) {
+  try {
+    const detail = await $fetch<{ source: any }>(`/api/workspace/research/sources/${encodeURIComponent(source.id)}`)
+    source = detail.source
+  } catch (cause: any) {
+    researchError.value = cause?.data?.statusMessage || 'The source snapshot could not be loaded. Retry before reviewing.'
+    return
+  }
   editingSource.value = source.id
   Object.assign(sourceForm, {
     enabled: source.enabled,
     aiExcerpt: source.ai_excerpt || '',
     aiReviewed: source.ai_reviewed || false,
+    snapshotHash: source.snapshot?.hash || source.latest_snapshot_hash || source.last_hash || '',
   })
 }
-async function saveSource() {
+function saveSource() {
+  if (researchBusy.value || !editingSource.value) return
+  const sourceId = editingSource.value
+  const payload = { ...sourceForm }
+  const source = research.value?.sources.find((item: any) => item.id === sourceId)
+  const previous = source ? { enabled: source.enabled, ai_excerpt: source.ai_excerpt, ai_reviewed: source.ai_reviewed } : null
+  if (source) Object.assign(source, { enabled: payload.enabled, ai_excerpt: payload.aiExcerpt, ai_reviewed: payload.aiReviewed })
+  editingSource.value = ''
   researchBusy.value = true
+  researchActionState.value = 'queued'
+  researchActionMessage.value = 'Source review saved locally. Updating the research runner in the background…'
   researchError.value = ''
-  try {
-    await $fetch('/api/workspace/research', {
-      method: 'POST',
-      body: { action: 'source', sourceId: editingSource.value, ...sourceForm },
-    })
-    editingSource.value = ''
-    await loadResearch()
-  } catch (e: any) {
-    researchError.value = e?.data?.statusMessage || 'Could not save source review.'
-  } finally {
-    researchBusy.value = false
-  }
+  void (async () => {
+    try {
+      await $fetch('/api/workspace/research', { method: 'POST', body: { action: 'source', sourceId, ...payload } })
+      researchActionState.value = 'saved'
+      researchActionMessage.value = 'Source review updated. Future runs will use the new excerpt.'
+      await loadResearch()
+    } catch (e: any) {
+      if (source && previous) Object.assign(source, previous)
+      editingSource.value = sourceId
+      researchActionState.value = 'failed'
+      researchActionMessage.value = ''
+      researchError.value = e?.data?.statusMessage || 'Could not save source review.'
+    } finally {
+      researchBusy.value = false
+    }
+  })()
 }
 watch(tab, (value) => {
   if (value === 'research' && canDiscover.value) void loadResearch()
 })
+const historicalMailboxes = ref<any[]>([])
 const connecting = ref(false)
+const voicePreferences = reactive({length:'standard',formality:'neutral',opening:'greeting',requestStyle:'tentative'})
+const voiceNotice = ref('')
+async function loadVoice() {
+ if(!canDiscover.value) return
+ try { const result=await $fetch<any>('/api/workspace/voice');Object.assign(voicePreferences,result.preferences || {});voiceNotice.value=result.notice || '' }catch{voiceNotice.value='Local voice preferences are unavailable.'}
+}
+async function saveVoice() {
+ const result=await mutate<any>('/voice','PUT',{...voicePreferences},'Your local voice preferences are saved.')
+ if(result) voiceNotice.value=result.notice
+}
+watch(tab,value=>{if(value==='settings') void loadVoice()})
 const providers = ref({ gmail: false, outlook: false })
 async function loadMailboxes() {
   try {
-    const response = await $fetch<{ providers: { gmail: boolean; outlook: boolean } }>(
+    const response = await $fetch<{ items: any[]; providers: { gmail: boolean; outlook: boolean } }>(
       '/api/workspace/mailboxes',
     )
     providers.value = response.providers
+    historicalMailboxes.value = response.items || []
   } catch {
     providers.value = { gmail: false, outlook: false }
   }
@@ -766,33 +837,14 @@ async function reconcile() {
   }
 }
 watch(tab, (value) => {
-  if (value === 'drafts') void loadOutbox()
+  if (value === 'drafts' && canDiscover.value) void loadOutbox()
 })
-async function saveSociety() {
-  const snapshot = JSON.parse(JSON.stringify(societyForm))
-  const result = await mutate(
-    '/society',
-    'PUT',
-    {
-      ...snapshot,
-      capabilities: split(snapshot.capabilities),
-      accomplishments: snapshot.accomplishments.map((a: any) => ({
-        ...a,
-        url: a.url || undefined,
-      })),
-    },
-    'Society profile saved.',
-  )
-  if (result) {
-    societyBaseline.value = JSON.stringify(snapshot)
-    if (JSON.stringify(societyForm) !== societyBaseline.value)
-      notice.value = 'Submitted society profile saved. Your newer edits still need saving.'
-  }
-}
 onMounted(async () => {
   await refresh()
   await loadMailboxes()
-  await loadRelationships()
+  if (canDiscover.value) {
+    await loadSharedProfiles()
+  }
 })
 </script>
 
@@ -872,20 +924,13 @@ onMounted(async () => {
                 <p class="ws-kicker">
                   {{ canDiscover ? 'Shared source review' : 'Connections assigned to you' }}
                 </p>
-                <h2>Research relationships</h2>
+                <h2>Research queue</h2>
               </div>
               <button v-if="canDiscover" class="ws-button" @click="openTarget()">
                 <SiteIcon name="plus" :size="15" />Add candidate
               </button>
             </div>
             <div class="queue-tools">
-              <label class="ws-field"
-                >Access preference<select v-model="lens">
-                  <option value="nearby">Nearby · Arlington</option>
-                  <option value="remote">Remote</option>
-                  <option value="travel">Summer or travel</option>
-                </select></label
-              >
               <label class="search"
                 ><SiteIcon name="search" :size="17" /><input
                   v-model="query"
@@ -903,12 +948,6 @@ onMounted(async () => {
                   { value: 'rejected', label: 'Not viable' },
                   { value: 'contacted', label: 'Contacted' },
                 ]"
-              /><ThemedSelect
-                v-model="discipline"
-                label="Research discipline"
-                :options="
-                  disciplines.map((d) => ({ value: d, label: d === 'all' ? 'All disciplines' : d }))
-                "
               />
             </div>
             <form v-if="editTarget" class="ws-panel target-form" @submit.prevent="saveTarget">
@@ -1085,7 +1124,7 @@ onMounted(async () => {
                 >
                   <div class="candidate-top">
                     <span class="ws-chip">{{ target.kind }}</span
-                    ><span class="ws-chip">Student access unconfirmed</span>
+                    ><span class="ws-chip">Participation unconfirmed</span>
                   </div>
                   <h3>{{ target.name }}</h3>
                   <p>{{ target.organization }}</p>
@@ -1098,7 +1137,7 @@ onMounted(async () => {
                   </p>
                   <div class="candidate-bottom">
                     <span>{{ target.location || 'Location unverified' }}</span
-                    ><span>{{ target.status.replaceAll('_', ' ') }}</span>
+                    ><span class="candidate-review">Review dossier <SiteIcon name="right" :size="12" /></span>
                   </div>
                 </button>
                 <div v-if="!targets.length" class="ws-empty">
@@ -1131,35 +1170,7 @@ onMounted(async () => {
                     <span v-for="d in selected.disciplines" :key="d" class="ws-chip">{{ d }}</span>
                   </div>
                   <div class="ws-divider" />
-                  <section aria-label="Contact coordination">
-                    <h3>Coordinate before contacting</h3>
-                    <p v-if="relationshipError" class="ws-muted">{{ relationshipError }}</p>
-                    <p
-                      v-for="contact in relationshipHistory.filter(
-                        (r) => r.targetId === selected?.id,
-                      )"
-                      :key="contact.ownerId + contact.updatedAt"
-                      class="ws-muted"
-                    >
-                      {{ contact.owner }} · {{ contact.status.replaceAll('_', ' ') }} ·
-                      {{ contact.updatedAt.slice(0, 10) }}. Coordinate with the owner before another
-                      inquiry.
-                    </p>
-                    <p
-                      v-if="
-                        !relationshipError &&
-                        !relationshipHistory.some((r) => r.targetId === selected?.id)
-                      "
-                      class="ws-muted"
-                    >
-                      No recorded submission for this target. This does not establish that nobody
-                      contacted them outside this dashboard.
-                    </p>
-                    <p class="ws-muted">
-                      Reply reading is not connected. Record outcomes manually; sending is not a
-                      collaboration.
-                    </p>
-                  </section>
+                  <p class="ws-muted dossier-note">Review the evidence and choose a clear first ask. After an email is accepted, this candidate leaves the active queue; future outcomes are recorded with the sent message rather than tracked as a separate relationship workspace.</p>
                   <h3>What they work on</h3>
                   <p class="ws-muted preserve">
                     {{ selected.dossier.research || selected.description }}
@@ -1175,7 +1186,7 @@ onMounted(async () => {
                   <p class="ws-muted preserve">
                     {{
                       selected.dossier.eligibility ||
-                      'High-school access and mentoring availability remain unverified. Ask before proposing on-site work.'
+                      'Participation access and mentoring availability remain unverified. Ask before proposing on-site work.'
                     }}
                   </p>
                   <div v-if="selected.assessment.rationale" class="assessment">
@@ -1288,159 +1299,70 @@ onMounted(async () => {
                     :href="selected.canonicalUrl"
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="ws-button source-link"
-                    >Open official source<SiteIcon name="arrow" :size="14"
+                    class="evidence source-link"
+                    ><span>Open the official source</span><SiteIcon name="arrow" :size="14"
                   /></a>
                   <div class="ws-divider" />
-                  <h3>Compare proposal approaches</h3>
-                  <ol class="angle-list">
-                    <li v-for="angle in selected.dossier.proposalAngles || []" :key="angle">
-                      {{ angle }}
-                    </li>
-                  </ol>
-                  <p v-if="!selected.dossier.proposalAngles?.length" class="ws-muted">
-                    Choose a small, concrete ask that matches their work and your demonstrated
-                    skills. Drafting does not establish mentoring availability.
-                  </p>
-                  <ThemedSelect
-                    v-if="canDiscover"
-                    v-model="scope"
-                    label="Who is the connection for?"
-                    :options="[
-                      { value: 'society', label: 'Society partnership' },
-                      { value: 'student', label: 'My research profile' },
-                    ]"
-                  /><ThemedSelect
-                    v-if="scope === 'student'"
-                    v-model="profileId"
-                    label="Research profile"
-                    :options="data.profiles.map((p) => ({ value: p.id, label: p.fullName }))"
-                  />
-                  <ThemedSelect
-                    v-model="proposalStyle"
-                    label="Proposal approach"
-                    :options="
-                      proposalStyles.map((value) => ({
-                        value,
-                        label: value.charAt(0).toUpperCase() + value.slice(1),
-                      }))
-                    "
-                  />
-                  <div class="ws-actions">
-                    <button
-                      class="ws-button ws-button--primary"
-                      :disabled="busy || (scope === 'student' && !profileId)"
-                      @click="plan"
-                    >
-                      Shape a proposal<SiteIcon name="right" :size="14" /></button
-                    ><button v-if="canDiscover" class="ws-button" @click="openTarget(selected)">
-                      Edit dossier
-                    </button>
-                  </div>
-                  <div v-if="canDiscover" class="ws-actions">
-                    <button
-                      class="ws-button"
-                      :disabled="busy"
-                      @click="
-                        mutate(
-                          `/targets/${selected.id}`,
-                          'PATCH',
-                          { status: 'ready', expectedUpdatedAt: selected.updatedAt },
-                          'Candidate marked ready.',
-                        )
-                      "
-                    >
-                      Mark ready</button
-                    ><button
-                      class="ws-button"
-                      :disabled="busy"
-                      @click="
-                        mutate(
-                          `/targets/${selected.id}`,
-                          'PATCH',
-                          { status: 'deferred', expectedUpdatedAt: selected.updatedAt },
-                          'Deferred for later.',
-                        )
-                      "
-                    >
-                      For later</button
-                    ><button
-                      class="ws-button ws-button--danger"
-                      :disabled="busy"
-                      @click="
-                        mutate(
-                          `/targets/${selected.id}`,
-                          'PATCH',
-                          { status: 'rejected', expectedUpdatedAt: selected.updatedAt },
-                          'Removed from the active queue.',
-                        )
-                      "
-                    >
-                      Not viable
-                    </button>
-                  </div>
-                  <section v-if="canDiscover" class="assignment-section">
-                    <h3>Assign a personal connection</h3>
-                    <p class="ws-muted">
-                      Share this reviewed connection with a specific enrolled member. Assignment
-                      permits a personal inquiry, not a society-wide proposal or a promise of
-                      mentoring.
-                    </p>
-                    <p v-if="selected.status !== 'ready'" class="ws-muted">
-                      Mark the candidate ready after reviewing contact evidence and fit before
-                      assigning them.
-                    </p>
-                    <div v-if="assignmentError" class="ws-alert ws-error" role="alert">
-                      {{ assignmentError }}
-                    </div>
-                    <form @submit.prevent="assignMember(assignmentEmail, 'assign')">
-                      <label class="ws-field"
-                        >Member email<input
-                          v-model="assignmentEmail"
-                          type="email"
-                          required
-                          autocomplete="off"
-                          placeholder="member@example.org"
-                          :disabled="assignmentBusy"
-                      /></label>
-                      <button
-                        class="ws-button"
-                        :disabled="
-                          assignmentBusy || selected.status !== 'ready' || !assignmentEmail.trim()
-                        "
-                      >
-                        Assign connection<SiteIcon name="plus" :size="14" />
-                      </button>
-                    </form>
-                    <TransitionGroup name="assignment" tag="div">
-                      <div
-                        v-for="assignment in assignedMembers"
-                        :key="assignment.userId"
-                        class="job-row"
-                      >
-                        <span class="ws-muted">{{ assignment.email }}</span>
-                        <button
-                          class="ws-button"
-                          :disabled="assignmentBusy"
-                          @click="assignMember(assignment.email, 'revoke')"
-                        >
-                          Revoke<span class="sr-only"> access for {{ assignment.email }}</span>
-                        </button>
-                      </div>
-                    </TransitionGroup>
+                  <details class="research-next-step" :open="Boolean(matchPreview)">
+                    <summary><span>Next step</span><small>Shape one focused connection</small></summary>
+                    <p class="ws-muted">Choose the lightest honest path. The draft stays editable and nothing sends automatically.</p>
+                    <ThemedSelect
+                      v-if="canDiscover"
+                      v-model="scope"
+                      label="Connection type"
+                      :options="[
+                        { value: 'society', label: 'Matrix Fellows connection' },
+                        { value: 'student', label: 'Personal inquiry' },
+                      ]"
+                    /><ThemedSelect
+                      v-if="canDiscover && scope === 'student'"
+                      v-model="profileId"
+                      label="Represented profile"
+                      :options="[{value: '', label: 'Choose a consenting member'}, ...sharedProfiles.map((p) => ({ value: p.profileId, label: p.displayName }))]"
+                    />
+                    <ThemedSelect v-if="canDiscover && scope === 'student' && projectChoices.length" v-model="selectedProjectId" label="Relevant project" :options="[{value:'',label:'Use profile context'},...projectChoices.map(p=>({value:p.id,label:p.title}))]" />
+                    <ThemedSelect v-if="canDiscover && contributionChoices.length" v-model="selectedContribution" label="Supported angle" :options="[{value:'',label:'Let the plan choose'},...contributionChoices]" />
+                    <button v-if="canDiscover" class="ws-button ws-button--primary" :disabled="busy || (scope === 'student' && !profileId)" @click="previewMatch">Review the connection plan <SiteIcon name="right" :size="14" /></button>
+                  </details>
+                  <section v-if="matchPreview" aria-label="Selected connection plan">
+                    <h3>{{ matchPreview.plan.connection }}</h3>
+                    <p v-for="contact in matchPreview.coordination" :key="contact.id" class="ws-muted">Prior outreach signal: {{ contact.stage }} · assigned officer {{ contact.ownerId }}. Review the existing message before preparing a new ask.</p>
+                    <p class="ws-muted">History coverage: {{ matchPreview.historyStatus }}. Unresolved legacy contact may need manual review.</p>
+                    <p>{{ matchPreview.topicOverlap }}</p>
+                    <p>{{ matchPreview.plan.deliverable || matchPreview.plan.question }}</p>
+                    <p v-for="dimension in matchPreview.plan.dimensions" :key="dimension.dimension" class="ws-muted">{{ dimension.reason }}</p>
+                    <p v-for="unknown in matchPreview.plan.unknowns" :key="unknown" class="ws-muted">{{ unknown }}</p>
+                    <p class="ws-muted">{{ matchPreview.access.access }} access. This plan does not establish a recruiting need or commitment.</p>
                   </section>
+                  <div v-if="canDiscover && matchPreview" class="research-dossier-actions">
+                    <ThemedSelect
+                      v-model="proposalStyle"
+                      label="Draft tone"
+                      :options="proposalStyles.map((value) => ({ value, label: value.charAt(0).toUpperCase() + value.slice(1) }))"
+                    />
+                    <button class="ws-button ws-button--primary" :disabled="busy || !matchPreview || (scope === 'student' && !profileId)" @click="plan()">
+                      Shape the draft<SiteIcon name="right" :size="14" />
+                    </button>
+                    <details class="research-more-actions">
+                      <summary>More candidate actions</summary>
+                      <button class="ws-button" @click="openTarget(selected)">Edit evidence</button>
+                      <div class="research-status-action">
+                        <ThemedSelect v-model="selectedDecision" label="Queue status" :options="[{value:'ready',label:'Keep active'},{value:'deferred',label:'For later'},{value:'rejected',label:'Not viable'}]" />
+                        <button class="ws-button" :disabled="busy" @click="updateSelectedStatus">Update status</button>
+                      </div>
+                    </details>
+                  </div>
                 </article>
                 <div v-else class="ws-empty dossier-empty">
                   <SiteIcon name="compass" :size="32" />
                   <p>
-                    Select a candidate to review their research, evidence, access, and possible
-                    partnership approaches.
+                    Choose a candidate to review its evidence and shape one clear next step.
                   </p>
                 </div></Transition
               >
             </div>
           </template>
-          <template v-else-if="tab === 'drafts'"
+          <template v-else-if="tab === 'drafts' && canDiscover"
             ><div class="section-top">
               <div>
                 <h2>Draft review</h2>
@@ -1479,8 +1401,9 @@ onMounted(async () => {
                   {{
                     proposal.kind === 'society'
                       ? 'Matrix Fellows'
-                      : data.profiles.find((p) => p.id === proposal?.profileId)?.fullName ||
-                        'Your profile'
+                      : sharedProfiles.find((p) => p.profileId === proposal?.profileId)?.displayName ||
+                        data.profiles.find((p) => p.id === proposal?.profileId)?.fullName ||
+                        'Represented member'
                   }}
                 </p>
                 <p class="ws-muted">
@@ -1527,6 +1450,36 @@ onMounted(async () => {
                   </summary>
                   <h3>{{ revision.subject }}</h3>
                   <p class="preserve ws-muted">{{ revision.body }}</p>
+                </details>
+                <div class="ws-actions" v-if="proposal.status !== 'sent'">
+                  <button type="button" class="ws-button" :disabled="changed || revising" @click="proposeRevision('shorten')">Shorten</button>
+                  <button type="button" class="ws-button" :disabled="changed || revising" @click="proposeRevision('smaller_ask')">Make the ask smaller</button>
+                  <button type="button" class="ws-button" :disabled="changed || revising" @click="proposeRevision('direct')">Make it more direct</button>
+                </div>
+                <section v-if="revisionPreview" class="send-confirm" aria-label="Proposed revision preview">
+                  <h3>Proposed local edit</h3>
+                  <p v-for="message in revisionPreview.notices" :key="message" class="ws-muted">{{ message }}</p>
+                  <details><summary>Current message</summary><p class="preserve">{{ draft.body }}</p></details>
+                  <p class="preserve">{{ revisionPreview.body }}</p>
+                  <p v-if="!revisionCanApply" class="ws-muted">Your draft changed while this suggestion was prepared. Request a new preview to preserve your edits.</p>
+                  <button type="button" class="ws-button" :disabled="!revisionCanApply" @click="applyRevisionPreview">Use proposed edit</button>
+                  <button type="button" class="ws-button" @click="revisionPreview = null">Keep current text</button>
+                </section>
+                <details v-if="proposal.proposalPlan" class="sample">
+                  <summary>Selected plan and factual supports</summary>
+                  <p>{{ proposal.proposalPlan.connection }}</p>
+                  <p class="ws-muted">{{ proposal.proposalPlan.provenance === 'reviewed-model-analysis' ? 'Local draft informed by reviewed Gemini analysis' : 'Local evidence-based draft' }}</p>
+                  <p v-for="issue in proposal.proposalPlan.reviewIssues" :key="issue" class="ws-muted">{{ issue }}</p>
+                  <article v-for="support in proposal.proposalPlan.sentenceSupports" :key="support.sentence">
+                    <p>{{ support.sentence }}</p><small class="ws-muted">{{ support.classification }}</small>
+                    <a v-for="source in support.sources" :key="source.url + source.quote" :href="source.url" target="_blank" rel="noopener noreferrer">Source: {{ source.quote }}</a>
+                    <button v-for="claim in support.claimIds" :key="claim" type="button" class="ws-button" :disabled="changed || revising || proposal.status === 'sent'" @click="proposeRevision('remove_claim', claim)">Remove this claim</button>
+                  </article>
+                </details>
+                <details v-if="proposal.status !== 'sent'" class="sample"><summary>Hand this draft to an appointed officer</summary>
+                  <ThemedSelect v-model="handoffOwner" label="New draft owner" :options="[{value:'',label:'Choose an active officer'},...officers.map(o=>({value:o.id,label:o.label}))]" />
+                  <p class="ws-muted">Original authorship remains. Mailbox authorization never transfers.</p>
+                  <button type="button" class="ws-button" :disabled="changed || busy || !handoffOwner" @click="handoffDraft">Hand off draft</button>
                 </details>
                 <div class="ws-divider" />
                 <label class="ws-field"
@@ -1672,7 +1625,13 @@ onMounted(async () => {
             </details>
           </template>
           <template v-else-if="tab === 'profiles'"
-            ><form class="ws-panel" @submit.prevent="saveProfile">
+            ><section class="ws-panel" aria-label="Practical participation preferences">
+              <ThemedSelect v-model="lens" label="Practical participation" :options="[{value:'nearby',label:'Nearby or remote'},{value:'remote',label:'Remote only'},{value:'travel',label:'Travel is practical'}]" />
+              <label class="ws-field">Reachable cities or campuses<input v-model="reachableLocations" placeholder="Arlington, Dallas" /></label>
+              <button class="ws-button" :disabled="busy" @click="saveAccessPreferences">Save access preferences</button>
+            </section><ResearchProfileOverview v-if="profileForm.id" :profile-id="profileForm.id" @updated="refresh" />
+            <details class="ws-panel secondary-panel"><summary>Advanced profile editing</summary>
+            <form @submit.prevent="saveProfile">
               <p class="ws-kicker">Your context changes the proposal</p>
               <h2>Your research profile</h2>
               <p class="ws-muted">
@@ -1808,91 +1767,11 @@ onMounted(async () => {
                   Save my profile
                 </button>
               </div>
-            </form></template
+            </form></details></template
           >
-          <template v-else-if="tab === 'society'"
-            ><form class="ws-panel" @submit.prevent="saveSociety">
-              <p class="ws-kicker">A credible shared introduction</p>
-              <h2>What we can genuinely offer</h2>
-              <p class="ws-muted">
-                Keep accomplishments specific and evidenced. Officers review society claims before
-                use.
-              </p>
-              <div class="ws-divider" />
-              <label class="ws-field"
-                >Society name<input
-                  v-model="societyForm.name"
-                  required
-                  :disabled="!canDiscover" /></label
-              ><label class="ws-field"
-                >Concise introduction<textarea
-                  v-model="societyForm.description"
-                  :disabled="!canDiscover"
-                /></label
-              ><label class="ws-field"
-                >Demonstrated capabilities, comma separated<input
-                  v-model="societyForm.capabilities"
-                  :disabled="!canDiscover" /></label
-              ><label class="ws-field"
-                >Adult sponsor / supervising contact<input
-                  v-model="societyForm.sponsor"
-                  :disabled="!canDiscover"
-              /></label>
-              <h3>Reviewed accomplishments</h3>
-              <div v-for="(a, i) in societyForm.accomplishments" :key="i" class="sample">
-                <label class="ws-field"
-                  >Title<input v-model="a.title" required :disabled="!canDiscover" /></label
-                ><label class="ws-field"
-                  >What happened, and our actual contribution<textarea
-                    v-model="a.description"
-                    required
-                    :disabled="!canDiscover"
-                  /></label
-                ><label class="ws-field"
-                  >Supporting public source<input
-                    v-model="a.url"
-                    type="url"
-                    :disabled="!canDiscover"
-                /></label>
-                <div v-if="canDiscover" class="consent">
-                  <AnimatedCheckbox
-                    v-model="a.verified"
-                    outlined
-                    label="I reviewed this accomplishment against its supporting source."
-                  />
-                </div>
-                <button
-                  v-if="canDiscover"
-                  type="button"
-                  class="ws-button"
-                  @click="societyForm.accomplishments.splice(i, 1)"
-                >
-                  Remove
-                </button>
-              </div>
-              <div class="ws-actions" v-if="canDiscover">
-                <button
-                  type="button"
-                  class="ws-button"
-                  @click="
-                    societyForm.accomplishments.push({
-                      title: '',
-                      description: '',
-                      url: '',
-                      verified: false,
-                    })
-                  "
-                >
-                  Add accomplishment</button
-                ><button class="ws-button ws-button--primary" :disabled="busy">
-                  Save reviewed profile
-                </button>
-              </div>
-              <p v-else class="ws-muted">
-                Officers manage the society's reviewed introduction and claims.
-              </p>
-            </form></template
-          >
+          <template v-else-if="tab === 'society'">
+            <SocietyConnectionCloud :officer="canDiscover" />
+          </template>
           <template v-else-if="tab === 'research' && canDiscover"
             ><p class="ws-kicker">Bounded discovery, not a flood</p>
             <h2>Research runs</h2>
@@ -1903,6 +1782,7 @@ onMounted(async () => {
             <div v-if="researchError" role="alert" class="ws-alert ws-error">
               {{ researchError }}
             </div>
+            <Transition name="research-action"><p v-if="researchActionMessage" class="research-action-status" :class="`research-action-status--${researchActionState}`" role="status"><span class="research-action-status__orb" aria-hidden="true" />{{ researchActionMessage }}</p></Transition>
             <div v-if="research" class="ws-stack">
               <article class="ws-panel">
                 <div class="section-top">
@@ -1987,6 +1867,10 @@ onMounted(async () => {
               </article>
               <article class="ws-panel">
                 <h3>Vetted discovery sources</h3>
+                <form class="ws-actions" @submit.prevent="sourceOffset = 0; jobOffset = 0; loadResearch()">
+                  <label class="ws-field">Find source by ID<input v-model="sourceFilter" placeholder="Registry or target source ID" /></label>
+                  <button class="ws-button">Filter sources</button>
+                </form>
                 <div v-for="source in research.sources" :key="source.id" class="job-row">
                   <a :href="source.url" target="_blank" rel="noopener noreferrer">{{
                     source.url
@@ -2004,6 +1888,11 @@ onMounted(async () => {
                   No vetted sources enabled. An administrator must configure sources before jobs can
                   run.
                 </p>
+                <div v-if="research.pagination" class="ws-actions">
+                  <button class="ws-button" :disabled="sourceOffset === 0" @click="sourceOffset = Math.max(0, sourceOffset - 40); loadResearch()">Previous sources</button>
+                  <span class="ws-muted">{{ sourceOffset + 1 }}–{{ sourceOffset + research.sources.length }} of {{ research.pagination.sourceTotal }}</span>
+                  <button class="ws-button" :disabled="sourceOffset + research.sources.length >= research.pagination.sourceTotal" @click="sourceOffset += 40; loadResearch()">Next sources</button>
+                </div>
                 <Transition name="ws-content"
                   ><form v-if="editingSource" class="send-confirm" @submit.prevent="saveSource">
                     <h3>Review research-only excerpt</h3>
@@ -2052,13 +1941,21 @@ onMounted(async () => {
               </article>
               <article class="ws-panel">
                 <h3>Recent jobs</h3>
+                <p class="ws-muted">{{ research.health?.stages?.filter((s:any)=>s.status==='waiting_quota').length || 0 }} recent stages waiting for quota. Completed evidence is reused on retry.</p>
+                <p v-if="research.health?.usage" class="ws-muted">Today's reserved usage: {{ research.health.usage.source_requests }} source requests, {{ research.health.usage.source_bytes }} bytes, {{ research.health.usage.model_requests }} model requests and {{ research.health.usage.model_tokens }} tokens. Reservations include unknown-cost interrupted calls.</p>
+                <p class="ws-muted">{{ research.health?.coverage?.filter((s:any)=>s.enabled).length || 0 }} enabled sources in the displayed coverage inventory{{ research.health?.coveragePartial ? ' (partial)' : '' }}. Coverage is bounded; current openings still require review.</p>
                 <div v-for="job in research.jobs" :key="job.id" class="job-row">
                   <div>
                     <strong>{{ job.kind || 'Discovery' }}</strong
                     ><small>{{ job.created_at || job.createdAt }}</small>
                     <p v-if="job.error" class="ws-muted">{{ job.error }}</p>
                   </div>
-                  <span class="ws-chip">{{ job.status }}</span>
+                  <span class="ws-chip">{{ job.failure_kind === 'quota_wait' ? 'Waiting for quota' : job.status }}</span>
+                  <button v-if="data.member.role === 'admin' && job.status === 'failed'" class="ws-button" :disabled="researchBusy" @click="mutate('/research','POST',{action:'retry',jobId:job.id},'Stage retry queued.'); loadResearch()">Retry stage</button>
+                </div>
+                <div v-if="research.pagination" class="ws-actions">
+                  <button class="ws-button" :disabled="jobOffset === 0" @click="jobOffset = Math.max(0, jobOffset - 40); loadResearch()">Previous jobs</button>
+                  <button class="ws-button" :disabled="jobOffset + research.jobs.length >= research.pagination.jobTotal" @click="jobOffset += 40; loadResearch()">Next jobs</button>
                 </div>
                 <p v-if="!research.jobs.length" class="ws-muted">
                   No research runs yet. Jobs will appear here after an approved source is queued.
@@ -2076,7 +1973,7 @@ onMounted(async () => {
                 Signing in does not connect a mailbox. Grant sending access separately, then choose
                 that mailbox for each proposal. Tokens stay server-side.
               </p>
-              <div v-for="mailbox in data.mailboxes" :key="mailbox.id" class="job-row">
+              <div v-for="mailbox in historicalMailboxes" :key="mailbox.id" class="job-row">
                 <div>
                   <h3>{{ mailbox.email }}</h3>
                   <span class="ws-muted"
@@ -2093,7 +1990,7 @@ onMounted(async () => {
                   Disconnect
                 </button>
               </div>
-              <div class="ws-actions">
+              <div v-if="canDiscover" class="ws-actions">
                 <button
                   class="ws-button ws-button--primary"
                   :disabled="connecting || !providers.gmail"
@@ -2113,6 +2010,15 @@ onMounted(async () => {
                 sending is shown only when the server integration is configured.
               </p>
             </div>
+            <p v-if="!canDiscover" class="ws-muted">New mailbox connections and drafts require appointed officer access. You can disconnect a historical connection here.</p>
+            <section v-if="canDiscover" class="ws-panel" aria-label="Your outreach voice">
+              <h3>Your outreach voice</h3><p class="ws-muted">{{ voiceNotice || 'Defaults are conservative. Three distinct approved edits can suggest your own style; private text stays local.' }}</p>
+              <ThemedSelect v-model="voicePreferences.length" label="Preferred length" :options="['short','standard','long']" />
+              <ThemedSelect v-model="voicePreferences.formality" label="Preferred formality" :options="['conversational','neutral','formal']" />
+              <ThemedSelect v-model="voicePreferences.opening" label="Preferred opening" :options="['direct','greeting','formal']" />
+              <ThemedSelect v-model="voicePreferences.requestStyle" label="Request style" :options="['direct','tentative','unknown']" />
+              <button class="ws-button" :disabled="busy" @click="saveVoice">Save my voice preferences</button>
+            </section>
             <div class="ws-panel account-panel">
               <h3>Access & safety</h3>
               <p class="ws-muted">
@@ -2164,35 +2070,11 @@ onMounted(async () => {
   height: 1px;
   background: #ffffff16;
 }
-.assignment-section {
-  margin-top: 32px;
-  padding: 22px;
-  border-radius: 22px;
-  background: #b9a3ed06;
-}
 .personal-proposal > p {
   margin-block: 12px 20px;
 }
 .personal-proposal > :deep(.themed-select) {
   margin-block: 16px;
-}
-.assignment-section > h3 {
-  margin-bottom: 12px;
-}
-.assignment-section > p {
-  margin-bottom: 18px;
-}
-.assignment-enter-active,
-.assignment-leave-active,
-.assignment-move {
-  transition:
-    opacity 220ms ease,
-    transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-.assignment-enter-from,
-.assignment-leave-to {
-  opacity: 0;
-  transform: translateY(6px);
 }
 .acquisition-panel {
   padding: 20px;
@@ -2440,7 +2322,7 @@ onMounted(async () => {
 .candidate {
   text-align: left;
   width: 100%;
-  padding: 22px;
+  padding: 18px 20px;
   border: 1px solid #d5c9ed15;
   border-radius: 22px;
   background: #d5c9ed04;
@@ -2463,7 +2345,7 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 18px;
+  margin-bottom: 14px;
 }
 .score {
   font-size: 20px;
@@ -2496,6 +2378,18 @@ onMounted(async () => {
   font-size: 9px;
   color: #8f879b;
   margin-top: 20px;
+}
+.candidate-review {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #d8b977;
+  transition: gap 0.3s ease, color 0.3s ease;
+}
+.candidate:hover .candidate-review,
+.candidate:focus-visible .candidate-review {
+  gap: 8px;
+  color: #f0dba9;
 }
 .dossier {
   position: sticky;
@@ -2562,7 +2456,7 @@ onMounted(async () => {
 .dossier-empty {
   position: sticky;
   top: 24px;
-  min-height: 240px;
+  min-height: 180px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2670,11 +2564,29 @@ onMounted(async () => {
     grid-template-columns: 1fr;
   }
   .studio-nav {
-    position: static;
+    position: relative;
     display: flex;
     overflow: auto;
     padding-bottom: 8px;
     gap: 6px;
+    padding-right: 30px;
+    scrollbar-width: thin;
+    scrollbar-color: #d8b97766 transparent;
+  }
+  .studio-nav::after {
+    content: '›';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 8px;
+    display: grid;
+    width: 28px;
+    place-items: center;
+    border-radius: 10px 0 0 10px;
+    background: linear-gradient(90deg, transparent, rgb(17 19 22 / 76%) 58%);
+    color: #d8b977;
+    font-size: 15px;
+    pointer-events: none;
   }
   .studio-nav button {
     white-space: nowrap;
@@ -2726,4 +2638,9 @@ onMounted(async () => {
     min-height: 320px !important;
   }
 }
+</style>
+
+<style scoped>
+.research-next-step{margin-top:20px;padding:18px 20px;border:1px solid rgb(216 185 119 / 18%);border-radius:20px;background:linear-gradient(135deg,rgb(216 185 119 / 7%),rgb(185 163 237 / 5%));transition:border-color .35s,box-shadow .35s,transform .35s cubic-bezier(.22,1,.36,1)}.research-next-step[open]{border-color:rgb(216 185 119 / 34%);box-shadow:0 16px 42px rgb(9 8 16 / 18%)}.research-next-step:hover{border-color:rgb(216 185 119 / 32%)}.research-next-step>summary,.research-more-actions>summary{display:flex;align-items:center;justify-content:space-between;gap:14px;cursor:pointer;list-style:none;color:#efe7d6;font-size:13px;font-weight:550}.research-next-step>summary::-webkit-details-marker,.research-more-actions>summary::-webkit-details-marker{display:none}.research-next-step>summary:after,.research-more-actions>summary:after{content:'＋';color:#d8b977;font-size:16px;transition:transform .35s cubic-bezier(.22,1,.36,1)}.research-next-step[open]>summary:after,.research-more-actions[open]>summary:after{transform:rotate(45deg)}.research-next-step summary small{margin-left:auto;color:#aaa3b3;font-size:11px;font-weight:400}.research-next-step>.ws-muted{margin:12px 0 16px}.research-next-step :deep(.themed-select){margin-top:12px}.research-next-step>.ws-button{margin-top:15px}.research-dossier-actions{display:grid;gap:12px;margin-top:20px}.research-dossier-actions :deep(.themed-select){margin:0}.research-more-actions{margin-top:3px;padding-top:13px;border-top:1px solid #ffffff10}.research-more-actions>summary{font-size:11px;color:#aca5b5;font-weight:450}.research-more-actions .ws-button{margin-top:13px}.research-status-action{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:10px;margin-top:12px}.research-status-action :deep(.themed-select){margin:0}.research-action-status__orb{will-change:box-shadow}.source-link{margin-top:10px}.research-next-step,.research-dossier-actions,.research-more-actions{animation:research-flow-in .55s cubic-bezier(.22,1,.36,1) both}@keyframes research-flow-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@media(max-width:760px){.research-status-action{grid-template-columns:1fr}.research-next-step{padding:16px}.research-next-step summary small{display:none}}@media(prefers-reduced-motion:reduce){.research-next-step,.research-dossier-actions,.research-more-actions{animation:none}.research-next-step{transition:none}}
+.research-action-status{display:flex;align-items:center;gap:9px;margin:12px 0;padding:11px 14px;border:1px solid rgb(216 185 119 / 22%);border-radius:14px;color:#d9d1c2;background:linear-gradient(100deg,rgb(216 185 119 / 9%),rgb(185 163 237 / 6%));font-size:12px}.research-action-status--saved{border-color:rgb(146 218 177 / 26%);color:#c4e3cf}.research-action-status--failed{border-color:rgb(236 130 130 / 32%);color:#efb6b6}.research-action-status__orb{width:8px;height:8px;flex:0 0 8px;border-radius:50%;background:#d8b977;box-shadow:0 0 0 0 rgb(216 185 119 / 40%);animation:research-action-pulse 1.8s ease-out infinite}.research-action-status--saved .research-action-status__orb{background:#92dab1;animation:none}.research-action-status--failed .research-action-status__orb{background:#ec8282;animation:none}@keyframes research-action-pulse{0%{box-shadow:0 0 0 0 rgb(216 185 119 / 40%)}70%{box-shadow:0 0 0 8px rgb(216 185 119 / 0%)}100%{box-shadow:0 0 0 0 rgb(216 185 119 / 0%)}}.research-action-enter-active,.research-action-leave-active{transition:opacity .28s ease,transform .28s ease}.research-action-enter-from,.research-action-leave-to{opacity:0;transform:translateY(-6px)}@media (prefers-reduced-motion:reduce){.research-action-status__orb{animation:none}.research-action-enter-active,.research-action-leave-active{transition:none}}
 </style>

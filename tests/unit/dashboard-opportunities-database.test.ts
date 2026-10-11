@@ -18,6 +18,12 @@ beforeAll(async () => {
       'utf8',
     ),
   )
+  await db.exec(
+    await readFile(
+      new URL('../../supabase/migrations/20261010123000_dashboard_opportunity_intake.sql', import.meta.url),
+      'utf8',
+    ),
+  )
 }, 20000)
 afterAll(async () => {
   await db?.close()
@@ -118,4 +124,32 @@ it('allows undo when a catalog source subsequently becomes unavailable', async (
     )
   ).rows[0]!.decision
   expect(clear).toMatchObject({ decision: 'clear', version: 4 })
+})
+
+it('keeps personal intake private and separate from the public catalog', async () => {
+  await db.query(
+    `insert into dashboard_opportunity_intakes(user_id,url,disposition,title,reason,confidence,candidate)
+     values($1,$2,'personal',$3,$4,.72,$5::jsonb)`,
+    [owner, 'https://member.example.org/math-sprint-2027', 'Arlington Math Sprint', 'Member-scoped contest', JSON.stringify({ id: 'personal:math', title: 'Arlington Math Sprint' })],
+  )
+  const intake = (await db.query<{ id: string }>('select id from dashboard_opportunity_intakes where user_id=$1', [owner])).rows[0]!
+  await db.query(
+    `insert into dashboard_personal_opportunities(id,intake_id,user_id,url,data) values($1,$2,$3,$4,$5::jsonb)`,
+    ['personal:math', intake.id, owner, 'https://member.example.org/math-sprint-2027', JSON.stringify({ id: 'personal:math', title: 'Arlington Math Sprint' })],
+  )
+  expect((await db.query('select disposition from dashboard_opportunity_intakes where id=$1', [intake.id])).rows[0]).toEqual({ disposition: 'personal' })
+  await db.exec(`set role authenticated;set request.jwt.claim.sub='${other}'`)
+  expect((await db.query('select * from dashboard_personal_opportunities')).rows).toHaveLength(0)
+  await db.exec('reset role')
+})
+
+it('records a rejection without creating a personal or public opportunity', async () => {
+  await db.query(
+    `insert into dashboard_opportunity_intakes(user_id,url,disposition,title,reason,confidence)
+     values($1,$2,'rejected',$3,$4,.98)`,
+    [other, 'https://www.youtube.com/watch?v=fixture', 'Recorded video', 'Media is not an opportunity'],
+  )
+  expect((await db.query("select * from dashboard_personal_opportunities where user_id=$1", [other])).rows).toHaveLength(0)
+  expect((await db.query("select * from opportunities where id like 'personal:%'")).rows).toHaveLength(0)
+  expect((await db.query("select disposition from dashboard_opportunity_intakes where url like '%youtube%' ")).rows[0]).toEqual({ disposition: 'rejected' })
 })

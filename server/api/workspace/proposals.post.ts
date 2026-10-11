@@ -1,4 +1,5 @@
-import { requireWorkspaceMember, assertWorkspaceOrigin } from '../../utils/workspace-auth'
+import { shareableResearchProfile } from '../../utils/research-profile'
+import { requireWorkspaceOfficer, assertWorkspaceOrigin } from '../../utils/workspace-auth'
 import {
   workspaceStorage,
   workspaceResult,
@@ -10,35 +11,26 @@ import { outreachProposalSchema } from '#shared/utils/outreach'
 import { assertWorkspaceTarget } from '../../utils/workspace-access'
 export default defineEventHandler(async (event) => {
   assertWorkspaceOrigin(event)
-  const member = await requireWorkspaceMember(event)
+  const member = await requireWorkspaceOfficer(event)
   const body = await workspaceBody(event, outreachProposalSchema)
   const db = workspaceStorage(event)
   await assertWorkspaceTarget(event, member, body.targetId, body.kind)
   const target = workspaceResult(
     await db.from('outreach_targets').select('status').eq('id', body.targetId).single(),
   )
-  if (member.role === 'member' && target.status !== 'ready')
+  if (target.status !== 'ready')
     throw createError({
       statusCode: 403,
       statusMessage: 'Choose a reviewed, ready research connection.',
     })
   if (body.kind === 'student') {
     if (!body.profileId)
-      throw createError({ statusCode: 422, statusMessage: 'Choose a student profile.' })
-    const profile = workspaceResult(
-      await db
-        .from('outreach_profiles')
-        .select('consent_to_share')
-        .eq('id', body.profileId)
-        .eq('created_by', member.userId)
-        .single(),
-    )
-    if (!profile.consent_to_share)
-      throw createError({ statusCode: 422, statusMessage: 'Student consent is required.' })
+      throw createError({ statusCode: 422, statusMessage: 'Choose a member profile.' })
+    await shareableResearchProfile(event, body.profileId)
   } else if (body.profileId)
     throw createError({
       statusCode: 400,
-      statusMessage: 'Society proposals cannot include a private student profile.',
+      statusMessage: 'Society proposals cannot include a private member profile.',
     })
   if (['rejected', 'deferred'].includes(target.status))
     throw createError({

@@ -13,6 +13,42 @@ export function starterOutreachSources() {
       enabled: true,
     })),
     {
+      id: 'utd-cs-research',
+      url: 'https://cs.utdallas.edu/research/',
+      allowed_hosts: ['cs.utdallas.edu', 'www.utdallas.edu'],
+      kind: 'directory',
+      enabled: true,
+    },
+    {
+      id: 'utsw-labs-directory',
+      url: 'https://www.utsouthwestern.edu/labs/',
+      allowed_hosts: ['www.utsouthwestern.edu'],
+      kind: 'directory',
+      enabled: true,
+    },
+    // Additional DFW routes are explicit opt-in pending current source review.
+    {
+      id: 'unt-research',
+      url: 'https://research.unt.edu/',
+      allowed_hosts: ['research.unt.edu', 'www.unt.edu'],
+      kind: 'directory',
+      enabled: false,
+    },
+    {
+      id: 'smu-research',
+      url: 'https://www.smu.edu/research',
+      allowed_hosts: ['www.smu.edu'],
+      kind: 'directory',
+      enabled: false,
+    },
+    {
+      id: 'tcu-research',
+      url: 'https://research.tcu.edu/',
+      allowed_hosts: ['research.tcu.edu', 'www.tcu.edu'],
+      kind: 'directory',
+      enabled: false,
+    },
+    {
       id: 'uta-cse-directory',
       url: 'https://www.uta.edu/academics/schools-colleges/engineering/academics/departments/cse/research',
       allowed_hosts: [

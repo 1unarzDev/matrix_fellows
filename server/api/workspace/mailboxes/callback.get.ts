@@ -1,5 +1,5 @@
 import {
-  requireWorkspaceMember,
+  requireWorkspaceOfficer,
   workspaceConfig,
   workspaceAuthStorage,
   openWorkspace,
@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
   const cookie = getCookie(event, 'matrix-mailbox-flow') || ''
   deleteCookie(event, 'matrix-mailbox-flow', { path: '/api/workspace' })
   try {
-    const officer = await requireWorkspaceMember(event)
+    const officer = await requireWorkspaceOfficer(event)
     const flow = await openWorkspace<{
       state: string
       verifier: string

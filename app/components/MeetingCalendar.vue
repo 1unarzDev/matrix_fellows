@@ -14,8 +14,27 @@ const props = withDefaults(
 )
 const emit = defineEmits<{ select: [meeting: MeetingEvent] }>()
 const { ids: savedIds, ready: savedReady } = useSavedOpportunities()
+const deferredCalendarEntries = ref<CalendarOpportunityEntry[]>(props.calendarEntries)
 const savedCalendarEntries = ref<CalendarOpportunityEntry[]>([])
+const calendarRequestState = ref<'pending' | 'ready' | 'fallback'>(
+  props.calendarEntries.length ? 'ready' : 'pending',
+)
 let savedRequest = 0
+
+// Opportunity dates are a rich, noncritical projection. Keep the complete
+// meeting calendar usable from SSR, then atomically add the date layer once its
+// selected-record query has completed. No placeholder dates or geometry are
+// rendered while this request is in flight.
+onMounted(async () => {
+  if (props.calendarEntries.length) return
+  try {
+    const response = await $fetch<{ entries: CalendarOpportunityEntry[] }>('/api/content-calendar')
+    deferredCalendarEntries.value = response.entries
+    calendarRequestState.value = 'ready'
+  } catch {
+    calendarRequestState.value = 'fallback'
+  }
+})
 
 watch(
   [savedReady, () => savedIds.value.join('\u0000')],
@@ -41,7 +60,7 @@ watch(
 const allCalendarEntries = computed(() => {
   const saved = new Set(savedIds.value)
   const merged = new Map<string, CalendarOpportunityEntry>()
-  for (const entry of [...props.calendarEntries, ...savedCalendarEntries.value])
+  for (const entry of [...deferredCalendarEntries.value, ...savedCalendarEntries.value])
     merged.set(entry.id, { ...entry, saved: entry.saved || saved.has(entry.opportunityId) })
   return [...merged.values()]
 })
@@ -290,7 +309,11 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="meeting-calendar-shell" :data-calendar-ready="mounted">
+  <div
+    class="meeting-calendar-shell"
+    :data-calendar-ready="mounted"
+    :data-calendar-state="calendarRequestState"
+  >
     <section class="meeting-calendar" aria-label="Meeting calendar">
       <div class="meeting-calendar__header">
         <div>

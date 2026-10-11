@@ -18,8 +18,7 @@ withDefaults(
     <a href="#workspace-main" class="workspace-skip">{{
       skipLabel || (variant === 'auth' ? 'Skip to sign-in' : 'Skip to dashboard')
     }}</a>
-    <div class="workspace-glow" aria-hidden="true" />
-    <ScienceAccent v-if="variant !== 'auth'" theme="astronomy" />
+    <WorkspaceQuasar v-if="variant !== 'auth'" />
     <div v-if="$slots.background" class="workspace-background" aria-hidden="true">
       <slot name="background" />
     </div>
@@ -75,15 +74,6 @@ withDefaults(
   max-width: none;
   padding: 36px 20px 100px;
 }
-.workspace-glow {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(ellipse at 85% 5%, #8b68b619, transparent 45%),
-    radial-gradient(ellipse at 5% 80%, #c2a76c0c, transparent 45%);
-}
 .workspace-shell::before {
   content: '';
   position: fixed;
@@ -112,6 +102,8 @@ withDefaults(
   pointer-events: auto;
 }
 .workspace-header {
+  position: relative;
+  z-index: 1;
   min-height: 86px;
   padding: 20px clamp(20px, 4vw, 60px);
   display: flex;
@@ -180,10 +172,11 @@ withDefaults(
   transform: rotate(-4deg) scale(1.04);
 }
 .workspace-main {
+  position: relative;
+  z-index: 1;
   max-width: 1440px;
   margin: auto;
   padding: 16px clamp(20px, 4vw, 60px) 90px;
-  position: relative;
 }
 .workspace-heading {
   margin-bottom: 30px;
@@ -219,24 +212,42 @@ withDefaults(
   color: #ccb57e;
 }
 :deep(.ws-panel) {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   padding: clamp(22px, 3vw, 34px);
-  border: 1px solid #e1d8f013;
+  border: 1px solid rgb(239 235 224 / 11%);
   border-radius: 28px;
-  background:
-    radial-gradient(ellipse at 100% 0%, #b9a3ed0a, transparent 65%),
-    linear-gradient(135deg, #e0d5f009, #e0d5f003);
-  backdrop-filter: blur(24px);
+  background: rgb(20 21 27 / 58%);
+  backdrop-filter: blur(26px) saturate(118%);
   box-shadow:
-    inset 0 1px 0 #ffffff07,
-    0 20px 70px #00000012;
+    inset 0 1px 0 rgb(255 255 255 / 6%),
+    inset 0 -1px 0 rgb(216 185 119 / 3%),
+    0 20px 70px rgb(0 0 0 / 18%);
   min-width: 0;
   transition:
     border-color 0.4s,
-    box-shadow 0.4s;
+    box-shadow 0.4s,
+    background-color 0.4s;
+}
+:deep(.ws-panel)::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.15;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='panel-grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23panel-grain)' opacity='.28'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+  mix-blend-mode: soft-light;
 }
 :deep(.ws-panel:hover) {
-  border-color: #e1d8f023;
-  box-shadow: 0 20px 70px #00000018;
+  border-color: rgb(239 235 224 / 18%);
+  background-color: rgb(24 24 30 / 64%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 8%),
+    0 20px 70px rgb(0 0 0 / 21%),
+    0 0 34px rgb(216 185 119 / 5%);
 }
 :deep(h2) {
   font-family: Manrope, sans-serif;

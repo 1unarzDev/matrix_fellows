@@ -9,8 +9,12 @@ export interface OpportunityDecision {
 export interface OpportunityCapturePreview {
   url: string
   title: string
-  kind: 'catalog' | 'unverified-reference'
+  kind: 'catalog' | 'personal' | 'shared-review' | 'rejected' | 'unverified-reference'
   item: Opportunity | null
+  candidate: Opportunity | null
+  disposition: 'catalog' | 'personal' | 'shared-review' | 'rejected' | 'reference'
+  reason: string
+  confidence: number | null
   source: { url: string; retrievedAt: string | null; label: string }
   notice: string
 }
@@ -20,4 +24,10 @@ export interface OpportunityReference {
   title: string
   verification: 'user-supplied'
   createdAt: string
+}
+
+export interface PersonalOpportunity extends Opportunity {
+  intakeId: string
+  triageReason: string
+  triageConfidence: number
 }

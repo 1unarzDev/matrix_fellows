@@ -1,8 +1,8 @@
-import { requireWorkspaceMember } from '../../../../utils/workspace-auth'
+import { requireWorkspaceOfficer } from '../../../../utils/workspace-auth'
 import { workspaceId, workspaceResult, workspaceStorage } from '../../../../utils/workspace-storage'
 
 export default defineEventHandler(async (event) => {
-  const member = await requireWorkspaceMember(event)
+  const member = await requireWorkspaceOfficer(event)
   const db = workspaceStorage(event)
   const id = workspaceId(event)
   const owner = workspaceResult(
@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
       .from('outreach_proposals')
       .select('id')
       .eq('id', id)
-      .eq('created_by', member.userId)
+      .eq('current_owner_id', member.userId)
       .maybeSingle(),
   )
   if (!owner) throw createError({ statusCode: 404, statusMessage: 'Draft not found.' })

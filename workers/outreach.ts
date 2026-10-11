@@ -1,6 +1,14 @@
+import { uncoveredResearchInterests, freshnessWindow } from '../shared/utils/discovery-priorities'
 import { WorkflowEntrypoint, type WorkflowEvent, type WorkflowStep } from 'cloudflare:workers'
 import { createClient } from '@supabase/supabase-js'
-import { analyzePublicResearch, fetchOutreachEvidence } from './outreach-research'
+import {
+  CuratedDiscoveryProvider,
+  PublicGeminiResearchModel,
+  ReviewedSourceReader,
+} from './research-providers'
+import { compileTechnicalContext } from '../shared/utils/research-context'
+import { extractSocietyContext, SOCIETY_CONTEXT_WORKFLOW } from '../shared/utils/society-context'
+import type { SourceSnapshot } from '../shared/types/workspace-providers'
 
 interface Env {
   SUPABASE_URL: string
@@ -8,6 +16,8 @@ interface Env {
   OUTREACH_ENABLED?: string
   GEMINI_TERMS_CONFIRMED?: string
   GEMINI_FREE_PROJECT_CONFIRMED?: string
+  GEMINI_PROVIDER_MODE?: string
+  GEMINI_PAID_PROJECT_CONFIRMED?: string
   GEMINI_API_KEY?: string
   GEMINI_MODEL?: string
   OUTREACH_RESEARCH: Workflow<{ job: ResearchJob }>
@@ -27,6 +37,25 @@ const storage = (env: Env) =>
       fetch: (input, init) => fetch(input, { ...init, signal: AbortSignal.timeout(15000) }),
     },
   })
+
+async function processSocietyContext(env: Env, db: ReturnType<typeof storage>) {
+  const claimed = await db.rpc('outreach_claim_society_context_jobs', { p_worker: 'outreach-cron', p_limit: 2 })
+  if (claimed.error) return
+  for (const job of claimed.data || []) {
+    try {
+      const source = await db.from('outreach_society_sources').select('*').eq('id', job.source_id).single()
+      if (source.error || !source.data) throw new Error('Society source is unavailable')
+      const result = {
+        entries: extractSocietyContext(source.data),
+        processor: SOCIETY_CONTEXT_WORKFLOW.version,
+        workflow: SOCIETY_CONTEXT_WORKFLOW,
+      }
+      await db.rpc('outreach_finish_society_context_job', { p_id: job.id, p_claim_token: job.claim_token, p_result: result, p_error: null })
+    } catch (error) {
+      await db.rpc('outreach_finish_society_context_job', { p_id: job.id, p_claim_token: job.claim_token, p_result: {}, p_error: error instanceof Error ? error.message : 'Context extraction failed' })
+    }
+  }
+}
 
 export class OutreachResearchWorkflow extends WorkflowEntrypoint<Env, { job: ResearchJob }> {
   async run(event: WorkflowEvent<{ job: ResearchJob }>, step: WorkflowStep) {
@@ -58,6 +87,12 @@ export class OutreachResearchWorkflow extends WorkflowEntrypoint<Env, { job: Res
           .single()
         if (result.error || ['rejected', 'deferred', 'contacted'].includes(result.data.status))
           throw new Error('Target unavailable or suppressed')
+        const suppression = await db
+          .from('outreach_suppressions')
+          .select('canonical_url')
+          .eq('canonical_url', result.data.canonical_url)
+          .maybeSingle()
+        if (suppression.error || suppression.data) throw new Error('Target suppressed')
         target = result.data
       }
       const sourceResult = await db
@@ -80,12 +115,120 @@ export class OutreachResearchWorkflow extends WorkflowEntrypoint<Env, { job: Res
       retries: { limit: 0, delay: '1 second' as const, backoff: 'constant' as const },
       timeout: '2 minutes' as const,
     }
+    const reader = new ReviewedSourceReader()
+    const model = new PublicGeminiResearchModel({
+      key: this.env.GEMINI_API_KEY || '',
+      model: this.env.GEMINI_MODEL || 'gemini-2.5-flash',
+      mode:
+        this.env.GEMINI_PROVIDER_MODE === 'authorized_context'
+          ? 'authorized_context'
+          : 'unpaid_public',
+      termsConfirmed: this.env.GEMINI_TERMS_CONFIRMED === 'true',
+      projectModeConfirmed:
+        this.env.GEMINI_PROVIDER_MODE === 'authorized_context'
+          ? this.env.GEMINI_PAID_PROJECT_CONFIRMED === 'true'
+          : this.env.GEMINI_FREE_PROJECT_CONFIRMED === 'true',
+    })
+    const dependencyIds: string[] = []
+    const hashKey = async (value: string) =>
+      Array.from(
+        new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))),
+      )
+        .map((byte) => byte.toString(16).padStart(2, '0'))
+        .join('')
+    const stage = async <T>(
+      name: string,
+      inputKey: string,
+      resource: 'source' | 'model' | 'local',
+      execute: () => Promise<T>,
+    ): Promise<T> => {
+      const permission = await currentContext()
+      if (
+        resource === 'model' &&
+        (!permission.settings.ai_enabled ||
+          !permission.settings.terms_confirmed ||
+          !permission.source.ai_reviewed ||
+          permission.source.ai_snapshot_hash !== inputKey.split(':')[0] ||
+          (await hashKey(permission.source.ai_excerpt)) !== inputKey.split(':')[1])
+      )
+        throw new Error('Source model permission changed')
+      const reserved = await db.rpc('outreach_reserve_stage', {
+        p_job: job.id,
+        p_claim: job.claim_token,
+        p_stage: name,
+        p_input_key: inputKey,
+        p_resource: resource,
+        p_dependencies: [...dependencyIds],
+        p_metadata: {
+          promptVersion: 'bounded-contribution-v1',
+          modelVersion: resource === 'model' ? this.env.GEMINI_MODEL || 'gemini-2.5-flash' : null,
+        },
+      })
+      if (reserved.error)
+        throw new Error(
+          reserved.error.message.includes('budget')
+            ? 'Research resource budget exhausted'
+            : 'Could not reserve research stage',
+        )
+      if (reserved.data.cached) {
+        dependencyIds.push(reserved.data.id)
+        return reserved.data.result as T
+      }
+      // A stage that was interrupted after submission never silently replays
+      // within this attempt; the database is the sole retry authority.
+      if (reserved.data.resumed)
+        throw new Error('Interrupted research stage requires bounded job retry')
+      try {
+        const permission = await currentContext()
+        if (
+          resource === 'model' &&
+          (!permission.settings.ai_enabled ||
+            !permission.settings.terms_confirmed ||
+            !permission.source.ai_reviewed ||
+            permission.source.ai_snapshot_hash !== inputKey.split(':')[0] ||
+            (await hashKey(permission.source.ai_excerpt)) !== inputKey.split(':')[1])
+        )
+          throw new Error('Source model permission changed')
+        const value = await execute()
+        const finalPermission = await currentContext()
+        if (
+          resource === 'model' &&
+          (!finalPermission.settings.ai_enabled ||
+            !finalPermission.settings.terms_confirmed ||
+            !finalPermission.source.ai_reviewed ||
+            finalPermission.source.ai_snapshot_hash !== inputKey.split(':')[0] ||
+            (await hashKey(finalPermission.source.ai_excerpt)) !== inputKey.split(':')[1])
+        )
+          throw new Error('Source model permission changed')
+        const saved = await db.rpc('outreach_finish_stage', {
+          p_id: reserved.data.id,
+          p_job: job.id,
+          p_claim: job.claim_token,
+          p_result: value,
+          p_error: null,
+          p_usage: { resource, accounting: 'reserved-upper-bound' },
+        })
+        if (saved.error || !saved.data) throw new Error('Research lease expired; stage not applied')
+        dependencyIds.push(reserved.data.id)
+        return value
+      } catch (error) {
+        await db.rpc('outreach_finish_stage', {
+          p_id: reserved.data.id,
+          p_job: job.id,
+          p_claim: job.claim_token,
+          p_result: {},
+          p_error: error instanceof Error ? error.message.slice(0, 300) : 'Stage failed',
+          p_usage: { resource, accounting: 'unknown-cost-reservation-retained' },
+        })
+        throw error
+      }
+    }
     try {
       const evidence = await step.do('acquire-cited-first-party-evidence', bounded, async () => {
         const context = await currentContext()
-        return fetchOutreachEvidence(
-          context.target?.canonical_url || context.source.url,
-          context.source.allowed_hosts,
+        const url = context.target?.canonical_url || context.source.url
+        return stage<SourceSnapshot>('acquire', url, 'source', () =>
+          reader.read(url, context.source.allowed_hosts, AbortSignal.timeout(30000)),
         )
       })
 
@@ -106,10 +249,16 @@ export class OutreachResearchWorkflow extends WorkflowEntrypoint<Env, { job: Res
                   job_id: job.id,
                   claim_token: job.claim_token,
                   ...link,
-                  kind: /program|outreach|mentor|tour/i.test(link.name) ? 'program' : 'lab',
+                  kind: /program|outreach|mentor|tour/i.test(link.name)
+                    ? 'program'
+                    : /\/(faculty|people|profile|person)(\/|$)/i.test(
+                          new URL(link.canonical_url).pathname,
+                        )
+                      ? 'pi'
+                      : 'lab',
                   organization: new URL(link.canonical_url).hostname,
                   description:
-                    'Directory discovery; research and high-school openness have not been verified.',
+                    'Directory discovery; research relevance and participation availability have not been verified.',
                   scope: 'both',
                   location: '',
                   mode: 'unknown',
@@ -139,7 +288,7 @@ export class OutreachResearchWorkflow extends WorkflowEntrypoint<Env, { job: Res
       } else {
         const pages = [evidence]
         // At most two related first-party pages: no recursive spider and no
-        // assertion that publication lists establish high-school eligibility.
+        // assertion that publication lists establish participation eligibility.
         for (const [index, link] of evidence.links
           .filter(
             (link) =>
@@ -151,7 +300,17 @@ export class OutreachResearchWorkflow extends WorkflowEntrypoint<Env, { job: Res
           const page = await step.do(`acquire-related-page-${index}`, bounded, async () => {
             const context = await currentContext()
             try {
-              return await fetchOutreachEvidence(link.canonical_url, context.source.allowed_hosts)
+              return await stage<SourceSnapshot>(
+                `related-${index}`,
+                link.canonical_url,
+                'source',
+                () =>
+                  reader.read(
+                    link.canonical_url,
+                    context.source.allowed_hosts,
+                    AbortSignal.timeout(30000),
+                  ),
+              )
             } catch {
               return null
             } // A missing secondary page never invents facts.
@@ -170,8 +329,7 @@ export class OutreachResearchWorkflow extends WorkflowEntrypoint<Env, { job: Res
             const ai =
               context.settings.ai_enabled &&
               context.settings.terms_confirmed &&
-              this.env.GEMINI_TERMS_CONFIRMED === 'true' &&
-              this.env.GEMINI_FREE_PROJECT_CONFIRMED === 'true'
+              model.status().configured
             if (!(
               ai &&
               context.source.ai_reviewed &&
@@ -180,17 +338,56 @@ export class OutreachResearchWorkflow extends WorkflowEntrypoint<Env, { job: Res
               evidence.text.includes(context.source.ai_excerpt)
             ))
               return null
-            if (!this.env.GEMINI_API_KEY) throw new Error('Free research model is not configured')
-            return analyzePublicResearch(
-              context.source.ai_excerpt,
-              this.env.GEMINI_API_KEY,
-              this.env.GEMINI_MODEL || 'gemini-2.5-flash',
+            if (context.source.ai_snapshot_hash !== evidence.hash) return null
+            const packet = compileTechnicalContext({
+              snapshotHash: evidence.hash,
+              snapshotText: evidence.text,
+              reviewedHash: context.source.ai_snapshot_hash,
+              reviewedExcerpt: context.source.ai_excerpt,
+              reviewed: context.source.ai_reviewed,
+            })
+            return stage(
+              'analyze',
+              `${evidence.hash}:${await hashKey(context.source.ai_excerpt)}`,
+              'model',
+              () =>
+                model.analyze({
+                  approvedPublicExcerpt: packet.excerpt,
+                  schemaVersion: 'public-research-v1',
+                  promptVersion: 'bounded-contribution-v1',
+                  signal: AbortSignal.timeout(35000),
+                }),
             )
           },
+        )
+        const identity = await step.do(
+          'resolve-supported-identity-and-contact-unknowns',
+          bounded,
+          async () =>
+            stage('identity', evidence.hash, 'local', async () => ({
+              schemaVersion: 'identity-evidence-v1',
+              canonicalUrl: evidence.url,
+              sourceHashes: pages.map((page) => page.hash),
+              possibleContacts: pages.flatMap((page) =>
+                page.contacts.map((address) => ({
+                  address,
+                  sourceUrl: page.url,
+                  snapshotHash: page.hash,
+                  reviewed: false,
+                })),
+              ),
+              entities: evidence.entities,
+              unknowns: [
+                'A page address is not verified as the intended recipient.',
+                'Current affiliation and mentoring openness require officer review.',
+              ],
+              retrievedAt: evidence.retrievedAt,
+            })),
         )
         result = {
           acquisition: {
             pages,
+            identity,
             ...(analysis ? { publicAnalysis: analysis } : {}),
             aiState: analysis ? 'reviewed-public-excerpt-analyzed' : 'not-used',
           },
@@ -214,8 +411,6 @@ export class OutreachResearchWorkflow extends WorkflowEntrypoint<Env, { job: Res
     } catch (error) {
       const message = error instanceof Error ? error.message.slice(0, 300) : 'Research failed'
       await step.do('record-research-failure', bounded, async () => {
-        if (message.includes('quota exhausted'))
-          await db.from('outreach_settings').update({ ai_enabled: false }).eq('id', true)
         const response = await db.rpc('outreach_complete_job', {
           p_id: job.id,
           p_claim_token: job.claim_token,
@@ -238,19 +433,80 @@ export default {
       (async () => {
         const db = storage(env)
         const settings = await db.from('outreach_settings').select('*').eq('id', true).single()
-        if (settings.error || settings.data.paused) return
+        if (settings.error) return
+        // Society memory is an officer supplied maintenance queue. It remains
+        // useful while opportunity discovery is paused, so process it before
+        // honoring the discovery pause switch.
+        await processSocietyContext(env, db)
+        if (settings.data.paused) return
         if (controller.cron === '0 16 * * 1,3,5') {
           const sources = await db
             .from('outreach_sources')
-            .select('id')
+            .select('id,url,allowed_hosts')
             .eq('enabled', true)
             .eq('kind', 'directory')
-          // One rotated directory per batch keeps the total admission ceiling at
-          // five, not five per directory. Database counters enforce the ceiling.
-          const all = sources.data || []
-          const selected = all.length
-            ? [all[Math.floor(controller.scheduledTime / 86400000) % all.length]!]
-            : []
+          // Prefer sources without recent completed work; review capacity gates discovery.
+          const active = await db
+            .from('outreach_targets')
+            .select('id', { count: 'exact', head: true })
+            .in('status', ['needs_review', 'ready'])
+          const history = await db
+            .from('outreach_jobs')
+            .select('source_id,updated_at')
+            .eq('kind', 'discover')
+            .eq('status', 'completed')
+            .order('updated_at', { ascending: false })
+            .limit(250)
+          const latest = new Map<string, string>()
+          for (const item of history.data || [])
+            if (item.source_id && !latest.has(item.source_id))
+              latest.set(item.source_id, item.updated_at)
+          const all = freshnessWindow((sources.data || []).sort(
+            (a, b) =>
+              (latest.get(a.id) || '').localeCompare(latest.get(b.id) || '') ||
+              a.id.localeCompare(b.id),
+          ),latest,controller.scheduledTime)
+          const profiles = await db
+            .from('outreach_profiles')
+            .select('interests,subject_user_id')
+            .eq('consent_to_share', true)
+            .not('subject_user_id','is',null)
+            .limit(100)
+          const members=await db.from('outreach_members').select('user_id').eq('enabled',true).limit(250)
+          const subjects=new Set((members.data || []).map(row=>row.user_id))
+          const eligibleProfiles=(profiles.data || []).filter(profile=>subjects.has(profile.subject_user_id))
+          const coverage=await db.from('outreach_targets').select('discipline').in('status',['ready','needs_review']).limit(250)
+          const projectClaims=await db.from('research_claims').select('statement,owner_id').eq('adoption','accepted').eq('sharing_scope','officer').is('withdrawn_at',null).in('predicate',['project_question','project_method']).limit(100)
+          const societyEntries=await db.from('outreach_society_context_entries').select('title,summary,organization,chapter').eq('society_id',true).in('status',['introduced','connected','active']).order('updated_at',{ascending:false}).limit(100)
+          const interests=uncoveredResearchInterests(
+            eligibleProfiles.flatMap(profile=>profile.interests || []),
+            (coverage.data || []).flatMap(target=>target.discipline || []),
+            [
+              ...(projectClaims.data || []).filter(claim=>subjects.has(claim.owner_id)).map(claim=>claim.statement),
+              ...(societyEntries.data || []).flatMap(entry => [entry.title, entry.summary, entry.organization, entry.chapter].filter(Boolean) as string[]),
+            ],
+          )
+          const provider = new CuratedDiscoveryProvider(
+            all.map((source) => ({
+              url: source.url,
+              hosts: source.allowed_hosts,
+              fields: /cs|cse/.test(source.id)
+                ? ['Robotics', 'Computer Science', 'Artificial Intelligence']
+                : /utsw/.test(source.id)
+                  ? ['Biology', 'Medicine']
+                  : [],
+            })),
+          )
+          const urls =
+            active.error || (active.count || 0) >= settings.data.queue_limit
+              ? []
+              : await provider.discover({
+                  interests,
+                  permittedSources: all.map((source) => source.url),
+                  limit: 1,
+                  signal: AbortSignal.timeout(5000),
+                })
+          const selected = all.filter((source) => urls.includes(source.url))
           for (const source of selected) {
             const key = `discovery:${source.id}:${new Date(controller.scheduledTime).toISOString().slice(0, 10)}`
             await db

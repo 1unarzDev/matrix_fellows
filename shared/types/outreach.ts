@@ -74,6 +74,14 @@ export interface OutreachSociety {
 export interface OutreachProposal {
   id: string
   targetId: string
+  authorId?: string | null
+  ownerId?: string | null
+  relationshipId?: string | null
+  messageKind?: 'cold' | 'follow_up'
+  proposalPlan?: import('../utils/research-plan').ContributionPlan & {
+    sentenceSupports?: { sentence: string; claimIds: string[]; sources: {url: string; quote: string}[]; classification: string }[]
+    reviewIssues?: string[]
+  }
   profileId: string | null
   kind: 'society' | 'student'
   recipient: string
@@ -110,6 +118,7 @@ export interface OutreachSettings {
 }
 export interface OutreachWorkspace {
   member: OutreachMember
+  primaryProfileId?: string | null
   profiles: OutreachProfile[]
   society: OutreachSociety
   targets: OutreachTarget[]

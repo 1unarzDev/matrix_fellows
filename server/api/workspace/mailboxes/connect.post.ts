@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import {
-  requireWorkspaceMember,
+  requireWorkspaceOfficer,
   assertWorkspaceOrigin,
   randomToken,
   hashText,
@@ -12,7 +12,7 @@ import { mailProviderConfig, mailboxAuthorizeUrl } from '../../../utils/workspac
 export default defineEventHandler(async (event) => {
   setHeader(event, 'Cache-Control', 'no-store')
   assertWorkspaceOrigin(event)
-  const officer = await requireWorkspaceMember(event)
+  const officer = await requireWorkspaceOfficer(event)
   const { provider } = z
     .object({ provider: z.enum(['gmail', 'outlook']) })
     .parse(await readBody(event))

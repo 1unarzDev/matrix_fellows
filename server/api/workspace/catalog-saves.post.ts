@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
   const db = workspaceStorage(event)
   const ids = [...new Set(body.opportunityIds)]
   if (ids.length) {
-    const valid = workspaceResult(
+    const publicRows = workspaceResult(
       await db
         .from('opportunities')
         .select('id')
@@ -23,6 +23,8 @@ export default defineEventHandler(async (event) => {
         .eq('published', true)
         .eq('suppressed', false),
     )
+    const personalRows = workspaceResult(await db.from('dashboard_personal_opportunities').select('id').eq('user_id', member.userId).in('id', ids))
+    const valid = [...publicRows, ...personalRows]
     if (valid.length !== ids.length)
       throw createError({
         statusCode: 403,

@@ -1,10 +1,11 @@
+import { providerRetryTime } from '../shared/utils/provider-retry'
 import { parse } from 'node-html-parser'
 import { z } from 'zod'
 import { canonicalizeOutreachUrl } from '../shared/utils/outreach'
 
 // Reviewed institutional roots only. User input cannot turn the worker into an
 // arbitrary URL fetcher; adding an institution requires a source-policy review.
-const roots = ['uta.edu', 'utdallas.edu', 'utsouthwestern.edu']
+const roots = ['uta.edu', 'utdallas.edu', 'utsouthwestern.edu', 'unt.edu', 'tcu.edu', 'smu.edu']
 const exactHosts = ['uta-smile.github.io', 'yuxng.github.io']
 export function permittedOutreachUrl(value: string, allowedHosts: string[]): URL {
   const url = new URL(value)
@@ -106,12 +107,16 @@ export async function fetchOutreachEvidence(
       // Lab cards contain faculty profile links as well as the lab link. Admit
       // the named entity, not its staff roster or generic website button label.
       if (card && !node.classList.contains('lab-link')) return []
+      const faculty =
+        /\/(?:faculty|people|person|profile|researchers?)(?:\/|$)/i.test(linked.pathname) &&
+        /^[A-Z][a-z]+(?: [A-Z][a-z]+){1,3}$/.test(name)
       if (
         name.length < 5 ||
         /^(visit|learn|read|view|more|research areas)/i.test(name) ||
-        !/lab|laborator|center|institute|mentoring|outreach|summer.*program|research.*group/i.test(
-          name,
-        )
+        (!faculty &&
+          !/lab|laborator|center|institute|mentoring|outreach|summer.*program|research.*group/i.test(
+            name,
+          ))
       )
         return []
       return [{ name, canonical_url: linked.href }]
@@ -137,6 +142,7 @@ export async function fetchOutreachEvidence(
     text,
     hash,
     contacts,
+    bytes,
     retrievedAt: new Date().toISOString(),
     entities: [...new Map(entities.map((link) => [link.canonical_url, link])).values()].slice(
       0,
@@ -208,8 +214,10 @@ export async function analyzePublicResearch(
       }),
     },
   )
-  if (response.status === 429) throw new Error('Free model quota exhausted; no paid fallback')
-  if (!response.ok) throw new Error(`Research model unavailable (${response.status})`)
+  const retryAt = providerRetryTime(response.headers.get('retry-after'))
+  const retryNote = retryAt ? `; retry_at=${retryAt}` : ''
+  if (response.status === 429) throw new Error('Free model quota exhausted; no paid fallback'+retryNote)
+  if (!response.ok) throw new Error(`Research model unavailable (${response.status})${retryNote}`)
   const body = (await response.json()) as {
     candidates?: { content?: { parts?: { text?: string }[] } }[]
   }

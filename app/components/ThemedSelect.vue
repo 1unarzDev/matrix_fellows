@@ -137,7 +137,8 @@ onBeforeUnmount(() => {
 <template>
   <div
     ref="root"
-    class="themed-select relative z-20 w-full"
+    class="themed-select relative w-full"
+    :style="{ zIndex: open ? 40 : 20 }"
     :class="compact ? 'w-auto' : fullWidth ? 'sm:w-full' : 'sm:w-56'"
     @pointerdown.capture="markInternalPointerSequence"
     @focusout="focusOut"

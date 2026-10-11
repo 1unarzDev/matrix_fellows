@@ -19,6 +19,12 @@ useHead({
   link: [{ rel: 'canonical', href: canonicalUrl }],
   script: [
     {
+      key: 'ssr-content-timing',
+      tagPosition: 'bodyClose',
+      innerHTML:
+        "performance.mark('matrix:ssr-content-parsed');requestAnimationFrame(()=>requestAnimationFrame(()=>performance.mark('matrix:static-content-ready')))",
+    },
+    {
       key: 'organization-schema',
       type: 'application/ld+json',
       innerHTML: JSON.stringify({
@@ -116,10 +122,14 @@ const onSceneStatus = (status: 'ready' | 'fallback') => {
         // backgrounded tab that suppresses transition events.
         handoffTimeout = setTimeout(() => {
           sceneHandoff.value = 'complete'
+          performance.mark('matrix:scene-handoff-complete')
         }, 1900)
       })
     })
-  } else sceneHandoff.value = 'complete'
+  } else {
+    sceneHandoff.value = 'complete'
+    performance.mark('matrix:scene-handoff-complete')
+  }
   if (status === 'fallback' && pendingAnchor) {
     const target = document.getElementById(pendingAnchor)
     pendingAnchor = null
@@ -142,6 +152,7 @@ const onHandoffTransitionEnd = (event: TransitionEvent) => {
   ) {
     clearTimeout(handoffTimeout)
     sceneHandoff.value = 'complete'
+    performance.mark('matrix:scene-handoff-complete')
   }
 }
 let cinematicReady = false
@@ -219,6 +230,7 @@ const keydown = (event: KeyboardEvent) => {
 }
 onMounted(() => {
   hydrated.value = true
+  performance.mark('matrix:hydration-complete')
   // Choose the arrival palette before the lazy scene initializes on deep links
   // or browser-restored scroll positions.
   const anchorIndex = sections.findIndex((section) => `#${section.id}` === window.location.hash)

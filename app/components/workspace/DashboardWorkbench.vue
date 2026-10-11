@@ -2,6 +2,7 @@
 import DashboardDialog from './DashboardDialog.vue'
 import DashboardUrlCapture from './DashboardUrlCapture.vue'
 import DashboardTaskToggle from './DashboardTaskToggle.vue'
+import TodayCommandCenter from './TodayCommandCenter.vue'
 import type {
   OpportunityDecision,
   OpportunityCapturePreview,
@@ -9,7 +10,7 @@ import type {
 import type { OutreachWorkspace } from '#shared/types/outreach'
 import type { Opportunity, OpportunitySearchResult } from '#shared/types/content'
 import { getTimeline } from '#shared/utils/opportunity-lifecycle'
-import type { DashboardPlan, PlanTask, PlanActivity, PlanDate } from '#shared/types/dashboard'
+import type { DashboardPlan, PlanTask, PlanActivity, PlanDate, PlanPursuit } from '#shared/types/dashboard'
 import { planWorkload, publishedTimezone } from '#shared/utils/dashboard-planning'
 import {
   opportunityDisciplines,
@@ -143,6 +144,7 @@ const taskParent = computed({
 const activityEditor = ref(false)
 const editedActivity = ref<PlanActivity | null>(null)
 const eventEditor = ref<any>(null)
+const quickSelecting = ref(false)
 const selectedActivity = ref(queryText('activity'))
 const activityForm = reactive({ title: '', goal: '', role: '', milestone: '', status: 'active' })
 const contributionForm = reactive({ summary: '', learning: '', artifactUrl: '' })
@@ -206,24 +208,12 @@ const events = computed(() => ledger.value?.events || [])
 const currentActivity = computed(() =>
   activities.value.find((a) => a.id === selectedActivity.value),
 )
-const activeTasks = computed(() => tasks.value.filter((t) => t.status !== 'done'))
 const today = new Intl.DateTimeFormat('en-CA', {
   timeZone: 'America/Chicago',
   year: 'numeric',
   month: '2-digit',
   day: '2-digit',
 }).format(new Date())
-const week = computed(() =>
-  Array.from({ length: 7 }, (_, index) => {
-    const date = new Date(`${today}T12:00:00Z`)
-    date.setUTCDate(date.getUTCDate() + index)
-    return {
-      date: date.toISOString().slice(0, 10),
-      label: date.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' }),
-      day: date.getUTCDate(),
-    }
-  }),
-)
 const calendarMonth = computed(() => {
   const date = new Date(`${today.slice(0, 7)}-01T12:00:00Z`)
   date.setUTCMonth(date.getUTCMonth() + calendarOffset.value)
@@ -240,6 +230,10 @@ const calendarDays = computed(() => {
     }
   })
 })
+const quickCalendarDays = computed<(typeof calendarDays.value[number] | null)[]>(() => {
+  const first = new Date(`${calendarMonth.value.toISOString().slice(0, 7)}-01T12:00:00Z`)
+  return [...Array.from({ length: first.getUTCDay() }, () => null), ...calendarDays.value]
+})
 function chicagoMidnight(date: string) {
   const guess = new Date(`${date}T06:00:00Z`)
   const hour = Number(
@@ -251,11 +245,6 @@ function chicagoMidnight(date: string) {
   )
   return new Date(guess.getTime() - hour * 3600000).toISOString()
 }
-const nextActions = computed(() =>
-  [...activeTasks.value]
-    .sort((a, b) => (a.dueDate || '9999').localeCompare(b.dueDate || '9999'))
-    .slice(0, 6),
-)
 const upcomingCutoffs = computed(() =>
   pursuits.value
     .flatMap((p) =>
@@ -272,28 +261,13 @@ const upcomingCutoffs = computed(() =>
     .sort((a, b) => (a.date.localDate || '').localeCompare(b.date.localDate || ''))
     .slice(0, 4),
 )
-const workload = computed(() => {
+const scheduledHours = computed(() => {
   const end = new Date(`${today}T12:00:00Z`)
   end.setUTCDate(end.getUTCDate() + 7)
   return ledger.value
-    ? planWorkload(
-        ledger.value,
-        chicagoMidnight(today),
-        chicagoMidnight(end.toISOString().slice(0, 10)),
-      )
-    : { scheduledHours: 0, unscheduledHours: 0, unknownEstimates: 0 }
+    ? planWorkload(ledger.value, chicagoMidnight(today), chicagoMidnight(end.toISOString().slice(0, 10))).scheduledHours
+    : 0
 })
-const scheduledHours = computed(() => workload.value.scheduledHours)
-const unscheduledHours = computed(() => workload.value.unscheduledHours)
-const unknownEffort = computed(() => workload.value.unknownEstimates)
-const capacity = ref<number | null>(null)
-watch(
-  () => ledger.value?.capacityHours,
-  (value) => {
-    capacity.value = value ?? null
-  },
-  { immediate: true },
-)
 const boardStates = [
   { value: 'preparing', label: 'Preparing' },
   { value: 'waiting', label: 'Waiting on someone' },
@@ -323,7 +297,7 @@ function taskReason(t: any) {
   if (t.dueDate && t.dueDate < today) return 'Internal target has passed · review your plan'
   if (t.dueDate === today) return 'Internal target today'
   if (t.dueDate) return `Internal target ${dateLabel(t.dueDate)}`
-  return 'Choose a time for this next step'
+  return 'No date set'
 }
 function actionable(item: Opportunity) {
   if (['discontinued', 'replaced', 'awaiting-announcement'].includes(item.lifecycle || ''))
@@ -399,10 +373,16 @@ async function loadCatalog(page = 1, search = query.value) {
       },
       signal: catalogAbort.signal,
     })
+    const personal = savedMode
+      ? { items: [] as Opportunity[] }
+      : await $fetch<{ items: Opportunity[] }>('/api/workspace/capture/personal', {
+          query: { q: search },
+          signal: catalogAbort.signal,
+        })
     if (version !== catalogRequestVersion) return
     if (result.unavailable)
       throw new Error('Catalog is temporarily unavailable. Try again or open the public catalog.')
-    catalog.value = result.items
+    catalog.value = [...personal.items, ...result.items]
     catalogSource.value = savedMode ? 'saved' : 'all'
     savedCollectionInfo.value = savedMode
       ? {
@@ -629,10 +609,59 @@ function editTask(task?: any, activityId?: string) {
         scheduledEnd: '',
       }
 }
+function editQuickTask(date = today) {
+  taskEditor.value = {
+    quick: true,
+    title: '',
+    dueDate: date,
+    rangeEnd: date,
+    estimatedHours: null,
+    status: 'todo',
+    activityId: null,
+    pursuitId: null,
+    notes: '',
+    scheduledStart: '',
+    scheduledEnd: '',
+  }
+}
+function toggleQuickDrag(date: string) {
+  if (!quickSelecting.value) return
+  if (taskEditor.value?.quick) taskEditor.value.rangeEnd = date
+}
+function finishQuickDrag() {
+  quickSelecting.value = false
+}
+function quickTaskDate(date: string) {
+  if (!taskEditor.value?.quick) return
+  if (!taskEditor.value.dueDate || taskEditor.value.rangeEnd !== taskEditor.value.dueDate) {
+    taskEditor.value.dueDate = date
+    taskEditor.value.rangeEnd = date
+    return
+  }
+  const start = taskEditor.value.dueDate
+  if (date < start) {
+    taskEditor.value.dueDate = date
+    taskEditor.value.rangeEnd = start
+  } else taskEditor.value.rangeEnd = date
+}
+function quickTaskIsSelected(date: string) {
+  if (!taskEditor.value?.quick) return false
+  const start = taskEditor.value.dueDate || ''
+  const end = taskEditor.value.rangeEnd || start
+  return date >= start && date <= end
+}
+function quickTaskSession(task: any) {
+  if (!task.quick || !task.dueDate) return
+  const endDate = task.rangeEnd || task.dueDate
+  const start = chicagoMidnight(task.dueDate)
+  const following = new Date(`${endDate}T12:00:00Z`)
+  following.setUTCDate(following.getUTCDate() + 1)
+  return { scheduledStart: start, scheduledEnd: chicagoMidnight(following.toISOString().slice(0, 10)) }
+}
 async function saveTask() {
   const task = taskEditor.value
   if (!task?.title.trim()) return
-  const input = taskInput(task)
+  const input = { ...taskInput(task), ...(quickTaskSession(task) || {}) }
   const body = task.id
     ? { expectedVersion: task.version, task: input }
     : { task: input, pursuitId: task.pursuitId || null, activityId: task.activityId || null }
@@ -644,7 +673,7 @@ async function saveTask() {
     )
   ) {
     taskEditor.value = null
-    notice.value = 'Task saved across all plan views.'
+    notice.value = 'Task saved.'
   }
 }
 async function completeTask(task: any) {
@@ -671,7 +700,7 @@ async function saveActivity() {
     Object.assign(activityForm, { title: '', goal: '', role: '', milestone: '', status: 'active' })
     notice.value = editedActivity.value
       ? 'Activity updated.'
-      : 'Activity created. Add the next useful milestone.'
+      : 'Activity created.'
     editedActivity.value = null
   }
 }
@@ -690,6 +719,25 @@ function editActivity(activity?: PlanActivity) {
       : { title: '', goal: '', role: '', milestone: '', status: 'active' },
   )
   activityEditor.value = true
+}
+async function toggleActivityStatus(activity: PlanActivity) {
+  await request(`/plan/activities/${activity.id}`, 'PATCH', {
+    expectedVersion: activity.version,
+    activity: {
+      title: activity.title,
+      goal: activity.goal,
+      role: activity.role,
+      milestone: activity.milestone,
+      status: activity.status === 'active' ? 'paused' : 'active',
+    },
+  })
+  notice.value = activity.status === 'active' ? 'Project paused. You can bring it back whenever you need it.' : 'Project returned to your active orbit.'
+}
+function openPursuitOpportunity(pursuit: PlanPursuit) {
+  mode.value = 'plan'
+  view.value = 'timeline'
+  emit('navigate', 'opportunities')
+  notice.value = `${pursuit.title} is in your plan. Its milestones are now visible in the timeline.`
 }
 function editEvent(event?: any) {
   eventEditor.value = event
@@ -836,16 +884,17 @@ function calendarFacts(date: string) {
         <p class="wb-muted">
           {{
             section === 'today'
-              ? 'Your commitments, and the next useful step.'
+              ? 'Due dates and tasks for the day.'
               : section === 'opportunities'
-                ? 'Choose deliberately. Keep preparation manageable.'
-                : 'Sustained work, with a record of your contribution.'
+                ? 'Review saved opportunities and plan the next step.'
+                : 'Keep projects and contributions in one place.'
           }}
         </p>
       </div>
       <button
+        v-if="section !== 'today'"
         class="wb-button wb-primary"
-        @click="section === 'activities' ? editActivity() : editTask()"
+        @click="section === 'activities' ? editActivity() : editQuickTask()"
       >
         {{ section === 'activities' ? '+ Add activity' : '+ Add task' }}
       </button>
@@ -866,127 +915,20 @@ function calendarFacts(date: string) {
     </p>
     <p v-if="pending && !ledger" class="wb-loading" role="status">Loading your commitments…</p>
 
-    <div v-if="section === 'today'" class="wb-today">
-      <article class="wb-surface wb-next">
-        <p class="wb-kicker">Next action</p>
-        <template v-if="nextActions[0]"
-          ><h3>{{ nextActions[0].title }}</h3>
-          <p class="wb-muted">{{ taskReason(nextActions[0]) }}</p>
-          <button class="wb-button wb-primary" @click="openTask(nextActions[0])">
-            Open task <span aria-hidden="true">↗</span>
-          </button></template
-        >
-        <template v-else
-          ><h3>Your next step is yours to choose.</h3>
-          <p class="wb-muted">Choose something worth doing, then add one practical next step.</p>
-          <button class="wb-button" @click="emit('navigate', 'opportunities')">
-            Find an opportunity
-          </button></template
-        >
-      </article>
-      <article class="wb-surface wb-week">
-        <div class="wb-row">
-          <h3>The coming week</h3>
-          <span class="wb-muted">Internal plan</span>
-        </div>
-        <div class="wb-weekstrip">
-          <button
-            v-for="day in week"
-            :key="day.date"
-            @click="
-              editTask({
-                title: '',
-                dueDate: day.date,
-                status: 'todo',
-                estimatedHours: null,
-                notes: '',
-              })
-            "
-          >
-            <span>{{ day.label }}</span
-            ><strong>{{ day.day }}</strong
-            ><i v-if="activeTasks.some((t) => t.dueDate === day.date)" aria-label="Has tasks" />
-          </button>
-        </div>
-        <p>
-          {{ scheduledHours.toFixed(1) }}h scheduled
-          <span class="wb-muted"
-            >· {{ unscheduledHours.toFixed(1) }}h in unscheduled backlog<span v-if="unknownEffort">
-              · {{ unknownEffort }} task{{ unknownEffort === 1 ? '' : 's' }} without an
-              estimate</span
-            ></span
-          >
-        </p>
-        <form
-          class="wb-capacity"
-          @submit.prevent="request('/plan/settings', 'PATCH', { capacityHours: capacity })"
-        >
-          <label for="weekly-capacity">Approximate weekly capacity</label>
-          <div>
-            <input
-              id="weekly-capacity"
-              v-model.number="capacity"
-              type="number"
-              min="0"
-              max="168"
-              step="0.5"
-              placeholder="Not set"
-            /><span>hours</span><button class="wb-button" :disabled="busy">Save</button>
-          </div>
-        </form>
-        <p v-if="capacity != null && scheduledHours > capacity" class="wb-warning">
-          {{ (scheduledHours - capacity).toFixed(1) }}h above your capacity. Reschedule work before
-          adding more.
-        </p>
-      </article>
-      <article class="wb-surface wb-queue">
-        <div class="wb-row">
-          <h3>Action queue</h3>
-          <button class="wb-text" @click="openPlan">Open plan ↗</button>
-        </div>
-        <div v-for="task in nextActions" :key="task.id" class="wb-task">
-          <DashboardTaskToggle
-            :checked="task.status === 'done'"
-            :label="`Complete ${task.title}`"
-            :disabled="busy"
-            @toggle="completeTask(task)"
-          /><button class="wb-task-title" @click="openTask(task)">
-            <strong>{{ task.title }}</strong
-            ><span>{{ taskReason(task) }}</span></button
-          ><span class="wb-muted">{{
-            task.estimatedHours == null ? 'Effort unknown' : `${task.estimatedHours}h estimated`
-          }}</span>
-        </div>
-        <p v-if="!nextActions.length" class="wb-muted">
-          Tasks you choose to take on will appear here. Saved references stay in discovery.
-        </p>
-        <div v-if="upcomingCutoffs.length" class="wb-cutoffs">
-          <h4>Next official cutoffs</h4>
-          <div v-for="fact in upcomingCutoffs" :key="fact.key" class="wb-task">
-            <div class="wb-task-title">
-              <strong>{{ fact.pursuit.title }}</strong
-              ><span
-                >{{ fact.date.wording }} ·
-                {{
-                  fact.date.precision === 'date'
-                    ? 'Exact cutoff time unverified'
-                    : fact.date.timezone
-                }}</span
-              >
-            </div>
-            <a class="wb-text" :href="fact.date.sourceUrl" target="_blank" rel="noopener noreferrer"
-              >Verify source ↗</a
-            >
-          </div>
-        </div>
-        <div v-if="workspace.proposals.some((p) => p.status === 'draft')" class="wb-draft-action">
-          <p>
-            You have an editable research draft. Review its evidence before approving a message.
-          </p>
-          <button class="wb-button" @click="emit('navigate', 'drafts')">Review drafts</button>
-        </div>
-      </article>
-    </div>
+    <TodayCommandCenter
+      v-if="section === 'today'"
+      :tasks="tasks"
+      :pursuits="pursuits"
+      :activities="activities"
+      :events="events"
+      :today="today"
+      :saved-opportunity-count="saves.length"
+      @add-task="editQuickTask"
+      @open-task="openTask"
+      @toggle-task="completeTask"
+      @toggle-activity="toggleActivityStatus"
+      @open-opportunity="openPursuitOpportunity"
+    />
 
     <template v-if="section === 'opportunities'">
       <div class="wb-toolbar">
@@ -1233,20 +1175,6 @@ function calendarFacts(date: string) {
                   >Source ↗</a
                 >
               </div>
-              <button
-                class="wb-text"
-                @click="
-                  editTask({
-                    title: '',
-                    dueDate: day.date,
-                    status: 'todo',
-                    estimatedHours: null,
-                    notes: '',
-                  })
-                "
-              >
-                + Add task
-              </button>
             </article>
           </div>
         </template>
@@ -1388,9 +1316,6 @@ function calendarFacts(date: string) {
         </dl>
         <div class="wb-row">
           <h4>Next tasks</h4>
-          <button class="wb-text" @click="editTask(undefined, currentActivity.id)">
-            + Add task
-          </button>
         </div>
         <div v-for="task in activityTasks(currentActivity.id)" :key="task.id" class="wb-task">
           <DashboardTaskToggle
@@ -1528,9 +1453,7 @@ function calendarFacts(date: string) {
           internal tasks, not official deadlines.
         </p>
         <p class="wb-muted">
-          {{ scheduledHours.toFixed(1) }}h already scheduled this week{{
-            capacity == null ? ' · capacity not set' : ` of about ${capacity}h available`
-          }}. Unknown estimates are not zero.
+          {{ scheduledHours.toFixed(1) }}h already scheduled this week. Unknown estimates are not zero.
         </p>
         <form class="wb-form" @submit.prevent="confirmPursuit">
           <label class="wb-acknowledgement"
@@ -1600,8 +1523,25 @@ function calendarFacts(date: string) {
       </div></DashboardDialog
     >
     <DashboardDialog
-      v-if="taskEditor"
-      :title="taskEditor.id ? 'Edit task' : 'Add a next step'"
+      v-if="taskEditor?.quick"
+      title="Add task"
+      compact
+      @close="taskEditor = null"
+      ><form class="quick-task-form" @submit.prevent="saveTask" @pointerup="finishQuickDrag">
+        <label class="quick-task-form__title">Task name<input v-model="taskEditor.title" required maxlength="240" autofocus placeholder="Name this task" /></label>
+        <label class="quick-task-form__field">Connect to an opportunity <select v-model="taskParent"><option value="">Personal task</option><option v-for="p in pursuits" :key="p.id" :value="`pursuit:${p.id}`">{{ p.title }}</option></select></label>
+        <div class="quick-calendar" @pointerup="finishQuickDrag">
+          <div class="quick-calendar__head"><button type="button" class="quick-calendar__arrow" @click="calendarOffset--">←</button><strong>{{ calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) }}</strong><button type="button" class="quick-calendar__arrow" @click="calendarOffset++">→</button></div>
+          <div class="quick-calendar__grid"><span v-for="(label, index) in ['S','M','T','W','T','F','S']" :key="`${label}-${index}`" class="quick-calendar__label">{{ label }}</span><span v-for="(day, index) in quickCalendarDays" :key="day ? day.date : `quick-blank-${index}`" class="quick-calendar__cell"><button v-if="day" type="button" class="quick-calendar__day" :class="{ 'quick-calendar__day--selected': quickTaskIsSelected(day.date), 'quick-calendar__day--today': day.date === today }" @pointerdown="quickSelecting = true; quickTaskDate(day.date)" @pointerenter="toggleQuickDrag(day.date)">{{ Number(day.date.slice(-2)) }}</button></span></div>
+          <p class="quick-calendar__range">{{ dateLabel(taskEditor.dueDate) }}<span v-if="taskEditor.rangeEnd && taskEditor.rangeEnd !== taskEditor.dueDate"> → {{ dateLabel(taskEditor.rangeEnd) }}</span></p>
+        </div>
+        <p v-if="error" class="wb-message wb-error" role="alert">{{ error }}</p>
+        <button class="quick-task-form__save" :disabled="busy">{{ busy ? 'Saving…' : 'Save task' }}</button>
+      </form></DashboardDialog
+    >
+    <DashboardDialog
+      v-else-if="taskEditor"
+      :title="taskEditor.id ? 'Edit task' : 'Add task'"
       @close="taskEditor = null"
       ><form class="wb-form" @submit.prevent="saveTask">
         <label>Task<input v-model="taskEditor.title" required maxlength="240" autofocus /></label
@@ -2385,6 +2325,16 @@ function calendarFacts(date: string) {
   flex-direction: column;
   gap: 18px;
 }
+.quick-task-form { display:flex; flex-direction:column; gap:17px; min-width:min(100%,430px); padding:4px 2px 2px; }
+.quick-task-form__title,.quick-task-form__field { position:relative; z-index:1; display:flex; flex-direction:column; gap:8px; color:#bcb5c8; font-size:11px; }
+.quick-task-form__title input,.quick-task-form__field select { width:100%; min-height:48px; padding:0 14px; border:1px solid rgb(211 196 239 / 18%); border-radius:13px; background:rgb(255 255 255 / 4%); color:#f2edf5; font:inherit; outline:none; transition:border-color .3s,box-shadow .3s,background .3s; }
+.quick-task-form__title input { font-size:13px; }.quick-task-form__title input::placeholder { color:#767180; }.quick-task-form__title input:focus,.quick-task-form__field select:focus { border-color:#d8b97780; background:rgb(216 185 119 / 6%); box-shadow:0 0 0 4px rgb(216 185 119 / 8%); }
+.quick-task-form__field select option { background:#1d1a27; color:#f2edf5; }
+.quick-calendar { position:relative; z-index:1; padding:17px; border:1px solid rgb(216 185 119 / 19%); border-radius:18px; background:linear-gradient(145deg,rgb(216 185 119 / 7%),rgb(185 163 237 / 5%)); box-shadow:inset 0 1px rgb(255 255 255 / 7%); }
+.quick-calendar__head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; color:#e8d09b; font-size:12px; }.quick-calendar__arrow { display:grid; place-items:center; width:30px; height:30px; border:1px solid rgb(216 185 119 / 20%); border-radius:50%; background:transparent; color:#d8b977; cursor:pointer; transition:transform .3s,background .3s; }.quick-calendar__arrow:hover { transform:scale(1.1); background:rgb(216 185 119 / 10%); }
+.quick-calendar__grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:5px; }.quick-calendar__label { color:#777280; font-size:9px; text-align:center; }.quick-calendar__cell { display:grid; place-items:center; min-height:34px; }.quick-calendar__day { display:grid; place-items:center; width:100%; min-height:34px; border:1px solid transparent; border-radius:9px; background:transparent; color:#c3bdca; font-size:11px; cursor:pointer; transition:transform .3s,background .3s,border-color .3s,color .3s; }.quick-calendar__day:hover { transform:translateY(-2px); border-color:rgb(216 185 119 / 42%); color:#fff3ce; }.quick-calendar__day--selected { background:linear-gradient(145deg,rgb(216 185 119 / 36%),rgb(185 163 237 / 18%)); border-color:rgb(216 185 119 / 55%); color:#fff0c5; box-shadow:0 0 15px rgb(216 185 119 / 12%); }.quick-calendar__day--today { box-shadow:inset 0 -2px #d8b977; }.quick-calendar__range { min-height:17px; margin:13px 0 0; color:#a79ead; font-size:10px; }.quick-calendar__range span { color:#e2c486; }
+.quick-task-form__save { position:relative; z-index:1; display:flex; align-items:center; justify-content:center; gap:9px; min-height:49px; border:1px solid rgb(216 185 119 / 57%); border-radius:15px; background:linear-gradient(110deg,rgb(216 185 119 / 25%),rgb(185 163 237 / 16%)); color:#f5dfaf; font-size:12px; cursor:pointer; box-shadow:0 0 25px rgb(216 185 119 / 10%); transition:transform .45s cubic-bezier(.2,.8,.2,1),box-shadow .45s,background .45s; }.quick-task-form__save:hover:not(:disabled) { transform:translateY(-3px); background:linear-gradient(110deg,rgb(216 185 119 / 34%),rgb(185 163 237 / 23%)); box-shadow:0 12px 30px rgb(216 185 119 / 17%); }.quick-task-form__save:active:not(:disabled) { transform:scale(.98); }.quick-task-form__save-star { font-size:17px; }
+@media (prefers-reduced-motion:reduce) { .quick-task-form__save,.quick-calendar__day,.quick-calendar__arrow { transition:none; } }
 .wb-form label {
   display: flex;
   flex-direction: column;
@@ -2449,25 +2399,6 @@ function calendarFacts(date: string) {
 .wb-contribution small {
   display: block;
   margin-top: 12px;
-}
-.wb-capacity {
-  font-size: 11px;
-  color: var(--wb-muted);
-  border-top: 1px solid var(--wb-line);
-  padding-top: 12px;
-}
-.wb-capacity > div {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 8px;
-}
-.wb-capacity input {
-  width: 95px;
-}
-.wb-capacity .wb-button {
-  min-height: 38px;
-  padding: 5px 12px;
 }
 .wb-sr-only {
   position: absolute;

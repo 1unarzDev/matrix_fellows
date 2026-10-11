@@ -7,7 +7,7 @@ describe('public account policies', () => {
       expect(new Set(document.sections.map((section) => section.id)).size).toBe(
         document.sections.length,
       )
-      expect(document.updated).toBe('October 7, 2026')
+      expect(document.updated).toBe('October 9, 2026')
       expect(
         document.sections.every(
           (section) =>

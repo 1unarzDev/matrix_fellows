@@ -16,6 +16,9 @@ const error = ref('')
 async function show() {
   open.value = true
   error.value = ''
+  preview.value = null
+  url.value = ''
+  title.value = ''
   try {
     references.value = (
       await $fetch<{ references: OpportunityReference[] }>('/api/workspace/capture')
@@ -43,35 +46,55 @@ async function inspectUrl() {
 }
 async function save() {
   if (!preview.value) return
-  if (preview.value.item) {
+  const disposition = previewDisposition(preview.value)
+  if (disposition === 'catalog' && preview.value.item) {
     const item = preview.value.item
     open.value = false
     emit('inspect', item)
     return
   }
+  if (disposition === 'rejected') return
   busy.value = true
   error.value = ''
   try {
-    await $fetch('/api/workspace/capture', {
+    const result = await $fetch<OpportunityCapturePreview>('/api/workspace/capture', {
       method: 'POST',
-      body: { url: preview.value.url, title: title.value },
+      body: { url: preview.value.url },
     })
-    references.value = (
-      await $fetch<{ references: OpportunityReference[] }>('/api/workspace/capture')
-    ).references
-    preview.value = null
-    url.value = ''
-    title.value = ''
-    emit(
-      'saved',
-      'Private URL reference saved. Its facts still need verification; no commitments were added.',
-    )
+    if (result.item) {
+      open.value = false
+      emit('inspect', result.item)
+      emit('saved', 'Saved to your opportunities. It remains private to your dashboard.')
+    } else {
+      emit(
+        'saved',
+        result.disposition === 'shared-review'
+          ? 'Sent for officer review. It will enter the shared catalog only if approved.'
+          : 'This source was recorded for review.',
+      )
+      preview.value = null
+      url.value = ''
+      title.value = ''
+    }
   } catch (e: any) {
     error.value =
-      e?.data?.statusMessage || 'The reference could not be saved. Your URL is still here.'
+      e?.data?.statusMessage || 'This source could not be saved. Your URL is still here.'
   } finally {
     busy.value = false
   }
+}
+function dispositionLabel(value: OpportunityCapturePreview['disposition']) {
+  return {
+    catalog: 'Existing catalog opportunity',
+    personal: 'Personal opportunity',
+    'shared-review': 'Candidate for the shared catalog',
+    rejected: 'Not an opportunity',
+    reference: 'Unverified reference',
+  }[value]
+}
+function previewDisposition(value: OpportunityCapturePreview | null) {
+  if (!value) return 'reference' as const
+  return value.disposition || (value.item ? 'catalog' : 'reference')
 }
 </script>
 <template>
@@ -85,34 +108,39 @@ async function save() {
           placeholder="https://…"
           required /></label
       ><button class="capture-button" :disabled="busy">
-        {{ busy ? 'Checking…' : 'Preview reference' }}
+        {{ busy ? 'Inspecting source…' : 'Inspect link' }}
       </button>
     </form>
     <p v-if="error" class="capture-error" role="alert">{{ error }}</p>
     <div v-if="preview" class="capture-preview">
-      <p class="capture-label">
-        {{
-          preview.kind === 'catalog'
-            ? 'Existing sourced catalog record'
-            : 'Private · unverified reference'
-        }}
+      <p class="capture-label" :class="`capture-label--${previewDisposition(preview)}`">
+        {{ dispositionLabel(previewDisposition(preview)) }}
       </p>
       <p>{{ preview.notice }}</p>
-      <label v-if="!preview.item"
-        >Reference name<input v-model="title" maxlength="240" required
-      /></label>
-      <h3 v-else>{{ preview.item.title }}</h3>
+      <h3 v-if="preview.item || preview.candidate">
+        {{ (preview.item || preview.candidate)?.title }}
+      </h3>
+      <h3 v-else>{{ preview.title }}</h3>
+      <p v-if="preview.reason" class="capture-reason">{{ preview.reason }}</p>
       <a :href="preview.url" target="_blank" rel="noopener noreferrer">Open original source ↗</a>
       <p class="capture-muted">
-        {{ preview.source.label }}. A saved URL does not establish eligibility, availability, or a
-        current application cycle.
+        {{ preview.source.label }}. Dates and eligibility remain subject to source review.
       </p>
       <button
+        v-if="previewDisposition(preview) !== 'rejected'"
         class="capture-button"
-        :disabled="busy || (!preview.item && !title.trim())"
+        :disabled="busy"
         @click="save"
       >
-        {{ preview.item ? 'Inspect catalog record' : 'Save private reference' }}
+        {{
+          previewDisposition(preview) === 'catalog'
+            ? 'Inspect catalog record'
+            : previewDisposition(preview) === 'personal'
+              ? 'Save to my opportunities'
+              : previewDisposition(preview) === 'shared-review'
+                ? 'Send for officer review'
+                : 'Save private reference'
+        }}
       </button>
     </div>
     <div v-if="references.length" class="capture-references">
@@ -125,8 +153,8 @@ async function save() {
       </article>
     </div>
     <p v-else class="capture-muted">
-      URLs you save are private references. Known catalog entries open their evidence inspector;
-      other sources are retained for your review, not described as newly discovered opportunities.
+      We inspect the public page first. Strong shared opportunities wait for officer review,
+      smaller opportunities stay private to you, and unrelated links are rejected without saving.
     </p>
   </DashboardDialog>
 </template>
@@ -192,8 +220,21 @@ async function save() {
   font-size: 10px;
   letter-spacing: 0.1em;
 }
+.capture-label--personal { color: #a9d7c2; }
+.capture-label--shared-review { color: #c7b7f0; }
+.capture-label--rejected { color: #f0aaa0; }
 .capture-preview p {
   margin: 0;
+}
+.capture-reason {
+  padding: 12px 14px;
+  width: 100%;
+  border: 1px solid #ffffff14;
+  border-radius: 10px;
+  background: #ffffff05;
+  color: #ded8e4;
+  font-size: 12px;
+  line-height: 1.65;
 }
 .capture-muted {
   color: #b0adb8;

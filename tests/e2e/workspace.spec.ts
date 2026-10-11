@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-test('member dashboard restricts discovery and builds only assigned personal proposals', async ({
+test('member dashboard retains assigned research and excludes officer drafts', async ({
   page,
 }, info) => {
   const data: any = fixture()
@@ -48,17 +48,11 @@ test('member dashboard restricts discovery and builds only assigned personal pro
   await expect(nav.getByRole('button', { name: 'Source management', exact: true })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Assign connection', exact: true })).toHaveCount(0)
   await page.getByRole('button', { name: /Robotics Research Group/ }).click()
-  await expect(page.getByRole('button', { name: 'Shape a proposal', exact: true })).toBeEnabled()
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(
-    true,
-  )
-  await page.screenshot({ path: `/tmp/member-builder-${info.project.name}.png`, fullPage: true })
-  await page.getByRole('button', { name: 'Shape a proposal', exact: true }).click()
-  expect(requests.find((r) => r.path === '/api/workspace/planner')?.body).toMatchObject({
-    targetId,
-    kind: 'student',
-    profileId: officer,
-  })
+  await expect(page.getByRole('button', { name: 'Shape a proposal', exact: true })).toHaveCount(0)
+  await expect(nav.getByRole('button', { name: 'Draft review', exact: true })).toHaveCount(0)
+  await page.goto('/dashboard?section=drafts')
+  await expect(page.getByRole('heading', { name: 'Draft review', exact: true })).toHaveCount(0)
+  expect(requests.some((request) => request.path === '/api/workspace/planner')).toBe(false)
   await nav.getByRole('button', { name: 'Society', exact: true }).click()
   await expect(
     page.getByRole('button', { name: 'Save reviewed profile', exact: true }),

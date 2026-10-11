@@ -1,3 +1,4 @@
+import { stableResearchTopics } from '../shared/utils/research-topics'
 import type {
   DiscoveryProvider,
   ProviderCapability,
@@ -34,7 +35,7 @@ export class CuratedDiscoveryProvider implements DiscoveryProvider {
         source,
         index,
         relevant: source.fields.some((field) =>
-          input.interests.some((interest) => interest.toLowerCase() === field.toLowerCase()),
+          stableResearchTopics(input.interests).some(topic=>stableResearchTopics([field]).includes(topic)),
         ),
       }))
       .sort((a, b) => Number(b.relevant) - Number(a.relevant) || a.index - b.index)
@@ -59,12 +60,16 @@ export class PublicGeminiResearchModel implements ResearchModel {
     private readonly options: {
       key: string
       model: string
-      suitableAudienceAuthorized: boolean
+      termsConfirmed: boolean
+      mode: 'unpaid_public' | 'authorized_context'
+      projectModeConfirmed: boolean
       fetcher?: typeof fetch
     },
   ) {}
   status(): ProviderCapability {
-    const ready = Boolean(this.options.key && this.options.suitableAudienceAuthorized)
+    const ready = Boolean(
+      this.options.key && this.options.termsConfirmed && this.options.projectModeConfirmed,
+    )
     return {
       configured: ready,
       state: ready ? 'ready' : 'unavailable',
@@ -74,7 +79,7 @@ export class PublicGeminiResearchModel implements ResearchModel {
   async analyze(input: Parameters<ResearchModel['analyze']>[0]) {
     if (!this.status().configured)
       throw new Error(
-        'Model activation requires suitable audience authorization and server credentials.',
+        'Model activation requires confirmed terms, project mode and server credentials.',
       )
     if (
       input.schemaVersion !== 'public-research-v1' ||
@@ -93,14 +98,6 @@ export class PublicGeminiResearchModel implements ResearchModel {
           signal: AbortSignal.any([input.signal, ...(init?.signal ? [init.signal] : [])]),
         }),
     )
-    return {
-      themes: output.themes,
-      proposals: output.proposalOptions.map((proposal) => ({
-        title: proposal.title,
-        deliverable: proposal.deliverable,
-        supportingQuote: proposal.quote,
-      })),
-      unknowns: output.unknowns,
-    }
+    return output
   }
 }

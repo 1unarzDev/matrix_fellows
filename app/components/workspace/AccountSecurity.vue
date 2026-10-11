@@ -206,7 +206,7 @@ onMounted(() => {
             <span class="security-method__icon" aria-hidden="true"
               ><SiteIcon name="mail" :size="15"
             /></span>
-            <strong>Email link</strong><small>{{ security.email }}</small>
+            <strong>Email link</strong>
           </button>
           <button
             class="security-method"
@@ -253,7 +253,7 @@ onMounted(() => {
             <span class="security-method__icon" aria-hidden="true"
               ><SiteIcon name="lock" :size="14"
             /></span>
-            <strong>Password</strong><small>Use your account password</small>
+            <strong>Password</strong>
           </button>
         </div>
       </section>

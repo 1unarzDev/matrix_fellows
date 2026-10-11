@@ -80,6 +80,14 @@ Network failure after submission is uncertain: check Sent mail and reconcile,
 
 ## Bounded research
 
+Open **Outreach → Research runs** for schedule controls, reviewed discovery sources,
+and recent job activity. Research runs is a collapsible panel within Outreach;
+older `?section=research` links open that panel. Officers can queue runs and view
+activity. Only admins can change limits/Gemini settings, pause/resume scheduling,
+review sources, or retry failed stages. Ordinary members do not receive these
+controls. Expanding the panel loads current settings; actions synchronize in the
+background without leaving the candidate workspace.
+
 Deploy independently using `npm run deploy:outreach`, after verifying credentials
 and the worker dry run. The opportunity-import Worker is unchanged. Supply the
 outreach Worker's Supabase URL/service key; these never reach the browser.

@@ -25,7 +25,9 @@ const tab = computed({
     typeof route.query.section === 'string' &&
     sections.value.some((section) => section.value === route.query.section)
       ? route.query.section
-      : route.query.section === 'drafts'
+      : route.query.section === 'research' && canDiscover.value
+        ? 'queue'
+        : route.query.section === 'drafts'
         ? 'queue'
         : route.query.section === 'saved'
         ? 'opportunities'
@@ -39,21 +41,9 @@ const allSections = [
   { value: 'opportunities', label: 'Opportunities', icon: 'calendar' },
   { value: 'profiles', label: 'Your profile', icon: 'spark' },
   { value: 'society', label: 'Society', icon: 'atom' },
-  { value: 'research', label: 'Research runs', icon: 'globe' },
   { value: 'settings', label: 'Settings', icon: 'lock' },
 ] as const
-const sections = computed(() =>
-  canDiscover.value
-    ? allSections
-    : [
-        'today',
-        'queue',
-        'opportunities',
-        'profiles',
-        'society',
-        'settings',
-      ].map((value) => allSections.find((section) => section.value === value)!),
-)
+const sections = computed(() => allSections)
 const currentSection = computed(
   () => sections.value.find((section) => section.value === tab.value) || sections.value[0],
 )
@@ -72,9 +62,7 @@ const mobileSectionOptions = computed(() =>
               ? 'Your research profile'
               : section.value === 'society'
                 ? 'Shared Matrix Fellows context'
-                : section.value === 'research'
-                  ? 'Source and model activity'
-                  : 'Account and connection settings',
+                : 'Account and connection settings',
   })),
 )
 const commandOpen = ref(false)
@@ -706,7 +694,9 @@ async function sendDraft() {
     sendConfirm.value = false
   }
 }
+const researchExpanded = ref(route.query.section === 'research')
 const research = ref<any>(null)
+const researchLoading = ref(false)
 const researchError = ref('')
 const researchBusy = ref(false)
 const researchActionState = ref<'idle' | 'queued' | 'saved' | 'failed'>('idle')
@@ -714,15 +704,24 @@ const researchActionMessage = ref('')
 const sourceOffset = ref(0)
 const jobOffset = ref(0)
 const sourceFilter = ref('')
+let researchLoadVersion = 0
 async function loadResearch() {
+  if (!canDiscover.value) return
+  const version = ++researchLoadVersion
+  researchLoading.value = true
+  researchError.value = ''
   try {
-    research.value = await $fetch('/api/workspace/research', { query: { sourceOffset: sourceOffset.value, jobOffset: jobOffset.value, limit: 40, ...(sourceFilter.value ? { sourceId: sourceFilter.value } : {}) } })
+    const result = await $fetch('/api/workspace/research', { query: { sourceOffset: sourceOffset.value, jobOffset: jobOffset.value, limit: 40, ...(sourceFilter.value ? { sourceId: sourceFilter.value } : {}) } })
+    if (version === researchLoadVersion && canDiscover.value) research.value = result
   } catch (e: any) {
+    if (version !== researchLoadVersion || !canDiscover.value) return
     researchError.value = e?.data?.statusMessage || 'Research settings unavailable.'
+  } finally {
+    if (version === researchLoadVersion) researchLoading.value = false
   }
 }
 function researchAction(action: string) {
-  if (researchBusy.value || !research.value) return
+  if (researchBusy.value || researchLoading.value || !research.value) return
   researchBusy.value = true
   researchError.value = ''
   researchActionState.value = 'queued'
@@ -766,6 +765,14 @@ function researchAction(action: string) {
       researchBusy.value = false
     }
   })()
+}
+async function retryResearchJob(jobId: string) {
+  if (researchBusy.value) return
+  researchBusy.value = true
+  try {
+    await mutate('/research', 'POST', { action: 'retry', jobId }, 'Stage retry queued.')
+    await loadResearch()
+  } finally { researchBusy.value = false }
 }
 const editingSource = ref('')
 const sourceForm = reactive({ enabled: false, aiExcerpt: '', aiReviewed: false, snapshotHash: '' })
@@ -814,9 +821,12 @@ function saveSource() {
     }
   })()
 }
-watch(tab, (value) => {
-  if (value === 'research' && canDiscover.value) void loadResearch()
+watch(() => route.query.section, (section) => {
+  if (section === 'research') researchExpanded.value = true
 })
+watch(() => tab.value === 'queue' && canDiscover.value && researchExpanded.value, (visible) => {
+  if (visible) void loadResearch()
+}, { immediate: true })
 const historicalMailboxes = ref<any[]>([])
 const connecting = ref(false)
 const providers = ref({ gmail: false, outlook: false })
@@ -939,7 +949,7 @@ onMounted(async () => {
           :class="{ active: tab === section.value }"
           :data-group-start="section.value === 'queue'"
           :data-secondary="
-            ['profiles', 'society', 'research', 'settings'].includes(section.value)
+            ['profiles', 'society', 'settings'].includes(section.value)
           "
           :aria-current="tab === section.value ? 'page' : undefined"
           :aria-label="section.value === 'queue' ? section.label : undefined"
@@ -985,10 +995,211 @@ onMounted(async () => {
                 </p>
                 <h2>Outreach</h2>
               </div>
-              <button v-if="canDiscover" class="ws-button" @click="openTarget()">
-                <SiteIcon name="plus" :size="15" />Add candidate
-              </button>
+              <div v-if="canDiscover" class="ws-actions outreach-header-actions">
+                <button class="ws-button" @click="openTarget()">
+                  <SiteIcon name="plus" :size="15" />Add candidate
+                </button>
+              </div>
             </div>
+            <section v-if="canDiscover" class="ws-panel research-runs-panel" aria-labelledby="research-runs-title">
+              <button class="research-runs-toggle" :aria-expanded="researchExpanded" aria-controls="workspace-research-runs" @click="researchExpanded = !researchExpanded">
+                <SiteIcon name="globe" :size="19" />
+                <span class="research-runs-heading"><strong id="research-runs-title">Research runs</strong><small>Schedule, sources & activity</small></span>
+                <span v-if="research" class="ws-chip">{{ research.settings.paused ? 'Paused' : 'Scheduled' }}</span>
+                <SiteIcon class="research-runs-chevron" name="down" :size="16" />
+              </button>
+              <div id="workspace-research-runs" class="research-runs-disclosure" :class="{ 'is-open': researchExpanded }" :inert="!researchExpanded" :aria-hidden="!researchExpanded">
+                <div class="research-runs-clip"><div class="research-runs-body">
+                  <p class="ws-muted research-runs-intro">Monday, Wednesday & Friday at 16:00 UTC. Research gathers evidence; every email still needs your approval.</p>
+            <div v-if="researchError" role="alert" class="ws-alert ws-error">
+              {{ researchError }}
+            </div>
+            <Transition name="research-action"><p v-if="researchActionMessage" class="research-action-status" :class="`research-action-status--${researchActionState}`" role="status"><span class="research-action-status__orb" aria-hidden="true" />{{ researchActionMessage }}</p></Transition>
+            <div v-if="research" class="research-run-sections">
+              <article class="research-run-section">
+                <div class="section-top">
+                  <h3>Schedule & analysis</h3>
+                  <span class="ws-chip">{{
+                    research.settings.paused ? 'Paused' : 'Scheduled'
+                  }}</span>
+                </div>
+                <p class="ws-muted">{{ research.health.note }}</p>
+                <p class="ws-muted">
+                  Free-only AI access. Jobs pause on quota limits; no paid fallback. Research uses
+                  public professional information, never private member or mailbox content.
+                </p>
+                <div class="ws-actions">
+                  <button
+                    class="ws-button ws-button--primary"
+                    :disabled="researchBusy || researchLoading || research.settings.paused"
+                    @click="researchAction('run')"
+                  >
+                    Queue a research run</button
+                  ><button
+                    v-if="data.member.role === 'admin'"
+                    class="ws-button"
+                    :disabled="researchBusy || researchLoading"
+                    @click="researchAction(research.settings.paused ? 'resume' : 'pause')"
+                  >
+                    {{ research.settings.paused ? 'Resume scheduling' : 'Pause scheduling' }}
+                  </button>
+                </div>
+                <details v-if="data.member.role === 'admin'" class="research-run-detail">
+                  <summary>Limits & Gemini settings<SiteIcon name="down" :size="14" /></summary>
+                <form
+                  class="research-config"
+                  @submit.prevent="researchAction('settings')"
+                >
+                  <div class="ws-grid">
+                    <label class="ws-field"
+                      >Maximum new leads / week<input
+                        v-model.number="research.settings.weekly_limit"
+                        type="number"
+                        min="1"
+                        max="100"
+                        required /></label
+                    ><label class="ws-field"
+                      >Maximum leads / run<input
+                        v-model.number="research.settings.batch_limit"
+                        type="number"
+                        min="1"
+                        max="15"
+                        required /></label
+                    ><label class="ws-field"
+                      >Unreviewed queue ceiling<input
+                        v-model.number="research.settings.queue_limit"
+                        type="number"
+                        min="1"
+                        max="250"
+                        required /></label
+                    ><label class="ws-field"
+                      >Concurrent research tasks<input
+                        v-model.number="research.settings.concurrency"
+                        type="number"
+                        min="1"
+                        max="2"
+                        required
+                    /></label>
+                  </div>
+                  <div class="consent">
+                    <AnimatedCheckbox
+                      v-model="research.settings.ai_enabled"
+                      outlined
+                      label="Enable optional Gemini analysis on eligible public sources."
+                    />
+                  </div>
+                  <div class="consent">
+                    <AnimatedCheckbox
+                      v-model="research.settings.terms_confirmed"
+                      outlined
+                      label="I reviewed the API/data-use terms and confirmed this project's permitted free-tier use."
+                    />
+                  </div>
+                  <button class="ws-button" :disabled="researchBusy || researchLoading">Save research limits</button>
+                </form>
+                </details>
+              </article>
+              <details class="research-run-section research-run-detail">
+                <summary>Vetted discovery sources<SiteIcon name="down" :size="14" /></summary>
+                <form class="ws-actions" @submit.prevent="sourceOffset = 0; jobOffset = 0; loadResearch()">
+                  <label class="ws-field">Find source by ID<input v-model="sourceFilter" placeholder="Registry or target source ID" /></label>
+                  <button class="ws-button">Filter sources</button>
+                </form>
+                <div v-for="source in research.sources" :key="source.id" class="job-row">
+                  <a :href="source.url" target="_blank" rel="noopener noreferrer">{{
+                    source.url
+                  }}</a
+                  ><span class="ws-chip">{{ source.enabled ? 'Enabled' : 'Disabled' }}</span
+                  ><button
+                    v-if="data.member.role === 'admin'"
+                    class="ws-button"
+                    @click="openSource(source)"
+                  >
+                    Review source
+                  </button>
+                </div>
+                <p v-if="!research.sources.length" class="ws-muted">
+                  No vetted sources enabled. An administrator must configure sources before jobs can
+                  run.
+                </p>
+                <div v-if="research.pagination" class="ws-actions">
+                  <button class="ws-button" :disabled="sourceOffset === 0" @click="sourceOffset = Math.max(0, sourceOffset - 40); loadResearch()">Previous sources</button>
+                  <span class="ws-muted">{{ research.sources.length ? sourceOffset + 1 : 0 }}–{{ sourceOffset + research.sources.length }} of {{ research.pagination.sourceTotal }}</span>
+                  <button class="ws-button" :disabled="sourceOffset + research.sources.length >= research.pagination.sourceTotal" @click="sourceOffset += 40; loadResearch()">Next sources</button>
+                </div>
+                <Transition name="ws-content"
+                  ><form v-if="editingSource" class="send-confirm" @submit.prevent="saveSource">
+                    <h3>Review research-only excerpt</h3>
+                    <a
+                      class="ws-button"
+                      :href="research.sources.find((s: any) => s.id === editingSource)?.url"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      >Compare with official source<SiteIcon name="arrow" :size="14"
+                    /></a>
+                    <p class="ws-muted">
+                      Only a reviewed public research excerpt may enter optional AI analysis. Remove
+                      emails, phone numbers, student names/IDs, and any private or sensitive
+                      information. Confirm the excerpt matches the acquired source.
+                    </p>
+                    <label class="ws-field"
+                      >Public research excerpt<textarea
+                        v-model="sourceForm.aiExcerpt"
+                        @input="sourceForm.aiReviewed = false"
+                        maxlength="12000"
+                      />
+                    </label>
+                    <div class="consent">
+                      <AnimatedCheckbox
+                        v-model="sourceForm.enabled"
+                        outlined
+                        label="Enable this vetted discovery source."
+                      />
+                    </div>
+                    <div class="consent">
+                      <AnimatedCheckbox
+                        v-model="sourceForm.aiReviewed"
+                        outlined
+                        label="I reviewed this excerpt for source accuracy and absence of personal information."
+                      />
+                    </div>
+                    <div class="ws-actions">
+                      <button class="ws-button ws-button--primary" :disabled="researchBusy || researchLoading">
+                        Save source review</button
+                      ><button type="button" class="ws-button" @click="editingSource = ''">
+                        Cancel
+                      </button>
+                    </div>
+                  </form></Transition
+                >
+              </details>
+              <details class="research-run-section research-run-detail">
+                <summary>Recent jobs<SiteIcon name="down" :size="14" /></summary>
+                <p class="ws-muted">{{ research.health?.stages?.filter((s:any)=>s.status==='waiting_quota').length || 0 }} recent stages waiting for quota. Completed evidence is reused on retry.</p>
+                <p v-if="research.health?.usage" class="ws-muted">Today's reserved usage: {{ research.health.usage.source_requests }} source requests, {{ research.health.usage.source_bytes }} bytes, {{ research.health.usage.model_requests }} model requests and {{ research.health.usage.model_tokens }} tokens. Reservations include unknown-cost interrupted calls.</p>
+                <p class="ws-muted">{{ research.health?.coverage?.filter((s:any)=>s.enabled).length || 0 }} enabled sources in the displayed coverage inventory{{ research.health?.coveragePartial ? ' (partial)' : '' }}. Coverage is bounded; current openings still require review.</p>
+                <div v-for="job in research.jobs" :key="job.id" class="job-row">
+                  <div>
+                    <strong>{{ job.kind || 'Discovery' }}</strong
+                    ><small>{{ job.created_at || job.createdAt }}</small>
+                    <p v-if="job.error" class="ws-muted">{{ job.error }}</p>
+                  </div>
+                  <span class="ws-chip">{{ job.failure_kind === 'quota_wait' ? 'Waiting for quota' : job.status }}</span>
+                  <button v-if="data.member.role === 'admin' && job.status === 'failed'" class="ws-button" :disabled="researchBusy || researchLoading" @click="retryResearchJob(job.id)">Retry stage</button>
+                </div>
+                <div v-if="research.pagination" class="ws-actions">
+                  <button class="ws-button" :disabled="jobOffset === 0" @click="jobOffset = Math.max(0, jobOffset - 40); loadResearch()">Previous jobs</button>
+                  <button class="ws-button" :disabled="jobOffset + research.jobs.length >= research.pagination.jobTotal" @click="jobOffset += 40; loadResearch()">Next jobs</button>
+                </div>
+                <p v-if="!research.jobs.length" class="ws-muted">
+                  No research runs yet. Jobs will appear here after an approved source is queued.
+                </p>
+              </details>
+            </div>
+                  <div v-else class="ws-empty" role="status">{{ researchLoading ? 'Loading research controls…' : 'Research controls unavailable.' }}<button v-if="!researchLoading" class="ws-button" @click="loadResearch">Try again</button></div>
+                </div></div>
+              </div>
+            </section>
             <div class="queue-tools">
               <label class="search"
                 ><SiteIcon name="search" :size="17" /><input
@@ -1829,198 +2040,6 @@ onMounted(async () => {
           <template v-else-if="tab === 'society'">
             <SocietyConnectionCloud :officer="canDiscover" :allow-add="false" />
           </template>
-          <template v-else-if="tab === 'research' && canDiscover"
-            ><p class="ws-kicker">Bounded discovery, not a flood</p>
-            <h2>Research runs</h2>
-            <p class="ws-muted">
-              Scheduled Monday, Wednesday, and Friday at 16:00 UTC. Agents discover and qualify
-              leads; they never send email.
-            </p>
-            <div v-if="researchError" role="alert" class="ws-alert ws-error">
-              {{ researchError }}
-            </div>
-            <Transition name="research-action"><p v-if="researchActionMessage" class="research-action-status" :class="`research-action-status--${researchActionState}`" role="status"><span class="research-action-status__orb" aria-hidden="true" />{{ researchActionMessage }}</p></Transition>
-            <div v-if="research" class="ws-stack">
-              <article class="ws-panel">
-                <div class="section-top">
-                  <h3>Research controls</h3>
-                  <span class="ws-chip">{{
-                    research.settings.paused ? 'Paused' : 'Scheduled'
-                  }}</span>
-                </div>
-                <p class="ws-muted">{{ research.health.note }}</p>
-                <p class="ws-muted">
-                  Free-only AI access. Jobs pause on quota limits; no paid fallback. Research uses
-                  public professional information, never private member or mailbox content.
-                </p>
-                <div class="ws-actions">
-                  <button
-                    class="ws-button ws-button--primary"
-                    :disabled="researchBusy || research.settings.paused"
-                    @click="researchAction('run')"
-                  >
-                    Queue a research run</button
-                  ><button
-                    v-if="data.member.role === 'admin'"
-                    class="ws-button"
-                    :disabled="researchBusy"
-                    @click="researchAction(research.settings.paused ? 'resume' : 'pause')"
-                  >
-                    {{ research.settings.paused ? 'Resume scheduling' : 'Pause scheduling' }}
-                  </button>
-                </div>
-                <form
-                  v-if="data.member.role === 'admin'"
-                  class="research-config"
-                  @submit.prevent="researchAction('settings')"
-                >
-                  <div class="ws-grid">
-                    <label class="ws-field"
-                      >Maximum new leads / week<input
-                        v-model.number="research.settings.weekly_limit"
-                        type="number"
-                        min="1"
-                        max="100"
-                        required /></label
-                    ><label class="ws-field"
-                      >Maximum leads / run<input
-                        v-model.number="research.settings.batch_limit"
-                        type="number"
-                        min="1"
-                        max="15"
-                        required /></label
-                    ><label class="ws-field"
-                      >Unreviewed queue ceiling<input
-                        v-model.number="research.settings.queue_limit"
-                        type="number"
-                        min="1"
-                        max="250"
-                        required /></label
-                    ><label class="ws-field"
-                      >Concurrent research tasks<input
-                        v-model.number="research.settings.concurrency"
-                        type="number"
-                        min="1"
-                        max="2"
-                        required
-                    /></label>
-                  </div>
-                  <div class="consent">
-                    <AnimatedCheckbox
-                      v-model="research.settings.ai_enabled"
-                      outlined
-                      label="Enable optional Gemini analysis on eligible public sources."
-                    />
-                  </div>
-                  <div class="consent">
-                    <AnimatedCheckbox
-                      v-model="research.settings.terms_confirmed"
-                      outlined
-                      label="I reviewed the API/data-use terms and confirmed this project's permitted free-tier use."
-                    />
-                  </div>
-                  <button class="ws-button" :disabled="researchBusy">Save research limits</button>
-                </form>
-              </article>
-              <article class="ws-panel">
-                <h3>Vetted discovery sources</h3>
-                <form class="ws-actions" @submit.prevent="sourceOffset = 0; jobOffset = 0; loadResearch()">
-                  <label class="ws-field">Find source by ID<input v-model="sourceFilter" placeholder="Registry or target source ID" /></label>
-                  <button class="ws-button">Filter sources</button>
-                </form>
-                <div v-for="source in research.sources" :key="source.id" class="job-row">
-                  <a :href="source.url" target="_blank" rel="noopener noreferrer">{{
-                    source.url
-                  }}</a
-                  ><span class="ws-chip">{{ source.enabled ? 'Enabled' : 'Disabled' }}</span
-                  ><button
-                    v-if="data.member.role === 'admin'"
-                    class="ws-button"
-                    @click="openSource(source)"
-                  >
-                    Review source
-                  </button>
-                </div>
-                <p v-if="!research.sources.length" class="ws-muted">
-                  No vetted sources enabled. An administrator must configure sources before jobs can
-                  run.
-                </p>
-                <div v-if="research.pagination" class="ws-actions">
-                  <button class="ws-button" :disabled="sourceOffset === 0" @click="sourceOffset = Math.max(0, sourceOffset - 40); loadResearch()">Previous sources</button>
-                  <span class="ws-muted">{{ sourceOffset + 1 }}–{{ sourceOffset + research.sources.length }} of {{ research.pagination.sourceTotal }}</span>
-                  <button class="ws-button" :disabled="sourceOffset + research.sources.length >= research.pagination.sourceTotal" @click="sourceOffset += 40; loadResearch()">Next sources</button>
-                </div>
-                <Transition name="ws-content"
-                  ><form v-if="editingSource" class="send-confirm" @submit.prevent="saveSource">
-                    <h3>Review research-only excerpt</h3>
-                    <a
-                      class="ws-button"
-                      :href="research.sources.find((s: any) => s.id === editingSource)?.url"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      >Compare with official source<SiteIcon name="arrow" :size="14"
-                    /></a>
-                    <p class="ws-muted">
-                      Only a reviewed public research excerpt may enter optional AI analysis. Remove
-                      emails, phone numbers, student names/IDs, and any private or sensitive
-                      information. Confirm the excerpt matches the acquired source.
-                    </p>
-                    <label class="ws-field"
-                      >Public research excerpt<textarea
-                        v-model="sourceForm.aiExcerpt"
-                        @input="sourceForm.aiReviewed = false"
-                        maxlength="12000"
-                      />
-                    </label>
-                    <div class="consent">
-                      <AnimatedCheckbox
-                        v-model="sourceForm.enabled"
-                        outlined
-                        label="Enable this vetted discovery source."
-                      />
-                    </div>
-                    <div class="consent">
-                      <AnimatedCheckbox
-                        v-model="sourceForm.aiReviewed"
-                        outlined
-                        label="I reviewed this excerpt for source accuracy and absence of personal information."
-                      />
-                    </div>
-                    <div class="ws-actions">
-                      <button class="ws-button ws-button--primary" :disabled="researchBusy">
-                        Save source review</button
-                      ><button type="button" class="ws-button" @click="editingSource = ''">
-                        Cancel
-                      </button>
-                    </div>
-                  </form></Transition
-                >
-              </article>
-              <article class="ws-panel">
-                <h3>Recent jobs</h3>
-                <p class="ws-muted">{{ research.health?.stages?.filter((s:any)=>s.status==='waiting_quota').length || 0 }} recent stages waiting for quota. Completed evidence is reused on retry.</p>
-                <p v-if="research.health?.usage" class="ws-muted">Today's reserved usage: {{ research.health.usage.source_requests }} source requests, {{ research.health.usage.source_bytes }} bytes, {{ research.health.usage.model_requests }} model requests and {{ research.health.usage.model_tokens }} tokens. Reservations include unknown-cost interrupted calls.</p>
-                <p class="ws-muted">{{ research.health?.coverage?.filter((s:any)=>s.enabled).length || 0 }} enabled sources in the displayed coverage inventory{{ research.health?.coveragePartial ? ' (partial)' : '' }}. Coverage is bounded; current openings still require review.</p>
-                <div v-for="job in research.jobs" :key="job.id" class="job-row">
-                  <div>
-                    <strong>{{ job.kind || 'Discovery' }}</strong
-                    ><small>{{ job.created_at || job.createdAt }}</small>
-                    <p v-if="job.error" class="ws-muted">{{ job.error }}</p>
-                  </div>
-                  <span class="ws-chip">{{ job.failure_kind === 'quota_wait' ? 'Waiting for quota' : job.status }}</span>
-                  <button v-if="data.member.role === 'admin' && job.status === 'failed'" class="ws-button" :disabled="researchBusy" @click="mutate('/research','POST',{action:'retry',jobId:job.id},'Stage retry queued.'); loadResearch()">Retry stage</button>
-                </div>
-                <div v-if="research.pagination" class="ws-actions">
-                  <button class="ws-button" :disabled="jobOffset === 0" @click="jobOffset = Math.max(0, jobOffset - 40); loadResearch()">Previous jobs</button>
-                  <button class="ws-button" :disabled="jobOffset + research.jobs.length >= research.pagination.jobTotal" @click="jobOffset += 40; loadResearch()">Next jobs</button>
-                </div>
-                <p v-if="!research.jobs.length" class="ws-muted">
-                  No research runs yet. Jobs will appear here after an approved source is queued.
-                </p>
-              </article>
-            </div>
-            <div v-else class="ws-empty">Loading research controls…</div></template
-          >
           <template v-else-if="tab === 'settings'">
             <div class="settings-hero">
               <div>
@@ -2107,6 +2126,54 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+
+.ws-panel.research-runs-panel { margin: 0 0 24px; padding: 0; min-width: 0; }
+.research-runs-toggle {
+  display: flex; align-items: center; gap: 14px; width: 100%; padding: 20px 24px;
+  border: 0; background: transparent; color: #b9afc9; text-align: left; cursor: pointer;
+  border-radius: 28px; transition: color .25s, background-color .25s;
+}
+.research-runs-toggle:hover { color: #efdfb5; background: rgb(213 201 237 / 3%); }
+.research-runs-toggle:focus-visible { outline: 2px solid #d8b977; outline-offset: -5px; }
+.research-runs-heading { display: grid; gap: 5px; flex: 1; }
+.research-runs-heading strong { color: #e5dfeb; font-size: 14px; font-weight: 500; }
+.research-runs-heading small { color: #91899c; font-size: 12px; }
+.research-runs-chevron { flex-shrink: 0; transition: transform .45s cubic-bezier(.16,1,.3,1); }
+.research-runs-toggle[aria-expanded="true"] .research-runs-chevron { transform: rotate(180deg); }
+.research-runs-disclosure { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows .48s cubic-bezier(.16,1,.3,1), opacity .3s; }
+.research-runs-disclosure.is-open { grid-template-rows: 1fr; opacity: 1; }
+.research-runs-clip { min-height: 0; overflow: hidden; }
+.research-runs-body { padding: 0 24px 24px; }
+.research-runs-intro { margin: 0 0 22px; padding-top: 20px; border-top: 1px solid #d5c9ed15; line-height: 1.7; }
+.research-run-sections { display: grid; gap: 22px; }
+.research-run-section { min-width: 0; background: transparent; }
+.research-run-section > .section-top { margin-bottom: 12px; }
+.research-run-section h3 { margin: 0; font-size: 15px; }
+.research-run-section > .ws-muted { line-height: 1.7; }
+.research-run-section > .research-run-detail { margin-top: 20px; }
+.research-run-detail { border-top: 1px solid #d5c9ed15; }
+.research-run-detail > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 0; color: #c6bed7; font-size: 13px; cursor: pointer; list-style: none; transition: color .25s; }
+.research-run-detail > summary::-webkit-details-marker { display: none; }
+.research-run-detail > summary:hover { color: #efdfb5; }
+.research-run-detail > summary svg { transition: transform .3s; }
+.research-run-detail[open] > summary svg { transform: rotate(180deg); }
+.research-run-section .job-row { gap: 12px; flex-wrap: wrap; }
+.research-run-section .job-row > a, .research-run-section .job-row > div { min-width: 0; overflow-wrap: anywhere; flex: 1 1 180px; }
+.research-run-section .ws-actions { row-gap: 12px; }
+.research-run-section .research-config { margin-top: 0; }
+.research-run-section .send-confirm { background: transparent; }
+@media (max-width: 620px) {
+  .research-runs-toggle { padding: 18px; gap: 10px; }
+  .research-runs-body { padding: 0 18px 18px; }
+  .research-runs-heading small { font-size: 11px; }
+  .research-runs-toggle .ws-chip { font-size: 10px; }
+  .research-run-section .ws-grid { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .research-runs-disclosure, .research-runs-toggle, .research-runs-chevron,
+  .research-run-detail > summary, .research-run-detail > summary svg { transition: none; }
+}
+
 .command-menu {
   position: fixed;
   inset: 15% auto auto 50%;

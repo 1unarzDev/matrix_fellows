@@ -312,10 +312,15 @@ test('fixture: officer research evidence, autosave preserves in-flight typing an
     page.getByText('Spectroscopy methods; student availability unconfirmed.', { exact: true }),
   ).toBeVisible()
   await expect(page.getByText('Plan the first message', { exact: true })).toBeVisible()
-  await page
-    .getByRole('navigation', { name: 'Dashboard sections' })
-    .getByRole('button', { name: 'Outreach', exact: true })
-    .click()
+  if (info.project.name === 'mobile') {
+    await page.getByRole('button', { name: 'Dashboard section: Outreach', exact: true }).click()
+    await page.getByRole('option', { name: /Outreach/ }).click()
+  } else {
+    await page
+      .getByRole('navigation', { name: 'Dashboard sections' })
+      .getByRole('button', { name: 'Outreach', exact: true })
+      .click()
+  }
   await page.getByRole('button', { name: /Synthetic inquiry about spectroscopy/ }).click()
   const editor = page.getByLabel('Email', { exact: true })
   await editor.fill('Synthetic first manually edited paragraph.')

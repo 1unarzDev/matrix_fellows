@@ -3,6 +3,7 @@ import DashboardDialog from './DashboardDialog.vue'
 import DashboardUrlCapture from './DashboardUrlCapture.vue'
 import DashboardTaskToggle from './DashboardTaskToggle.vue'
 import TodayCommandCenter from './TodayCommandCenter.vue'
+import SocietyConnectionCloud from './SocietyConnectionCloud.vue'
 import type {
   OpportunityDecision,
   OpportunityCapturePreview,
@@ -24,6 +25,7 @@ const props = defineProps<{
   workspace: OutreachWorkspace
   section: 'today' | 'opportunities'
 }>()
+const canManageSources = computed(() => ['officer', 'admin'].includes(props.workspace.member.role))
 const catalogNow = Date.now()
 const emit = defineEmits<{ navigate: [section: string] }>()
 const route = useRoute()
@@ -1046,10 +1048,17 @@ function calendarFacts(date: string) {
           <button :aria-pressed="mode === 'discover'" @click="mode = 'discover'">Discover</button
           ><button :aria-pressed="mode === 'plan'" @click="mode = 'plan'">My plan</button>
         </div>
-        <a v-if="mode === 'plan'" class="wb-button" href="/api/workspace/plan/export" download
-          >Export calendar ↓</a
-        >
-        <DashboardUrlCapture v-else @inspect="inspectOpportunity" @saved="notice = $event" />
+        <div class="wb-toolbar__actions">
+          <a v-if="mode === 'plan'" class="wb-button" href="/api/workspace/plan/export" download
+            >Export calendar ↓</a
+          >
+          <DashboardUrlCapture v-else @inspect="inspectOpportunity" @saved="notice = $event" />
+          <SocietyConnectionCloud
+            v-if="canManageSources"
+            :officer="canManageSources"
+            trigger-only
+          />
+        </div>
       </div>
       <div v-if="mode === 'discover'" class="wb-discovery">
         <form class="wb-search" @submit.prevent="loadCatalog()">
@@ -1864,6 +1873,7 @@ function calendarFacts(date: string) {
   margin-bottom: 22px;
   gap: 16px;
 }
+.wb-toolbar__actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;min-width:0}.wb-toolbar__actions .society-cloud{flex:0 0 auto}
 .wb-segments,
 .wb-viewbar {
   display: flex;

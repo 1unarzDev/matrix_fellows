@@ -156,6 +156,10 @@ test('fixture: society source intake accepts paste and animated date ranges', as
   state.workspace.member.role = 'officer'
   await page.goto('/dashboard?section=society')
   await expect(page.getByRole('heading', { name: 'Society context', exact: true })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('button', { name: 'Add source', exact: true })).toHaveCount(0)
+  await page.goto('/dashboard?section=opportunities')
+  await expect(page.getByRole('heading', { name: 'Opportunities', exact: true })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('button', { name: 'Add source', exact: true })).toHaveCount(1)
   await page.getByRole('button', { name: 'Add source', exact: true }).click()
   await page.getByLabel('Paste source text', { exact: true }).fill('From: Dr. Ada Lovelace <ada@uta.edu>\nWe would be happy to connect about this project.')
   await page.getByRole('button', { name: 'Continue', exact: true }).click()
@@ -170,14 +174,14 @@ test('fixture: society source intake accepts paste and animated date ranges', as
   expect(endBox).toBeTruthy()
   await page.mouse.move(startBox!.x + startBox!.width / 2, startBox!.y + startBox!.height / 2)
   await page.mouse.down()
-  await page.mouse.move(endBox!.x + endBox!.width / 2, endBox!.y + endBox!.height / 2, { steps: 8 })
+  await page.mouse.move(endBox!.x + endBox!.width / 2, endBox!.y + endBox!.height / 2)
   await page.mouse.up()
   await expect(page.locator('.source-calendar__range')).toContainText('Oct')
   await page.getByLabel('Notes for the agent').fill('Follow up about imaging methods.')
   await page.locator('.source-step--details .cloud-submit').click()
   await expect(page.getByRole('heading', { name: 'When and why?', exact: true })).toBeHidden()
   await expect.poll(() => state.writes.some((write) => write.path === '/api/workspace/society-context')).toBe(true)
-  await expect(page.getByText('From: Dr. Ada Lovelace', { exact: false })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('status')).toContainText('Source queued for background processing.')
 })
 
 test('fixture: newer profile typing stays unsaved until its own submission', async ({ page }) => {

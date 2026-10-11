@@ -39,7 +39,7 @@ const allSections = [
   { value: 'opportunities', label: 'Opportunities', icon: 'calendar' },
   { value: 'profiles', label: 'Your profile', icon: 'spark' },
   { value: 'society', label: 'Society', icon: 'atom' },
-  { value: 'research', label: 'Source management', icon: 'globe' },
+  { value: 'research', label: 'Research runs', icon: 'globe' },
   { value: 'settings', label: 'Connections', icon: 'lock' },
 ] as const
 const sections = computed(() =>
@@ -1900,7 +1900,7 @@ onMounted(async () => {
             </form></details></template
           >
           <template v-else-if="tab === 'society'">
-            <SocietyConnectionCloud :officer="canDiscover" />
+            <SocietyConnectionCloud :officer="canDiscover" :allow-add="false" />
           </template>
           <template v-else-if="tab === 'research' && canDiscover"
             ><p class="ws-kicker">Bounded discovery, not a flood</p>

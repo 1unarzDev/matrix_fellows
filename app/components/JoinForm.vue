@@ -569,9 +569,6 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.join-panel {
-  border: 1px solid color-mix(in srgb, var(--color-paper) 20%, transparent);
-}
 .join-progress-fill {
   background: linear-gradient(
     90deg,
@@ -595,7 +592,6 @@ onBeforeUnmount(() => {
 }
 .join-panel--modal {
   --color-acid: #e4bb72;
-  border-color: color-mix(in srgb, #e4bb72 18%, transparent);
   border-radius: 1.5rem;
   filter: drop-shadow(0 30px 70px rgb(0 0 0 / 45%));
   transition:
@@ -609,7 +605,7 @@ onBeforeUnmount(() => {
 .join-panel--embedded {
   box-shadow:
     0 32px 110px rgb(0 0 0 / 32%),
-    0 0 72px color-mix(in srgb, var(--color-acid) 5%, transparent);
+    inset 0 1px 0 rgb(255 255 255 / 7%);
 }
 @media (max-width: 639px) {
   .join-panel--embedded {
@@ -617,7 +613,7 @@ onBeforeUnmount(() => {
     border-radius: 1.5rem;
     box-shadow:
       0 24px 80px rgb(0 0 0 / 28%),
-      0 0 54px color-mix(in srgb, var(--color-acid) 4%, transparent);
+      inset 0 1px 0 rgb(255 255 255 / 7%);
   }
 }
 .join-close {

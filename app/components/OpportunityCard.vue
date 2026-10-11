@@ -349,24 +349,7 @@ onMounted(() => {
 
 <style scoped>
 .opportunity-card--featured {
-  border-color: rgb(244 240 231 / 14%);
-  transition:
-    border-color 420ms ease,
-    box-shadow 420ms ease;
-}
-.opportunity-card--featured:focus-within {
-  border-color: rgb(230 217 187 / 38%);
-  box-shadow:
-    0 20px 60px rgb(0 7 15 / 11%),
-    inset 0 1px rgb(255 255 255 / 9%);
-}
-@media (hover: hover) and (pointer: fine) {
-  .opportunity-card--featured:hover {
-    border-color: rgb(230 217 187 / 28%);
-    box-shadow:
-      0 20px 60px rgb(0 7 15 / 11%),
-      inset 0 1px rgb(255 255 255 / 8%);
-  }
+  border-color: rgb(244 241 233 / 12%);
 }
 @media (prefers-reduced-motion: reduce) {
   .opportunity-card--featured {

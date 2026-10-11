@@ -65,9 +65,9 @@ const error = ref('')
 const notice = ref('')
 const mode = ref<'discover' | 'plan'>(queryText('mode') === 'plan' ? 'plan' : 'discover')
 const view = ref(
-  ['agenda', 'calendar', 'timeline', 'board'].includes(queryText('view'))
+  ['focus', 'calendar', 'timeline', 'board'].includes(queryText('view'))
     ? queryText('view')
-    : 'agenda',
+    : 'focus',
 )
 const calendarOffset = ref(0)
 const calendarDirection = ref<'next' | 'previous'>('next')
@@ -194,9 +194,11 @@ watch(
     const restoredSearch = queryText('find')
     const searchChanged = restoredSearch !== query.value
     mode.value = queryText('mode') === 'plan' ? 'plan' : 'discover'
-    view.value = ['agenda', 'calendar', 'timeline', 'board'].includes(queryText('view'))
-      ? queryText('view')
-      : 'agenda'
+    const requestedView = queryText('view')
+    const normalizedView = requestedView === 'agenda' ? 'focus' : requestedView
+    view.value = ['focus', 'calendar', 'timeline', 'board'].includes(normalizedView)
+      ? normalizedView
+      : 'focus'
     query.value = restoredSearch
     includeClosed.value = queryText('past') === '1'
     savedOnly.value = queryText('saved') === '1'
@@ -1313,12 +1315,12 @@ function calendarFacts(date: string) {
             </div>
             <div v-if="mode === 'plan'" class="wb-viewbar" aria-label="Plan view">
               <button
-                v-for="v in ['agenda', 'calendar', 'timeline', 'board']"
+                v-for="v in ['focus', 'calendar', 'timeline', 'board']"
                 :key="v"
                 :aria-pressed="view === v"
                 @click="view = v"
               >
-                {{ v }}
+                {{ v === 'focus' ? 'Focus' : v }}
               </button>
             </div>
           </div>
@@ -1506,46 +1508,21 @@ function calendarFacts(date: string) {
         <div v-else key="plan" class="wb-plan-mode">
           <Transition name="wb-plan-view" mode="out-in">
             <div :key="view" class="wb-plan-view">
-              <div v-if="view === 'agenda'" class="wb-plan-surface wb-agenda">
-                <div class="wb-view-heading">
-                  <div>
-                    <p class="wb-kicker">Your next moves</p>
-                    <h3>Agenda</h3>
-                  </div>
-                  <span class="wb-muted"
-                    >{{ tasks.length }} task{{ tasks.length === 1 ? '' : 's' }}</span
-                  >
-                </div>
-                <div v-if="tasks.length" class="wb-agenda-list">
-                  <article
-                    v-for="task in [...tasks].sort((a, b) =>
-                      (a.dueDate || '9999').localeCompare(b.dueDate || '9999'),
-                    )"
-                    :key="task.id"
-                    class="wb-agenda-row"
-                    :class="{ 'wb-done': task.status === 'done' }"
-                  >
-                    <DashboardTaskToggle
-                      :checked="task.status === 'done'"
-                      :label="`${task.status === 'done' ? 'Reopen' : 'Complete'} ${task.title}`"
-                      :disabled="busy"
-                      @toggle="completeTask(task)"
-                    />
-                    <button class="wb-task-title" @click="openTask(task)">
-                      <strong>{{ task.title }}</strong>
-                      <span>{{ opportunityTitleForTask(task) || taskReason(task) }}</span>
-                    </button>
-                    <time v-if="task.dueDate" :datetime="task.dueDate">{{
-                      dateLabel(task.dueDate)
-                    }}</time>
-                  </article>
-                </div>
-                <div v-else class="wb-empty-state">
-                  <span class="wb-empty-state__orb" aria-hidden="true">✦</span>
-                  <p>No tasks yet. Add one small next move to give your plan a pulse.</p>
-                  <button class="wb-button wb-primary" @click="editQuickTask()">Add task</button>
-                </div>
-              </div>
+              <TodayCommandCenter
+                v-if="view === 'focus'"
+                embedded
+                :tasks="tasks"
+                :pursuits="pursuits"
+                :activities="activities"
+                :events="events"
+                :today="today"
+                :saved-opportunity-count="saves.length"
+                @add-task="editQuickTask"
+                @open-task="openTask"
+                @toggle-task="completeTask"
+                @toggle-activity="toggleActivityStatus"
+                @open-opportunity="openPursuitOpportunity"
+              />
               <section
                 v-else-if="view === 'calendar'"
                 class="wb-plan-surface wb-plan-calendar wb-calendar"

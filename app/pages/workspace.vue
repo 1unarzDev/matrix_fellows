@@ -24,22 +24,22 @@ const callbackMessage = computed(() => {
 })
 const { patchQuery } = useDashboardNavigation()
 const tab = computed({
-  get: () =>
-    typeof route.query.section === 'string' &&
-    sections.value.some((section) => section.value === route.query.section)
-      ? route.query.section
-      : route.query.section === 'research' && canDiscover.value
+  get: () => {
+    const requested = typeof route.query.section === 'string' ? route.query.section : ''
+    if (requested === 'today') return 'opportunities'
+    if (sections.value.some((section) => section.value === requested)) return requested
+    return requested === 'research' && canDiscover.value
+      ? 'queue'
+      : requested === 'drafts'
         ? 'queue'
-        : route.query.section === 'drafts'
-          ? 'queue'
-          : route.query.section === 'saved'
-            ? 'opportunities'
-            : 'today',
+        : requested === 'saved'
+          ? 'opportunities'
+          : 'opportunities'
+  },
   set: (section: string) => patchQuery({ section }, true),
 })
 const canDiscover = computed(() => ['officer', 'admin'].includes(data.value?.member.role || ''))
 const allSections = [
-  { value: 'today', label: 'Today', icon: 'spark' },
   { value: 'queue', label: 'Outreach', icon: 'compass' },
   { value: 'opportunities', label: 'Opportunities', icon: 'calendar' },
   { value: 'profiles', label: 'Your profile', icon: 'spark' },
@@ -55,17 +55,15 @@ const mobileSectionOptions = computed(() =>
     value: section.value,
     label: section.label,
     description:
-      section.value === 'today'
-        ? 'Your daily focus and planned work'
-        : section.value === 'queue'
-          ? 'Review outreach opportunities'
-          : section.value === 'opportunities'
-            ? 'Saved opportunities and dates'
-            : section.value === 'profiles'
-              ? 'Your research profile'
-              : section.value === 'society'
-                ? 'Shared Matrix Fellows context'
-                : 'Account and connection settings',
+      section.value === 'queue'
+        ? 'Review outreach opportunities'
+        : section.value === 'opportunities'
+          ? 'Saved opportunities and dates'
+          : section.value === 'profiles'
+            ? 'Your research profile'
+            : section.value === 'society'
+              ? 'Shared Matrix Fellows context'
+              : 'Account and connection settings',
   })),
 )
 const commandOpen = ref(false)
@@ -359,6 +357,14 @@ async function updateSelectedStatus() {
     messages[selectedDecision.value],
   )
 }
+function markSelectedReady() {
+  selectedDecision.value = 'ready'
+  void updateSelectedStatus()
+}
+function loadMoreSharedProfiles() {
+  sharedProfilePage.value += 1
+  void loadSharedProfiles()
+}
 const acquisition = computed(
   () =>
     selected.value?.dossier.acquisition as
@@ -623,7 +629,8 @@ watch(data, (value) => {
       scope.value = 'student'
     }
   }
-  if (!canDiscover.value && ['research'].includes(String(route.query.section))) tab.value = 'today'
+  if (!canDiscover.value && ['research'].includes(String(route.query.section)))
+    tab.value = 'opportunities'
   const p =
     value.profiles.find((profile) => profile.id === value.primaryProfileId) || value.profiles[0]
   if (p && !profileSaving.value && (!profileForm.id || profileForm.id !== p.id)) {
@@ -971,6 +978,19 @@ async function loadResearch() {
     if (version === researchLoadVersion) researchLoading.value = false
   }
 }
+function resetResearchPagination() {
+  sourceOffset.value = 0
+  jobOffset.value = 0
+  void loadResearch()
+}
+function shiftResearchSources(delta: number) {
+  sourceOffset.value = Math.max(0, sourceOffset.value + delta)
+  void loadResearch()
+}
+function shiftResearchJobs(delta: number) {
+  jobOffset.value = Math.max(0, jobOffset.value + delta)
+  void loadResearch()
+}
 function researchAction(action: string) {
   if (researchBusy.value || researchLoading.value || !research.value) return
   researchBusy.value = true
@@ -1149,6 +1169,10 @@ async function connectMailbox(provider = 'gmail') {
     connecting.value = false
   }
 }
+async function disconnectMailbox(id: string) {
+  await mutate(`/mailboxes/${id}`, 'DELETE', undefined, 'Mailbox disconnected.')
+  await loadMailboxes()
+}
 async function logout() {
   if (unsaved.value && !window.confirm('Sign out and discard unsaved edits?')) return
   await $fetch('/api/workspace/auth/logout', { method: 'POST' })
@@ -1189,6 +1213,9 @@ watch(tab, (value) => {
   if (value === 'queue' && canDiscover.value) void loadOutbox()
 })
 onMounted(async () => {
+  if (route.query.section === 'today') {
+    patchQuery({ section: 'opportunities', mode: 'plan', view: 'focus' }, true)
+  }
   await refresh()
   await loadMailboxes()
   if (canDiscover.value) {
@@ -1267,14 +1294,12 @@ onMounted(async () => {
         </div>
       </div>
       <DashboardWorkbench
-        v-show="['today', 'opportunities'].includes(tab)"
+        v-if="tab === 'opportunities'"
         :workspace="data"
-        :section="
-          (['today', 'opportunities'].includes(tab) ? tab : 'today') as 'today' | 'opportunities'
-        "
+        section="opportunities"
         @navigate="tab = $event"
       />
-      <Transition v-if="!['today', 'opportunities'].includes(tab)" name="ws-content" mode="out-in"
+      <Transition v-if="tab !== 'opportunities'" name="ws-content" mode="out-in"
         ><section :key="tab" class="studio-content">
           <template v-if="tab === 'queue'">
             <div class="section-top">
@@ -1443,14 +1468,7 @@ onMounted(async () => {
                         </summary>
                         <div class="research-run-detail__content">
                           <div class="research-run-detail__inner">
-                            <form
-                              class="ws-actions"
-                              @submit.prevent="
-                                sourceOffset = 0
-                                jobOffset = 0
-                                loadResearch()
-                              "
-                            >
+                            <form class="ws-actions" @submit.prevent="resetResearchPagination">
                               <label class="ws-field"
                                 >Find source by ID<input
                                   v-model="sourceFilter"
@@ -1485,10 +1503,7 @@ onMounted(async () => {
                               <button
                                 class="ws-button"
                                 :disabled="sourceOffset === 0"
-                                @click="
-                                  sourceOffset = Math.max(0, sourceOffset - 40)
-                                  loadResearch()
-                                "
+                                @click="shiftResearchSources(-40)"
                               >
                                 Previous sources
                               </button>
@@ -1504,10 +1519,7 @@ onMounted(async () => {
                                   sourceOffset + research.sources.length >=
                                   research.pagination.sourceTotal
                                 "
-                                @click="
-                                  sourceOffset += 40
-                                  loadResearch()
-                                "
+                                @click="shiftResearchSources(40)"
                               >
                                 Next sources
                               </button>
@@ -1625,10 +1637,7 @@ onMounted(async () => {
                               <button
                                 class="ws-button"
                                 :disabled="jobOffset === 0"
-                                @click="
-                                  jobOffset = Math.max(0, jobOffset - 40)
-                                  loadResearch()
-                                "
+                                @click="shiftResearchJobs(-40)"
                               >
                                 Previous jobs
                               </button>
@@ -1637,10 +1646,7 @@ onMounted(async () => {
                                 :disabled="
                                   jobOffset + research.jobs.length >= research.pagination.jobTotal
                                 "
-                                @click="
-                                  jobOffset += 40
-                                  loadResearch()
-                                "
+                                @click="shiftResearchJobs(40)"
                               >
                                 Next jobs
                               </button>
@@ -2045,16 +2051,10 @@ onMounted(async () => {
                     @preview="previewMatch"
                     @draft="plan"
                     @edit="openTarget(selected)"
-                    @ready="
-                      selectedDecision = 'ready'
-                      updateSelectedStatus()
-                    "
+                    @ready="markSelectedReady"
                     @retry-profiles="loadSharedProfiles"
                     @retry-projects="loadProjects"
-                    @more-profiles="
-                      sharedProfilePage++
-                      loadSharedProfiles()
-                    "
+                    @more-profiles="loadMoreSharedProfiles"
                   />
                   <CandidateRefinementForm
                     v-if="canDiscover && editTarget && targetForm.id === selected.id"
@@ -2648,14 +2648,7 @@ onMounted(async () => {
                   <button
                     class="ws-button ws-button--danger"
                     :disabled="busy"
-                    @click="
-                      mutate(
-                        `/mailboxes/${mailbox.id}`,
-                        'DELETE',
-                        undefined,
-                        'Mailbox disconnected.',
-                      )
-                    "
+                    @click="disconnectMailbox(mailbox.id)"
                   >
                     Disconnect
                   </button>

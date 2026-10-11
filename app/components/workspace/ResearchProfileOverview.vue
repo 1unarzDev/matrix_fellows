@@ -53,6 +53,10 @@ const savingLink = computed(() => pendingLinks.value.length > 0)
 const displayArtifacts = computed(() => [...pendingLinks.value, ...(data.value?.artifacts || [])])
 const editingId = ref(''),
   editedStatement = ref('')
+function editClaim(claim: ResearchClaim) {
+  editingId.value = claim.id
+  editedStatement.value = claim.statement
+}
 let timer: ReturnType<typeof setTimeout> | undefined
 async function poll() {
   if (
@@ -291,14 +295,7 @@ async function retry(id: string) {
           ><button type="button" @click="editingId = ''">Cancel</button>
         </form>
         <div>
-          <button
-            :disabled="busy"
-            @click="
-              editingId = claim.id
-              editedStatement = claim.statement
-            "
-          >
-            Edit</button
+          <button :disabled="busy" @click="editClaim(claim)">Edit</button
           ><button :disabled="busy" @click="correct(claim, 'interest')">Only an interest</button
           ><button :disabled="busy" @click="correct(claim, 'wrong_attribution')">
             Wrong attribution</button
@@ -326,9 +323,7 @@ async function retry(id: string) {
         </p>
         <blockquote>{{ claim.statement }}</blockquote>
         <small
-          >{{
-            claim.adoption === 'candidate' ? 'Suggested project fact' : 'Accepted project fact'
-          }}
+          >{{ claim.adoption === 'candidate' ? 'Suggested project fact' : 'Accepted project fact' }}
           ·
           <a
             v-if="sourceUrl(claim)"

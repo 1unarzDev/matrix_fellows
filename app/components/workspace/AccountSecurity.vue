@@ -92,7 +92,7 @@ onMounted(() => {
   <section class="account-security" aria-labelledby="account-security-title">
     <p class="ws-kicker">Your account</p>
     <h2 id="account-security-title">Sign-in &amp; security</h2>
-    <div class="ws-panel">
+    <div class="ws-panel settings-panel settings-security-panel">
       <p class="ws-muted">
         Passkeys use your device’s fingerprint, face recognition, or security key. Email sign-in
         remains available for recovery.
@@ -149,8 +149,14 @@ onMounted(() => {
         >
           Add a passkey
         </button>
-        <form class="security-password" @submit.prevent="changePassword">
-          <h3>Set or change password</h3>
+        <form class="security-password settings-password-card" @submit.prevent="changePassword">
+          <div class="settings-password-card__heading">
+            <div>
+              <p class="settings-panel__eyebrow">Account recovery</p>
+              <h3>Set or change password</h3>
+            </div>
+            <span class="settings-password-card__mark" aria-hidden="true">✦</span>
+          </div>
           <label for="security-password"
             >New password<input
               id="security-password"
@@ -187,6 +193,13 @@ onMounted(() => {
 .account-security {
   margin-bottom: 2rem;
 }
+.settings-security-panel {
+  min-height: 100%;
+  background:
+    radial-gradient(30rem 20rem at 100% 0%, rgb(228 187 114 / 8%), transparent 70%),
+    linear-gradient(145deg, rgb(244 241 233 / 6%), rgb(244 241 233 / 2.4%) 48%, transparent 78%),
+    rgb(10 12 16 / 54%);
+}
 .security-key,
 .security-password {
   border-top: 1px solid var(--ws-border, #ffffff1a);
@@ -194,6 +207,57 @@ onMounted(() => {
   margin-top: 1.25rem;
   display: grid;
   gap: 0.85rem;
+}
+.security-password {
+  position: relative;
+  overflow: hidden;
+  padding: 1.35rem;
+  border: 1px solid rgb(228 187 114 / 15%);
+  border-radius: 20px;
+  background:
+    radial-gradient(22rem 11rem at 100% 0%, rgb(228 187 114 / 7%), transparent 72%),
+    rgb(0 0 0 / 13%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 5%);
+}
+.security-password::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: url('/textures/glass-grain.svg') repeat;
+  opacity: 0.1;
+  mix-blend-mode: soft-light;
+}
+.security-password > * {
+  position: relative;
+  z-index: 1;
+}
+.settings-password-card__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+.settings-password-card__heading h3 {
+  margin: 5px 0 0;
+}
+.settings-panel__eyebrow {
+  margin: 0;
+  color: #d8b977;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.settings-password-card__mark {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgb(228 187 114 / 22%);
+  border-radius: 50%;
+  color: #e4bb72;
+  background: rgb(228 187 114 / 7%);
+  box-shadow: 0 0 22px rgb(228 187 114 / 8%);
 }
 label {
   display: grid;

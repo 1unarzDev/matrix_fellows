@@ -14,7 +14,7 @@ const callbackMessage = computed(() => {
   if (route.query.mailbox === 'connected')
     return 'Mailbox connected. Review and approve each message before sending.'
   if (route.query.mailbox === 'failed')
-    return 'Mailbox connection did not complete. Check provider consent and try again in Connections.'
+    return 'Mailbox connection did not complete. Check provider consent and try again in Settings.'
   if (route.query.auth === 'failed')
     return 'Sign-in did not complete. Please sign in with your approved member account.'
   return ''
@@ -40,7 +40,7 @@ const allSections = [
   { value: 'profiles', label: 'Your profile', icon: 'spark' },
   { value: 'society', label: 'Society', icon: 'atom' },
   { value: 'research', label: 'Research runs', icon: 'globe' },
-  { value: 'settings', label: 'Connections', icon: 'lock' },
+  { value: 'settings', label: 'Settings', icon: 'lock' },
 ] as const
 const sections = computed(() =>
   canDiscover.value
@@ -799,17 +799,6 @@ watch(tab, (value) => {
 })
 const historicalMailboxes = ref<any[]>([])
 const connecting = ref(false)
-const voicePreferences = reactive({length:'standard',formality:'neutral',opening:'greeting',requestStyle:'tentative'})
-const voiceNotice = ref('')
-async function loadVoice() {
- if(!canDiscover.value) return
- try { const result=await $fetch<any>('/api/workspace/voice');Object.assign(voicePreferences,result.preferences || {});voiceNotice.value=result.notice || '' }catch{voiceNotice.value='Local voice preferences are unavailable.'}
-}
-async function saveVoice() {
- const result=await mutate<any>('/voice','PUT',{...voicePreferences},'Your local voice preferences are saved.')
- if(result) voiceNotice.value=result.notice
-}
-watch(tab,value=>{if(value==='settings') void loadVoice()})
 const providers = ref({ gmail: false, outlook: false })
 async function loadMailboxes() {
   try {
@@ -2094,14 +2083,30 @@ onMounted(async () => {
             </div>
             <div v-else class="ws-empty">Loading research controls…</div></template
           >
-          <template v-else-if="tab === 'settings'"
-            ><AccountSecurity />
-            <p class="ws-kicker">Separate identity from sending permission</p>
-            <h2>Mailbox connections</h2>
-            <div class="ws-panel">
+          <template v-else-if="tab === 'settings'">
+            <div class="settings-hero">
+              <div>
+                <p class="ws-kicker">Your workspace</p>
+                <h2>Settings</h2>
+                <p class="ws-muted">Keep your sign-in secure and connect a mailbox when you are ready to send an approved message.</p>
+              </div>
+              <div class="settings-hero__orb" aria-hidden="true"><span></span></div>
+            </div>
+            <div class="settings-grid">
+              <AccountSecurity />
+              <section class="ws-panel settings-panel mailbox-panel" aria-labelledby="mailbox-settings-title">
+                <div class="settings-panel__heading">
+                  <div>
+                    <p class="settings-panel__eyebrow">Sending access</p>
+                    <h2 id="mailbox-settings-title">Mailbox connections</h2>
+                  </div>
+                  <span class="settings-panel__icon" aria-hidden="true"><SiteIcon name="mail" :size="17" /></span>
+                </div>
+                <p class="ws-muted">
+                  Connect the mailbox you control when you are ready to send. Every message still needs an exact, explicit approval.
+                </p>
               <p class="ws-muted">
-                Signing in does not connect a mailbox. Grant sending access separately, then choose
-                that mailbox for each proposal. Tokens stay server-side.
+                Tokens stay encrypted on the server. Connecting a mailbox does not grant inbox-reading access.
               </p>
               <div v-for="mailbox in historicalMailboxes" :key="mailbox.id" class="job-row">
                 <div>
@@ -2139,25 +2144,24 @@ onMounted(async () => {
                 Microsoft sign-in and Outlook mailbox access are separate capabilities. Outlook
                 sending is shown only when the server integration is configured.
               </p>
+              <p v-if="!canDiscover" class="ws-muted mailbox-restriction">New mailbox connections and drafts require appointed officer access. You can disconnect a historical connection here.</p>
+              </section>
             </div>
-            <p v-if="!canDiscover" class="ws-muted">New mailbox connections and drafts require appointed officer access. You can disconnect a historical connection here.</p>
-            <section v-if="canDiscover" class="ws-panel" aria-label="Your outreach voice">
-              <h3>Your outreach voice</h3><p class="ws-muted">{{ voiceNotice || 'Defaults are conservative. Three distinct approved edits can suggest your own style; private text stays local.' }}</p>
-              <ThemedSelect v-model="voicePreferences.length" label="Preferred length" :options="['short','standard','long']" />
-              <ThemedSelect v-model="voicePreferences.formality" label="Preferred formality" :options="['conversational','neutral','formal']" />
-              <ThemedSelect v-model="voicePreferences.opening" label="Preferred opening" :options="['direct','greeting','formal']" />
-              <ThemedSelect v-model="voicePreferences.requestStyle" label="Request style" :options="['direct','tentative','unknown']" />
-              <button class="ws-button" :disabled="busy" @click="saveVoice">Save my voice preferences</button>
-            </section>
-            <div class="ws-panel account-panel">
-              <h3>Access & safety</h3>
+            <section class="ws-panel settings-panel account-panel" aria-labelledby="access-safety-title">
+              <div class="settings-panel__heading">
+                <div>
+                  <p class="settings-panel__eyebrow">Quiet guardrails</p>
+                  <h2 id="access-safety-title">Access &amp; safety</h2>
+                </div>
+                <span class="settings-panel__icon" aria-hidden="true"><SiteIcon name="lock" :size="17" /></span>
+              </div>
               <p class="ws-muted">
                 This private dashboard belongs to your approved account. Your role:
                 {{ data.member.role }}. Researchers are ranked by documented fit and feasibility—not
                 guaranteed response rates. Automatic bulk sending is never enabled.
               </p>
-            </div></template
-          >
+            </section>
+          </template>
         </section></Transition
       >
     </div>
@@ -2829,6 +2833,169 @@ onMounted(async () => {
 }
 .connection-note {
   margin-top: 25px;
+}
+.settings-hero {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 160px;
+  margin-bottom: 24px;
+  padding: clamp(24px, 4vw, 40px);
+  overflow: hidden;
+  border: 1px solid rgb(239 235 224 / 12%);
+  border-radius: 30px;
+  background:
+    radial-gradient(28rem 18rem at 100% 0%, rgb(228 187 114 / 10%), transparent 70%),
+    linear-gradient(145deg, rgb(244 241 233 / 7%), rgb(244 241 233 / 2.8%) 48%, transparent 78%),
+    rgb(10 12 16 / 58%);
+  box-shadow: 0 30px 100px rgb(0 0 0 / 28%), inset 0 1px 0 rgb(255 255 255 / 7%);
+  backdrop-filter: blur(30px) saturate(120%);
+}
+.settings-hero::before,
+.settings-panel::before,
+:deep(.settings-security-panel)::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: url('/textures/glass-grain.svg') repeat;
+  opacity: 0.11;
+  mix-blend-mode: soft-light;
+}
+.settings-hero > div:first-child {
+  position: relative;
+  z-index: 1;
+  max-width: 620px;
+}
+.settings-hero h2 {
+  margin: 8px 0 2px;
+  font-size: clamp(28px, 4vw, 42px);
+  letter-spacing: -0.06em;
+}
+.settings-hero .ws-muted {
+  max-width: 52ch;
+  margin: 0;
+  padding-block: 8px 0;
+}
+.settings-hero__orb {
+  position: absolute;
+  right: 8%;
+  bottom: -58px;
+  width: 180px;
+  height: 180px;
+  border: 1px solid rgb(228 187 114 / 22%);
+  border-radius: 50%;
+  box-shadow: 0 0 70px rgb(228 187 114 / 8%), inset 0 0 40px rgb(228 187 114 / 8%);
+  animation: settings-orbit 12s linear infinite;
+}
+.settings-hero__orb::before,
+.settings-hero__orb::after {
+  content: '';
+  position: absolute;
+  inset: 18px;
+  border: 1px solid rgb(228 187 114 / 14%);
+  border-radius: 50%;
+}
+.settings-hero__orb::after {
+  inset: 50%;
+  width: 9px;
+  height: 9px;
+  margin: -4px;
+  border: 0;
+  background: #e4bb72;
+  box-shadow: 0 0 24px 7px rgb(228 187 114 / 40%);
+}
+.settings-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+.settings-grid > .account-security {
+  margin-bottom: 0;
+}
+.settings-panel {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(28rem 18rem at 100% 0%, rgb(228 187 114 / 8%), transparent 70%),
+    linear-gradient(145deg, rgb(244 241 233 / 6%), rgb(244 241 233 / 2.4%) 48%, transparent 78%),
+    rgb(10 12 16 / 54%);
+  box-shadow: 0 26px 90px rgb(0 0 0 / 24%), inset 0 1px 0 rgb(255 255 255 / 7%);
+}
+.settings-panel > * {
+  position: relative;
+  z-index: 1;
+}
+.settings-panel__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 3px;
+}
+.settings-panel__heading h2 {
+  margin: 4px 0 0;
+  font-size: clamp(20px, 2.5vw, 28px);
+  letter-spacing: -0.045em;
+}
+.settings-panel__eyebrow {
+  margin: 0;
+  color: #d8b977;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.settings-panel__icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  border: 1px solid rgb(228 187 114 / 24%);
+  border-radius: 50%;
+  color: #e4bb72;
+  background: rgb(228 187 114 / 7%);
+  box-shadow: 0 0 25px rgb(228 187 114 / 8%);
+}
+.mailbox-panel .job-row {
+  position: relative;
+  z-index: 1;
+  margin-inline: -8px;
+  padding-inline: 8px;
+  border-color: rgb(255 255 255 / 8%);
+  border-radius: 12px;
+  transition: background-color 220ms ease, transform 320ms ease;
+}
+.mailbox-panel .job-row:hover {
+  background: rgb(228 187 114 / 5%);
+  transform: translateX(3px);
+}
+.mailbox-restriction {
+  margin-top: 10px;
+  padding-bottom: 0;
+}
+.account-panel {
+  margin-top: 22px;
+}
+@keyframes settings-orbit {
+  to { transform: rotate(360deg); }
+}
+@media (max-width: 820px) {
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+  .settings-hero__orb {
+    right: -50px;
+    bottom: -70px;
+    opacity: 0.65;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .settings-hero__orb { animation: none; }
+  .mailbox-panel .job-row { transition: none; }
 }
 .account-panel,
 .merge-panel {

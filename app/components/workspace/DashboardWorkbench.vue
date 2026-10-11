@@ -1291,25 +1291,11 @@ function calendarFacts(date: string) {
             </div>
           </div>
           <div class="wb-toolbar__actions">
-            <button
-              v-if="mode === 'plan'"
-              class="wb-button wb-primary wb-action-button"
-              @click="editQuickTask()"
-            >
+            <button class="wb-button wb-action-button wb-task-trigger" @click="editQuickTask()">
               <span class="wb-action-symbol" aria-hidden="true">+</span> Add task
             </button>
             <SocietyConnectionCloud
-              v-if="canManageSources && mode === 'plan'"
-              :officer="canManageSources"
-              trigger-only
-            />
-            <DashboardUrlCapture
-              v-if="mode === 'discover'"
-              @inspect="inspectOpportunity"
-              @saved="notice = $event"
-            />
-            <SocietyConnectionCloud
-              v-if="canManageSources && mode === 'discover'"
+              v-if="canManageSources"
               :officer="canManageSources"
               trigger-only
             />
@@ -2325,6 +2311,14 @@ function calendarFacts(date: string) {
 }
 .wb-action-button {
   white-space: nowrap;
+}
+.wb-task-trigger {
+  border-color: #ffffff20;
+  background: #ffffff04;
+}
+.wb-task-trigger:hover:not(:disabled) {
+  background: #ffffff0c;
+  border-color: #ffffff40;
 }
 .wb-action-symbol {
   font-size: 18px;

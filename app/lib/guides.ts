@@ -1,11 +1,10 @@
 import { parseMarkdown } from '@nuxtjs/mdc/runtime'
 import type { MDCRoot, Toc } from '@nuxtjs/mdc'
-import type { DefineComponent } from 'vue'
+import { defineAsyncComponent, type DefineComponent } from 'vue'
 import { guideSummaries } from '#shared/data/guides'
 import { guideMetadataSchema, type GuideMetadata } from '#shared/utils/guide-validation'
 
 const contentComponents = import.meta.glob('../components/content/*.vue', {
-  eager: true,
   import: 'default',
 })
 
@@ -34,12 +33,15 @@ export const guideComponents = Object.fromEntries(
   Object.entries(contentComponents).flatMap(([path, component]) => {
     const name = path.slice(path.lastIndexOf('/') + 1, -4)
     const proseTag = proseTags[name]
+    // Keep diagram/prose code out of guide and homepage startup until the
+    // renderer actually encounters that component in the selected guide.
+    const lazyComponent = defineAsyncComponent(component as () => Promise<DefineComponent>)
     return proseTag
       ? [
-          [name, component],
-          [proseTag, component],
+          [name, lazyComponent],
+          [proseTag, lazyComponent],
         ]
-      : [[name, component]]
+      : [[name, lazyComponent]]
   }),
 ) as Record<string, DefineComponent>
 

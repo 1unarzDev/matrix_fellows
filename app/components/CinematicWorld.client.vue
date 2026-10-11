@@ -32,6 +32,21 @@ function performanceReport() {
     canvas: { ...canvas.value?.dataset },
     state: window.__matrixWorldDebug?.snapshot(),
     profile: window.__matrixWorldProfile,
+    timings: performance
+      .getEntriesByType('mark')
+      .filter((entry) => entry.name.startsWith('matrix:'))
+      .map((entry) => ({ name: entry.name, startTime: Number(entry.startTime.toFixed(1)) })),
+    navigation: (() => {
+      const entry = performance.getEntriesByType('navigation')[0] as
+        PerformanceNavigationTiming | undefined
+      return entry
+        ? {
+            ttfb: Number((entry.responseStart - entry.requestStart).toFixed(1)),
+            domContentLoaded: Number(entry.domContentLoadedEventEnd.toFixed(1)),
+            responseBytes: entry.transferSize,
+          }
+        : null
+    })(),
   })
 }
 
@@ -61,6 +76,7 @@ function toggleDiagnosticDrawing() {
   debug.pauseDrawing(diagnosticDrawingPaused.value)
 }
 let world: World | undefined
+let worldInitializing = false
 let cleanup: (() => void) | undefined
 let disposed = false
 let idle: ReturnType<typeof setTimeout>
@@ -100,7 +116,15 @@ onMounted(() => {
     // Fetch the world while the animation libraries initialize. Construction
     // still waits for stable layout, but its large module no longer sits behind
     // font/layout work on the critical path.
-    const worldModule = media.matches ? undefined : import('~/lib/scene/world')
+    const worldModule = media.matches
+      ? undefined
+      : import('~/lib/scene/world').then((module) => {
+          performance.mark('matrix:world-module-imported')
+          return module
+        })
+    // Attach rejection handling immediately while the animation imports run.
+    // initWorld still owns the failure/fallback decision below.
+    void worldModule?.catch(() => {})
     const [{ gsap }, { ScrollTrigger }, lenisModule] = await Promise.all([
       import('gsap'),
       import('gsap/ScrollTrigger'),
@@ -553,10 +577,12 @@ onMounted(() => {
         }),
     )
     const initWorld = async () => {
-      if (media.matches || disposed || world || failed.value) return
+      if (media.matches || disposed || world || worldInitializing || failed.value) return
+      worldInitializing = true
       try {
         const { createWorld } = await (worldModule || import('~/lib/scene/world'))
         await layoutReady
+        performance.mark('matrix:layout-ready')
         await yieldToMain()
         if (disposed || media.matches || !canvas.value) return
         const constructionStarted = performance.now()
@@ -573,6 +599,7 @@ onMounted(() => {
             if (disposed || media.matches) return
             if (canvas.value)
               canvas.value.dataset.firstSceneMs = (performance.now() - mountedAt).toFixed(1)
+            performance.mark('matrix:first-valid-scene-frame')
             ready.value = true
             emit('scene', 'ready')
           },
@@ -583,6 +610,9 @@ onMounted(() => {
         failed.value = true
         ready.value = false
         emit('scene', 'fallback')
+      } finally {
+        worldInitializing = false
+        if (!disposed && !media.matches && !world && !failed.value) void initWorld()
       }
     }
     mediaChanged = () => {

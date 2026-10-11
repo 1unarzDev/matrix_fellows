@@ -81,10 +81,9 @@ export function createOasisDressing(scene: THREE.Scene, camera: THREE.Camera, ef
       shader.fragmentShader =
         'varying vec3 oasisWorld; uniform float oasisExpansion; uniform float oasisWaterLevel;\n' +
         terrainGLSL +
-        shader.fragmentShader
-          .replace(
-            '#include <alphatest_fragment>',
-            `
+        shader.fragmentShader.replace(
+          '#include <alphatest_fragment>',
+          `
         // Cut out the leaf texture independently of the whole-grove reveal.
         // Testing opacity * texture alpha made entire canopies pop at alphaTest.
         diffuseColor.a /= max(opacity, .0001);
@@ -103,7 +102,7 @@ export function createOasisDressing(scene: THREE.Scene, camera: THREE.Camera, ef
         // diverged quad are undefined, and empty leaf texels need no expensive
         // terrain evaluation. Ground/water clipping itself is unchanged.
         if (oasisWorld.y < max(oasisWaterLevel, terrain(oasisWorld.xz, 1.0, oasisExpansion) - .025)) discard;`,
-          )
+        )
     }
     material.customProgramCacheKey = () =>
       `${previousCacheKey()}-oasis-ground-v3-${efficient ? 'direct-alpha' : 'post-tone'}`
@@ -328,6 +327,7 @@ export function createOasisDressing(scene: THREE.Scene, camera: THREE.Camera, ef
       { name: 'plant_bush', tint: '#697150', placements: plants(20, 1.3, 0.15) },
       { name: 'plant_bushSmall', tint: '#8a8054', placements: plants(16, 0.7, 0.21) },
     ]
+    const failures: unknown[] = []
     await Promise.all(
       assets.map(async (asset) => {
         try {
@@ -356,14 +356,13 @@ export function createOasisDressing(scene: THREE.Scene, camera: THREE.Camera, ef
           updateInstances(mesh, asset.placements, 1)
           group.add(mesh)
           setProgress(progress, true)
-        } catch {
-          // Optional dressing must never prevent the main world from rendering.
+        } catch (error) {
+          failures.push(error)
         }
       }),
     )
-  })().catch(() => {
-    // A failed optional module download leaves the original grove intact.
-  })
+    if (failures.length) throw new Error('Required desert dressing could not be prepared')
+  })()
 
   // The world itself is lazy; prefetch its small palm asset immediately so the
   // grove is populated by the crest, rather than requesting it at the reveal.
@@ -415,7 +414,8 @@ export function createOasisDressing(scene: THREE.Scene, camera: THREE.Camera, ef
         )
       }
       const sourceParts = [...parts.trunk, ...parts.foliage]
-      if (!sourceParts.length || !leafMap) return
+      if (!parts.trunk.length || !parts.foliage.length || !leafMap)
+        throw new Error('Required palm geometry or texture is missing')
       const geometry = mergeGeometries(sourceParts, false)
       sourceParts.forEach((part) => part.dispose())
       if (!geometry) throw new Error('Could not merge complete palm geometry')
@@ -483,8 +483,9 @@ export function createOasisDressing(scene: THREE.Scene, camera: THREE.Camera, ef
       }
       if (disposed) dispose()
       else setProgress(progress, true)
-    } catch {
-      /* Rocks, reeds, and the irregular shoreline remain if the optional asset fails. */
+    } catch (error) {
+      // Preserve the complete static preview rather than reveal a partial grove.
+      throw error
     }
   })()
 
@@ -500,10 +501,13 @@ export function createOasisDressing(scene: THREE.Scene, camera: THREE.Camera, ef
   }
   setProgress(0)
   return {
-    // The renderer waits for the optional silhouettes before compiling the
+    // The renderer waits for all required silhouettes before compiling the
     // foreground once. Otherwise their first visible oasis frame can force a
     // synchronous driver compile and produce a several-hundred-ms hitch.
-    ready: Promise.all([desertReady, palmsReady]).then(() => undefined),
+    ready: Promise.allSettled([desertReady, palmsReady]).then((results) => {
+      const failed = results.find((result) => result.status === 'rejected')
+      if (failed?.status === 'rejected') throw failed.reason
+    }),
     getPalmPartCounts: () => ({ ...palmPartCounts }),
     setProgress,
     setTime: (seconds: number) => {

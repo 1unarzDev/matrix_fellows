@@ -13,7 +13,7 @@ beforeAll(async () => {
      create function auth.uid() returns uuid language sql as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
      insert into auth.users values('${actor}','officer@example.com',now());`,
   )
-  for (const name of ['023_outreach_workspace.sql', '20261010110000_society_context_cloud.sql', '20261011120000_society_source_date_ranges.sql'])
+  for (const name of ['023_outreach_workspace.sql', '20261010110000_society_context_cloud.sql', '20261011114508_society_source_date_ranges.sql'])
     await db.exec(await readFile(new URL('../../supabase/migrations/' + name, import.meta.url), 'utf8'))
   await db.exec(`set role service_role; insert into outreach_members(user_id,email,role)values('${actor}','officer@example.com','officer'); reset role`)
 })

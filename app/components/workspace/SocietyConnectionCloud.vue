@@ -689,7 +689,9 @@ onBeforeUnmount(() => {
   box-shadow:
     0 0 0 5px #d8b97715,
     0 0 18px #d8b977aa;
-  animation: pulse 2.6s ease-in-out infinite;
+  animation: cloud-memory-pulse 3.6s cubic-bezier(0.37, 0, 0.63, 1) infinite;
+  transform-origin: center;
+  will-change: opacity, transform, box-shadow;
 }
 .cloud-add,
 .cloud-submit {
@@ -1257,6 +1259,23 @@ onBeforeUnmount(() => {
   50% {
     opacity: 0.45;
     transform: scale(0.82);
+  }
+}
+@keyframes cloud-memory-pulse {
+  0%,
+  100% {
+    opacity: 0.78;
+    transform: scale(0.94);
+    box-shadow:
+      0 0 0 4px #d8b97712,
+      0 0 14px #d8b97772;
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow:
+      0 0 0 7px #d8b9771c,
+      0 0 22px #d8b977a0;
   }
 }
 @keyframes cloud-twinkle {

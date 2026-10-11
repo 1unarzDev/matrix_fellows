@@ -69,7 +69,7 @@ onMounted(() => {
     class="opportunity-card flex min-w-0 flex-col overflow-hidden rounded-2xl border border-paper/15 transition-[transform,border-color,background-color,box-shadow] duration-700 ease-[cubic-bezier(.16,1,.3,1)] motion-reduce:transition-none"
     :class="
       compact
-        ? 'opportunity-card--featured bg-paper/[.006] shadow-[0_22px_70px_rgba(0,7,15,.14),inset_0_1px_rgba(255,255,255,.05)] backdrop-blur-[18px] backdrop-saturate-[118%]'
+        ? 'opportunity-card--featured'
         : 'bg-paper/[.015] hover:border-paper/30 hover:bg-paper/[.025] hover:shadow-[0_16px_48px_#00000012]'
     "
   >
@@ -351,77 +351,34 @@ onMounted(() => {
 .opportunity-card--featured {
   position: relative;
   isolation: isolate;
-  border-color: rgb(244 240 231 / 16%);
-  background:
-    linear-gradient(145deg, rgb(244 240 231 / 3.5%), rgb(244 240 231 / 0.9%) 48%, transparent 86%),
-    rgb(9 14 22 / 10%);
-  -webkit-backdrop-filter: blur(22px) saturate(124%);
-  backdrop-filter: blur(22px) saturate(124%);
+  border-color: rgb(244 240 231 / 14%);
+  background: rgb(9 14 22 / 0.7%);
+  -webkit-backdrop-filter: blur(18px) saturate(112%);
+  backdrop-filter: blur(18px) saturate(112%);
   box-shadow:
-    0 22px 70px rgb(0 7 15 / 10%),
-    inset 0 1px rgb(255 255 255 / 8%);
+    0 18px 56px rgb(0 7 15 / 9%),
+    inset 0 1px rgb(255 255 255 / 7%);
   transition:
-    transform 900ms cubic-bezier(0.22, 1, 0.36, 1),
-    border-color 1000ms ease,
-    box-shadow 1000ms ease;
-}
-.opportunity-card--featured::before,
-.opportunity-card--featured::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  opacity: 0;
-  transition:
-    opacity 1100ms cubic-bezier(0.22, 1, 0.36, 1),
-    transform 1300ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-.opportunity-card--featured::before {
-  background:
-    url('/textures/glass-grain.svg') repeat,
-    radial-gradient(ellipse at 12% 0%, rgb(228 198 142 / 9%), transparent 62%),
-    radial-gradient(ellipse at 100% 80%, rgb(190 173 236 / 6%), transparent 68%);
-  background-blend-mode: soft-light, normal, normal;
-  opacity: .12;
-  transform: translateY(12px) scale(1.03);
-  z-index: -1;
-}
-.opportunity-card--featured::after {
-  box-shadow:
-    inset 0 1px 0 rgb(244 228 193 / 19%),
-    inset 0 0 36px rgb(225 211 247 / 3%);
-  opacity: .58;
+    border-color 420ms ease,
+    box-shadow 420ms ease;
 }
 .opportunity-card--featured:focus-within {
-  border-color: rgb(230 217 187 / 32%);
-}
-.opportunity-card--featured:focus-within::before,
-.opportunity-card--featured:focus-within::after {
-  opacity: 1;
-  transform: none;
+  border-color: rgb(230 217 187 / 38%);
+  box-shadow:
+    0 20px 60px rgb(0 7 15 / 11%),
+    inset 0 1px rgb(255 255 255 / 9%);
 }
 @media (hover: hover) and (pointer: fine) {
   .opportunity-card--featured:hover {
-    transform: translateY(-3px);
-    border-color: rgb(230 217 187 / 32%);
+    border-color: rgb(230 217 187 / 28%);
     box-shadow:
-      0 28px 76px rgb(0 7 15 / 15%),
-      0 0 38px rgb(220 199 154 / 4%),
-      inset 0 1px rgb(255 255 255 / 5%);
-  }
-  .opportunity-card--featured:hover::before,
-  .opportunity-card--featured:hover::after {
-    opacity: 1;
-    transform: none;
+      0 20px 60px rgb(0 7 15 / 11%),
+      inset 0 1px rgb(255 255 255 / 8%);
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .opportunity-card--featured,
-  .opportunity-card--featured::before,
-  .opportunity-card--featured::after {
+  .opportunity-card--featured {
     transition: none;
-    transform: none !important;
   }
 }
 </style>

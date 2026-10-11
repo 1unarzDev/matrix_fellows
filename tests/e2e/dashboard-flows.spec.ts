@@ -188,7 +188,7 @@ test('fixture: officer research evidence, autosave preserves in-flight typing an
   await expect(
     page.getByText('Spectroscopy methods; student availability unconfirmed.', { exact: true }),
   ).toBeVisible()
-  await expect(page.getByText('Next step', { exact: true })).toBeVisible()
+  await expect(page.getByText('Plan the first message', { exact: true })).toBeVisible()
   await page
     .getByRole('navigation', { name: 'Dashboard sections' })
     .getByRole('button', { name: 'Draft review', exact: true })

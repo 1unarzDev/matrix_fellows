@@ -350,13 +350,29 @@ export class OutreachResearchWorkflow extends WorkflowEntrypoint<Env, { job: Res
               'analyze',
               `${evidence.hash}:${await hashKey(context.source.ai_excerpt)}`,
               'model',
-              () =>
-                model.analyze({
+              async () => {
+                const analysis = await model.analyze({
                   approvedPublicExcerpt: packet.excerpt,
                   schemaVersion: 'public-research-v1',
-                  promptVersion: 'bounded-contribution-v1',
+                  promptVersion: 'bounded-contribution-v2',
                   signal: AbortSignal.timeout(35000),
-                }),
+                })
+                const relatedLinks = pages
+                  .flatMap((page) => page.links)
+                  .filter((link, index, all) => all.findIndex((item) => item.canonical_url === link.canonical_url) === index)
+                  .slice(0, 8)
+                return {
+                  ...analysis,
+                  proposalOptions: analysis.proposalOptions.map((option) => ({
+                    ...option,
+                    evidenceQuote: option.evidenceQuote || option.quote,
+                    sourceUrl: evidence.url,
+                    relatedLinks,
+                  })),
+                  sourceUrl: evidence.url,
+                  relatedLinks,
+                }
+              },
             )
           },
         )

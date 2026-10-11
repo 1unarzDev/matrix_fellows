@@ -3,10 +3,45 @@ import {
   analyzePublicResearch,
   fetchOutreachEvidence,
   permittedOutreachUrl,
+  scorePublicResearchAnalysis,
   validateNonPersonalExcerpt,
 } from '../../workers/outreach-research'
 
 describe('bounded partnership research acquisition', () => {
+  it('scores raw model output separately from the derived contribution plan', () => {
+    const excerpt =
+      'The lab evaluates robotic grasp repeatability with a physical gripper in the Arlington lab.'
+    const result = {
+      themes: ['Robotics'],
+      researchSignals: [{ claim: 'Grasp repeatability', quote: excerpt }],
+      accessSignals: ['Physical lab access is mentioned; current availability is unknown.'],
+      proposalOptions: [
+        {
+          title: 'Gripper repeatability review',
+          whyThisMatters: 'The source names a measurable research question.',
+          task: 'Compare the public calibration description with one reproducibility checklist.',
+          deliverable: 'A one-page checklist for discussion.',
+          recipientAsk: 'Would this be a useful starting point for a short feedback exchange?',
+          constraints: ['No private data or lab access assumed.'],
+          supervisionQuestions: [],
+          quote: excerpt,
+          evidenceQuote: excerpt,
+        },
+      ],
+      unknowns: [
+        'Current identity and affiliation require confirmation.',
+        'Mentoring openness and current need are unknown.',
+        'Practical equipment access is unconfirmed.',
+        'Eligibility and data/privacy requirements are unknown.',
+      ],
+    }
+    expect(scorePublicResearchAnalysis(result, excerpt)).toMatchObject({
+      score: 16,
+      disposition: 'usable',
+      missing: [],
+    })
+  })
+
   it('rejects private destinations, lookalike domains, credentials and unreviewed hosts', () => {
     for (const url of [
       'http://uta.edu',

@@ -217,18 +217,47 @@ const acquisition = computed(
           aiState?: string
           publicAnalysis?: {
             themes: string[]
+            researchSignals?: { claim: string; quote: string }[]
+            accessSignals?: string[]
+            sourceUrl?: string
+            relatedLinks?: { name: string; canonical_url: string }[]
+            quality?: {
+              score: number
+              maxScore: number
+              disposition: 'usable' | 'review_only'
+              missing: string[]
+            }
             proposalOptions: {
               title: string
+              whyThisMatters?: string
               task: string
               deliverable: string
+              recipientAsk?: string
+              constraints?: string[]
               supervisionQuestions: string[]
               quote: string
+              evidenceQuote?: string
+              sourceUrl?: string
+              relatedLinks?: { name: string; canonical_url: string }[]
             }[]
             unknowns: string[]
           }
         }
       | undefined,
 )
+const queueSignals = computed(() => {
+  const assessment = selected.value?.assessment
+  return [
+    { label: 'Research fit', value: assessment?.fit },
+    { label: 'Openness', value: assessment?.openness },
+    { label: 'Contribution', value: assessment?.contribution },
+    { label: 'Practical access', value: assessment?.feasibility },
+    { label: 'Evidence', value: assessment?.evidence },
+  ].filter((signal): signal is { label: string; value: number } => typeof signal.value === 'number')
+})
+function sourceUrlForQuote(quote: string) {
+  return acquisition.value?.pages?.find((page) => page.text.includes(quote))?.url || selected.value?.canonicalUrl
+}
 const targets = computed(() =>
   orderResearchTargets(
     (data.value?.targets || []).filter(
@@ -1208,16 +1237,31 @@ onMounted(async () => {
                       'Participation access and mentoring availability remain unverified. Ask before proposing on-site work.'
                     }}
                   </p>
-                  <div v-if="selected.assessment.rationale" class="assessment">
-                    <h3>Why it is in the queue</h3>
-                    <p class="ws-muted">{{ selected.assessment.rationale }}</p>
-                    <span class="ws-chip"
-                      >{{ selected.assessment.confidence || 'low' }} confidence</span
-                    >
-                    <ul v-if="selected.assessment.blockers?.length">
+                  <section
+                    v-if="selected.assessment.rationale || queueSignals.length || selected.assessment.blockers?.length"
+                    class="assessment"
+                    aria-labelledby="queue-rationale-title"
+                  >
+                    <div class="assessment-heading">
+                      <div>
+                        <p class="ws-kicker">Review signal</p>
+                        <h3 id="queue-rationale-title">Why it is in the queue</h3>
+                      </div>
+                      <span class="ws-chip">{{ selected.assessment.confidence || 'low' }} confidence</span>
+                    </div>
+                    <p v-if="selected.assessment.rationale" class="ws-muted assessment-rationale">
+                      {{ selected.assessment.rationale }}
+                    </p>
+                    <div v-if="queueSignals.length" class="assessment-signals">
+                      <div v-for="signal in queueSignals" :key="signal.label" class="assessment-signal">
+                        <span>{{ signal.label }}</span>
+                        <strong>{{ signal.value }}/5</strong>
+                      </div>
+                    </div>
+                    <ul v-if="selected.assessment.blockers?.length" class="assessment-blockers">
                       <li v-for="b in selected.assessment.blockers" :key="b">{{ b }}</li>
                     </ul>
-                  </div>
+                  </section>
                   <h3 class="source-heading">Evidence, not assumptions</h3>
                   <details v-if="acquisition" class="acquisition-panel">
                     <summary>
@@ -1268,7 +1312,20 @@ onMounted(async () => {
                       </div>
                     </div>
                     <div v-if="acquisition.publicAnalysis" class="acquired-analysis">
-                      <h3>Research suggestions · review required</h3>
+                      <div class="analysis-heading">
+                        <div>
+                          <p class="ws-kicker">Reviewed model output</p>
+                          <h3>Research suggestions</h3>
+                        </div>
+                        <span class="ws-chip">
+                          {{ acquisition.publicAnalysis.quality
+                            ? `${acquisition.publicAnalysis.quality.score}/${acquisition.publicAnalysis.quality.maxScore} · ${acquisition.publicAnalysis.quality.disposition.replace('_', ' ')}`
+                            : 'Review required' }}
+                        </span>
+                      </div>
+                      <p class="ws-muted analysis-note">
+                        These are source-backed prompts for officer review. They do not establish a lab need, invitation, authorship, or availability.
+                      </p>
                       <div class="ws-actions">
                         <span
                           v-for="theme in acquisition.publicAnalysis.themes"
@@ -1277,27 +1334,59 @@ onMounted(async () => {
                           >{{ theme }}</span
                         >
                       </div>
+                      <ul v-if="acquisition.publicAnalysis.researchSignals?.length" class="analysis-list">
+                        <li v-for="signal in acquisition.publicAnalysis.researchSignals" :key="signal.quote">
+                          <strong>{{ signal.claim }}</strong>
+                          <blockquote>{{ signal.quote }}</blockquote>
+                        </li>
+                      </ul>
+                      <div v-if="acquisition.publicAnalysis.accessSignals?.length" class="analysis-subsection">
+                        <p class="ws-kicker">Access signals</p>
+                        <ul class="analysis-list">
+                          <li v-for="signal in acquisition.publicAnalysis.accessSignals" :key="signal">{{ signal }}</li>
+                        </ul>
+                      </div>
                       <article
                         v-for="option in acquisition.publicAnalysis.proposalOptions"
                         :key="option.title"
                         class="sample"
                       >
-                        <h3>{{ option.title }}</h3>
-                        <p class="ws-muted">{{ option.task }}</p>
-                        <p class="ws-muted">
-                          <strong>Potential deliverable:</strong> {{ option.deliverable }}
-                        </p>
-                        <blockquote>{{ option.quote }}</blockquote>
-                        <ul>
-                          <li v-for="question in option.supervisionQuestions" :key="question">
-                            {{ question }}
-                          </li>
+                        <div class="sample-heading">
+                          <h3>{{ option.title }}</h3>
+                          <a
+                            v-if="option.sourceUrl || sourceUrlForQuote(option.evidenceQuote || option.quote)"
+                            :href="option.sourceUrl || sourceUrlForQuote(option.evidenceQuote || option.quote)"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="source-pill"
+                          >Source <SiteIcon name="arrow" :size="12" /></a>
+                        </div>
+                        <ul class="analysis-list">
+                          <li v-if="option.whyThisMatters"><strong>Why it matters:</strong> {{ option.whyThisMatters }}</li>
+                          <li><strong>Small task:</strong> {{ option.task }}</li>
+                          <li><strong>Deliverable:</strong> {{ option.deliverable }}</li>
+                          <li v-if="option.recipientAsk"><strong>Ask:</strong> {{ option.recipientAsk }}</li>
+                        </ul>
+                        <blockquote>{{ option.evidenceQuote || option.quote }}</blockquote>
+                        <ul v-if="option.constraints?.length || option.supervisionQuestions.length" class="analysis-list analysis-list--muted">
+                          <li v-for="constraint in option.constraints?.length ? option.constraints : option.supervisionQuestions" :key="constraint">{{ constraint }}</li>
                         </ul>
                       </article>
-                      <ul>
+                      <div v-if="acquisition.publicAnalysis.relatedLinks?.length" class="analysis-subsection">
+                        <p class="ws-kicker">Related research</p>
+                        <div class="analysis-links">
+                          <a v-for="link in acquisition.publicAnalysis.relatedLinks" :key="link.canonical_url" :href="link.canonical_url" target="_blank" rel="noopener noreferrer" class="evidence">
+                            <span>{{ link.name }}</span><SiteIcon name="arrow" :size="13" />
+                          </a>
+                        </div>
+                      </div>
+                      <ul v-if="acquisition.publicAnalysis.unknowns.length" class="analysis-list analysis-list--muted">
                         <li v-for="unknown in acquisition.publicAnalysis.unknowns" :key="unknown">
                           {{ unknown }}
                         </li>
+                      </ul>
+                      <ul v-if="acquisition.publicAnalysis.quality?.missing.length" class="analysis-list analysis-list--muted">
+                        <li v-for="missing in acquisition.publicAnalysis.quality.missing" :key="missing">Review gap: {{ missing }}</li>
                       </ul>
                     </div>
                   </details>
@@ -1323,8 +1412,8 @@ onMounted(async () => {
                   /></a>
                   <div class="ws-divider" />
                   <details class="research-next-step" :open="Boolean(matchPreview)">
-                    <summary><span>Next step</span><small>Shape one focused connection</small></summary>
-                    <p class="ws-muted">Choose the lightest honest path. The draft stays editable and nothing sends automatically.</p>
+                    <summary><span>Plan the first message</span><small>Build a source-backed connection plan</small></summary>
+                    <p class="ws-muted">This saves a reviewed match with its evidence, suggested task, unknowns, and access checks. It feeds the editable draft; nothing sends automatically.</p>
                     <ThemedSelect
                       v-if="canDiscover"
                       v-model="scope"
@@ -1344,14 +1433,32 @@ onMounted(async () => {
                     <button v-if="canDiscover" class="ws-button ws-button--primary" :disabled="busy || (scope === 'student' && !profileId)" @click="previewMatch">Review the connection plan <SiteIcon name="right" :size="14" /></button>
                   </details>
                   <section v-if="matchPreview" aria-label="Selected connection plan">
-                    <h3>{{ matchPreview.plan.connection }}</h3>
-                    <p v-for="contact in matchPreview.coordination" :key="contact.id" class="ws-muted">Prior outreach signal: {{ contact.stage }} · assigned officer {{ contact.ownerId }}. Review the existing message before preparing a new ask.</p>
-                    <p class="ws-muted">History coverage: {{ matchPreview.historyStatus }}. Unresolved legacy contact may need manual review.</p>
-                    <p>{{ matchPreview.topicOverlap }}</p>
-                    <p>{{ matchPreview.plan.deliverable || matchPreview.plan.question }}</p>
-                    <p v-for="dimension in matchPreview.plan.dimensions" :key="dimension.dimension" class="ws-muted">{{ dimension.reason }}</p>
-                    <p v-for="unknown in matchPreview.plan.unknowns" :key="unknown" class="ws-muted">{{ unknown }}</p>
-                    <p class="ws-muted">{{ matchPreview.access.access }} access. This plan does not establish a recruiting need or commitment.</p>
+                    <div class="connection-plan-heading">
+                      <div>
+                        <p class="ws-kicker">Connection plan ready</p>
+                        <h3>{{ matchPreview.plan.connection }}</h3>
+                      </div>
+                      <span class="ws-chip">Saved match</span>
+                    </div>
+                    <div class="connection-plan-grid">
+                      <div><span>Why this target</span><p>{{ matchPreview.topicOverlap }}</p></div>
+                      <div><span>Suggested first ask</span><p>{{ matchPreview.plan.question }}</p></div>
+                      <div v-if="matchPreview.plan.deliverable"><span>Small deliverable</span><p>{{ matchPreview.plan.deliverable }}</p></div>
+                      <div><span>Participation</span><p>{{ matchPreview.access.access }} access</p></div>
+                    </div>
+                    <div v-if="matchPreview.plan.evidence?.length" class="connection-plan-evidence">
+                      <span>Evidence used</span>
+                      <a v-for="evidence in matchPreview.plan.evidence" :key="evidence.url + evidence.quote" :href="evidence.url" target="_blank" rel="noopener noreferrer" class="evidence">
+                        <span>{{ evidence.quote }}</span><SiteIcon name="arrow" :size="13" />
+                      </a>
+                    </div>
+                    <ul v-if="matchPreview.plan.unknowns?.length" class="analysis-list analysis-list--muted">
+                      <li v-for="unknown in matchPreview.plan.unknowns" :key="unknown">{{ unknown }}</li>
+                    </ul>
+                    <ul v-if="matchPreview.coordination?.length" class="analysis-list analysis-list--muted">
+                      <li v-for="contact in matchPreview.coordination" :key="contact.id">Prior outreach: {{ contact.stage }} · assigned officer {{ contact.ownerId }}</li>
+                    </ul>
+                    <p class="ws-muted connection-plan-footnote">{{ matchPreview.historyStatus }} history. This plan does not establish a recruiting need, supervision availability, or commitment.</p>
                   </section>
                   <div v-if="canDiscover && matchPreview" class="research-dossier-actions">
                     <ThemedSelect
@@ -2132,6 +2239,56 @@ onMounted(async () => {
 .acquired-analysis {
   margin-top: 24px;
 }
+.analysis-note {
+  max-width: 68ch;
+  margin: 12px 0 16px;
+  line-height: 1.65;
+}
+.analysis-subsection {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #ffffff0d;
+}
+.analysis-list {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0;
+  padding-left: 18px;
+  color: #c4bbcf;
+  font-size: 12px;
+  line-height: 1.65;
+}
+.analysis-list--muted {
+  color: #a9a1b1;
+}
+.analysis-list blockquote {
+  margin: 6px 0 2px;
+  padding-left: 10px;
+  border-left: 2px solid #d2b98140;
+  color: #b9aec9;
+  font-size: 11px;
+  line-height: 1.65;
+}
+.analysis-links {
+  display: grid;
+  gap: 0;
+}
+.source-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+  padding: 6px 9px;
+  border: 1px solid #d6bc7930;
+  border-radius: 999px;
+  color: #d8b977;
+  font-size: 10px;
+  text-decoration: none;
+}
+.source-pill:hover {
+  border-color: #d6bc7966;
+  color: #f0dba9;
+}
 .acquired-analysis blockquote {
   border-left: 2px solid #d2b98140;
   padding-left: 14px;
@@ -2428,6 +2585,68 @@ onMounted(async () => {
   padding: 20px;
   border-radius: 18px;
   background: #ac93d909;
+  border: 1px solid #d6bc7920;
+}
+.assessment-heading,
+.analysis-heading,
+.connection-plan-heading,
+.sample-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.assessment-heading .ws-chip,
+.analysis-heading .ws-chip,
+.connection-plan-heading .ws-chip {
+  flex: 0 0 auto;
+}
+.assessment-heading h3,
+.analysis-heading h3,
+.sample-heading h3,
+.connection-plan-heading h3 {
+  margin-top: 4px !important;
+}
+.assessment-rationale {
+  max-width: 62ch;
+  margin: 15px 0 18px;
+  line-height: 1.7;
+}
+.assessment-signals {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+.assessment-signal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid #ffffff0d;
+  border-radius: 12px;
+  color: #a9a1b1;
+  background: #0d0e121f;
+  font-size: 11px;
+}
+.assessment-signal strong {
+  color: #e2cc99;
+  font-size: 12px;
+  font-weight: 600;
+}
+.assessment-signal:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+.assessment-blockers {
+  display: grid;
+  gap: 7px;
+  margin-top: 15px;
+  padding-left: 18px;
+  color: #d6bd90;
+  font-size: 12px;
+  line-height: 1.6;
 }
 .assessment ul {
   padding-left: 18px;
@@ -2506,6 +2725,56 @@ onMounted(async () => {
   border-radius: 20px;
   margin: 18px 0;
   border: 1px solid #aa91d415;
+}
+.sample-heading {
+  align-items: center;
+  margin-bottom: 12px;
+}
+.sample-heading h3 {
+  margin: 0 !important;
+}
+.connection-plan-heading {
+  align-items: center;
+}
+.connection-plan-heading h3 {
+  margin-bottom: 0;
+}
+.connection-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 18px 0;
+}
+.connection-plan-grid > div {
+  min-width: 0;
+  padding: 13px 14px;
+  border: 1px solid #ffffff0d;
+  border-radius: 14px;
+  background: #0d0e121f;
+}
+.connection-plan-grid span,
+.connection-plan-evidence > span {
+  display: block;
+  margin-bottom: 7px;
+  color: #91899c;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.connection-plan-grid p {
+  margin: 0;
+  color: #cec5d6;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.connection-plan-evidence {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #ffffff0d;
+}
+.connection-plan-footnote {
+  margin-top: 15px;
+  line-height: 1.6;
 }
 .consent {
   display: flex;
@@ -2721,6 +2990,16 @@ onMounted(async () => {
   }
   .email-body {
     min-height: 320px !important;
+  }
+  .assessment-heading,
+  .analysis-heading,
+  .connection-plan-heading,
+  .sample-heading {
+    align-items: flex-start;
+  }
+  .assessment-signals,
+  .connection-plan-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

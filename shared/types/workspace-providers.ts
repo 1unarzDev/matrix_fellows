@@ -35,14 +35,26 @@ export interface ResearchModel {
     signal: AbortSignal
   }): Promise<{
     themes: string[]
+    researchSignals?: { claim: string; quote: string }[]
+    accessSignals?: string[]
     proposalOptions: {
       title: string
+      whyThisMatters?: string
       task: string
       deliverable: string
+      recipientAsk?: string
+      constraints?: string[]
       quote: string
+      evidenceQuote?: string
       supervisionQuestions: string[]
     }[]
     unknowns: string[]
+    quality?: {
+      score: number
+      maxScore: number
+      disposition: 'usable' | 'review_only'
+      missing: string[]
+    }
   }>
 }
 export interface ReviewedMail {

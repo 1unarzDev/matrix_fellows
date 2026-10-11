@@ -83,7 +83,7 @@ export class PublicGeminiResearchModel implements ResearchModel {
       )
     if (
       input.schemaVersion !== 'public-research-v1' ||
-      input.promptVersion !== 'bounded-contribution-v1'
+      !['bounded-contribution-v1', 'bounded-contribution-v2'].includes(input.promptVersion)
     )
       throw new Error('Unsupported model contract version.')
     input.signal.throwIfAborted()

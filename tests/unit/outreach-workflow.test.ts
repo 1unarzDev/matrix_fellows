@@ -40,6 +40,8 @@ vi.mock('@supabase/supabase-js', () => ({
       state.calls.push({ name, input })
       state.onRpc(name, input)
       if (name === 'outreach_reserve_stage') {
+        if (input.p_claim !== state.rows.outreach_jobs.claim_token)
+          return { data: null, error: { message: 'Research lease expired' } }
         const key = [input.p_job, input.p_stage, input.p_input_key].join(':')
         const previous = state.stages.get(key)
         if (previous?.status === 'completed')

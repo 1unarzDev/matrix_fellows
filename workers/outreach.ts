@@ -34,7 +34,12 @@ const storage = (env: Env) =>
   createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
     global: {
-      fetch: (input, init) => fetch(input, { ...init, signal: AbortSignal.timeout(15000) }),
+      fetch: (input, init) =>
+        fetch(input, {
+          ...init,
+          cache: 'no-store',
+          signal: AbortSignal.timeout(15000),
+        }),
     },
   })
 
@@ -63,18 +68,6 @@ export class OutreachResearchWorkflow extends WorkflowEntrypoint<Env, { job: Res
     const db = storage(this.env)
     // No durable cached permission is authorization for a later external call.
     const currentContext = async () => {
-      const lease = await db
-        .from('outreach_jobs')
-        .select('status,claim_token,lease_until')
-        .eq('id', job.id)
-        .maybeSingle()
-      if (
-        lease.error ||
-        lease.data?.status !== 'running' ||
-        lease.data.claim_token !== job.claim_token ||
-        !(Date.parse(lease.data.lease_until || '') > Date.now())
-      )
-        throw new Error('Research lease expired')
       const settings = await db.from('outreach_settings').select('*').eq('id', true).single()
       if (settings.error || settings.data.paused || this.env.OUTREACH_ENABLED !== 'true')
         throw new Error('Research paused')
@@ -107,8 +100,6 @@ export class OutreachResearchWorkflow extends WorkflowEntrypoint<Env, { job: Res
         source = (approved.data || []).find((row) => row.allowed_hosts.includes(host))
       }
       if (!source?.enabled) throw new Error('No enabled reviewed source')
-      if (!(Date.parse(lease.data.lease_until) > Date.now() + 30000))
-        throw new Error('Research lease has insufficient remaining time')
       return { settings: settings.data, target, source }
     }
     const bounded = {
@@ -168,7 +159,9 @@ export class OutreachResearchWorkflow extends WorkflowEntrypoint<Env, { job: Res
         throw new Error(
           reserved.error.message.includes('budget')
             ? 'Research resource budget exhausted'
-            : 'Could not reserve research stage',
+            : reserved.error.message.includes('lease')
+              ? 'Research lease expired'
+              : 'Could not reserve research stage',
         )
       if (reserved.data.cached) {
         dependencyIds.push(reserved.data.id)
@@ -298,8 +291,11 @@ export class OutreachResearchWorkflow extends WorkflowEntrypoint<Env, { job: Res
           .slice(0, 2)
           .entries()) {
           const page = await step.do(`acquire-related-page-${index}`, bounded, async () => {
-            const context = await currentContext()
             try {
+              // Related pages are an enrichment hint. If the source policy or
+              // lease changes while fetching one, skip that page and continue
+              // with the already acquired primary evidence.
+              const context = await currentContext()
               return await stage<SourceSnapshot>(
                 `related-${index}`,
                 link.canonical_url,

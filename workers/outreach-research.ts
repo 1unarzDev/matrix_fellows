@@ -26,7 +26,7 @@ export function permittedOutreachUrl(value: string, allowedHosts: string[]): URL
 export async function fetchOutreachEvidence(
   value: string,
   allowedHosts: string[],
-  fetcher: typeof fetch = fetch,
+  fetcher: typeof fetch = (input, init) => globalThis.fetch(input, init),
 ) {
   const url = permittedOutreachUrl(value, allowedHosts)
   const response = await fetcher(url.href, {
@@ -249,7 +249,7 @@ export async function analyzePublicResearch(
   excerpt: string,
   apiKey: string,
   model: string,
-  fetcher: typeof fetch = fetch,
+  fetcher: typeof fetch = (input, init) => globalThis.fetch(input, init),
 ) {
   const text = validateNonPersonalExcerpt(excerpt)
   if (!/^gemini-[a-z0-9.-]+$/.test(model)) throw new Error('Invalid model configuration')

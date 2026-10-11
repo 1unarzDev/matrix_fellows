@@ -44,7 +44,9 @@ export class CuratedDiscoveryProvider implements DiscoveryProvider {
   }
 }
 export class ReviewedSourceReader implements SourceReader {
-  constructor(private readonly fetcher: typeof fetch = fetch) {}
+  constructor(
+    private readonly fetcher: typeof fetch = (input, init) => globalThis.fetch(input, init),
+  ) {}
   async read(url: string, permittedHosts: string[], signal: AbortSignal) {
     signal.throwIfAborted()
     return fetchOutreachEvidence(url, permittedHosts, (input, init) =>
@@ -87,7 +89,11 @@ export class PublicGeminiResearchModel implements ResearchModel {
     )
       throw new Error('Unsupported model contract version.')
     input.signal.throwIfAborted()
-    const fetcher = this.options.fetcher || fetch
+    // Cloudflare's global fetch is host-bound. Keep the provider seam
+    // injectable for tests while ensuring the live default retains its
+    // receiver when passed through the adapter.
+    const fetcher = this.options.fetcher || ((input: RequestInfo | URL, init?: RequestInit) =>
+      globalThis.fetch(input, init))
     const output = await analyzePublicResearch(
       input.approvedPublicExcerpt,
       this.options.key,

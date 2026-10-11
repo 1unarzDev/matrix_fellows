@@ -3411,31 +3411,56 @@ onMounted(async () => {
   min-width: 0;
 }
 .message-review-layout {
-  grid-template-columns: minmax(220px, 0.62fr) minmax(0, 1.38fr);
-  gap: 20px;
+  grid-template-columns: minmax(236px, 0.62fr) minmax(0, 1.38fr);
+  gap: 16px;
   align-items: stretch;
 }
 .message-list-panel,
 .message-editor-panel,
-.outbox-panel {
+.outbox-panel,
+.dossier {
   border: 1px solid rgb(239 235 224 / 11%);
   border-radius: 21px;
-  background:
-    linear-gradient(145deg, rgb(244 241 233 / 5%), rgb(244 241 233 / 2%) 52%, transparent 82%),
-    rgb(18 19 26 / 58%);
+  background: rgb(244 241 233 / 4%);
   box-shadow:
     inset 0 1px rgb(255 255 255 / 6%),
-    0 18px 58px rgb(0 0 0 / 14%);
+    0 14px 34px rgb(0 0 0 / 10%);
   -webkit-backdrop-filter: blur(20px) saturate(116%);
   backdrop-filter: blur(20px) saturate(116%);
+  transition:
+    border-color 0.35s ease,
+    background-color 0.35s ease,
+    box-shadow 0.35s ease,
+    transform 0.35s ease;
+}
+.message-list-panel:hover,
+.message-editor-panel:hover,
+.outbox-panel:hover,
+.dossier:hover,
+.message-list-panel:focus-within,
+.message-editor-panel:focus-within,
+.outbox-panel:focus-within,
+.dossier:focus-within {
+  border-color: rgb(216 185 119 / 30%);
+  background-color: rgb(244 241 233 / 6%);
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 8%),
+    0 16px 38px rgb(0 0 0 / 12%);
+}
+.message-list-panel::before,
+.message-editor-panel::before,
+.outbox-panel::before,
+.dossier::before {
+  opacity: 0.012;
 }
 .message-list-panel {
   align-self: stretch;
   align-content: start;
-  padding: 14px;
+  padding: 12px;
 }
 .message-editor-panel {
   align-self: stretch;
+  padding: clamp(20px, 2.5vw, 30px);
 }
 .message-empty-state {
   display: grid;
@@ -3444,17 +3469,9 @@ onMounted(async () => {
 }
 .outbox-panel {
   margin-top: 14px;
-  padding: 0 clamp(18px, 3vw, 28px);
+  padding: 0 clamp(20px, 2.5vw, 30px);
   border-color: rgb(239 235 224 / 11%);
   border-radius: 21px;
-  transition:
-    border-color 0.35s ease,
-    box-shadow 0.45s ease;
-}
-.outbox-panel:hover,
-.outbox-panel:focus-within {
-  border-color: rgb(216 185 119 / 25%);
-  box-shadow: 0 0 24px rgb(216 185 119 / 4%);
 }
 .outbox-toggle {
   display: flex;
@@ -3742,6 +3759,7 @@ onMounted(async () => {
   border: 1px solid rgb(244 241 233 / 12%);
   border-radius: 22px;
   background: rgb(244 241 233 / 4%);
+  box-shadow: inset 0 1px rgb(255 255 255 / 4%);
   transition:
     border-color 0.35s,
     background 0.35s,
@@ -3751,11 +3769,23 @@ onMounted(async () => {
 .candidate:hover {
   transform: translateY(-2px);
   border-color: rgb(216 185 119 / 32%);
-  background: rgb(244 241 233 / 7%);
+  background: rgb(244 241 233 / 6%);
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 7%),
+    0 14px 30px rgb(0 0 0 / 10%);
 }
 .candidate.selected {
   border-color: rgb(216 185 119 / 48%);
-  background: rgb(216 185 119 / 9%);
+  background: rgb(244 241 233 / 4%);
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 7%),
+    0 14px 30px rgb(0 0 0 / 12%);
+}
+.outreach-queue-surface > .dossier,
+.message-review-layout > .message-editor-panel,
+.messages-review-surface .message-list-panel,
+.messages-review-surface > .outbox-panel {
+  background: rgb(244 241 233 / 4%);
 }
 .candidate-top {
   display: flex;

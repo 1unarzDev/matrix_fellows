@@ -11,7 +11,13 @@ import type {
 import type { OutreachWorkspace } from '#shared/types/outreach'
 import type { Opportunity, OpportunitySearchResult } from '#shared/types/content'
 import { getTimeline } from '#shared/utils/opportunity-lifecycle'
-import type { DashboardPlan, PlanTask, PlanActivity, PlanDate, PlanPursuit } from '#shared/types/dashboard'
+import type {
+  DashboardPlan,
+  PlanTask,
+  PlanActivity,
+  PlanDate,
+  PlanPursuit,
+} from '#shared/types/dashboard'
 import { planWorkload, publishedTimezone } from '#shared/utils/dashboard-planning'
 import {
   opportunityDisciplines,
@@ -115,7 +121,7 @@ const activeFilters = computed(() =>
       value,
       label: opportunityFilterLabels[key]?.[value] || value,
       id: `${key}:${value}`,
-    }))
+    })),
   ),
 )
 function clearFilters() {
@@ -179,7 +185,8 @@ watch([mode, view, query, includeClosed, savedOnly, showPassed], () =>
   }),
 )
 watch(mode, (next) => {
-  if (next === 'plan' && !taskSavedOpportunityRecords.value.length) void loadTaskSavedOpportunities()
+  if (next === 'plan' && !taskSavedOpportunityRecords.value.length)
+    void loadTaskSavedOpportunities()
 })
 watch(
   () => route.query,
@@ -261,26 +268,36 @@ const calendarDays = computed(() => {
     }
   })
 })
-const quickCalendarDays = computed<(typeof calendarDays.value[number] | null)[]>(() => {
+const quickCalendarDays = computed<((typeof calendarDays.value)[number] | null)[]>(() => {
   const first = new Date(`${calendarMonth.value.toISOString().slice(0, 7)}-01T12:00:00Z`)
   return [...Array.from({ length: first.getUTCDay() }, () => null), ...calendarDays.value]
 })
-const planCalendarCells = computed<(typeof calendarDays.value[number] | null)[]>(() => {
+const planCalendarCells = computed<((typeof calendarDays.value)[number] | null)[]>(() => {
   const first = new Date(`${calendarMonth.value.toISOString().slice(0, 7)}-01T12:00:00Z`)
   return [...Array.from({ length: first.getUTCDay() }, () => null), ...calendarDays.value]
 })
 const selectedPlanDate = ref(today)
+const selectedTimelineDate = ref(today)
 watch(calendarOffset, () => {
-  const next = calendarDays.value.find((day) => planHasItems(day.date))?.date || calendarDays.value[0]?.date
+  const next =
+    calendarDays.value.find((day) => planHasItems(day.date))?.date || calendarDays.value[0]?.date
   if (next) selectedPlanDate.value = next
 })
 const savedOpportunityRecords = computed(() =>
   taskSavedOpportunityRecords.value.filter((item) => saves.value.includes(item.id)),
 )
 function opportunityTitleForTask(task: PlanTask) {
-  if (task.pursuitId) return pursuits.value.find((pursuit) => pursuit.id === task.pursuitId)?.title || 'Planned opportunity'
+  if (task.pursuitId)
+    return (
+      pursuits.value.find((pursuit) => pursuit.id === task.pursuitId)?.title ||
+      'Planned opportunity'
+    )
   if (task.opportunityId) {
-    return [...catalog.value, ...taskSavedOpportunityRecords.value].find((item) => item.id === task.opportunityId)?.title || 'Saved opportunity'
+    return (
+      [...catalog.value, ...taskSavedOpportunityRecords.value].find(
+        (item) => item.id === task.opportunityId,
+      )?.title || 'Saved opportunity'
+    )
   }
   return ''
 }
@@ -289,22 +306,38 @@ function planMilestonesForDate(date: string) {
   const milestones = [
     ...pursuits.value.flatMap((pursuit) =>
       pursuit.officialDates
-        .filter((point) => point.localDate === date && point.precision !== 'unknown' && point.precision !== 'approximate')
+        .filter(
+          (point) =>
+            point.localDate === date &&
+            point.precision !== 'unknown' &&
+            point.precision !== 'approximate',
+        )
         .map((point, index) => ({ key: `${pursuit.id}:${index}:${date}`, pursuit, point })),
     ),
     ...savedOpportunityRecords.value.flatMap((opportunity) =>
       pursuedOpportunityIds.has(opportunity.id)
         ? []
-        :
-      getTimeline(opportunity)
-        .filter((point) => !point.superseded && point.date.slice(0, 10) === date)
-        .map((point, index) => ({ key: `${opportunity.id}:${index}:${date}`, opportunity, point })),
+        : getTimeline(opportunity)
+            .filter((point) => !point.superseded && point.date.slice(0, 10) === date)
+            .map((point, index) => ({
+              key: `${opportunity.id}:${index}:${date}`,
+              opportunity,
+              point,
+            })),
     ),
   ]
   const seen = new Set<string>()
   return milestones.filter((milestone: any) => {
     const owner = milestone.pursuit?.opportunityId || milestone.opportunity?.id || 'saved'
-    const identity = JSON.stringify([owner, date, milestone.point.type || milestone.point.role, milestone.point.wording || milestone.point.label, milestone.point.sourceFactId || milestone.point.sourceRef, milestone.point.instant, milestone.point.conflict])
+    const identity = JSON.stringify([
+      owner,
+      date,
+      milestone.point.type || milestone.point.role,
+      milestone.point.wording || milestone.point.label,
+      milestone.point.sourceFactId || milestone.point.sourceRef,
+      milestone.point.instant,
+      milestone.point.conflict,
+    ])
     if (seen.has(identity)) return false
     seen.add(identity)
     return true
@@ -321,15 +354,35 @@ function planMilestoneLabel(milestone: any) {
     : label
 }
 function planMilestoneHref(milestone: any) {
-  return milestone?.point?.url || milestone?.point?.sourceUrl || milestone?.opportunity?.url || undefined
+  return (
+    milestone?.point?.url || milestone?.point?.sourceUrl || milestone?.opportunity?.url || undefined
+  )
+}
+function planEventLabel(event: { type?: string; start: string; end: string }) {
+  const type =
+    event.type === 'work_session'
+      ? 'Work session'
+      : event.type === 'appointment'
+        ? 'Appointment'
+        : 'Program'
+  return `${type} · ${new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Chicago' }).format(new Date(event.start))}`
 }
 function planTasksForDate(date: string) {
   return tasks.value.filter(
     (task) => task.dueDate === date || overlapsDay(task.scheduledStart, task.scheduledEnd, date),
   )
 }
+function planEventsForDate(date: string) {
+  return events.value.filter(
+    (event) => overlapsDay(event.start, event.end, date) || localDay(event.start) === date,
+  )
+}
 function planHasItems(date: string) {
-  return planTasksForDate(date).length > 0 || planMilestonesForDate(date).length > 0
+  return (
+    planTasksForDate(date).length > 0 ||
+    planMilestonesForDate(date).length > 0 ||
+    planEventsForDate(date).length > 0
+  )
 }
 function planDateLabel(date: string) {
   return new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US', {
@@ -340,31 +393,47 @@ function planDateLabel(date: string) {
   })
 }
 const planTimelineGroups = computed(() => {
-  const groups = new Map<string, { date: string; tasks: PlanTask[]; milestones: any[] }>()
-  const add = (date: string, kind: 'task' | 'milestone', value: any) => {
+  const groups = new Map<
+    string,
+    { date: string; tasks: PlanTask[]; milestones: any[]; events: typeof events.value }
+  >()
+  const add = (date: string, kind: 'task' | 'milestone' | 'event', value: any) => {
     if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return
-    const group = groups.get(date) || { date, tasks: [], milestones: [] }
-    group[kind === 'task' ? 'tasks' : 'milestones'].push(value)
+    const group = groups.get(date) || { date, tasks: [], milestones: [], events: [] }
+    if (kind === 'task') group.tasks.push(value)
+    else if (kind === 'milestone') group.milestones.push(value)
+    else group.events.push(value)
     groups.set(date, group)
   }
   tasks.value.forEach((task) => add(task.dueDate || localDay(task.scheduledStart), 'task', task))
+  events.value.forEach((event) =>
+    localDatesBetween(event.start, event.end).forEach((date) => add(date, 'event', event)),
+  )
   pursuits.value.forEach((pursuit) =>
     pursuit.officialDates.forEach((point, index) => {
-      if (point.localDate && point.precision !== 'unknown' && point.precision !== 'approximate') add(point.localDate, 'milestone', { key: `${pursuit.id}:${index}`, pursuit, point })
+      if (point.localDate && point.precision !== 'unknown' && point.precision !== 'approximate')
+        add(point.localDate, 'milestone', { key: `${pursuit.id}:${index}`, pursuit, point })
     }),
   )
   savedOpportunityRecords.value.forEach((opportunity) =>
     getTimeline(opportunity).forEach((point, index) => {
-      if (!point.superseded && /^\d{4}-\d{2}-\d{2}$/.test(point.date)) add(point.date, 'milestone', { key: `${opportunity.id}:${index}`, opportunity, point })
+      if (!point.superseded && /^\d{4}-\d{2}-\d{2}$/.test(point.date))
+        add(point.date, 'milestone', { key: `${opportunity.id}:${index}`, opportunity, point })
     }),
   )
   return [...groups.values()]
-    .map((group) => ({ ...group, milestones: planMilestonesForDate(group.date) }))
-    .filter((group) => group.tasks.length || group.milestones.length)
+    .map((group) => ({
+      ...group,
+      milestones: planMilestonesForDate(group.date),
+      events: planEventsForDate(group.date),
+    }))
+    .filter((group) => group.tasks.length || group.milestones.length || group.events.length)
     .sort((a, b) => a.date.localeCompare(b.date))
 })
 function boardTasksFor(column: string) {
-  return tasks.value.filter((task) => !task.pursuitId && column === 'preparing' && task.status !== 'done')
+  return tasks.value.filter(
+    (task) => !task.pursuitId && column === 'preparing' && task.status !== 'done',
+  )
 }
 const selectedPursuit = computed(() => {
   const id = taskEditor.value?.pursuitId
@@ -377,15 +446,21 @@ const taskMilestones = computed(() => {
   const savedMilestones = opportunity
     ? getTimeline(opportunity)
         .filter((point) => !point.superseded && /^\d{4}-\d{2}-\d{2}$/.test(point.date))
-        .map((point) => ({ value: `${point.date}|${point.label}`, date: point.date, label: point.label }))
+        .map((point) => ({
+          value: `${point.date}|${point.label}`,
+          date: point.date,
+          label: point.label,
+        }))
     : []
-  const milestones = selectedPursuit.value ? (selectedPursuit.value.officialDates || [])
-    .filter((point) => point.localDate && /^\d{4}-\d{2}-\d{2}$/.test(point.localDate))
-    .map((point) => ({
-      value: `${point.localDate}|${point.wording}`,
-      date: point.localDate as string,
-      label: point.wording,
-    })) : savedMilestones
+  const milestones = selectedPursuit.value
+    ? (selectedPursuit.value.officialDates || [])
+        .filter((point) => point.localDate && /^\d{4}-\d{2}-\d{2}$/.test(point.localDate))
+        .map((point) => ({
+          value: `${point.localDate}|${point.wording}`,
+          date: point.localDate as string,
+          label: point.wording,
+        }))
+    : savedMilestones
   const existing = taskEditor.value?.milestoneKey
   if (existing && !milestones.some((milestone) => milestone.value === existing)) {
     const [date, ...label] = existing.split('|')
@@ -402,7 +477,10 @@ const taskParentOptions = computed(() => [
   })),
   ...savedTaskOpportunities.value.map((opportunity) => ({
     value: `opportunity:${opportunity.id}`,
-    label: opportunity.title === 'Saved opportunity' ? `${opportunity.title} · ${opportunity.id}` : opportunity.title,
+    label:
+      opportunity.title === 'Saved opportunity'
+        ? `${opportunity.title} · ${opportunity.id}`
+        : opportunity.title,
     description: 'Saved opportunity',
   })),
   ...activities.value.map((activity) => ({
@@ -454,7 +532,11 @@ const scheduledHours = computed(() => {
   const end = new Date(`${today}T12:00:00Z`)
   end.setUTCDate(end.getUTCDate() + 7)
   return ledger.value
-    ? planWorkload(ledger.value, chicagoMidnight(today), chicagoMidnight(end.toISOString().slice(0, 10))).scheduledHours
+    ? planWorkload(
+        ledger.value,
+        chicagoMidnight(today),
+        chicagoMidnight(end.toISOString().slice(0, 10)),
+      ).scheduledHours
     : 0
 })
 const boardStates = [
@@ -870,7 +952,8 @@ function setTaskCalendarMonth(date: string) {
   const base = new Date(`${today.slice(0, 7)}-01T12:00:00Z`)
   const nextOffset =
     (target.getUTCFullYear() - base.getUTCFullYear()) * 12 +
-    target.getUTCMonth() - base.getUTCMonth()
+    target.getUTCMonth() -
+    base.getUTCMonth()
   calendarDirection.value = nextOffset >= calendarOffset.value ? 'next' : 'previous'
   calendarOffset.value = nextOffset
 }
@@ -941,7 +1024,8 @@ function quickTaskCellClass(date: string) {
   return {
     'quick-calendar__cell--selected': true,
     'quick-calendar__cell--range': start !== end,
-    'quick-calendar__cell--start': date === start || day.getUTCDay() === 0 || day.getUTCDate() === 1,
+    'quick-calendar__cell--start':
+      date === start || day.getUTCDay() === 0 || day.getUTCDate() === 1,
     'quick-calendar__cell--end': date === end || day.getUTCDay() === 6 || day.getUTCDate() === last,
   }
 }
@@ -960,7 +1044,10 @@ function quickTaskSession(task: any) {
   const start = chicagoMidnight(task.dueDate)
   const following = new Date(`${endDate}T12:00:00Z`)
   following.setUTCDate(following.getUTCDate() + 1)
-  return { scheduledStart: start, scheduledEnd: chicagoMidnight(following.toISOString().slice(0, 10)) }
+  return {
+    scheduledStart: start,
+    scheduledEnd: chicagoMidnight(following.toISOString().slice(0, 10)),
+  }
 }
 async function saveTask() {
   const task = taskEditor.value
@@ -969,9 +1056,10 @@ async function saveTask() {
   // The composer intentionally sends only the fields a person can act on. The
   // database keeps legacy planning columns for existing records, while their
   // editor no longer asks people to manage estimates, statuses or work sessions.
-  const selectedDueDate = task.id && !task.calendarDirty
-    ? task.originalDueDate || task.dueDate || null
-    : task.rangeEnd || task.dueDate || null
+  const selectedDueDate =
+    task.id && !task.calendarDirty
+      ? task.originalDueDate || task.dueDate || null
+      : task.rangeEnd || task.dueDate || null
   const input: Record<string, unknown> = task.id
     ? {
         ...taskInput(task),
@@ -1030,7 +1118,10 @@ async function toggleActivityStatus(activity: PlanActivity) {
       status: activity.status === 'active' ? 'paused' : 'active',
     },
   })
-  notice.value = activity.status === 'active' ? 'Project paused. You can bring it back whenever you need it.' : 'Project returned to your active orbit.'
+  notice.value =
+    activity.status === 'active'
+      ? 'Project paused. You can bring it back whenever you need it.'
+      : 'Project returned to your active orbit.'
 }
 function openPursuitOpportunity(pursuit: PlanPursuit) {
   mode.value = 'plan'
@@ -1134,6 +1225,19 @@ function overlapsDay(
   // Half-open intervals: midnight-ending events do not occupy the following day.
   return Date.parse(start) < to && Date.parse(end) > from
 }
+function localDatesBetween(start: string, end: string) {
+  const first = localDay(start)
+  const last = localDay(new Date(Math.max(Date.parse(start), Date.parse(end) - 1)))
+  if (!first || !last) return first ? [first] : []
+  const dates: string[] = []
+  const cursor = new Date(`${first}T12:00:00Z`)
+  const finish = new Date(`${last}T12:00:00Z`)
+  while (cursor <= finish && dates.length < 366) {
+    dates.push(cursor.toISOString().slice(0, 10))
+    cursor.setUTCDate(cursor.getUTCDate() + 1)
+  }
+  return dates
+}
 function calendarFacts(date: string) {
   return pursuits.value.flatMap((p) =>
     p.officialDates
@@ -1151,11 +1255,7 @@ function calendarFacts(date: string) {
       <div>
         <p class="wb-kicker">My work <span>· America/Chicago</span></p>
         <h2>
-          {{
-            section === 'today'
-              ? 'Today'
-              : 'Opportunities'
-          }}
+          {{ section === 'today' ? 'Today' : 'Opportunities' }}
         </h2>
         <p class="wb-muted">
           {{
@@ -1199,47 +1299,65 @@ function calendarFacts(date: string) {
 
     <template v-if="section === 'opportunities'">
       <div class="wb-control-dock">
-      <div class="wb-toolbar wb-plan-rail">
-        <div class="wb-plan-rail__navigation">
-          <div class="wb-segments" aria-label="Opportunity mode">
-            <span class="wb-segments__indicator" :class="{ 'is-plan': mode === 'plan' }" aria-hidden="true" />
-            <button :aria-pressed="mode === 'discover'" @click="mode = 'discover'">Discover</button
-            ><button :aria-pressed="mode === 'plan'" @click="mode = 'plan'">My plan</button>
+        <div class="wb-toolbar wb-plan-rail">
+          <div class="wb-plan-rail__navigation">
+            <div class="wb-segments" aria-label="Opportunity mode">
+              <span
+                class="wb-segments__indicator"
+                :class="{ 'is-plan': mode === 'plan' }"
+                aria-hidden="true"
+              />
+              <button :aria-pressed="mode === 'discover'" @click="mode = 'discover'">
+                Discover</button
+              ><button :aria-pressed="mode === 'plan'" @click="mode = 'plan'">My plan</button>
+            </div>
+            <div v-if="mode === 'plan'" class="wb-viewbar" aria-label="Plan view">
+              <button
+                v-for="v in ['agenda', 'calendar', 'timeline', 'board']"
+                :key="v"
+                :aria-pressed="view === v"
+                @click="view = v"
+              >
+                {{ v }}
+              </button>
+            </div>
           </div>
-          <div v-if="mode === 'plan'" class="wb-viewbar" aria-label="Plan view">
+          <div class="wb-toolbar__actions">
             <button
-              v-for="v in ['agenda', 'calendar', 'timeline', 'board']"
-              :key="v"
-              :aria-pressed="view === v"
-              @click="view = v"
+              v-if="mode === 'plan'"
+              class="wb-button wb-primary wb-action-button"
+              @click="editQuickTask()"
             >
-              {{ v }}
+              <span class="wb-action-symbol" aria-hidden="true">+</span> Add task
             </button>
+            <SocietyConnectionCloud
+              v-if="canManageSources && mode === 'plan'"
+              :officer="canManageSources"
+              trigger-only
+            />
+            <DashboardUrlCapture
+              v-if="mode === 'discover'"
+              @inspect="inspectOpportunity"
+              @saved="notice = $event"
+            />
+            <SocietyConnectionCloud
+              v-if="canManageSources && mode === 'discover'"
+              :officer="canManageSources"
+              trigger-only
+            />
+            <a
+              v-if="mode === 'plan'"
+              class="wb-button wb-export-button"
+              href="/api/workspace/plan/export"
+              download
+              >Export calendar <span aria-hidden="true">↓</span></a
+            >
           </div>
         </div>
-        <div class="wb-toolbar__actions">
-          <button v-if="mode === 'plan'" class="wb-button wb-primary wb-action-button" @click="editQuickTask()">
-            <span class="wb-action-symbol" aria-hidden="true">+</span> Add task
-          </button>
-          <SocietyConnectionCloud
-            v-if="canManageSources && mode === 'plan'"
-            :officer="canManageSources"
-            trigger-only
-          />
-          <DashboardUrlCapture v-if="mode === 'discover'" @inspect="inspectOpportunity" @saved="notice = $event" />
-          <SocietyConnectionCloud
-            v-if="canManageSources && mode === 'discover'"
-            :officer="canManageSources"
-            trigger-only
-          />
-          <a v-if="mode === 'plan'" class="wb-button wb-export-button" href="/api/workspace/plan/export" download
-            >Export calendar <span aria-hidden="true">↓</span></a
-          >
-        </div>
-      </div>
         <form v-if="mode === 'discover'" class="wb-search" @submit.prevent="loadCatalog()">
           <label class="wb-sr-only" for="opportunity-search">Search sourced opportunities</label
-          ><span class="wb-search__icon" aria-hidden="true"><SiteIcon name="search" :size="16" /></span
+          ><span class="wb-search__icon" aria-hidden="true"
+            ><SiteIcon name="search" :size="16" /></span
           ><input
             id="opportunity-search"
             v-model="query"
@@ -1261,212 +1379,534 @@ function calendarFacts(date: string) {
         </form>
       </div>
       <Transition name="wb-mode-switch" mode="out-in">
-      <div v-if="mode === 'discover'" key="discover" class="wb-discovery">
-        <TransitionGroup
-          name="wb-filter-chip"
-          tag="div"
-          class="wb-filter-chips"
-          aria-label="Active opportunity filters"
-        >
-          <button
-            v-for="filter in activeFilters"
-            :key="filter.id"
-            type="button"
-            class="wb-filter-chip"
-            :aria-label="`Remove ${filter.label} filter`"
-            @click="toggleFilter(filter.key, filter.value)"
+        <div v-if="mode === 'discover'" key="discover" class="wb-discovery">
+          <TransitionGroup
+            name="wb-filter-chip"
+            tag="div"
+            class="wb-filter-chips"
+            aria-label="Active opportunity filters"
           >
-            {{ filter.label }}<SiteIcon name="close" :size="12" aria-hidden="true" />
-          </button>
-        </TransitionGroup>
-        <p v-if="savedOnly" class="wb-muted">
-          Searching your saved opportunities. Past cycles and passed records remain hidden unless
-          you include them.
-        </p>
-        <template v-if="savedOnly && catalogSource === 'saved' && savedCollectionInfo"
-          ><p v-if="savedCollectionInfo.capped" class="wb-message">
-            Search includes your newest {{ savedCollectionInfo.limit }} saved records. Older saves
-            remain stored but are outside this collection limit.
-          </p>
-          <p v-if="savedCollectionInfo.unavailableCount" class="wb-muted">
-            {{ savedCollectionInfo.unavailableCount }} saved record{{
-              savedCollectionInfo.unavailableCount === 1 ? '' : 's'
-            }}
-            cannot currently be displayed in the published catalog. This does not establish whether
-            the organizer is accepting participants.
-          </p></template
-        >
-        <p v-if="catalogError" class="wb-message wb-error" role="alert">
-          {{ catalogError }} <button @click="loadCatalog()">Retry</button>
-        </p>
-        <p v-if="catalogPending" class="wb-muted" role="status">Checking the catalog…</p>
-        <OpportunitySaveNotice />
-        <div
-          ref="catalogResultsStage"
-          class="wb-results-stage"
-          :style="catalogResultsStageHeight ? { minHeight: catalogResultsStageHeight } : undefined"
-        >
-          <Transition
-            :name="`wb-results-${catalogTransition}`"
-            mode="out-in"
-            @before-leave="holdCatalogResultsStage"
-            @after-leave="releaseCatalogResultsStageIfEmpty"
-            @after-enter="releaseCatalogResultsStage"
-            @enter-cancelled="releaseCatalogResultsStage"
-            @leave-cancelled="releaseCatalogResultsStage"
-          >
-            <div
-              v-if="results.length"
-              :key="`${catalogSource}:${savedOnly}:${catalogPage}:${results.map((item) => item.id).join(',')}`"
-              class="wb-results"
-              :aria-busy="catalogPending"
+            <button
+              v-for="filter in activeFilters"
+              :key="filter.id"
+              type="button"
+              class="wb-filter-chip"
+              :aria-label="`Remove ${filter.label} filter`"
+              @click="toggleFilter(filter.key, filter.value)"
             >
-              <OpportunityCard
-                v-for="item in results"
-                :key="item.id"
-                :item="item"
-                :now="catalogNow"
-                compact
-                inspect
-                @inspect="inspectOpportunity(item)"
+              {{ filter.label }}<SiteIcon name="close" :size="12" aria-hidden="true" />
+            </button>
+          </TransitionGroup>
+          <p v-if="savedOnly" class="wb-muted">
+            Searching your saved opportunities. Past cycles and passed records remain hidden unless
+            you include them.
+          </p>
+          <template v-if="savedOnly && catalogSource === 'saved' && savedCollectionInfo"
+            ><p v-if="savedCollectionInfo.capped" class="wb-message">
+              Search includes your newest {{ savedCollectionInfo.limit }} saved records. Older saves
+              remain stored but are outside this collection limit.
+            </p>
+            <p v-if="savedCollectionInfo.unavailableCount" class="wb-muted">
+              {{ savedCollectionInfo.unavailableCount }} saved record{{
+                savedCollectionInfo.unavailableCount === 1 ? '' : 's'
+              }}
+              cannot currently be displayed in the published catalog. This does not establish
+              whether the organizer is accepting participants.
+            </p></template
+          >
+          <p v-if="catalogError" class="wb-message wb-error" role="alert">
+            {{ catalogError }} <button @click="loadCatalog()">Retry</button>
+          </p>
+          <p v-if="catalogPending" class="wb-muted" role="status">Checking the catalog…</p>
+          <OpportunitySaveNotice />
+          <div
+            ref="catalogResultsStage"
+            class="wb-results-stage"
+            :style="
+              catalogResultsStageHeight ? { minHeight: catalogResultsStageHeight } : undefined
+            "
+          >
+            <Transition
+              :name="`wb-results-${catalogTransition}`"
+              mode="out-in"
+              @before-leave="holdCatalogResultsStage"
+              @after-leave="releaseCatalogResultsStageIfEmpty"
+              @after-enter="releaseCatalogResultsStage"
+              @enter-cancelled="releaseCatalogResultsStage"
+              @leave-cancelled="releaseCatalogResultsStage"
+            >
+              <div
+                v-if="results.length"
+                :key="`${catalogSource}:${savedOnly}:${catalogPage}:${results.map((item) => item.id).join(',')}`"
+                class="wb-results"
+                :aria-busy="catalogPending"
               >
-                <template #actions>
-                  <div class="wb-card-actions">
-                    <button type="button" class="wb-inspect" @click="inspectOpportunity(item)">
-                      Details <SiteIcon name="right" :size="14" aria-hidden="true" />
+                <OpportunityCard
+                  v-for="item in results"
+                  :key="item.id"
+                  :item="item"
+                  :now="catalogNow"
+                  compact
+                  inspect
+                  @inspect="inspectOpportunity(item)"
+                >
+                  <template #actions>
+                    <div class="wb-card-actions">
+                      <button type="button" class="wb-inspect" @click="inspectOpportunity(item)">
+                        Details <SiteIcon name="right" :size="14" aria-hidden="true" />
+                      </button>
+                      <button
+                        v-if="
+                          decisions.some(
+                            (d) => d.opportunityId === item.id && d.decision === 'pass',
+                          )
+                        "
+                        class="wb-text"
+                        :disabled="busy"
+                        @click="decideOpportunity(item, 'clear')"
+                      >
+                        Undo pass
+                      </button>
+                      <OpportunitySaveButton :id="item.id" compact />
+                    </div>
+                  </template>
+                </OpportunityCard>
+              </div>
+            </Transition>
+          </div>
+          <div v-if="!catalogPending && !results.length" class="wb-surface wb-empty">
+            <h3>No actionable results in this set.</h3>
+            <p>Try another field, or include past cycles to watch for their next announcement.</p>
+            <NuxtLink class="wb-text" to="/opportunities">Open the full catalog ↗</NuxtLink>
+          </div>
+          <div v-if="catalogSource === (savedOnly ? 'saved' : 'all')" class="wb-pagination">
+            <button
+              class="wb-pagination-control"
+              aria-label="Previous opportunity page"
+              :disabled="catalogPage <= 1 || catalogPending"
+              @click="loadCatalog(catalogPage - 1)"
+            >
+              <SiteIcon
+                name="right"
+                :size="15"
+                aria-hidden="true"
+                class="wb-pagination-control__icon--previous"
+              /><span>Previous</span></button
+            ><span>Page {{ catalogPage }} of {{ catalogPages }}</span
+            ><button
+              class="wb-pagination-control"
+              aria-label="Next opportunity page"
+              :disabled="catalogPage >= catalogPages || catalogPending"
+              @click="loadCatalog(catalogPage + 1)"
+            >
+              <span>Next</span><SiteIcon name="right" :size="15" aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+        <div v-else key="plan" class="wb-plan-mode">
+          <Transition name="wb-plan-view" mode="out-in">
+            <div :key="view" class="wb-plan-view">
+              <div v-if="view === 'agenda'" class="wb-plan-surface wb-agenda">
+                <div class="wb-view-heading">
+                  <div>
+                    <p class="wb-kicker">Your next moves</p>
+                    <h3>Agenda</h3>
+                  </div>
+                  <span class="wb-muted"
+                    >{{ tasks.length }} task{{ tasks.length === 1 ? '' : 's' }}</span
+                  >
+                </div>
+                <div v-if="tasks.length" class="wb-agenda-list">
+                  <article
+                    v-for="task in [...tasks].sort((a, b) =>
+                      (a.dueDate || '9999').localeCompare(b.dueDate || '9999'),
+                    )"
+                    :key="task.id"
+                    class="wb-agenda-row"
+                    :class="{ 'wb-done': task.status === 'done' }"
+                  >
+                    <DashboardTaskToggle
+                      :checked="task.status === 'done'"
+                      :label="`${task.status === 'done' ? 'Reopen' : 'Complete'} ${task.title}`"
+                      :disabled="busy"
+                      @toggle="completeTask(task)"
+                    />
+                    <button class="wb-task-title" @click="openTask(task)">
+                      <strong>{{ task.title }}</strong>
+                      <span>{{ opportunityTitleForTask(task) || taskReason(task) }}</span>
+                    </button>
+                    <time v-if="task.dueDate" :datetime="task.dueDate">{{
+                      dateLabel(task.dueDate)
+                    }}</time>
+                  </article>
+                </div>
+                <div v-else class="wb-empty-state">
+                  <span class="wb-empty-state__orb" aria-hidden="true">✦</span>
+                  <p>No tasks yet. Add one small next move to give your plan a pulse.</p>
+                  <button class="wb-button wb-primary" @click="editQuickTask()">Add task</button>
+                </div>
+              </div>
+              <section
+                v-else-if="view === 'calendar'"
+                class="wb-plan-surface wb-plan-calendar wb-calendar"
+              >
+                <div class="wb-calendar-header">
+                  <div class="wb-calendar-month-title">
+                    <p class="wb-kicker">Saved dates</p>
+                    <Transition :name="`wb-calendar-month-${calendarDirection}`" mode="out-in"
+                      ><h3 :key="calendarMonth.toISOString().slice(0, 7)">
+                        {{
+                          calendarMonth.toLocaleDateString('en-US', {
+                            month: 'long',
+                            year: 'numeric',
+                            timeZone: 'UTC',
+                          })
+                        }}
+                      </h3></Transition
+                    >
+                  </div>
+                  <div class="wb-calendar-nav">
+                    <button
+                      class="wb-calendar-nav__button"
+                      aria-label="Previous month"
+                      @click="shiftCalendarMonth(-1)"
+                    >
+                      <SiteIcon name="right" :size="14" class="wb-icon--previous" />
                     </button>
                     <button
-                      v-if="decisions.some((d) => d.opportunityId === item.id && d.decision === 'pass')"
-                      class="wb-text"
-                      :disabled="busy"
-                      @click="decideOpportunity(item, 'clear')"
+                      class="wb-calendar-nav__button"
+                      aria-label="Next month"
+                      @click="shiftCalendarMonth(1)"
                     >
-                      Undo pass
+                      <SiteIcon name="right" :size="14" />
                     </button>
-                    <OpportunitySaveButton :id="item.id" compact />
                   </div>
-                </template>
-              </OpportunityCard>
+                </div>
+                <Transition :name="`wb-calendar-month-${calendarDirection}`" mode="out-in">
+                  <div
+                    :key="calendarMonth.toISOString().slice(0, 7)"
+                    class="wb-calendar-grid"
+                    role="grid"
+                    :aria-label="
+                      calendarMonth.toLocaleDateString('en-US', {
+                        month: 'long',
+                        year: 'numeric',
+                        timeZone: 'UTC',
+                      })
+                    "
+                  >
+                    <span
+                      v-for="(label, index) in ['S', 'M', 'T', 'W', 'T', 'F', 'S']"
+                      :key="`${label}-${index}`"
+                      class="wb-calendar-weekday"
+                      >{{ label }}</span
+                    >
+                    <div
+                      v-for="(day, index) in planCalendarCells"
+                      :key="day?.date || `empty-${index}`"
+                      class="wb-calendar-cell"
+                      role="gridcell"
+                    >
+                      <button
+                        v-if="day"
+                        class="wb-calendar-day"
+                        :class="{
+                          'wb-calendar-day--active': selectedPlanDate === day.date,
+                          'wb-calendar-day--marked': planHasItems(day.date),
+                          'wb-calendar-day--today': day.date === today,
+                        }"
+                        :aria-label="`${planDateLabel(day.date)}${planHasItems(day.date) ? ', has planned items' : ''}`"
+                        :aria-pressed="selectedPlanDate === day.date"
+                        @click="selectedPlanDate = day.date"
+                      >
+                        <span>{{ Number(day.date.slice(-2)) }}</span>
+                        <i v-if="planHasItems(day.date)" aria-hidden="true" />
+                      </button>
+                    </div>
+                  </div>
+                </Transition>
+                <div class="wb-calendar-legend">
+                  <span><i class="wb-legend-dot wb-legend-dot--task" />Tasks</span
+                  ><span
+                    ><i class="wb-legend-dot wb-legend-dot--opportunity" />Saved opportunities</span
+                  >
+                </div>
+                <aside class="wb-calendar-preview" aria-live="polite">
+                  <div class="wb-view-heading">
+                    <div>
+                      <p class="wb-kicker">Selected day</p>
+                      <h4>{{ planDateLabel(selectedPlanDate) }}</h4>
+                    </div>
+                    <span v-if="!planHasItems(selectedPlanDate)" class="wb-muted">Quiet day</span>
+                  </div>
+                  <div
+                    v-if="
+                      planTasksForDate(selectedPlanDate).length ||
+                      planMilestonesForDate(selectedPlanDate).length
+                    "
+                    class="wb-calendar-preview__items"
+                  >
+                    <button
+                      v-for="task in planTasksForDate(selectedPlanDate)"
+                      :key="`task:${task.id}`"
+                      class="wb-preview-item"
+                      @click="openTask(task)"
+                    >
+                      <i class="wb-preview-item__signal wb-preview-item__signal--task" /><span
+                        ><strong>{{ task.title }}</strong
+                        ><small>{{ opportunityTitleForTask(task) || 'Personal task' }}</small></span
+                      >
+                    </button>
+                    <a
+                      v-for="milestone in planMilestonesForDate(selectedPlanDate)"
+                      :key="`milestone:${milestone.key}`"
+                      class="wb-preview-item"
+                      :href="planMilestoneHref(milestone)"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      ><i
+                        class="wb-preview-item__signal wb-preview-item__signal--opportunity"
+                      /><span
+                        ><strong>{{ planMilestoneTitle(milestone) }}</strong
+                        ><small>{{ planMilestoneLabel(milestone) }}</small></span
+                      ></a
+                    >
+                    <button
+                      v-for="event in planEventsForDate(selectedPlanDate)"
+                      :key="`event:${event.id}`"
+                      class="wb-preview-item"
+                      @click="selectedTimelineDate = selectedPlanDate"
+                    >
+                      <i class="wb-preview-item__signal wb-preview-item__signal--event" /><span
+                        ><strong>{{ event.title }}</strong
+                        ><small>{{ planEventLabel(event) }}</small></span
+                      >
+                    </button>
+                  </div>
+                  <div v-else class="wb-calendar-preview__empty">
+                    Nothing saved or scheduled for this day.
+                  </div>
+                </aside>
+              </section>
+              <section v-else-if="view === 'timeline'" class="wb-plan-surface wb-timeline">
+                <div class="wb-view-heading">
+                  <div>
+                    <p class="wb-kicker">Chronological view</p>
+                    <h3>Timeline</h3>
+                  </div>
+                  <span class="wb-muted"
+                    >{{ planTimelineGroups.length }} date{{
+                      planTimelineGroups.length === 1 ? '' : 's'
+                    }}</span
+                  >
+                </div>
+                <div v-if="planTimelineGroups.length" class="wb-timeline-list">
+                  <article
+                    v-for="group in planTimelineGroups"
+                    :key="group.date"
+                    class="wb-timeline-row"
+                    :class="{ 'wb-timeline-row--selected': selectedTimelineDate === group.date }"
+                  >
+                    <button
+                      class="wb-timeline-marker"
+                      type="button"
+                      :aria-label="`Preview ${planDateLabel(group.date)}`"
+                      :aria-pressed="selectedTimelineDate === group.date"
+                      @click="selectedTimelineDate = group.date"
+                    >
+                      <span aria-hidden="true" /><time :datetime="group.date"
+                        ><strong>{{ planDateParts(group.date).monthDay }}</strong
+                        ><small>{{ planDateParts(group.date).weekday }}</small></time
+                      >
+                    </button>
+                    <div class="wb-timeline-content">
+                      <button
+                        v-for="task in group.tasks"
+                        :key="`task:${task.id}`"
+                        class="wb-timeline-card wb-timeline-card--task"
+                        @click="selectedTimelineDate = group.date"
+                      >
+                        <i class="wb-preview-item__signal wb-preview-item__signal--task" /><span
+                          ><strong>{{ task.title }}</strong
+                          ><small>{{
+                            opportunityTitleForTask(task) || 'Personal task'
+                          }}</small></span
+                        >
+                      </button>
+                      <button
+                        v-for="milestone in group.milestones"
+                        :key="`milestone:${milestone.key}`"
+                        class="wb-timeline-card wb-timeline-card--milestone"
+                        @click="selectedTimelineDate = group.date"
+                      >
+                        <i
+                          class="wb-preview-item__signal wb-preview-item__signal--opportunity"
+                        /><span
+                          ><strong>{{ planMilestoneTitle(milestone) }}</strong
+                          ><small>{{ planMilestoneLabel(milestone) }}</small></span
+                        >
+                      </button>
+                      <button
+                        v-for="event in group.events"
+                        :key="`event:${event.id}`"
+                        class="wb-timeline-card wb-timeline-card--event"
+                        @click="selectedTimelineDate = group.date"
+                      >
+                        <i class="wb-preview-item__signal wb-preview-item__signal--event" /><span
+                          ><strong>{{ event.title }}</strong
+                          ><small>{{ planEventLabel(event) }}</small></span
+                        >
+                      </button>
+                    </div>
+                  </article>
+                </div>
+                <aside
+                  v-if="planTimelineGroups.some((group) => group.date === selectedTimelineDate)"
+                  class="wb-calendar-preview wb-timeline-preview"
+                  aria-live="polite"
+                >
+                  <div class="wb-view-heading">
+                    <div>
+                      <p class="wb-kicker">Selected timeline date</p>
+                      <h4>{{ planDateLabel(selectedTimelineDate) }}</h4>
+                    </div>
+                    <span class="wb-muted"
+                      >{{
+                        planTasksForDate(selectedTimelineDate).length +
+                        planMilestonesForDate(selectedTimelineDate).length +
+                        planEventsForDate(selectedTimelineDate).length
+                      }}
+                      item{{
+                        planTasksForDate(selectedTimelineDate).length +
+                          planMilestonesForDate(selectedTimelineDate).length +
+                          planEventsForDate(selectedTimelineDate).length ===
+                        1
+                          ? ''
+                          : 's'
+                      }}</span
+                    >
+                  </div>
+                  <div class="wb-calendar-preview__items">
+                    <button
+                      v-for="task in planTasksForDate(selectedTimelineDate)"
+                      :key="`timeline-preview-task:${task.id}`"
+                      class="wb-preview-item"
+                      @click="openTask(task)"
+                    >
+                      <i class="wb-preview-item__signal wb-preview-item__signal--task" /><span
+                        ><strong>{{ task.title }}</strong
+                        ><small>{{ opportunityTitleForTask(task) || 'Personal task' }}</small></span
+                      >
+                    </button>
+                    <a
+                      v-for="milestone in planMilestonesForDate(selectedTimelineDate)"
+                      :key="`timeline-preview-milestone:${milestone.key}`"
+                      class="wb-preview-item"
+                      :href="planMilestoneHref(milestone)"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      ><i
+                        class="wb-preview-item__signal wb-preview-item__signal--opportunity"
+                      /><span
+                        ><strong>{{ planMilestoneTitle(milestone) }}</strong
+                        ><small>{{ planMilestoneLabel(milestone) }} · Source details</small></span
+                      ></a
+                    >
+                    <div
+                      v-for="event in planEventsForDate(selectedTimelineDate)"
+                      :key="`timeline-preview-event:${event.id}`"
+                      class="wb-preview-item wb-preview-item--static"
+                    >
+                      <i class="wb-preview-item__signal wb-preview-item__signal--event" /><span
+                        ><strong>{{ event.title }}</strong
+                        ><small>{{ planEventLabel(event) }}</small></span
+                      >
+                    </div>
+                  </div>
+                </aside>
+                <div v-else class="wb-empty-state wb-empty-state--rail">
+                  <span class="wb-empty-state__orb" aria-hidden="true">✦</span>
+                  <p>Your timeline will appear when you save an opportunity or add a task.</p>
+                  <button class="wb-button wb-primary" @click="editQuickTask()">Add task</button>
+                </div>
+              </section>
+              <section v-else class="wb-board" aria-label="Plan board">
+                <section
+                  v-for="column in boardStates"
+                  :key="column.value"
+                  class="wb-board__lane"
+                  :class="`wb-board__lane--${column.value}`"
+                >
+                  <header class="wb-board__lane-header">
+                    <div>
+                      <h3>{{ column.label }}</h3>
+                    </div>
+                    <span>{{
+                      pursuits.filter((p) => p.status === column.value).length +
+                      boardTasksFor(column.value).length
+                    }}</span>
+                  </header>
+                  <div
+                    v-if="
+                      pursuits.some((p) => p.status === column.value) ||
+                      boardTasksFor(column.value).length
+                    "
+                    class="wb-board__cards"
+                  >
+                    <article
+                      v-for="pursuit in pursuits.filter((p) => p.status === column.value)"
+                      :key="pursuit.id"
+                      class="wb-board-card"
+                    >
+                      <div class="wb-board-card__top">
+                        <span class="wb-label">Opportunity</span><span class="wb-board-card__dot" />
+                      </div>
+                      <h4>{{ pursuit.title }}</h4>
+                      <p class="wb-muted">
+                        {{ pursuitTasks(pursuit.id).filter((t) => t.status === 'done').length }} of
+                        {{ pursuitTasks(pursuit.id).length }} steps complete
+                      </p>
+                      <label class="wb-sr-only" :for="`stage-${pursuit.id}`"
+                        >Application stage</label
+                      ><select
+                        :id="`stage-${pursuit.id}`"
+                        :value="pursuit.status"
+                        :disabled="busy"
+                        @change="updatePursuit(pursuit, ($event.target as HTMLSelectElement).value)"
+                      >
+                        <option
+                          v-for="state in boardStates"
+                          :key="state.value"
+                          :value="state.value"
+                        >
+                          {{ state.label }}
+                        </option>
+                      </select>
+                    </article>
+                    <article
+                      v-for="task in boardTasksFor(column.value)"
+                      :key="`task:${task.id}`"
+                      class="wb-board-card wb-board-card--task"
+                    >
+                      <div class="wb-board-card__top">
+                        <span class="wb-label">Task</span
+                        ><span class="wb-board-card__dot wb-board-card__dot--task" />
+                      </div>
+                      <button class="wb-task-title" @click="openTask(task)">
+                        <strong>{{ task.title }}</strong
+                        ><span>{{ taskReason(task) }}</span>
+                      </button>
+                    </article>
+                  </div>
+                  <div v-else class="wb-board-empty">
+                    <span aria-hidden="true">·</span>
+                    <p>Nothing here yet</p>
+                  </div>
+                </section>
+              </section>
             </div>
           </Transition>
         </div>
-        <div v-if="!catalogPending && !results.length" class="wb-surface wb-empty">
-          <h3>No actionable results in this set.</h3>
-          <p>Try another field, or include past cycles to watch for their next announcement.</p>
-          <NuxtLink class="wb-text" to="/opportunities">Open the full catalog ↗</NuxtLink>
-        </div>
-        <div v-if="catalogSource === (savedOnly ? 'saved' : 'all')" class="wb-pagination">
-          <button
-            class="wb-pagination-control"
-            aria-label="Previous opportunity page"
-            :disabled="catalogPage <= 1 || catalogPending"
-            @click="loadCatalog(catalogPage - 1)"
-          ><SiteIcon name="right" :size="15" aria-hidden="true" class="wb-pagination-control__icon--previous" /><span
-              >Previous</span
-            ></button
-          ><span>Page {{ catalogPage }} of {{ catalogPages }}</span
-          ><button
-            class="wb-pagination-control"
-            aria-label="Next opportunity page"
-            :disabled="catalogPage >= catalogPages || catalogPending"
-            @click="loadCatalog(catalogPage + 1)"
-          ><span>Next</span><SiteIcon name="right" :size="15" aria-hidden="true" /></button>
-        </div>
-      </div>
-      <div v-else key="plan" class="wb-plan-mode">
-        <Transition name="wb-plan-view" mode="out-in">
-          <div :key="view" class="wb-plan-view">
-        <div v-if="view === 'agenda'" class="wb-plan-surface wb-agenda">
-          <div class="wb-view-heading">
-            <div><p class="wb-kicker">Your next moves</p><h3>Agenda</h3></div>
-            <span class="wb-muted">{{ tasks.length }} task{{ tasks.length === 1 ? '' : 's' }}</span>
-          </div>
-          <div v-if="tasks.length" class="wb-agenda-list">
-            <article
-              v-for="task in [...tasks].sort((a, b) => (a.dueDate || '9999').localeCompare(b.dueDate || '9999'))"
-              :key="task.id"
-              class="wb-agenda-row"
-              :class="{ 'wb-done': task.status === 'done' }"
-            >
-              <DashboardTaskToggle
-                :checked="task.status === 'done'"
-                :label="`${task.status === 'done' ? 'Reopen' : 'Complete'} ${task.title}`"
-                :disabled="busy"
-                @toggle="completeTask(task)"
-              />
-              <button class="wb-task-title" @click="openTask(task)">
-                <strong>{{ task.title }}</strong>
-                <span>{{ opportunityTitleForTask(task) || taskReason(task) }}</span>
-              </button>
-              <time v-if="task.dueDate" :datetime="task.dueDate">{{ dateLabel(task.dueDate) }}</time>
-            </article>
-          </div>
-          <div v-else class="wb-empty-state">
-            <span class="wb-empty-state__orb" aria-hidden="true">✦</span>
-            <p>No tasks yet. Add one small next move to give your plan a pulse.</p>
-            <button class="wb-button wb-primary" @click="editQuickTask()">Add task</button>
-          </div>
-        </div>
-        <section v-else-if="view === 'calendar'" class="wb-plan-surface wb-plan-calendar wb-calendar">
-          <div class="wb-calendar-header">
-            <div class="wb-calendar-month-title"><p class="wb-kicker">Saved dates</p><Transition :name="`wb-calendar-month-${calendarDirection}`" mode="out-in"><h3 :key="calendarMonth.toISOString().slice(0, 7)">{{ calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) }}</h3></Transition></div>
-            <div class="wb-calendar-nav">
-              <button class="wb-calendar-nav__button" aria-label="Previous month" @click="shiftCalendarMonth(-1)"><SiteIcon name="right" :size="14" class="wb-icon--previous" /></button>
-              <button class="wb-calendar-nav__button" aria-label="Next month" @click="shiftCalendarMonth(1)"><SiteIcon name="right" :size="14" /></button>
-            </div>
-          </div>
-          <Transition :name="`wb-calendar-month-${calendarDirection}`" mode="out-in">
-            <div :key="calendarMonth.toISOString().slice(0, 7)" class="wb-calendar-grid" role="grid" :aria-label="calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' })">
-              <span v-for="(label, index) in ['S','M','T','W','T','F','S']" :key="`${label}-${index}`" class="wb-calendar-weekday">{{ label }}</span>
-              <div v-for="(day, index) in planCalendarCells" :key="day?.date || `empty-${index}`" class="wb-calendar-cell" role="gridcell">
-                <button v-if="day" class="wb-calendar-day" :class="{ 'wb-calendar-day--active': selectedPlanDate === day.date, 'wb-calendar-day--marked': planHasItems(day.date), 'wb-calendar-day--today': day.date === today }" :aria-label="`${planDateLabel(day.date)}${planHasItems(day.date) ? ', has planned items' : ''}`" :aria-pressed="selectedPlanDate === day.date" @click="selectedPlanDate = day.date">
-                  <span>{{ Number(day.date.slice(-2)) }}</span>
-                  <i v-if="planHasItems(day.date)" aria-hidden="true" />
-                </button>
-              </div>
-            </div>
-          </Transition>
-          <div class="wb-calendar-legend"><span><i class="wb-legend-dot wb-legend-dot--task" />Tasks</span><span><i class="wb-legend-dot wb-legend-dot--opportunity" />Saved opportunities</span></div>
-          <aside class="wb-calendar-preview" aria-live="polite">
-            <div class="wb-view-heading"><div><p class="wb-kicker">Selected day</p><h4>{{ planDateLabel(selectedPlanDate) }}</h4></div><span v-if="!planHasItems(selectedPlanDate)" class="wb-muted">Quiet day</span></div>
-            <div v-if="planTasksForDate(selectedPlanDate).length || planMilestonesForDate(selectedPlanDate).length" class="wb-calendar-preview__items">
-              <button v-for="task in planTasksForDate(selectedPlanDate)" :key="`task:${task.id}`" class="wb-preview-item" @click="openTask(task)"><i class="wb-preview-item__signal wb-preview-item__signal--task" /><span><strong>{{ task.title }}</strong><small>{{ opportunityTitleForTask(task) || 'Personal task' }}</small></span></button>
-              <a v-for="milestone in planMilestonesForDate(selectedPlanDate)" :key="`milestone:${milestone.key}`" class="wb-preview-item" :href="planMilestoneHref(milestone)" target="_blank" rel="noopener noreferrer"><i class="wb-preview-item__signal wb-preview-item__signal--opportunity" /><span><strong>{{ planMilestoneTitle(milestone) }}</strong><small>{{ planMilestoneLabel(milestone) }}</small></span></a>
-            </div>
-            <div v-else class="wb-calendar-preview__empty">Nothing saved or scheduled for this day.</div>
-          </aside>
-        </section>
-        <section v-else-if="view === 'timeline'" class="wb-plan-surface wb-timeline">
-          <div class="wb-view-heading"><div><p class="wb-kicker">Chronological view</p><h3>Timeline</h3></div><span class="wb-muted">{{ planTimelineGroups.length }} date{{ planTimelineGroups.length === 1 ? '' : 's' }}</span></div>
-          <div v-if="planTimelineGroups.length" class="wb-timeline-list">
-            <article v-for="group in planTimelineGroups" :key="group.date" class="wb-timeline-row">
-              <div class="wb-timeline-marker"><span aria-hidden="true" /><time :datetime="group.date"><strong>{{ planDateParts(group.date).monthDay }}</strong><small>{{ planDateParts(group.date).weekday }} · {{ planDateParts(group.date).year }}</small></time></div>
-              <div class="wb-timeline-content">
-                <button v-for="task in group.tasks" :key="`task:${task.id}`" class="wb-timeline-card wb-timeline-card--task" @click="openTask(task)"><i class="wb-preview-item__signal wb-preview-item__signal--task" /><span><strong>{{ task.title }}</strong><small>{{ opportunityTitleForTask(task) || 'Personal task' }}</small></span></button>
-                <a v-for="milestone in group.milestones" :key="`milestone:${milestone.key}`" class="wb-timeline-card wb-timeline-card--milestone" :href="planMilestoneHref(milestone)" target="_blank" rel="noopener noreferrer"><i class="wb-preview-item__signal wb-preview-item__signal--opportunity" /><span><strong>{{ planMilestoneTitle(milestone) }}</strong><small>{{ planMilestoneLabel(milestone) }}</small></span></a>
-              </div>
-            </article>
-          </div>
-          <div v-else class="wb-empty-state wb-empty-state--rail"><span class="wb-empty-state__orb" aria-hidden="true">✦</span><p>Your timeline will appear when you save an opportunity or add a task.</p><button class="wb-button wb-primary" @click="editQuickTask()">Add task</button></div>
-        </section>
-        <section v-else class="wb-board" aria-label="Plan board">
-            <section v-for="column in boardStates" :key="column.value" class="wb-board__lane" :class="`wb-board__lane--${column.value}`">
-            <header class="wb-board__lane-header"><div><h3>{{ column.label }}</h3></div><span>{{ pursuits.filter((p) => p.status === column.value).length + boardTasksFor(column.value).length }}</span></header>
-            <div v-if="pursuits.some((p) => p.status === column.value) || boardTasksFor(column.value).length" class="wb-board__cards">
-              <article v-for="pursuit in pursuits.filter((p) => p.status === column.value)" :key="pursuit.id" class="wb-board-card">
-                <div class="wb-board-card__top"><span class="wb-label">Opportunity</span><span class="wb-board-card__dot" /></div>
-                <h4>{{ pursuit.title }}</h4>
-                <p class="wb-muted">{{ pursuitTasks(pursuit.id).filter((t) => t.status === 'done').length }} of {{ pursuitTasks(pursuit.id).length }} steps complete</p>
-                <label class="wb-sr-only" :for="`stage-${pursuit.id}`">Application stage</label><select :id="`stage-${pursuit.id}`" :value="pursuit.status" :disabled="busy" @change="updatePursuit(pursuit, ($event.target as HTMLSelectElement).value)"><option v-for="state in boardStates" :key="state.value" :value="state.value">{{ state.label }}</option></select>
-              </article>
-              <article v-for="task in boardTasksFor(column.value)" :key="`task:${task.id}`" class="wb-board-card wb-board-card--task"><div class="wb-board-card__top"><span class="wb-label">Task</span><span class="wb-board-card__dot wb-board-card__dot--task" /></div><button class="wb-task-title" @click="openTask(task)"><strong>{{ task.title }}</strong><span>{{ taskReason(task) }}</span></button></article>
-            </div>
-            <div v-else class="wb-board-empty"><span aria-hidden="true">·</span><p>Nothing here yet</p></div>
-          </section>
-        </section>
-          </div>
-        </Transition>
-      </div>
       </Transition>
     </template>
 
@@ -1563,11 +2003,7 @@ function calendarFacts(date: string) {
               Remove suggestion
             </button>
           </fieldset>
-          <button
-            type="button"
-            class="wb-button"
-            @click="proposedTasks.push({ title: '' })"
-          >
+          <button type="button" class="wb-button" @click="proposedTasks.push({ title: '' })">
             + Add step
           </button>
           <div class="wb-dialog-actions">
@@ -1612,16 +2048,113 @@ function calendarFacts(date: string) {
       compact
       @close="taskEditor = null"
       ><form class="quick-task-form" @submit.prevent="saveTask">
-        <label class="quick-task-form__title">Task name<input v-model="taskEditor.title" required maxlength="240" autofocus placeholder="Name this task" :disabled="taskEditor.saving || taskEditor.saved" /></label>
-        <div class="quick-task-form__field"><span>Connect to an opportunity</span><ThemedSelect v-model="taskParent" label="Connect to an opportunity" :options="taskParentOptions" full-width :disabled="taskEditor.saving || taskEditor.saved" /></div>
-        <div v-if="taskMilestones.length" class="quick-task-form__field"><span>Milestone</span><ThemedSelect v-model="taskMilestone" label="Milestone" :options="taskMilestoneOptions" full-width :disabled="taskEditor.saving || taskEditor.saved" /></div>
-        <div class="quick-calendar" @pointermove="quickDateFromPoint" @pointerup="finishQuickDrag" @pointercancel="finishQuickDrag">
-          <div class="quick-calendar__head"><button type="button" class="quick-calendar__arrow" aria-label="Previous month" :disabled="taskEditor.saving || taskEditor.saved" @click="shiftCalendarMonth(-1)">←</button><strong>{{ calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) }}</strong><button type="button" class="quick-calendar__arrow" aria-label="Next month" :disabled="taskEditor.saving || taskEditor.saved" @click="shiftCalendarMonth(1)">→</button></div>
-          <div class="quick-calendar__grid"><span v-for="(label, index) in ['S','M','T','W','T','F','S']" :key="`${label}-${index}`" class="quick-calendar__label">{{ label }}</span><span v-for="(day, index) in quickCalendarDays" :key="day ? day.date : `quick-blank-${index}`" class="quick-calendar__cell" :class="day ? quickTaskCellClass(day.date) : {}"><button v-if="day" :data-quick-date="day.date" :data-date="day.date" :aria-label="`Select ${day.date}`" :aria-pressed="quickTaskIsSelected(day.date)" type="button" class="quick-calendar__day" :disabled="taskEditor.saving || taskEditor.saved" :class="{ 'quick-calendar__day--selected': quickTaskIsSelected(day.date), 'quick-calendar__day--today': day.date === today, ...quickTaskRangeClass(day.date) }" @pointerdown.prevent="beginQuickDrag($event, day.date)" @click="clickQuickDate($event, day.date)">{{ Number(day.date.slice(-2)) }}</button></span></div>
-          <p class="quick-calendar__range">{{ dateLabel(taskEditor.dueDate) }}<span v-if="taskEditor.rangeEnd && taskEditor.rangeEnd !== taskEditor.dueDate"> → {{ dateLabel(taskEditor.rangeEnd) }}</span></p>
+        <label class="quick-task-form__title"
+          >Task name<input
+            v-model="taskEditor.title"
+            required
+            maxlength="240"
+            autofocus
+            placeholder="Name this task"
+            :disabled="taskEditor.saving || taskEditor.saved"
+        /></label>
+        <div class="quick-task-form__field">
+          <span>Connect to an opportunity</span
+          ><ThemedSelect
+            v-model="taskParent"
+            label="Connect to an opportunity"
+            :options="taskParentOptions"
+            full-width
+            :disabled="taskEditor.saving || taskEditor.saved"
+          />
+        </div>
+        <div v-if="taskMilestones.length" class="quick-task-form__field">
+          <span>Milestone</span
+          ><ThemedSelect
+            v-model="taskMilestone"
+            label="Milestone"
+            :options="taskMilestoneOptions"
+            full-width
+            :disabled="taskEditor.saving || taskEditor.saved"
+          />
+        </div>
+        <div
+          class="quick-calendar"
+          @pointermove="quickDateFromPoint"
+          @pointerup="finishQuickDrag"
+          @pointercancel="finishQuickDrag"
+        >
+          <div class="quick-calendar__head">
+            <button
+              type="button"
+              class="quick-calendar__arrow"
+              aria-label="Previous month"
+              :disabled="taskEditor.saving || taskEditor.saved"
+              @click="shiftCalendarMonth(-1)"
+            >
+              ←</button
+            ><strong>{{
+              calendarMonth.toLocaleDateString('en-US', {
+                month: 'long',
+                year: 'numeric',
+                timeZone: 'UTC',
+              })
+            }}</strong
+            ><button
+              type="button"
+              class="quick-calendar__arrow"
+              aria-label="Next month"
+              :disabled="taskEditor.saving || taskEditor.saved"
+              @click="shiftCalendarMonth(1)"
+            >
+              →
+            </button>
+          </div>
+          <div class="quick-calendar__grid">
+            <span
+              v-for="(label, index) in ['S', 'M', 'T', 'W', 'T', 'F', 'S']"
+              :key="`${label}-${index}`"
+              class="quick-calendar__label"
+              >{{ label }}</span
+            ><span
+              v-for="(day, index) in quickCalendarDays"
+              :key="day ? day.date : `quick-blank-${index}`"
+              class="quick-calendar__cell"
+              :class="day ? quickTaskCellClass(day.date) : {}"
+              ><button
+                v-if="day"
+                :data-quick-date="day.date"
+                :data-date="day.date"
+                :aria-label="`Select ${day.date}`"
+                :aria-pressed="quickTaskIsSelected(day.date)"
+                type="button"
+                class="quick-calendar__day"
+                :disabled="taskEditor.saving || taskEditor.saved"
+                :class="{
+                  'quick-calendar__day--selected': quickTaskIsSelected(day.date),
+                  'quick-calendar__day--today': day.date === today,
+                  ...quickTaskRangeClass(day.date),
+                }"
+                @pointerdown.prevent="beginQuickDrag($event, day.date)"
+                @click="clickQuickDate($event, day.date)"
+              >
+                {{ Number(day.date.slice(-2)) }}
+              </button></span
+            >
+          </div>
+          <p class="quick-calendar__range">
+            {{ dateLabel(taskEditor.dueDate)
+            }}<span v-if="taskEditor.rangeEnd && taskEditor.rangeEnd !== taskEditor.dueDate">
+              → {{ dateLabel(taskEditor.rangeEnd) }}</span
+            >
+          </p>
         </div>
         <p v-if="error" class="wb-message wb-error" role="alert">{{ error }}</p>
-        <button class="quick-task-form__save" :disabled="busy || taskEditor.saving || taskEditor.saved">{{ taskEditor.saved ? 'Saved ✓' : busy || taskEditor.saving ? 'Saving…' : 'Save task' }}</button>
+        <button
+          class="quick-task-form__save"
+          :disabled="busy || taskEditor.saving || taskEditor.saved"
+        >
+          {{ taskEditor.saved ? 'Saved ✓' : busy || taskEditor.saving ? 'Saving…' : 'Save task' }}
+        </button>
       </form></DashboardDialog
     >
     <DashboardDialog
@@ -1629,8 +2162,16 @@ function calendarFacts(date: string) {
       :title="eventEditor.id ? 'Edit calendar event' : 'Add calendar event'"
       @close="eventEditor = null"
       ><form class="wb-form" @submit.prevent="saveEvent">
-        <label>Title<input v-model="eventEditor.title" required maxlength="240" /></label
-        ><div class="wb-form__select-field"><span>Type</span><ThemedSelect v-model="eventEditor.type" label="Type" :options="eventTypeOptions" full-width /></div>
+        <label>Title<input v-model="eventEditor.title" required maxlength="240" /></label>
+        <div class="wb-form__select-field">
+          <span>Type</span
+          ><ThemedSelect
+            v-model="eventEditor.type"
+            label="Type"
+            :options="eventTypeOptions"
+            full-width
+          />
+        </div>
         <div class="wb-formgrid">
           <label>Start<input v-model="eventEditor.start" type="datetime-local" required /></label
           ><label>End<input v-model="eventEditor.end" type="datetime-local" required /></label>
@@ -1716,10 +2257,10 @@ function calendarFacts(date: string) {
   overflow: visible;
   border: 1px solid rgb(244 241 233 / 12%);
   border-radius: 24px;
-  background:
-    linear-gradient(145deg, rgb(244 241 233 / 2%), transparent 72%),
-    rgb(18 19 26 / 36%);
-  box-shadow: inset 0 1px rgb(255 255 255 / 7%), 0 18px 58px rgb(0 0 0 / 15%);
+  background: linear-gradient(145deg, rgb(244 241 233 / 2%), transparent 72%), rgb(18 19 26 / 36%);
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 7%),
+    0 18px 58px rgb(0 0 0 / 15%);
   backdrop-filter: blur(20px) saturate(116%);
 }
 .wb-plan-surface::before,
@@ -1730,7 +2271,7 @@ function calendarFacts(date: string) {
   z-index: -1;
   pointer-events: none;
   background: url('/textures/glass-grain.svg') repeat;
-  opacity: .025;
+  opacity: 0.025;
   mix-blend-mode: soft-light;
 }
 .wb-surface h3 {
@@ -1956,7 +2497,9 @@ function calendarFacts(date: string) {
   margin-bottom: 0;
   padding: 12px 14px;
 }
-.wb-control-dock { margin-bottom: 26px; }
+.wb-control-dock {
+  margin-bottom: 26px;
+}
 .wb-plan-rail__navigation {
   display: flex;
   align-items: center;
@@ -1975,10 +2518,20 @@ function calendarFacts(date: string) {
   position: relative;
   z-index: 1;
 }
-.wb-toolbar__actions .society-cloud { flex: 0 0 auto; }
-.wb-action-button { white-space: nowrap; }
-.wb-action-symbol { font-size: 18px; line-height: 0; font-weight: 400; }
-.wb-export-button { color: rgb(244 241 233 / 72%); }
+.wb-toolbar__actions .society-cloud {
+  flex: 0 0 auto;
+}
+.wb-action-button {
+  white-space: nowrap;
+}
+.wb-action-symbol {
+  font-size: 18px;
+  line-height: 0;
+  font-weight: 400;
+}
+.wb-export-button {
+  color: rgb(244 241 233 / 72%);
+}
 .wb-plan-rail .capture-trigger,
 .wb-plan-rail :deep(.cloud-trigger-button) {
   min-height: 44px;
@@ -2013,20 +2566,62 @@ function calendarFacts(date: string) {
   padding-left: 16px;
   border-left: 1px solid rgb(244 241 233 / 12%);
 }
-.wb-segments { position: relative; isolation: isolate; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; width: 156px; }
-.wb-segments__indicator { position: absolute; z-index: 0; top: 2px; bottom: 2px; left: 2px; width: calc(50% - 2px); border: 1px solid rgb(216 185 119 / 25%); border-radius: 10px; background: rgb(216 185 119 / 9%); box-shadow: 0 5px 18px rgb(216 185 119 / 7%); transform: translateX(0); transition: transform .55s cubic-bezier(.22,1,.36,1), background .35s ease, border-color .35s ease; pointer-events: none; }
-.wb-segments__indicator.is-plan { transform: translateX(100%); }
-.wb-segments button { position: relative; z-index: 1; }
-.wb-plan-mode { min-width: 0; }
-.wb-mode-switch-enter-active, .wb-mode-switch-leave-active { transition: opacity .4s ease, transform .5s cubic-bezier(.22,1,.36,1); }
-.wb-mode-switch-enter-from { opacity: 0; transform: translateY(12px); }
-.wb-mode-switch-leave-to { opacity: 0; transform: translateY(-10px); }
+.wb-segments {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  width: 156px;
+}
+.wb-segments__indicator {
+  position: absolute;
+  z-index: 0;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: calc(50% - 2px);
+  border: 1px solid rgb(216 185 119 / 25%);
+  border-radius: 10px;
+  background: rgb(216 185 119 / 9%);
+  box-shadow: 0 5px 18px rgb(216 185 119 / 7%);
+  transform: translateX(0);
+  transition:
+    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    background 0.35s ease,
+    border-color 0.35s ease;
+  pointer-events: none;
+}
+.wb-segments__indicator.is-plan {
+  transform: translateX(100%);
+}
+.wb-segments button {
+  position: relative;
+  z-index: 1;
+}
+.wb-plan-mode {
+  min-width: 0;
+}
+.wb-mode-switch-enter-active,
+.wb-mode-switch-leave-active {
+  transition:
+    opacity 0.4s ease,
+    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.wb-mode-switch-enter-from {
+  opacity: 0;
+  transform: translateY(12px);
+}
+.wb-mode-switch-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
 
 .wb-viewbar__label {
   padding: 0 8px 0 10px;
   color: rgb(244 241 233 / 34%);
   font-size: 10px;
-  letter-spacing: .1em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   align-self: center;
 }
@@ -2055,7 +2650,10 @@ function calendarFacts(date: string) {
   color: rgb(244 241 233 / 86%);
 }
 .wb-segments button:focus-visible,
-.wb-viewbar button:focus-visible { outline: 2px solid var(--wb-gold); outline-offset: 2px; }
+.wb-viewbar button:focus-visible {
+  outline: 2px solid var(--wb-gold);
+  outline-offset: 2px;
+}
 .wb-plan-rail .wb-segments button[aria-pressed='true'] {
   background: transparent;
   color: var(--wb-gold);
@@ -2175,7 +2773,10 @@ function calendarFacts(date: string) {
   border-radius: 14px;
   background: transparent;
   box-shadow: inset 0 1px rgb(255 255 255 / 6%);
-  transition: border-color 240ms ease, background 240ms ease, box-shadow 300ms ease;
+  transition:
+    border-color 240ms ease,
+    background 240ms ease,
+    box-shadow 300ms ease;
 }
 .workbench .wb-search > input:hover {
   border-color: rgb(216 185 119 / 28%);
@@ -2185,7 +2786,9 @@ function calendarFacts(date: string) {
   outline: none;
   border-color: rgb(216 185 119 / 62%);
   background: rgb(255 255 255 / 3%);
-  box-shadow: 0 0 0 3px rgb(216 185 119 / 10%), inset 0 1px rgb(255 255 255 / 8%);
+  box-shadow:
+    0 0 0 3px rgb(216 185 119 / 10%),
+    inset 0 1px rgb(255 255 255 / 8%);
 }
 .workbench .wb-search > input::placeholder {
   color: rgb(176 173 184 / 72%);
@@ -2309,10 +2912,18 @@ function calendarFacts(date: string) {
   opacity: 0;
   filter: blur(2px);
 }
-.wb-results-next-enter-from { transform: translate3d(18px, 0, 0); }
-.wb-results-next-leave-to { transform: translate3d(-18px, 0, 0); }
-.wb-results-previous-enter-from { transform: translate3d(-18px, 0, 0); }
-.wb-results-previous-leave-to { transform: translate3d(18px, 0, 0); }
+.wb-results-next-enter-from {
+  transform: translate3d(18px, 0, 0);
+}
+.wb-results-next-leave-to {
+  transform: translate3d(-18px, 0, 0);
+}
+.wb-results-previous-enter-from {
+  transform: translate3d(-18px, 0, 0);
+}
+.wb-results-previous-leave-to {
+  transform: translate3d(18px, 0, 0);
+}
 .wb-inspect {
   display: inline-flex;
   align-items: center;
@@ -2404,7 +3015,9 @@ function calendarFacts(date: string) {
   border-color: color-mix(in srgb, var(--wb-gold) 48%, transparent);
   color: var(--wb-gold);
   background: linear-gradient(145deg, rgb(244 240 231 / 8%), rgb(216 185 119 / 7%));
-  box-shadow: 0 8px 24px rgb(0 0 0 / 15%), 0 0 18px rgb(216 185 119 / 6%);
+  box-shadow:
+    0 8px 24px rgb(0 0 0 / 15%),
+    0 0 18px rgb(216 185 119 / 6%);
 }
 .wb-pagination-control:not(:disabled):active {
   transform: translate3d(0, 0, 0) scale(0.96);
@@ -2537,23 +3150,262 @@ function calendarFacts(date: string) {
   flex-direction: column;
   gap: 18px;
 }
-.quick-task-form { display:flex; flex-direction:column; gap:17px; min-width:min(100%,430px); padding:4px 2px 2px; }
-.quick-task-form__title,.quick-task-form__field { position:relative; z-index:3; display:flex; flex-direction:column; gap:8px; color:#bcb5c8; font-size:11px; }
-.quick-task-form__field:has(.themed-select--open) { z-index:50; }
-.quick-task-form__title input,.quick-task-form__field select { width:100%; min-height:48px; padding:0 14px; border:1px solid rgb(211 196 239 / 18%); border-radius:13px; background:rgb(255 255 255 / 4%); color:#f2edf5; font:inherit; outline:none; transition:border-color .3s,box-shadow .3s,background .3s; }
-.quick-task-form__title input { font-size:13px; }.quick-task-form__title input::placeholder { color:#767180; }.quick-task-form__title input:focus,.quick-task-form__field select:focus { border-color:#d8b97780; background:rgb(216 185 119 / 6%); box-shadow:0 0 0 4px rgb(216 185 119 / 8%); }
-.quick-task-form__field select option { background:#1d1a27; color:#f2edf5; }
-.quick-calendar { position:relative; z-index:1; isolation:isolate; overflow:hidden; padding:17px; border:1px solid rgb(228 187 114 / 20%); border-radius:20px; background:radial-gradient(26rem 13rem at 100% 0%,rgb(228 187 114 / 8%),transparent 70%),rgb(244 241 233 / 3.5%); box-shadow:inset 0 1px rgb(255 255 255 / 6%),0 18px 45px rgb(0 0 0 / 12%); backdrop-filter:blur(18px) saturate(118%); }
-.quick-calendar::before { content:''; position:absolute; inset:0; z-index:-1; pointer-events:none; background:url('/textures/glass-grain.svg') repeat; opacity:.1; mix-blend-mode:soft-light; }
-.quick-calendar__head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; color:#e8d09b; font-size:12px; }.quick-calendar__arrow { display:grid; place-items:center; width:30px; height:30px; border:1px solid rgb(216 185 119 / 20%); border-radius:50%; background:transparent; color:#d8b977; cursor:pointer; transition:transform .3s,background .3s; }.quick-calendar__arrow:hover { transform:scale(1.1); background:rgb(216 185 119 / 10%); }
-.quick-calendar__grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:5px; touch-action:none; }.quick-calendar__label { color:#777280; font-size:9px; text-align:center; }.quick-calendar__cell { position:relative; display:grid; place-items:center; min-height:34px; }.quick-calendar__cell--selected::before { content:''; position:absolute; inset:3px -3px; background:linear-gradient(180deg,rgb(228 187 114 / 18%),rgb(228 187 114 / 9%)); border-block:1px solid rgb(228 187 114 / 28%); pointer-events:none; transition:background .22s ease,box-shadow .22s ease; box-shadow:0 0 16px rgb(228 187 114 / 7%); }
-.quick-calendar__cell--start::before { left:0; border-radius:9px 0 0 9px; }
-.quick-calendar__cell--end::before { right:0; border-radius:0 9px 9px 0; }
-.quick-calendar__cell--start.quick-calendar__cell--end::before { border-radius:9px; }
-.quick-calendar__cell--range .quick-calendar__day--selected { border-color:transparent; background:transparent; box-shadow:none; }
-.quick-calendar__cell--range .quick-calendar__day--range-start,.quick-calendar__cell--range .quick-calendar__day--range-end { border-color:rgb(228 187 114 / 55%); background:rgb(228 187 114 / 13%); box-shadow:0 0 15px rgb(228 187 114 / 12%); }.quick-calendar__day { position:relative; display:grid; place-items:center; width:100%; min-height:34px; border:1px solid transparent; border-radius:9px; background:transparent; color:#c3bdca; font-size:11px; cursor:pointer; transition:transform .3s,background .3s,border-color .3s,color .3s; }.quick-calendar__day:hover { transform:translateY(-2px); border-color:rgb(228 187 114 / 42%); color:#fff3ce; }.quick-calendar__day:focus-visible { outline:2px solid rgb(228 187 114 / 74%); outline-offset:2px; }.quick-calendar__day--selected { background:rgb(228 187 114 / 13%); border-color:rgb(228 187 114 / 55%); color:#fff0c5; box-shadow:0 0 15px rgb(228 187 114 / 12%),inset 0 1px rgb(255 255 255 / 8%); }.quick-calendar__day--range-start::before,.quick-calendar__day--range-end::after { content:''; position:absolute; top:50%; width:8px; height:2px; background:#e7c779; box-shadow:0 0 9px #e7c779aa; }.quick-calendar__day--range-start::before { left:-7px; }.quick-calendar__day--range-end::after { right:-7px; }.quick-calendar__day--today { box-shadow:inset 0 -2px #d8b977; }.quick-calendar__range { min-height:17px; margin:13px 0 0; color:#a79ead; font-size:10px; }.quick-calendar__range span { color:#e2c486; }
-.quick-task-form__save { position:relative; z-index:1; display:flex; align-items:center; justify-content:center; gap:9px; min-height:49px; border:1px solid rgb(216 185 119 / 57%); border-radius:15px; background:linear-gradient(110deg,rgb(216 185 119 / 25%),rgb(185 163 237 / 16%)); color:#f5dfaf; font-size:12px; cursor:pointer; box-shadow:0 0 25px rgb(216 185 119 / 10%); transition:transform .45s cubic-bezier(.2,.8,.2,1),box-shadow .45s,background .45s; }.quick-task-form__save:hover:not(:disabled) { transform:translateY(-3px); background:linear-gradient(110deg,rgb(216 185 119 / 34%),rgb(185 163 237 / 23%)); box-shadow:0 12px 30px rgb(216 185 119 / 17%); }.quick-task-form__save:active:not(:disabled) { transform:scale(.98); }.quick-task-form__save-star { font-size:17px; }
-@media (prefers-reduced-motion:reduce) { .quick-task-form__save,.quick-calendar__day,.quick-calendar__arrow { transition:none; } }
+.quick-task-form {
+  display: flex;
+  flex-direction: column;
+  gap: 17px;
+  min-width: min(100%, 430px);
+  padding: 4px 2px 2px;
+}
+.quick-task-form__title,
+.quick-task-form__field {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #bcb5c8;
+  font-size: 11px;
+}
+.quick-task-form__field:has(.themed-select--open) {
+  z-index: 50;
+}
+.quick-task-form__title input,
+.quick-task-form__field select {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid rgb(211 196 239 / 18%);
+  border-radius: 13px;
+  background: rgb(255 255 255 / 4%);
+  color: #f2edf5;
+  font: inherit;
+  outline: none;
+  transition:
+    border-color 0.3s,
+    box-shadow 0.3s,
+    background 0.3s;
+}
+.quick-task-form__title input {
+  font-size: 13px;
+}
+.quick-task-form__title input::placeholder {
+  color: #767180;
+}
+.quick-task-form__title input:focus,
+.quick-task-form__field select:focus {
+  border-color: #d8b97780;
+  background: rgb(216 185 119 / 6%);
+  box-shadow: 0 0 0 4px rgb(216 185 119 / 8%);
+}
+.quick-task-form__field select option {
+  background: #1d1a27;
+  color: #f2edf5;
+}
+.quick-calendar {
+  position: relative;
+  z-index: 1;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 17px;
+  border: 1px solid rgb(228 187 114 / 20%);
+  border-radius: 20px;
+  background:
+    radial-gradient(26rem 13rem at 100% 0%, rgb(228 187 114 / 8%), transparent 70%),
+    rgb(244 241 233 / 3.5%);
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 6%),
+    0 18px 45px rgb(0 0 0 / 12%);
+  backdrop-filter: blur(18px) saturate(118%);
+}
+.quick-calendar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: url('/textures/glass-grain.svg') repeat;
+  opacity: 0.1;
+  mix-blend-mode: soft-light;
+}
+.quick-calendar__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  color: #e8d09b;
+  font-size: 12px;
+}
+.quick-calendar__arrow {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgb(216 185 119 / 20%);
+  border-radius: 50%;
+  background: transparent;
+  color: #d8b977;
+  cursor: pointer;
+  transition:
+    transform 0.3s,
+    background 0.3s;
+}
+.quick-calendar__arrow:hover {
+  transform: scale(1.1);
+  background: rgb(216 185 119 / 10%);
+}
+.quick-calendar__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+  touch-action: none;
+}
+.quick-calendar__label {
+  color: #777280;
+  font-size: 9px;
+  text-align: center;
+}
+.quick-calendar__cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 34px;
+}
+.quick-calendar__cell--selected::before {
+  content: '';
+  position: absolute;
+  inset: 3px -3px;
+  background: linear-gradient(180deg, rgb(228 187 114 / 18%), rgb(228 187 114 / 9%));
+  border-block: 1px solid rgb(228 187 114 / 28%);
+  pointer-events: none;
+  transition:
+    background 0.22s ease,
+    box-shadow 0.22s ease;
+  box-shadow: 0 0 16px rgb(228 187 114 / 7%);
+}
+.quick-calendar__cell--start::before {
+  left: 0;
+  border-radius: 9px 0 0 9px;
+}
+.quick-calendar__cell--end::before {
+  right: 0;
+  border-radius: 0 9px 9px 0;
+}
+.quick-calendar__cell--start.quick-calendar__cell--end::before {
+  border-radius: 9px;
+}
+.quick-calendar__cell--range .quick-calendar__day--selected {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+.quick-calendar__cell--range .quick-calendar__day--range-start,
+.quick-calendar__cell--range .quick-calendar__day--range-end {
+  border-color: rgb(228 187 114 / 55%);
+  background: rgb(228 187 114 / 13%);
+  box-shadow: 0 0 15px rgb(228 187 114 / 12%);
+}
+.quick-calendar__day {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: #c3bdca;
+  font-size: 11px;
+  cursor: pointer;
+  transition:
+    transform 0.3s,
+    background 0.3s,
+    border-color 0.3s,
+    color 0.3s;
+}
+.quick-calendar__day:hover {
+  transform: translateY(-2px);
+  border-color: rgb(228 187 114 / 42%);
+  color: #fff3ce;
+}
+.quick-calendar__day:focus-visible {
+  outline: 2px solid rgb(228 187 114 / 74%);
+  outline-offset: 2px;
+}
+.quick-calendar__day--selected {
+  background: rgb(228 187 114 / 13%);
+  border-color: rgb(228 187 114 / 55%);
+  color: #fff0c5;
+  box-shadow:
+    0 0 15px rgb(228 187 114 / 12%),
+    inset 0 1px rgb(255 255 255 / 8%);
+}
+.quick-calendar__day--range-start::before,
+.quick-calendar__day--range-end::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 8px;
+  height: 2px;
+  background: #e7c779;
+  box-shadow: 0 0 9px #e7c779aa;
+}
+.quick-calendar__day--range-start::before {
+  left: -7px;
+}
+.quick-calendar__day--range-end::after {
+  right: -7px;
+}
+.quick-calendar__day--today {
+  box-shadow: inset 0 -2px #d8b977;
+}
+.quick-calendar__range {
+  min-height: 17px;
+  margin: 13px 0 0;
+  color: #a79ead;
+  font-size: 10px;
+}
+.quick-calendar__range span {
+  color: #e2c486;
+}
+.quick-task-form__save {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 49px;
+  border: 1px solid rgb(216 185 119 / 57%);
+  border-radius: 15px;
+  background: linear-gradient(110deg, rgb(216 185 119 / 25%), rgb(185 163 237 / 16%));
+  color: #f5dfaf;
+  font-size: 12px;
+  cursor: pointer;
+  box-shadow: 0 0 25px rgb(216 185 119 / 10%);
+  transition:
+    transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.45s,
+    background 0.45s;
+}
+.quick-task-form__save:hover:not(:disabled) {
+  transform: translateY(-3px);
+  background: linear-gradient(110deg, rgb(216 185 119 / 34%), rgb(185 163 237 / 23%));
+  box-shadow: 0 12px 30px rgb(216 185 119 / 17%);
+}
+.quick-task-form__save:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.quick-task-form__save-star {
+  font-size: 17px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .quick-task-form__save,
+  .quick-calendar__day,
+  .quick-calendar__arrow {
+    transition: none;
+  }
+}
 .wb-form label {
   display: flex;
   flex-direction: column;
@@ -2670,7 +3522,11 @@ function calendarFacts(date: string) {
     width: 100%;
     padding-left: 50px;
   }
-  .wb-search__icon { position: absolute; top: 19px; left: 9px; }
+  .wb-search__icon {
+    position: absolute;
+    top: 19px;
+    left: 9px;
+  }
   .wb-search > .wb-button {
     width: 100%;
     justify-content: center;
@@ -2735,13 +3591,26 @@ function calendarFacts(date: string) {
     transform: none;
   }
 }
-.wb-plan-view { min-width: 0; }
+.wb-plan-view {
+  min-width: 0;
+}
 .wb-plan-view-enter-active,
 .wb-plan-view-leave-active {
-  transition: opacity 260ms ease, transform 420ms cubic-bezier(.22,1,.36,1), filter 260ms ease;
+  transition:
+    opacity 260ms ease,
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 260ms ease;
 }
-.wb-plan-view-enter-from { opacity: 0; transform: translateY(8px); filter: blur(2px); }
-.wb-plan-view-leave-to { opacity: 0; transform: translateY(-6px); filter: blur(2px); }
+.wb-plan-view-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+  filter: blur(2px);
+}
+.wb-plan-view-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+  filter: blur(2px);
+}
 .wb-view-heading {
   display: flex;
   align-items: center;
@@ -2749,10 +3618,23 @@ function calendarFacts(date: string) {
   gap: 18px;
 }
 .wb-view-heading h3,
-.wb-view-heading h4 { margin: 5px 0 0; font-size: 21px; font-weight: 500; letter-spacing: -.03em; }
-.wb-view-heading h4 { font-size: 16px; }
-.wb-agenda { padding: clamp(22px, 3vw, 32px); }
-.wb-agenda-list { display: grid; gap: 0; margin-top: 22px; }
+.wb-view-heading h4 {
+  margin: 5px 0 0;
+  font-size: 21px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+.wb-view-heading h4 {
+  font-size: 16px;
+}
+.wb-agenda {
+  padding: clamp(22px, 3vw, 32px);
+}
+.wb-agenda-list {
+  display: grid;
+  gap: 0;
+  margin-top: 22px;
+}
 .wb-agenda-row {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
@@ -2762,8 +3644,14 @@ function calendarFacts(date: string) {
   padding: 12px 0;
   border-top: 1px solid rgb(244 241 233 / 8%);
 }
-.wb-agenda-row time { color: var(--wb-muted); font-size: 11px; white-space: nowrap; }
-.wb-agenda-row .wb-task-title { padding: 5px 0; }
+.wb-agenda-row time {
+  color: var(--wb-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.wb-agenda-row .wb-task-title {
+  padding: 5px 0;
+}
 .wb-empty-state {
   display: grid;
   justify-items: center;
@@ -2775,7 +3663,12 @@ function calendarFacts(date: string) {
   color: var(--wb-muted);
   text-align: center;
 }
-.wb-empty-state p { max-width: 36ch; margin: 0; line-height: 1.65; font-size: 13px; }
+.wb-empty-state p {
+  max-width: 36ch;
+  margin: 0;
+  line-height: 1.65;
+  font-size: 13px;
+}
 .wb-empty-state__orb {
   display: grid;
   width: 40px;
@@ -2791,17 +3684,32 @@ function calendarFacts(date: string) {
   min-width: 0;
   padding: clamp(18px, 3vw, 26px);
 }
-.wb-calendar-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.wb-calendar-month-title { min-width: 0; }
-.wb-calendar-header h3 { margin: 5px 0 0; font-size: clamp(19px, 2vw, 24px); font-weight: 500; letter-spacing: -.035em; }
-.wb-calendar-nav { display: flex; gap: 6px; }
+.wb-calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.wb-calendar-month-title {
+  min-width: 0;
+}
+.wb-calendar-header h3 {
+  margin: 5px 0 0;
+  font-size: clamp(19px, 2vw, 24px);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+}
+.wb-calendar-nav {
+  display: flex;
+  gap: 6px;
+}
 .wb-calendar-month-next-enter-active,
 .wb-calendar-month-next-leave-active,
 .wb-calendar-month-previous-enter-active,
 .wb-calendar-month-previous-leave-active {
   transition:
     opacity 240ms ease,
-    transform 360ms cubic-bezier(.16, 1, .3, 1),
+    transform 360ms cubic-bezier(0.16, 1, 0.3, 1),
     filter 240ms ease;
 }
 .wb-calendar-month-next-enter-from,
@@ -2826,14 +3734,43 @@ function calendarFacts(date: string) {
   color: rgb(244 241 233 / 62%);
   background: rgb(244 241 233 / 3%);
   cursor: pointer;
-  transition: color 180ms ease, border-color 220ms ease, background 220ms ease, transform 360ms cubic-bezier(.16,1,.3,1), box-shadow 300ms ease;
+  transition:
+    color 180ms ease,
+    border-color 220ms ease,
+    background 220ms ease,
+    transform 360ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 300ms ease;
 }
 .wb-calendar-nav__button:hover,
-.wb-calendar-nav__button:focus-visible { color: #e4bb72; border-color: rgb(228 187 114 / 38%); background: rgb(228 187 114 / 6%); box-shadow: 0 0 20px rgb(228 187 114 / 8%); transform: translateY(-1px) scale(1.03); }
-.wb-icon--previous { transform: rotate(180deg); }
-.wb-calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin-top: 24px; }
-.wb-calendar-weekday { padding: 0 0 7px; color: rgb(244 241 233 / 31%); font-size: 9px; text-align: center; text-transform: uppercase; letter-spacing: .12em; }
-.wb-calendar-cell { position: relative; min-width: 0; aspect-ratio: 1; }
+.wb-calendar-nav__button:focus-visible {
+  color: #e4bb72;
+  border-color: rgb(228 187 114 / 38%);
+  background: rgb(228 187 114 / 6%);
+  box-shadow: 0 0 20px rgb(228 187 114 / 8%);
+  transform: translateY(-1px) scale(1.03);
+}
+.wb-icon--previous {
+  transform: rotate(180deg);
+}
+.wb-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 24px;
+}
+.wb-calendar-weekday {
+  padding: 0 0 7px;
+  color: rgb(244 241 233 / 31%);
+  font-size: 9px;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.wb-calendar-cell {
+  position: relative;
+  min-width: 0;
+  aspect-ratio: 1;
+}
 .wb-calendar-day {
   position: relative;
   display: grid;
@@ -2846,100 +3783,492 @@ function calendarFacts(date: string) {
   background: transparent;
   font-size: 12px;
   cursor: pointer;
-  transition: color 180ms ease, background 240ms ease, border-color 240ms ease, transform 420ms cubic-bezier(.16,1,.3,1), box-shadow 320ms ease;
+  transition:
+    color 180ms ease,
+    background 240ms ease,
+    border-color 240ms ease,
+    transform 420ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 320ms ease;
 }
 .wb-calendar-day:hover,
-.wb-calendar-day:focus-visible { color: #fffaf0; border-color: rgb(228 187 114 / 34%); background: rgb(228 187 114 / 6%); transform: translateY(-2px) scale(1.05); box-shadow: 0 0 20px rgb(228 187 114 / 9%); }
-.wb-calendar-day--active { color: #fffaf0; border-color: rgb(244 241 233 / 18%); background: rgb(244 241 233 / 6%); box-shadow: inset 0 0 0 1px rgb(244 241 233 / 4%); }
-.wb-calendar-day--today { box-shadow: inset 0 -2px var(--wb-gold); }
-.wb-calendar-day--marked { color: rgb(244 241 233 / 84%); background: rgb(244 241 233 / 3.5%); }
-.wb-calendar-day i { position: absolute; bottom: 16%; width: 4px; height: 4px; border-radius: 50%; background: var(--wb-gold); box-shadow: 0 0 11px rgb(216 185 119 / 80%); }
-.wb-calendar-day--active i { background: #fff2c8; }
-.wb-calendar-legend { display: flex; flex-wrap: wrap; gap: 14px 20px; margin-top: 20px; color: rgb(244 241 233 / 47%); font-size: 10px; }
-.wb-calendar-legend span { display: inline-flex; align-items: center; gap: 7px; }
-.wb-legend-dot { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--wb-gold); box-shadow: 0 0 10px rgb(216 185 119 / 70%); }
-.wb-legend-dot--opportunity { background: #b9a3ed; box-shadow: 0 0 10px rgb(185 163 237 / 70%); }
-.wb-calendar-preview { margin-top: 24px; padding-top: 20px; border-top: 1px solid rgb(244 241 233 / 9%); }
-.wb-calendar-preview__items { display: grid; gap: 8px; margin-top: 14px; }
-.wb-calendar-preview__empty { margin-top: 13px; color: var(--wb-muted); font-size: 12px; }
+.wb-calendar-day:focus-visible {
+  color: #fffaf0;
+  border-color: rgb(228 187 114 / 34%);
+  background: rgb(228 187 114 / 6%);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 0 20px rgb(228 187 114 / 9%);
+}
+.wb-calendar-day--active {
+  color: #fffaf0;
+  border-color: rgb(244 241 233 / 18%);
+  background: rgb(244 241 233 / 6%);
+  box-shadow: inset 0 0 0 1px rgb(244 241 233 / 4%);
+}
+.wb-calendar-day--today {
+  box-shadow: inset 0 -2px var(--wb-gold);
+}
+.wb-calendar-day--marked {
+  color: rgb(244 241 233 / 84%);
+  background: rgb(244 241 233 / 3.5%);
+}
+.wb-calendar-day i {
+  position: absolute;
+  bottom: 16%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--wb-gold);
+  box-shadow: 0 0 11px rgb(216 185 119 / 80%);
+}
+.wb-calendar-day--active i {
+  background: #fff2c8;
+}
+.wb-calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 20px;
+  margin-top: 20px;
+  color: rgb(244 241 233 / 47%);
+  font-size: 10px;
+}
+.wb-calendar-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.wb-legend-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--wb-gold);
+  box-shadow: 0 0 10px rgb(216 185 119 / 70%);
+}
+.wb-legend-dot--opportunity {
+  background: #b9a3ed;
+  box-shadow: 0 0 10px rgb(185 163 237 / 70%);
+}
+.wb-calendar-preview {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid rgb(244 241 233 / 9%);
+}
+.wb-calendar-preview__items {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+.wb-calendar-preview__empty {
+  margin-top: 13px;
+  color: var(--wb-muted);
+  font-size: 12px;
+}
 .wb-preview-item,
-.wb-timeline-card { display: flex; align-items: center; gap: 11px; width: 100%; padding: 12px 13px; border: 1px solid rgb(244 241 233 / 9%); border-radius: 14px; color: var(--wb-ink); background: transparent; text-decoration: none; text-align: left; cursor: pointer; transition: transform 300ms cubic-bezier(.22,1,.36,1), border-color 240ms ease, background 240ms ease, box-shadow 260ms ease; }
+.wb-timeline-card {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 12px 13px;
+  border: 1px solid rgb(244 241 233 / 9%);
+  border-radius: 14px;
+  color: var(--wb-ink);
+  background: transparent;
+  text-decoration: none;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 300ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 240ms ease,
+    background 240ms ease,
+    box-shadow 260ms ease;
+}
 .wb-preview-item:hover,
 .wb-preview-item:focus-visible,
 .wb-timeline-card:hover,
-.wb-timeline-card:focus-visible { border-color: rgb(216 185 119 / 36%); background: rgb(216 185 119 / 6%); transform: translateY(-1px); box-shadow: 0 10px 26px rgb(0 0 0 / 14%); }
+.wb-timeline-card:focus-visible {
+  border-color: rgb(216 185 119 / 36%);
+  background: rgb(216 185 119 / 6%);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 26px rgb(0 0 0 / 14%);
+}
 .wb-preview-item span,
-.wb-timeline-card span { display: grid; min-width: 0; gap: 4px; }
+.wb-timeline-card span {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
 .wb-preview-item strong,
-.wb-timeline-card strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 500; }
+.wb-timeline-card strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 500;
+}
 .wb-preview-item small,
-.wb-timeline-card small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--wb-muted); font-size: 10px; }
-.wb-preview-item__signal { display: block; flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%; background: var(--wb-gold); box-shadow: 0 0 12px rgb(216 185 119 / 72%); }
-.wb-preview-item__signal--opportunity { border-radius: 2px; background: #b9a3ed; transform: rotate(45deg); box-shadow: 0 0 12px rgb(185 163 237 / 64%); }
-.wb-timeline { padding: clamp(22px, 3vw, 32px); }
-.wb-timeline-list { display: grid; gap: 0; margin-top: 24px; }
-.wb-timeline-row { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 20px; min-width: 0; }
-.wb-timeline-marker { position: relative; display: flex; align-items: flex-start; gap: 12px; min-height: 92px; padding-top: 4px; color: var(--wb-muted); font-size: 11px; }
-.wb-timeline-marker::after { content: ''; position: absolute; top: 14px; left: 4px; bottom: -9px; width: 1px; background: linear-gradient(rgb(216 185 119 / 24%), rgb(244 241 233 / 8%)); }
-.wb-timeline-row:last-child .wb-timeline-marker::after { bottom: 24px; }
-.wb-timeline-marker span { position: relative; z-index: 1; width: 9px; height: 9px; flex: 0 0 auto; margin-top: 5px; border: 1px solid var(--wb-gold); border-radius: 50%; background: #16151d; box-shadow: 0 0 13px rgb(216 185 119 / 50%); }
-.wb-timeline-marker time { display: grid; gap: 3px; line-height: 1.1; }
-.wb-timeline-marker time strong { color: rgb(244 241 233 / 88%); font-size: 13px; font-weight: 500; letter-spacing: -.01em; white-space: nowrap; }
-.wb-timeline-marker time small { color: rgb(244 241 233 / 40%); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
-.wb-timeline-content { display: grid; gap: 8px; min-width: 0; padding: 0 0 24px; }
-.wb-timeline-card { min-height: 48px; }
-.wb-timeline-card--task { border-left-color: rgb(216 185 119 / 28%); }
-.wb-timeline-card--task .wb-preview-item__signal { background: var(--wb-gold); }
-.wb-timeline-card--milestone { border-color: rgb(185 163 237 / 22%); background: transparent; }
-.wb-timeline-card--milestone .wb-preview-item__signal { border-radius: 2px; transform: rotate(45deg); }
-.wb-board { display: grid; grid-template-columns: repeat(5, minmax(200px, 1fr)); gap: 14px; overflow-x: auto; padding: 2px 2px 16px; scroll-snap-type: x proximity; }
-.wb-board__lane { position: relative; min-width: 0; min-height: 280px; padding: 17px; border: 1px solid color-mix(in srgb, var(--wb-lane-accent) 24%, transparent); border-radius: 20px; background: color-mix(in srgb, var(--wb-lane-accent) 8%, rgb(16 20 19 / 82%)); box-shadow: inset 0 1px rgb(244 241 233 / 7%), 0 14px 34px rgb(0 0 0 / 12%); scroll-snap-align: start; overflow: hidden; }
-.wb-board__lane::before { content: ''; position: absolute; top: 0; right: 18px; left: 18px; height: 2px; border-radius: 999px; background: var(--wb-lane-accent); box-shadow: 0 0 18px var(--wb-lane-glow); opacity: .72; }
-.wb-board__lane--preparing { --wb-lane-accent: var(--wb-gold); --wb-lane-glow: rgb(216 185 119 / 52%); }
-.wb-board__lane--waiting { --wb-lane-accent: #c5c0eb; --wb-lane-glow: rgb(197 192 235 / 52%); }
-.wb-board__lane--ready { --wb-lane-accent: #9bd8d1; --wb-lane-glow: rgb(155 216 209 / 46%); }
-.wb-board__lane--submitted { --wb-lane-accent: #dce8ee; --wb-lane-glow: rgb(220 232 238 / 46%); }
-.wb-board__lane--outcome { --wb-lane-accent: #f4f1e9; --wb-lane-glow: rgb(244 241 233 / 42%); }
-.wb-board__lane-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding-bottom: 14px; border-bottom: 1px solid rgb(244 241 233 / 8%); }
-.wb-board__lane-header h3 { margin: 0; font-size: 13px; font-weight: 500; }
-.wb-board__lane-header > span { display: grid; min-width: 24px; height: 24px; place-items: center; border: 1px solid rgb(216 185 119 / 26%); border-radius: 50%; color: var(--wb-gold); font-size: 10px; }
-.wb-board__cards { display: grid; gap: 10px; margin-top: 12px; }
-.wb-board-card { padding: 14px; border: 1px solid color-mix(in srgb, var(--wb-lane-accent) 19%, transparent); border-radius: 15px; background: color-mix(in srgb, var(--wb-lane-accent) 5%, rgb(244 241 233 / 8%)); box-shadow: inset 0 1px rgb(244 241 233 / 5%); }
-.wb-board-card__top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
-.wb-board-card h4 { margin: 0 0 9px; font-size: 13px; line-height: 1.45; }
-.wb-board-card select { width: 100%; margin-top: 12px; font-size: 11px; }
-.wb-board-card__dot { width: 6px; height: 6px; border-radius: 50%; background: var(--wb-gold); box-shadow: 0 0 10px rgb(216 185 119 / 72%); }
-.wb-board-card__dot--task { background: #c5c0eb; box-shadow: 0 0 10px rgb(197 192 235 / 72%); }
-.wb-board-empty { display: grid; justify-items: center; gap: 6px; min-height: 170px; place-content: center; color: rgb(244 241 233 / 35%); text-align: center; }
-.wb-board-empty span { color: var(--wb-gold); font-size: 22px; }
-.wb-board-empty p { margin: 0; font-size: 11px; }
+.wb-timeline-card small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--wb-muted);
+  font-size: 10px;
+}
+.wb-preview-item__signal {
+  display: block;
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--wb-gold);
+  box-shadow: 0 0 12px rgb(216 185 119 / 72%);
+}
+.wb-preview-item__signal--opportunity {
+  border-radius: 2px;
+  background: #c5c0eb;
+  transform: rotate(45deg);
+  box-shadow: 0 0 12px rgb(197 192 235 / 64%);
+}
+.wb-preview-item__signal--event {
+  border: 1px solid #9bd8d1;
+  background: transparent;
+  box-shadow: 0 0 12px rgb(155 216 209 / 58%);
+}
+.wb-preview-item--static {
+  cursor: default;
+}
+.wb-timeline {
+  padding: clamp(22px, 3vw, 32px);
+}
+.wb-timeline-list {
+  display: grid;
+  gap: 0;
+  margin-top: 24px;
+}
+.wb-timeline-row {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 20px;
+  min-width: 0;
+}
+.wb-timeline-marker {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 92px;
+  padding: 4px 0 0;
+  border: 0;
+  color: var(--wb-muted);
+  background: transparent;
+  font: inherit;
+  font-size: 11px;
+  text-align: left;
+  cursor: pointer;
+}
+.wb-timeline-marker::after {
+  content: '';
+  position: absolute;
+  top: 14px;
+  left: 4px;
+  bottom: -9px;
+  width: 1px;
+  background: linear-gradient(rgb(216 185 119 / 24%), rgb(244 241 233 / 8%));
+}
+.wb-timeline-row:last-child .wb-timeline-marker::after {
+  bottom: 24px;
+}
+.wb-timeline-marker span {
+  position: relative;
+  z-index: 1;
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  margin-top: 5px;
+  border: 1px solid var(--wb-gold);
+  border-radius: 50%;
+  background: #16151d;
+  box-shadow: 0 0 13px rgb(216 185 119 / 50%);
+}
+.wb-timeline-marker time {
+  display: grid;
+  gap: 3px;
+  line-height: 1.1;
+}
+.wb-timeline-marker time strong {
+  color: rgb(244 241 233 / 88%);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+.wb-timeline-marker time small {
+  color: rgb(244 241 233 / 40%);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.wb-timeline-marker:hover time strong,
+.wb-timeline-marker:focus-visible time strong,
+.wb-timeline-row--selected .wb-timeline-marker time strong {
+  color: #e4bb72;
+}
+.wb-timeline-marker:focus-visible {
+  outline: 2px solid rgb(216 185 119 / 58%);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+.wb-timeline-content {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 0 0 24px;
+}
+.wb-timeline-card {
+  min-height: 48px;
+}
+.wb-timeline-card--task {
+  border-left-color: rgb(216 185 119 / 28%);
+}
+.wb-timeline-card--task .wb-preview-item__signal {
+  background: var(--wb-gold);
+}
+.wb-timeline-card--milestone {
+  border-color: rgb(197 192 235 / 28%);
+  background: rgb(197 192 235 / 4%);
+}
+.wb-timeline-card--milestone .wb-preview-item__signal {
+  border-radius: 2px;
+  transform: rotate(45deg);
+}
+.wb-timeline-card--event {
+  border-color: rgb(155 216 209 / 26%);
+  background: rgb(155 216 209 / 4%);
+}
+.wb-board {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(200px, 1fr));
+  gap: 14px;
+  overflow-x: auto;
+  padding: 2px 2px 16px;
+  scroll-snap-type: x proximity;
+}
+.wb-board__lane {
+  position: relative;
+  min-width: 0;
+  min-height: 280px;
+  padding: 17px;
+  border: 1px solid color-mix(in srgb, var(--wb-lane-accent) 24%, transparent);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--wb-lane-accent) 8%, rgb(16 20 19 / 82%));
+  box-shadow:
+    inset 0 1px rgb(244 241 233 / 7%),
+    0 14px 34px rgb(0 0 0 / 12%);
+  scroll-snap-align: start;
+  overflow: hidden;
+}
+.wb-board__lane::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 18px;
+  left: 18px;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--wb-lane-accent);
+  box-shadow: 0 0 18px var(--wb-lane-glow);
+  opacity: 0.72;
+}
+.wb-board__lane--preparing {
+  --wb-lane-accent: var(--wb-gold);
+  --wb-lane-glow: rgb(216 185 119 / 52%);
+}
+.wb-board__lane--waiting {
+  --wb-lane-accent: #c5c0eb;
+  --wb-lane-glow: rgb(197 192 235 / 52%);
+}
+.wb-board__lane--ready {
+  --wb-lane-accent: #9bd8d1;
+  --wb-lane-glow: rgb(155 216 209 / 46%);
+}
+.wb-board__lane--submitted {
+  --wb-lane-accent: #dce8ee;
+  --wb-lane-glow: rgb(220 232 238 / 46%);
+}
+.wb-board__lane--outcome {
+  --wb-lane-accent: #f4f1e9;
+  --wb-lane-glow: rgb(244 241 233 / 42%);
+}
+.wb-board__lane-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgb(244 241 233 / 8%);
+}
+.wb-board__lane-header h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+}
+.wb-board__lane-header > span {
+  display: grid;
+  min-width: 24px;
+  height: 24px;
+  place-items: center;
+  border: 1px solid rgb(216 185 119 / 26%);
+  border-radius: 50%;
+  color: var(--wb-gold);
+  font-size: 10px;
+}
+.wb-board__cards {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+.wb-board-card {
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--wb-lane-accent) 19%, transparent);
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--wb-lane-accent) 5%, rgb(244 241 233 / 8%));
+  box-shadow: inset 0 1px rgb(244 241 233 / 5%);
+}
+.wb-board-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.wb-board-card h4 {
+  margin: 0 0 9px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.wb-board-card select {
+  width: 100%;
+  margin-top: 12px;
+  font-size: 11px;
+}
+.wb-board-card__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--wb-gold);
+  box-shadow: 0 0 10px rgb(216 185 119 / 72%);
+}
+.wb-board-card__dot--task {
+  background: #c5c0eb;
+  box-shadow: 0 0 10px rgb(197 192 235 / 72%);
+}
+.wb-board-empty {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  min-height: 170px;
+  place-content: center;
+  color: rgb(244 241 233 / 35%);
+  text-align: center;
+}
+.wb-board-empty span {
+  color: var(--wb-gold);
+  font-size: 22px;
+}
+.wb-board-empty p {
+  margin: 0;
+  font-size: 11px;
+}
 @media (max-width: 700px) {
-  .wb-plan-rail { display: grid; gap: 12px; }
-  .wb-plan-rail__navigation { display: flex; align-items: center; gap: 8px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
-  .wb-plan-rail__navigation::-webkit-scrollbar { display: none; }
-  .wb-plan-rail .wb-segments { width: 156px; max-width: none; flex: 0 0 auto; }
-  .wb-plan-rail .wb-segments button { width: 100%; padding-inline: 10px; }
-  .wb-plan-rail .wb-viewbar { width: max-content; margin-left: 0; padding: 0 0 0 8px; overflow: visible; justify-content: flex-start; border-top: 0; border-left: 1px solid rgb(244 241 233 / 12%); }
-  .wb-plan-rail .wb-viewbar::-webkit-scrollbar { display: none; }
-  .wb-plan-rail .wb-viewbar button { flex: 0 0 auto; padding-inline: 13px; }
-  .wb-toolbar__actions { justify-content: stretch; }
-  .wb-toolbar__actions > * { flex: 1 1 0; }
+  .wb-plan-rail {
+    display: grid;
+    gap: 12px;
+  }
+  .wb-plan-rail__navigation {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .wb-plan-rail__navigation::-webkit-scrollbar {
+    display: none;
+  }
+  .wb-plan-rail .wb-segments {
+    width: 156px;
+    max-width: none;
+    flex: 0 0 auto;
+  }
+  .wb-plan-rail .wb-segments button {
+    width: 100%;
+    padding-inline: 10px;
+  }
+  .wb-plan-rail .wb-viewbar {
+    width: max-content;
+    margin-left: 0;
+    padding: 0 0 0 8px;
+    overflow: visible;
+    justify-content: flex-start;
+    border-top: 0;
+    border-left: 1px solid rgb(244 241 233 / 12%);
+  }
+  .wb-plan-rail .wb-viewbar::-webkit-scrollbar {
+    display: none;
+  }
+  .wb-plan-rail .wb-viewbar button {
+    flex: 0 0 auto;
+    padding-inline: 13px;
+  }
+  .wb-toolbar__actions {
+    justify-content: stretch;
+  }
+  .wb-toolbar__actions > * {
+    flex: 1 1 0;
+  }
   .wb-toolbar__actions .wb-button,
   .wb-toolbar__actions :deep(.cloud-trigger-button),
-  .wb-toolbar__actions :deep(.capture-trigger) { width: 100%; }
-  .wb-agenda-row { grid-template-columns: auto minmax(0, 1fr); }
-  .wb-agenda-row time { grid-column: 2; }
-  .wb-timeline-row { grid-template-columns: 102px minmax(0, 1fr); gap: 12px; }
-  .wb-board { grid-template-columns: repeat(5, minmax(224px, 1fr)); margin-inline: -4px; padding-inline: 4px; }
+  .wb-toolbar__actions :deep(.capture-trigger) {
+    width: 100%;
+  }
+  .wb-agenda-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .wb-agenda-row time {
+    grid-column: 2;
+  }
+  .wb-timeline-row {
+    grid-template-columns: 102px minmax(0, 1fr);
+    gap: 12px;
+  }
+  .wb-board {
+    grid-template-columns: repeat(5, minmax(224px, 1fr));
+    margin-inline: -4px;
+    padding-inline: 4px;
+  }
 }
 @media (max-width: 420px) {
-  .wb-plan-rail__navigation { min-width: 0; }
-  .wb-plan-rail .wb-segments { width: 156px; }
-  .wb-calendar-grid { gap: 3px; }
-  .wb-calendar-day { font-size: 11px; }
-  .wb-calendar-legend { gap: 9px 14px; }
-  .wb-timeline-row { grid-template-columns: 86px minmax(0, 1fr); }
-  .wb-timeline-marker { font-size: 10px; }
+  .wb-plan-rail__navigation {
+    min-width: 0;
+  }
+  .wb-plan-rail .wb-segments {
+    width: 156px;
+  }
+  .wb-calendar-grid {
+    gap: 3px;
+  }
+  .wb-calendar-day {
+    font-size: 11px;
+  }
+  .wb-calendar-legend {
+    gap: 9px 14px;
+  }
+  .wb-timeline-row {
+    grid-template-columns: 86px minmax(0, 1fr);
+  }
+  .wb-timeline-marker {
+    font-size: 10px;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .wb-plan-view-enter-active,
@@ -2951,6 +4280,9 @@ function calendarFacts(date: string) {
   .wb-calendar-nav__button,
   .wb-calendar-day,
   .wb-preview-item,
-  .wb-timeline-card { transition: none; transform: none; }
+  .wb-timeline-card {
+    transition: none;
+    transform: none;
+  }
 }
 </style>

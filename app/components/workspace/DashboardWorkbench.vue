@@ -65,9 +65,7 @@ const error = ref('')
 const notice = ref('')
 const mode = ref<'discover' | 'plan'>(queryText('mode') === 'plan' ? 'plan' : 'discover')
 const view = ref(
-  ['focus', 'calendar', 'timeline', 'board'].includes(queryText('view'))
-    ? queryText('view')
-    : 'focus',
+  ['focus', 'calendar', 'board'].includes(queryText('view')) ? queryText('view') : 'focus',
 )
 const calendarOffset = ref(0)
 const calendarDirection = ref<'next' | 'previous'>('next')
@@ -195,10 +193,8 @@ watch(
     const searchChanged = restoredSearch !== query.value
     mode.value = queryText('mode') === 'plan' ? 'plan' : 'discover'
     const requestedView = queryText('view')
-    const normalizedView = requestedView === 'agenda' ? 'focus' : requestedView
-    view.value = ['focus', 'calendar', 'timeline', 'board'].includes(normalizedView)
-      ? normalizedView
-      : 'focus'
+    const normalizedView = ['agenda', 'timeline'].includes(requestedView) ? 'focus' : requestedView
+    view.value = ['focus', 'calendar', 'board'].includes(normalizedView) ? normalizedView : 'focus'
     query.value = restoredSearch
     includeClosed.value = queryText('past') === '1'
     savedOnly.value = queryText('saved') === '1'
@@ -279,7 +275,6 @@ const planCalendarCells = computed<((typeof calendarDays.value)[number] | null)[
   return [...Array.from({ length: first.getUTCDay() }, () => null), ...calendarDays.value]
 })
 const selectedPlanDate = ref(today)
-const selectedTimelineDate = ref(today)
 watch(calendarOffset, () => {
   const next =
     calendarDays.value.find((day) => planHasItems(day.date))?.date || calendarDays.value[0]?.date
@@ -394,44 +389,6 @@ function planDateLabel(date: string) {
     timeZone: 'UTC',
   })
 }
-const planTimelineGroups = computed(() => {
-  const groups = new Map<
-    string,
-    { date: string; tasks: PlanTask[]; milestones: any[]; events: typeof events.value }
-  >()
-  const add = (date: string, kind: 'task' | 'milestone' | 'event', value: any) => {
-    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return
-    const group = groups.get(date) || { date, tasks: [], milestones: [], events: [] }
-    if (kind === 'task') group.tasks.push(value)
-    else if (kind === 'milestone') group.milestones.push(value)
-    else group.events.push(value)
-    groups.set(date, group)
-  }
-  tasks.value.forEach((task) => add(task.dueDate || localDay(task.scheduledStart), 'task', task))
-  events.value.forEach((event) =>
-    localDatesBetween(event.start, event.end).forEach((date) => add(date, 'event', event)),
-  )
-  pursuits.value.forEach((pursuit) =>
-    pursuit.officialDates.forEach((point, index) => {
-      if (point.localDate && point.precision !== 'unknown' && point.precision !== 'approximate')
-        add(point.localDate, 'milestone', { key: `${pursuit.id}:${index}`, pursuit, point })
-    }),
-  )
-  savedOpportunityRecords.value.forEach((opportunity) =>
-    getTimeline(opportunity).forEach((point, index) => {
-      if (!point.superseded && /^\d{4}-\d{2}-\d{2}$/.test(point.date))
-        add(point.date, 'milestone', { key: `${opportunity.id}:${index}`, opportunity, point })
-    }),
-  )
-  return [...groups.values()]
-    .map((group) => ({
-      ...group,
-      milestones: planMilestonesForDate(group.date),
-      events: planEventsForDate(group.date),
-    }))
-    .filter((group) => group.tasks.length || group.milestones.length || group.events.length)
-    .sort((a, b) => a.date.localeCompare(b.date))
-})
 function boardTasksFor(column: string) {
   return tasks.value.filter(
     (task) => !task.pursuitId && column === 'preparing' && task.status !== 'done',
@@ -571,21 +528,6 @@ function taskReason(t: any) {
   if (t.dueDate === today) return 'Internal target today'
   if (t.dueDate) return `Internal target ${dateLabel(t.dueDate)}`
   return 'No date set'
-}
-function planDateParts(value: string) {
-  const date = new Date(`${value.slice(0, 10)}T12:00:00Z`)
-  return {
-    monthDay: date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      timeZone: 'UTC',
-    }),
-    weekday: date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      timeZone: 'UTC',
-    }),
-    year: value.slice(0, 4),
-  }
 }
 function actionable(item: Opportunity) {
   if (['discontinued', 'replaced', 'awaiting-announcement'].includes(item.lifecycle || ''))
@@ -1127,9 +1069,16 @@ async function toggleActivityStatus(activity: PlanActivity) {
 }
 function openPursuitOpportunity(pursuit: PlanPursuit) {
   mode.value = 'plan'
-  view.value = 'timeline'
+  view.value = 'focus'
   emit('navigate', 'opportunities')
-  notice.value = `${pursuit.title} is in your plan. Its milestones are now visible in the timeline.`
+  notice.value = `${pursuit.title} is in your plan. Its milestones are now visible in Focus.`
+}
+function openSavedOpportunity(id: string) {
+  const item =
+    catalog.value.find((candidate) => candidate.id === id) ||
+    taskSavedOpportunityRecords.value.find((candidate) => candidate.id === id)
+  if (item) inspectOpportunity(item)
+  else queryPatch({ opportunity: id }, true)
 }
 function editEvent(event?: any) {
   eventEditor.value = event
@@ -1292,11 +1241,13 @@ function calendarFacts(date: string) {
       :events="events"
       :today="today"
       :saved-opportunity-count="saves.length"
+      :saved-opportunities="savedTaskOpportunities"
       @add-task="editQuickTask"
       @open-task="openTask"
       @toggle-task="completeTask"
       @toggle-activity="toggleActivityStatus"
       @open-opportunity="openPursuitOpportunity"
+      @open-saved-opportunity="openSavedOpportunity"
     />
 
     <template v-if="section === 'opportunities'">
@@ -1315,7 +1266,7 @@ function calendarFacts(date: string) {
             </div>
             <div v-if="mode === 'plan'" class="wb-viewbar" aria-label="Plan view">
               <button
-                v-for="v in ['focus', 'calendar', 'timeline', 'board']"
+                v-for="v in ['focus', 'calendar', 'board']"
                 :key="v"
                 :aria-pressed="view === v"
                 @click="view = v"
@@ -1517,11 +1468,13 @@ function calendarFacts(date: string) {
                 :events="events"
                 :today="today"
                 :saved-opportunity-count="saves.length"
+                :saved-opportunities="savedTaskOpportunities"
                 @add-task="editQuickTask"
                 @open-task="openTask"
                 @toggle-task="completeTask"
                 @toggle-activity="toggleActivityStatus"
                 @open-opportunity="openPursuitOpportunity"
+                @open-saved-opportunity="openSavedOpportunity"
               />
               <section
                 v-else-if="view === 'calendar'"
@@ -1652,7 +1605,6 @@ function calendarFacts(date: string) {
                       v-for="event in planEventsForDate(selectedPlanDate)"
                       :key="`event:${event.id}`"
                       class="wb-preview-item"
-                      @click="selectedTimelineDate = selectedPlanDate"
                     >
                       <i class="wb-preview-item__signal wb-preview-item__signal--event" /><span
                         ><strong>{{ event.title }}</strong
@@ -1664,148 +1616,6 @@ function calendarFacts(date: string) {
                     Nothing saved or scheduled for this day.
                   </div>
                 </aside>
-              </section>
-              <section v-else-if="view === 'timeline'" class="wb-plan-surface wb-timeline">
-                <div class="wb-view-heading">
-                  <div>
-                    <p class="wb-kicker">Chronological view</p>
-                    <h3>Timeline</h3>
-                  </div>
-                  <span class="wb-muted"
-                    >{{ planTimelineGroups.length }} date{{
-                      planTimelineGroups.length === 1 ? '' : 's'
-                    }}</span
-                  >
-                </div>
-                <div v-if="planTimelineGroups.length" class="wb-timeline-list">
-                  <article
-                    v-for="group in planTimelineGroups"
-                    :key="group.date"
-                    class="wb-timeline-row"
-                    :class="{ 'wb-timeline-row--selected': selectedTimelineDate === group.date }"
-                  >
-                    <button
-                      class="wb-timeline-marker"
-                      type="button"
-                      :aria-label="`Preview ${planDateLabel(group.date)}`"
-                      :aria-pressed="selectedTimelineDate === group.date"
-                      @click="selectedTimelineDate = group.date"
-                    >
-                      <span aria-hidden="true" /><time :datetime="group.date"
-                        ><strong>{{ planDateParts(group.date).monthDay }}</strong
-                        ><small>{{ planDateParts(group.date).weekday }}</small></time
-                      >
-                    </button>
-                    <div class="wb-timeline-content">
-                      <button
-                        v-for="task in group.tasks"
-                        :key="`task:${task.id}`"
-                        class="wb-timeline-card wb-timeline-card--task"
-                        @click="selectedTimelineDate = group.date"
-                      >
-                        <i class="wb-preview-item__signal wb-preview-item__signal--task" /><span
-                          ><strong>{{ task.title }}</strong
-                          ><small>{{
-                            opportunityTitleForTask(task) || 'Personal task'
-                          }}</small></span
-                        >
-                      </button>
-                      <button
-                        v-for="milestone in group.milestones"
-                        :key="`milestone:${milestone.key}`"
-                        class="wb-timeline-card wb-timeline-card--milestone"
-                        @click="selectedTimelineDate = group.date"
-                      >
-                        <i
-                          class="wb-preview-item__signal wb-preview-item__signal--opportunity"
-                        /><span
-                          ><strong>{{ planMilestoneTitle(milestone) }}</strong
-                          ><small>{{ planMilestoneLabel(milestone) }}</small></span
-                        >
-                      </button>
-                      <button
-                        v-for="event in group.events"
-                        :key="`event:${event.id}`"
-                        class="wb-timeline-card wb-timeline-card--event"
-                        @click="selectedTimelineDate = group.date"
-                      >
-                        <i class="wb-preview-item__signal wb-preview-item__signal--event" /><span
-                          ><strong>{{ event.title }}</strong
-                          ><small>{{ planEventLabel(event) }}</small></span
-                        >
-                      </button>
-                    </div>
-                  </article>
-                </div>
-                <aside
-                  v-if="planTimelineGroups.some((group) => group.date === selectedTimelineDate)"
-                  class="wb-calendar-preview wb-timeline-preview"
-                  aria-live="polite"
-                >
-                  <div class="wb-view-heading">
-                    <div>
-                      <p class="wb-kicker">Selected timeline date</p>
-                      <h4>{{ planDateLabel(selectedTimelineDate) }}</h4>
-                    </div>
-                    <span class="wb-muted"
-                      >{{
-                        planTasksForDate(selectedTimelineDate).length +
-                        planMilestonesForDate(selectedTimelineDate).length +
-                        planEventsForDate(selectedTimelineDate).length
-                      }}
-                      item{{
-                        planTasksForDate(selectedTimelineDate).length +
-                          planMilestonesForDate(selectedTimelineDate).length +
-                          planEventsForDate(selectedTimelineDate).length ===
-                        1
-                          ? ''
-                          : 's'
-                      }}</span
-                    >
-                  </div>
-                  <div class="wb-calendar-preview__items">
-                    <button
-                      v-for="task in planTasksForDate(selectedTimelineDate)"
-                      :key="`timeline-preview-task:${task.id}`"
-                      class="wb-preview-item"
-                      @click="openTask(task)"
-                    >
-                      <i class="wb-preview-item__signal wb-preview-item__signal--task" /><span
-                        ><strong>{{ task.title }}</strong
-                        ><small>{{ opportunityTitleForTask(task) || 'Personal task' }}</small></span
-                      >
-                    </button>
-                    <a
-                      v-for="milestone in planMilestonesForDate(selectedTimelineDate)"
-                      :key="`timeline-preview-milestone:${milestone.key}`"
-                      class="wb-preview-item"
-                      :href="planMilestoneHref(milestone)"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      ><i
-                        class="wb-preview-item__signal wb-preview-item__signal--opportunity"
-                      /><span
-                        ><strong>{{ planMilestoneTitle(milestone) }}</strong
-                        ><small>{{ planMilestoneLabel(milestone) }} · Source details</small></span
-                      ></a
-                    >
-                    <div
-                      v-for="event in planEventsForDate(selectedTimelineDate)"
-                      :key="`timeline-preview-event:${event.id}`"
-                      class="wb-preview-item wb-preview-item--static"
-                    >
-                      <i class="wb-preview-item__signal wb-preview-item__signal--event" /><span
-                        ><strong>{{ event.title }}</strong
-                        ><small>{{ planEventLabel(event) }}</small></span
-                      >
-                    </div>
-                  </div>
-                </aside>
-                <div v-else class="wb-empty-state wb-empty-state--rail">
-                  <span class="wb-empty-state__orb" aria-hidden="true">✦</span>
-                  <p>Your timeline will appear when you save an opportunity or add a task.</p>
-                  <button class="wb-button wb-primary" @click="editQuickTask()">Add task</button>
-                </div>
               </section>
               <section v-else class="wb-board" aria-label="Plan board">
                 <section

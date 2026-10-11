@@ -8,6 +8,7 @@ const props = defineProps<{
   events: PlanEvent[]
   today: string
   savedOpportunityCount: number
+  savedOpportunities?: { id: string; title: string }[]
   embedded?: boolean
 }>()
 const emit = defineEmits<{
@@ -16,6 +17,7 @@ const emit = defineEmits<{
   toggleTask: [task: PlanTask]
   toggleActivity: [activity: PlanActivity]
   openOpportunity: [pursuit: PlanPursuit]
+  openSavedOpportunity: [id: string]
 }>()
 
 const rail = ref<HTMLElement | null>(null)
@@ -70,6 +72,7 @@ const activeProjects = computed(() =>
   props.activities.filter((activity) => activity.status === 'active'),
 )
 const trackedProjects = computed(() => props.activities)
+const savedOpportunities = computed(() => props.savedOpportunities || [])
 onMounted(() => nextTick(() => scrollTo(props.today, 'auto')))
 onBeforeUnmount(() => {
   if (snapTimer) clearTimeout(snapTimer)
@@ -93,6 +96,13 @@ function dateLabel(date: string) {
 }
 function eventDate(value: string) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Chicago' }).format(new Date(value))
+}
+function eventTimeLabel(value: string) {
+  return new Intl.DateTimeFormat('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone: 'America/Chicago',
+  }).format(new Date(value))
 }
 function onRailScroll() {
   const element = rail.value
@@ -250,7 +260,9 @@ const allTasksComplete = computed(() => dayTasks.value.length > 0 && openTasks.v
               <span class="day-event__glyph">◌</span
               ><span
                 ><strong>{{ event.title }}</strong
-                ><small>{{ event.type.replace('_', ' ') }}</small></span
+                ><small
+                  >{{ event.type.replace('_', ' ') }} · {{ eventTimeLabel(event.start) }}</small
+                ></span
               >
             </div>
             <div v-if="!hasDayItems" class="day-empty">
@@ -260,6 +272,25 @@ const allTasksComplete = computed(() => dayTasks.value.length > 0 && openTasks.v
                 ><small>A clear day for the next useful move.</small></span
               >
             </div>
+          </div>
+          <div v-if="savedOpportunities.length" class="day-panel__saved">
+            <p class="day-panel__saved-label">Saved opportunities</p>
+            <button
+              v-for="opportunity in savedOpportunities.slice(0, 3)"
+              :key="opportunity.id"
+              type="button"
+              class="day-saved"
+              @click="emit('openSavedOpportunity', opportunity.id)"
+            >
+              <span class="day-saved__glyph" aria-hidden="true">✦</span>
+              <span
+                ><strong>{{ opportunity.title }}</strong
+                ><small>Saved for review</small></span
+              >
+            </button>
+            <p v-if="savedOpportunities.length > 3" class="day-panel__saved-more">
+              +{{ savedOpportunities.length - 3 }} more saved
+            </p>
           </div>
         </aside>
       </Transition>
@@ -812,6 +843,71 @@ const allTasksComplete = computed(() => dayTasks.value.length > 0 && openTasks.v
   color: #d8b977;
   box-shadow: 0 0 20px rgb(216 185 119 / 8%);
   font-size: 16px;
+}
+.day-panel__saved {
+  margin-top: 22px;
+  padding-top: 17px;
+  border-top: 1px solid rgb(255 255 255 / 8%);
+}
+.day-panel__saved-label,
+.day-panel__saved-more {
+  margin: 0 0 9px;
+  color: #948e9f;
+  font-size: 9px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+.day-saved {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 10px;
+  min-height: 42px;
+  padding: 8px 9px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  background: transparent;
+  color: #e9e4ee;
+  text-align: left;
+  transition:
+    background 0.25s,
+    border-color 0.25s,
+    transform 0.25s;
+}
+.day-saved:hover,
+.day-saved:focus-visible {
+  transform: translateX(3px);
+  border-color: rgb(216 185 119 / 25%);
+  background: rgb(216 185 119 / 6%);
+}
+.day-saved__glyph {
+  color: #d8b977;
+  font-size: 13px;
+}
+.day-saved span:last-child {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+.day-saved strong,
+.day-saved small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.day-saved strong {
+  font-size: 11px;
+  font-weight: 500;
+}
+.day-saved small {
+  color: #85818e;
+  font-size: 9px;
+}
+.day-panel__saved-more {
+  margin: 8px 0 0 25px;
+  color: #777481;
+  letter-spacing: 0;
+  text-transform: none;
 }
 .day-panel__footer {
   display: flex;

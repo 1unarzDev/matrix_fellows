@@ -351,6 +351,15 @@ onMounted(() => {
 .opportunity-card--featured {
   position: relative;
   isolation: isolate;
+  border-color: rgb(244 240 231 / 16%);
+  background:
+    linear-gradient(145deg, rgb(244 240 231 / 3.5%), rgb(244 240 231 / 0.9%) 48%, transparent 86%),
+    rgb(9 14 22 / 10%);
+  -webkit-backdrop-filter: blur(22px) saturate(124%);
+  backdrop-filter: blur(22px) saturate(124%);
+  box-shadow:
+    0 22px 70px rgb(0 7 15 / 10%),
+    inset 0 1px rgb(255 255 255 / 8%);
   transition:
     transform 900ms cubic-bezier(0.22, 1, 0.36, 1),
     border-color 1000ms ease,
@@ -370,8 +379,11 @@ onMounted(() => {
 }
 .opportunity-card--featured::before {
   background:
+    url('/textures/glass-grain.svg') repeat,
     radial-gradient(ellipse at 12% 0%, rgb(228 198 142 / 9%), transparent 62%),
     radial-gradient(ellipse at 100% 80%, rgb(190 173 236 / 6%), transparent 68%);
+  background-blend-mode: soft-light, normal, normal;
+  opacity: .12;
   transform: translateY(12px) scale(1.03);
   z-index: -1;
 }
@@ -379,9 +391,10 @@ onMounted(() => {
   box-shadow:
     inset 0 1px 0 rgb(244 228 193 / 19%),
     inset 0 0 36px rgb(225 211 247 / 3%);
+  opacity: .58;
 }
 .opportunity-card--featured:focus-within {
-  border-color: rgb(230 217 187 / 24%);
+  border-color: rgb(230 217 187 / 32%);
 }
 .opportunity-card--featured:focus-within::before,
 .opportunity-card--featured:focus-within::after {
@@ -391,9 +404,9 @@ onMounted(() => {
 @media (hover: hover) and (pointer: fine) {
   .opportunity-card--featured:hover {
     transform: translateY(-3px);
-    border-color: rgb(230 217 187 / 24%);
+    border-color: rgb(230 217 187 / 32%);
     box-shadow:
-      0 28px 76px rgb(0 7 15 / 19%),
+      0 28px 76px rgb(0 7 15 / 15%),
       0 0 38px rgb(220 199 154 / 4%),
       inset 0 1px rgb(255 255 255 / 5%);
   }

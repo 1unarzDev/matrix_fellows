@@ -2549,7 +2549,7 @@ function calendarFacts(date: string) {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0;
-  width: 156px;
+  width: 224px;
 }
 .wb-segments__indicator {
   position: absolute;
@@ -4035,9 +4035,9 @@ function calendarFacts(date: string) {
   min-width: 0;
   min-height: 280px;
   padding: 17px;
-  border: 1px solid color-mix(in srgb, var(--wb-lane-accent) 24%, transparent);
+  border: 1px solid rgb(244 241 233 / 11%);
   border-radius: 20px;
-  background: color-mix(in srgb, var(--wb-lane-accent) 8%, rgb(16 20 19 / 82%));
+  background: rgb(255 255 255 / 3%);
   box-shadow:
     inset 0 1px rgb(244 241 233 / 7%),
     0 14px 34px rgb(0 0 0 / 12%);
@@ -4057,24 +4057,24 @@ function calendarFacts(date: string) {
   opacity: 0.72;
 }
 .wb-board__lane--preparing {
-  --wb-lane-accent: var(--wb-gold);
-  --wb-lane-glow: rgb(216 185 119 / 52%);
+  --wb-lane-accent: #f4f1e9;
+  --wb-lane-glow: rgb(244 241 233 / 48%);
 }
 .wb-board__lane--waiting {
-  --wb-lane-accent: #c5c0eb;
-  --wb-lane-glow: rgb(197 192 235 / 52%);
+  --wb-lane-accent: #e7c779;
+  --wb-lane-glow: rgb(231 199 121 / 48%);
 }
 .wb-board__lane--ready {
-  --wb-lane-accent: #9bd8d1;
-  --wb-lane-glow: rgb(155 216 209 / 46%);
+  --wb-lane-accent: #e49a57;
+  --wb-lane-glow: rgb(228 154 87 / 48%);
 }
 .wb-board__lane--submitted {
-  --wb-lane-accent: #dce8ee;
-  --wb-lane-glow: rgb(220 232 238 / 46%);
+  --wb-lane-accent: #df6f58;
+  --wb-lane-glow: rgb(223 111 88 / 48%);
 }
 .wb-board__lane--outcome {
   --wb-lane-accent: #f4f1e9;
-  --wb-lane-glow: rgb(244 241 233 / 42%);
+  --wb-lane-glow: rgb(244 241 233 / 34%);
 }
 .wb-board__lane-header {
   display: flex;
@@ -4106,9 +4106,9 @@ function calendarFacts(date: string) {
 }
 .wb-board-card {
   padding: 14px;
-  border: 1px solid color-mix(in srgb, var(--wb-lane-accent) 19%, transparent);
+  border: 1px solid rgb(244 241 233 / 10%);
   border-radius: 15px;
-  background: color-mix(in srgb, var(--wb-lane-accent) 5%, rgb(244 241 233 / 8%));
+  background: rgb(255 255 255 / 4%);
   box-shadow: inset 0 1px rgb(244 241 233 / 5%);
 }
 .wb-board-card__top {
@@ -4136,8 +4136,8 @@ function calendarFacts(date: string) {
   box-shadow: 0 0 10px rgb(216 185 119 / 72%);
 }
 .wb-board-card__dot--task {
-  background: #c5c0eb;
-  box-shadow: 0 0 10px rgb(197 192 235 / 72%);
+  background: #e7c779;
+  box-shadow: 0 0 10px rgb(231 199 121 / 64%);
 }
 .wb-board-empty {
   display: grid;
@@ -4173,7 +4173,7 @@ function calendarFacts(date: string) {
     display: none;
   }
   .wb-plan-rail .wb-segments {
-    width: 156px;
+    width: 224px;
     max-width: none;
     flex: 0 0 auto;
   }
@@ -4229,7 +4229,7 @@ function calendarFacts(date: string) {
     min-width: 0;
   }
   .wb-plan-rail .wb-segments {
-    width: 156px;
+    width: 224px;
   }
   .wb-calendar-grid {
     gap: 3px;

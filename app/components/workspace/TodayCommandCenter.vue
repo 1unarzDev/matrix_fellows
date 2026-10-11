@@ -824,9 +824,18 @@ const allTasksComplete = computed(() => dayTasks.value.length > 0 && openTasks.v
   font-size: 11px;
 }
 .project-pulse {
-  margin-top: 34px;
-  padding-top: 25px;
-  border-top: 1px solid rgb(255 255 255 / 8%);
+  position: relative;
+  isolation: isolate;
+  margin-top: 28px;
+  padding: 22px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 22px;
+  background: rgb(255 255 255 / 2.5%);
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 6%),
+    0 14px 38px rgb(0 0 0 / 10%);
+  -webkit-backdrop-filter: blur(18px) saturate(112%);
+  backdrop-filter: blur(18px) saturate(112%);
 }
 .project-pulse__heading > span {
   color: #948e9f;

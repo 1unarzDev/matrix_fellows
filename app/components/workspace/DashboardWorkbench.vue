@@ -2893,23 +2893,23 @@ function calendarFacts(date: string) {
 .wb-timeline-card--milestone { border-color: rgb(185 163 237 / 22%); background: transparent; }
 .wb-timeline-card--milestone .wb-preview-item__signal { border-radius: 2px; transform: rotate(45deg); }
 .wb-board { display: grid; grid-template-columns: repeat(5, minmax(200px, 1fr)); gap: 14px; overflow-x: auto; padding: 2px 2px 16px; scroll-snap-type: x proximity; }
-.wb-board__lane { position: relative; min-width: 0; min-height: 280px; padding: 17px; border: 1px solid rgb(244 241 233 / 11%); border-radius: 20px; background: transparent; scroll-snap-align: start; overflow: hidden; }
+.wb-board__lane { position: relative; min-width: 0; min-height: 280px; padding: 17px; border: 1px solid color-mix(in srgb, var(--wb-lane-accent) 24%, transparent); border-radius: 20px; background: color-mix(in srgb, var(--wb-lane-accent) 8%, rgb(16 20 19 / 82%)); box-shadow: inset 0 1px rgb(244 241 233 / 7%), 0 14px 34px rgb(0 0 0 / 12%); scroll-snap-align: start; overflow: hidden; }
 .wb-board__lane::before { content: ''; position: absolute; top: 0; right: 18px; left: 18px; height: 2px; border-radius: 999px; background: var(--wb-lane-accent); box-shadow: 0 0 18px var(--wb-lane-glow); opacity: .72; }
 .wb-board__lane--preparing { --wb-lane-accent: var(--wb-gold); --wb-lane-glow: rgb(216 185 119 / 52%); }
-.wb-board__lane--waiting { --wb-lane-accent: #b9a3ed; --wb-lane-glow: rgb(185 163 237 / 52%); }
-.wb-board__lane--ready { --wb-lane-accent: #9bc9c4; --wb-lane-glow: rgb(155 201 196 / 46%); }
-.wb-board__lane--submitted { --wb-lane-accent: #9ab7e8; --wb-lane-glow: rgb(154 183 232 / 46%); }
-.wb-board__lane--outcome { --wb-lane-accent: #d99a9a; --wb-lane-glow: rgb(217 154 154 / 46%); }
+.wb-board__lane--waiting { --wb-lane-accent: #c5c0eb; --wb-lane-glow: rgb(197 192 235 / 52%); }
+.wb-board__lane--ready { --wb-lane-accent: #9bd8d1; --wb-lane-glow: rgb(155 216 209 / 46%); }
+.wb-board__lane--submitted { --wb-lane-accent: #dce8ee; --wb-lane-glow: rgb(220 232 238 / 46%); }
+.wb-board__lane--outcome { --wb-lane-accent: #f4f1e9; --wb-lane-glow: rgb(244 241 233 / 42%); }
 .wb-board__lane-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding-bottom: 14px; border-bottom: 1px solid rgb(244 241 233 / 8%); }
 .wb-board__lane-header h3 { margin: 0; font-size: 13px; font-weight: 500; }
 .wb-board__lane-header > span { display: grid; min-width: 24px; height: 24px; place-items: center; border: 1px solid rgb(216 185 119 / 26%); border-radius: 50%; color: var(--wb-gold); font-size: 10px; }
 .wb-board__cards { display: grid; gap: 10px; margin-top: 12px; }
-.wb-board-card { padding: 14px; border: 1px solid rgb(244 241 233 / 10%); border-radius: 15px; background: transparent; }
+.wb-board-card { padding: 14px; border: 1px solid color-mix(in srgb, var(--wb-lane-accent) 19%, transparent); border-radius: 15px; background: color-mix(in srgb, var(--wb-lane-accent) 5%, rgb(244 241 233 / 8%)); box-shadow: inset 0 1px rgb(244 241 233 / 5%); }
 .wb-board-card__top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
 .wb-board-card h4 { margin: 0 0 9px; font-size: 13px; line-height: 1.45; }
 .wb-board-card select { width: 100%; margin-top: 12px; font-size: 11px; }
 .wb-board-card__dot { width: 6px; height: 6px; border-radius: 50%; background: var(--wb-gold); box-shadow: 0 0 10px rgb(216 185 119 / 72%); }
-.wb-board-card__dot--task { background: #b9a3ed; box-shadow: 0 0 10px rgb(185 163 237 / 72%); }
+.wb-board-card__dot--task { background: #c5c0eb; box-shadow: 0 0 10px rgb(197 192 235 / 72%); }
 .wb-board-empty { display: grid; justify-items: center; gap: 6px; min-height: 170px; place-content: center; color: rgb(244 241 233 / 35%); text-align: center; }
 .wb-board-empty span { color: var(--wb-gold); font-size: 22px; }
 .wb-board-empty p { margin: 0; font-size: 11px; }

@@ -47,3 +47,9 @@ needed. Deploy the built application to Worker `matrix-fellows` at `matrixfellow
 using `wrangler.jsonc` with `--keep-vars`. The previous application version is
 `802bce22-b313-4fa6-b353-a51aa065c891`; restoring it restores the standalone Research
 runs UI without changing research jobs, source evidence, or database settings.
+
+Released application commit: `b25cec4`, pushed to `origin/main`. Production Worker
+version: `c545647d-76d0-4e6a-aab1-2bc3f829eedf`. The dashboard document and published
+`workspace.zYnJJQ3a.css` asset returned HTTP 200; the asset contains the research
+panel/disclosure/transparent-section selectors. This is a production deployment
+and static-asset smoke check, not live authenticated persistence or provider validation.

@@ -852,6 +852,7 @@ async function logout() {
 }
 const outbox = ref<any[]>([])
 const outboxError = ref('')
+const outboxExpanded = ref(false)
 const reconcileId = ref('')
 const reconcileOutcome = ref('sent')
 const reconcileNote = ref('')
@@ -1718,8 +1719,15 @@ onMounted(async () => {
                 Choose a message to refine, approve, and send.
               </div>
             </div>
-            <details class="ws-panel secondary-panel outbox-panel">
-              <summary>
+            <section class="ws-panel secondary-panel outbox-panel" :class="{ 'outbox-panel--expanded': outboxExpanded }">
+              <button
+                type="button"
+                class="outbox-toggle"
+                aria-label="Outbox & sending history"
+                aria-controls="workspace-outbox-content"
+                :aria-expanded="outboxExpanded"
+                @click="outboxExpanded = !outboxExpanded"
+              >
                 <span class="outbox-heading">
                   <span class="outbox-icon" aria-hidden="true"><SiteIcon name="mail" :size="15" /></span>
                   <span class="outbox-heading__copy">
@@ -1728,7 +1736,15 @@ onMounted(async () => {
                   </span>
                 </span>
                 <span class="outbox-count">{{ outbox.length }}</span>
-              </summary>
+                <span class="outbox-toggle__chevron" aria-hidden="true"></span>
+              </button>
+              <div
+                id="workspace-outbox-content"
+                class="outbox-disclosure"
+                :aria-hidden="!outboxExpanded"
+                :inert="!outboxExpanded"
+              >
+              <div class="outbox-disclosure__clip"><div class="outbox-content">
               <p class="ws-muted">
                 Accepted means the provider accepted the request, not confirmed delivery. Resolve
                 uncertain sends only after checking your mailbox.
@@ -1766,7 +1782,8 @@ onMounted(async () => {
                   ><button type="button" class="ws-button" @click="reconcileId = ''">Cancel</button>
                 </div>
               </form>
-            </details>
+              </div></div></div>
+            </section>
             </div>
           </section>
           </template>
@@ -2350,10 +2367,6 @@ onMounted(async () => {
 .secondary-panel {
   margin-top: 30px;
   padding: clamp(22px, 3vw, 30px);
-  background:
-    radial-gradient(28rem 14rem at 100% 0%, rgb(216 185 119 / 7%), transparent 72%),
-    linear-gradient(145deg, rgb(244 241 233 / 4%), rgb(185 163 237 / 2%) 52%, transparent 86%),
-    rgb(18 19 26 / 62%);
 }
 .secondary-panel summary {
   font-family: Manrope, sans-serif;
@@ -2446,104 +2459,94 @@ onMounted(async () => {
 .outreach-draft-workspace > .section-top .ws-chip {
   flex: 0 0 auto;
 }
-.messages-review-surface {
-  position: relative;
-  isolation: isolate;
-  padding: clamp(12px, 2vw, 18px);
-  border: 1px solid rgb(239 235 224 / 10%);
-  border-radius: 30px;
-  background:
-    radial-gradient(38rem 22rem at 82% 0%, rgb(216 185 119 / 4%), transparent 72%),
-    rgb(255 255 255 / 1.8%);
-  box-shadow: inset 0 1px rgb(255 255 255 / 5%), 0 24px 70px rgb(0 0 0 / 10%);
-  backdrop-filter: blur(24px) saturate(114%);
-}
-.messages-review-surface::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  border-radius: inherit;
-  background: url('/textures/glass-grain.svg') repeat;
-  opacity: .045;
-  mix-blend-mode: soft-light;
-}
-.message-review-layout {
-  grid-template-columns: minmax(220px, .62fr) minmax(0, 1.38fr);
-  gap: 14px;
-}
-.messages-review-surface .message-list-panel {
-  align-content: start;
-  padding: 8px;
-  border-color: rgb(239 235 224 / 9%);
-  border-radius: 21px;
-  background: rgb(255 255 255 / 1.5%);
-  box-shadow: inset 0 1px rgb(255 255 255 / 4%);
-}
-.messages-review-surface .message-list-panel::before {
-  opacity: .025;
-}
-.messages-review-surface .message-list-panel .candidate {
-  padding: 18px 16px;
-  border-color: rgb(239 235 224 / 8%);
-  border-radius: 16px;
-  background: rgb(255 255 255 / 1.5%);
-  box-shadow: none;
-}
-.messages-review-surface .message-list-panel .candidate:hover {
-  background: rgb(255 255 255 / 4%);
-  box-shadow: 0 10px 26px rgb(0 0 0 / 9%);
-}
-.messages-review-surface .message-list-panel .candidate.selected {
-  border-color: rgb(216 185 119 / 42%);
-  background: linear-gradient(135deg, rgb(216 185 119 / 8%), rgb(185 163 237 / 3%));
-  box-shadow: inset 0 1px rgb(255 255 255 / 6%);
-}
-.message-editor-panel,
-.message-empty-state {
-  min-height: 100%;
-  border-color: rgb(239 235 224 / 11%);
-  background: rgb(255 255 255 / 2.8%);
-  box-shadow: inset 0 1px rgb(255 255 255 / 5%), 0 18px 44px rgb(0 0 0 / 7%);
-}
-.message-editor-panel:hover {
-  background: rgb(255 255 255 / 3.5%);
-}
-.message-empty-state {
-  display: grid;
-  place-items: center;
-  min-height: 390px;
-  padding: 30px;
-  border-style: solid;
-  color: #a7a0b1;
-  text-align: center;
-}
-.message-empty-state::before {
-  opacity: .04;
-}
+/* Keep the original outreach panel appearance; grouping is layout only. */
+.messages-review-surface { min-width: 0; }
+.message-review-layout { grid-template-columns: minmax(220px, .62fr) minmax(0, 1.38fr); gap: 20px; }
+.message-empty-state { display: grid; place-items: center; min-height: 390px; }
 .outbox-panel {
   margin-top: 14px;
   padding: 0 clamp(18px, 3vw, 28px);
   border-color: rgb(239 235 224 / 9%);
   border-radius: 21px;
-  background: rgb(255 255 255 / 1.8%);
-  box-shadow: inset 0 1px rgb(255 255 255 / 4%);
+  transition: border-color .35s ease, box-shadow .45s ease;
 }
-.outbox-panel summary {
+.outbox-panel:hover,
+.outbox-panel:focus-within {
+  border-color: rgb(216 185 119 / 25%);
+  box-shadow: 0 0 24px rgb(216 185 119 / 4%);
+}
+.outbox-toggle {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
   min-height: 72px;
-  margin: 0;
-}
-.outbox-panel summary span {
-  margin-left: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 13px;
+  background: transparent;
   color: inherit;
-  font-size: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
-.outbox-panel summary > .outbox-count {
+.outbox-toggle:focus-visible {
+  outline: 1px solid rgb(216 185 119 / 65%);
+  outline-offset: 5px;
+}
+.outbox-toggle > .outbox-count {
   margin-left: auto;
 }
-.outbox-panel summary::before {
-  display: none;
+.outbox-toggle__chevron {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  margin-right: 3px;
+  border-right: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  color: #a99c82;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform .45s cubic-bezier(.22, 1, .36, 1), color .3s ease;
+}
+.outbox-panel--expanded .outbox-toggle__chevron {
+  transform: translateY(2px) rotate(225deg);
+}
+.outbox-toggle:hover .outbox-toggle__chevron {
+  color: #d8b977;
+}
+.outbox-toggle .outbox-icon {
+  transition: transform .4s cubic-bezier(.22, 1, .36, 1), box-shadow .4s ease, border-color .4s ease;
+}
+.outbox-toggle:hover .outbox-icon,
+.outbox-toggle:focus-visible .outbox-icon {
+  transform: translateY(-1px);
+  border-color: rgb(216 185 119 / 45%);
+  box-shadow: 0 0 17px rgb(216 185 119 / 12%);
+}
+.outbox-toggle:active .outbox-icon {
+  transform: translateY(0) scale(.94);
+}
+.outbox-disclosure {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows .48s cubic-bezier(.22, 1, .36, 1), opacity .28s ease;
+}
+.outbox-panel--expanded .outbox-disclosure {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.outbox-disclosure__clip {
+  min-height: 0;
+  overflow: hidden;
+}
+.outbox-content {
+  padding: 3px 0 20px;
+  transform: translateY(-7px);
+  transition: transform .48s cubic-bezier(.22, 1, .36, 1);
+}
+.outbox-panel--expanded .outbox-content {
+  transform: translateY(0);
 }
 .outbox-heading {
   display: inline-flex;
@@ -2593,7 +2596,7 @@ onMounted(async () => {
   font-size: 11px;
   font-variant-numeric: tabular-nums;
 }
-.outbox-panel > .ws-muted {
+.outbox-content > .ws-muted {
   max-width: 58ch;
   padding: 0 0 4px 44px;
   color: #9a93a3;
@@ -2628,6 +2631,16 @@ onMounted(async () => {
 }
 .outbox-row .ws-button {
   flex: 0 0 auto;
+}
+@media (prefers-reduced-motion: reduce) {
+  .outbox-panel,
+  .outbox-toggle__chevron,
+  .outbox-toggle .outbox-icon,
+  .outbox-disclosure,
+  .outbox-content,
+  .outbox-row {
+    transition: none;
+  }
 }
 .account {
   display: flex;
@@ -2721,69 +2734,18 @@ onMounted(async () => {
   gap: 20px;
   align-items: start;
 }
-.outreach-queue-surface {
-  position: relative;
-  isolation: isolate;
-  padding: clamp(12px, 2vw, 18px);
-  border: 1px solid rgb(239 235 224 / 9%);
-  border-radius: 30px;
-  background:
-    radial-gradient(34rem 24rem at 84% 0%, rgb(216 185 119 / 4%), transparent 72%),
-    rgb(255 255 255 / 1.5%);
-  box-shadow: inset 0 1px rgb(255 255 255 / 4%), 0 24px 70px rgb(0 0 0 / 8%);
-  backdrop-filter: blur(24px) saturate(112%);
-}
-.outreach-queue-surface::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  border-radius: inherit;
-  background: url('/textures/glass-grain.svg') repeat;
-  opacity: .035;
-  mix-blend-mode: soft-light;
-}
-.outreach-queue-surface > .candidate-list {
-  background: rgb(255 255 255 / 1.8%);
-  box-shadow: inset 0 1px rgb(255 255 255 / 4%);
-}
-.outreach-queue-surface > .dossier {
-  background: rgb(255 255 255 / 2.8%);
-  box-shadow: inset 0 1px rgb(255 255 255 / 5%), 0 18px 44px rgb(0 0 0 / 7%);
-}
 .candidate-list {
-  position: relative;
-  isolation: isolate;
   display: grid;
   gap: 12px;
   min-width: 0;
-  padding: 14px;
-  border: 1px solid rgb(239 235 224 / 9%);
-  border-radius: 24px;
-  background:
-    linear-gradient(145deg, rgb(244 241 233 / 4%), rgb(185 163 237 / 2%) 55%, transparent 90%),
-    rgb(18 19 26 / 48%);
-  box-shadow: inset 0 1px rgb(255 255 255 / 6%), 0 18px 58px rgb(0 0 0 / 14%);
-  backdrop-filter: blur(22px) saturate(114%);
-}
-.candidate-list::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background: url('/textures/glass-grain.svg') repeat;
-  opacity: .07;
-  mix-blend-mode: soft-light;
 }
 .candidate {
   text-align: left;
   width: 100%;
-  padding: 18px 18px;
-  border: 1px solid rgb(239 235 224 / 9%);
-  border-radius: 18px;
-  background: rgb(255 255 255 / 2%);
+  padding: 18px 20px;
+  border: 1px solid #d5c9ed15;
+  border-radius: 22px;
+  background: #d5c9ed04;
   transition:
     border-color 0.35s,
     background 0.35s,
@@ -2792,14 +2754,12 @@ onMounted(async () => {
 }
 .candidate:hover {
   transform: translateY(-2px);
-  border-color: rgb(239 235 224 / 22%);
-  background: rgb(255 255 255 / 5%);
-  box-shadow: 0 12px 30px rgb(0 0 0 / 14%);
+  border-color: #d5c9ed35;
+  background: #d5c9ed09;
 }
 .candidate.selected {
-  border-color: rgb(216 185 119 / 55%);
-  background: linear-gradient(135deg, rgb(216 185 119 / 9%), rgb(185 163 237 / 3%));
-  box-shadow: inset 0 1px rgb(255 255 255 / 7%), 0 12px 34px rgb(0 0 0 / 15%);
+  border-color: #d6bc7955;
+  background: #d6bc7909;
 }
 .candidate-top {
   display: flex;
@@ -3336,10 +3296,6 @@ onMounted(async () => {
   .queue-layout {
     grid-template-columns: 1fr;
   }
-  .messages-review-surface {
-    padding: 10px;
-    border-radius: 24px;
-  }
   .message-review-layout {
     gap: 10px;
   }
@@ -3352,13 +3308,13 @@ onMounted(async () => {
   .outbox-panel {
     padding-inline: 14px;
   }
-  .outbox-panel summary {
+  .outbox-toggle {
     min-height: 68px;
   }
   .outbox-heading__copy small {
     display: none;
   }
-  .outbox-panel > .ws-muted {
+  .outbox-content > .ws-muted {
     padding-left: 0;
   }
   .outbox-row {

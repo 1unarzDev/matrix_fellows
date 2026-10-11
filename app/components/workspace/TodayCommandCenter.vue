@@ -592,7 +592,7 @@ const allTasksComplete = computed(() => dayTasks.value.length > 0 && openTasks.v
   margin-left: 25px;
   border: 1px solid rgb(216 185 119 / 55%);
   border-radius: 50%;
-  background: rgb(25 24 31 / 96%);
+  background: transparent;
   box-shadow: 0 0 0 5px rgb(216 185 119 / 5%);
   transition:
     transform 0.4s,
@@ -601,7 +601,7 @@ const allTasksComplete = computed(() => dayTasks.value.length > 0 && openTasks.v
 }
 .day-orbit--active .day-orbit__dot {
   transform: scale(1.45);
-  background: rgb(31 28 31 / 96%);
+  background: transparent;
   box-shadow:
     0 0 0 7px rgb(216 185 119 / 10%),
     0 0 22px rgb(216 185 119 / 35%);

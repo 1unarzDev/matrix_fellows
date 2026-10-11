@@ -3811,7 +3811,7 @@ function calendarFacts(date: string) {
   margin-top: 5px;
   border: 1px solid var(--wb-gold);
   border-radius: 50%;
-  background: #16151d;
+  background: transparent;
   box-shadow: 0 0 13px rgb(216 185 119 / 50%);
 }
 .wb-timeline-marker time {

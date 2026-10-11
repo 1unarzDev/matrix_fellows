@@ -92,7 +92,11 @@ export function createWorkspaceQuasar(canvas: HTMLCanvasElement) {
         float aspect = uResolution.x / max(uResolution.y, 1.0);
 
         // Keep the object on the open side of the dashboard on wide screens.
-        vec2 center = aspect > 1.0 ? vec2(0.68, 0.49) : vec2(0.52, 0.43);
+        // Keep the launch point aligned with the visual centre of the main
+        // workspace rather than drifting into the right rail.  This leaves
+        // the event horizon sitting behind the timeline content instead of
+        // reading as a separate, off-centre object.
+        vec2 center = aspect > 1.0 ? vec2(0.59, 0.49) : vec2(0.52, 0.43);
         float scale = aspect > 1.0 ? 0.35 : 0.48;
         vec2 p = (uv - center) / scale;
         p.x *= aspect;
@@ -515,6 +519,19 @@ export function createWorkspaceQuasar(canvas: HTMLCanvasElement) {
         color += vec3(0.74, 0.78, 0.95) * star * selected * twinkle * 0.62;
         alpha += star * selected * 0.58;
 
+
+        // Clear the event-horizon interior at the very end of the pass.  The
+        // prior shadow multiplication stopped light, but retained a dark
+        // translucent disc, so the jets could still read as a cross over a
+        // black circle.  A transparent centre lets the dashboard glass show
+        // through while a fine rim keeps the quasar legible.
+        float cleanCore = 1.0 - smoothstep(0.185, 0.225, screenRadius);
+        color *= 1.0 - cleanCore;
+        alpha *= 1.0 - cleanCore;
+        float cleanRim = exp(-pow((screenRadius - 0.225) * 38.0, 2.0));
+        float rimPulse = 0.84 + 0.16 * sin(time * 1.8 + turbulent * 3.0);
+        color += vec3(1.0, 0.68, 0.34) * cleanRim * rimPulse * 0.42;
+        alpha += cleanRim * 0.3;
 
         // Tone map the HDR-like hand-drawn light and fade the outer boundary.
         color = 1.0 - exp(-max(color, vec3(0.0)) * 1.25);

@@ -64,6 +64,7 @@ const view = ref(
     : 'agenda',
 )
 const calendarOffset = ref(0)
+const calendarDirection = ref<'next' | 'previous'>('next')
 const query = ref(queryText('find'))
 const catalog = ref<Opportunity[]>([])
 const catalogPending = ref(false)
@@ -867,9 +868,15 @@ function setTaskCalendarMonth(date: string) {
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return
   const target = new Date(`${date}T12:00:00Z`)
   const base = new Date(`${today.slice(0, 7)}-01T12:00:00Z`)
-  calendarOffset.value =
+  const nextOffset =
     (target.getUTCFullYear() - base.getUTCFullYear()) * 12 +
     target.getUTCMonth() - base.getUTCMonth()
+  calendarDirection.value = nextOffset >= calendarOffset.value ? 'next' : 'previous'
+  calendarOffset.value = nextOffset
+}
+function shiftCalendarMonth(delta: -1 | 1) {
+  calendarDirection.value = delta > 0 ? 'next' : 'previous'
+  calendarOffset.value += delta
 }
 const quickDragAnchor = ref('')
 const quickDragMoved = ref(false)
@@ -1401,21 +1408,23 @@ function calendarFacts(date: string) {
         </div>
         <section v-else-if="view === 'calendar'" class="wb-plan-surface wb-plan-calendar wb-calendar">
           <div class="wb-calendar-header">
-            <div><p class="wb-kicker">Saved dates</p><h3>{{ calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) }}</h3></div>
+            <div class="wb-calendar-month-title"><p class="wb-kicker">Saved dates</p><Transition :name="`wb-calendar-month-${calendarDirection}`" mode="out-in"><h3 :key="calendarMonth.toISOString().slice(0, 7)">{{ calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) }}</h3></Transition></div>
             <div class="wb-calendar-nav">
-              <button class="wb-calendar-nav__button" aria-label="Previous month" @click="calendarOffset--"><SiteIcon name="right" :size="14" class="wb-icon--previous" /></button>
-              <button class="wb-calendar-nav__button" aria-label="Next month" @click="calendarOffset++"><SiteIcon name="right" :size="14" /></button>
+              <button class="wb-calendar-nav__button" aria-label="Previous month" @click="shiftCalendarMonth(-1)"><SiteIcon name="right" :size="14" class="wb-icon--previous" /></button>
+              <button class="wb-calendar-nav__button" aria-label="Next month" @click="shiftCalendarMonth(1)"><SiteIcon name="right" :size="14" /></button>
             </div>
           </div>
-          <div class="wb-calendar-grid" role="grid" :aria-label="calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' })">
-            <span v-for="(label, index) in ['S','M','T','W','T','F','S']" :key="`${label}-${index}`" class="wb-calendar-weekday">{{ label }}</span>
-            <div v-for="(day, index) in planCalendarCells" :key="day?.date || `empty-${index}`" class="wb-calendar-cell" role="gridcell">
-              <button v-if="day" class="wb-calendar-day" :class="{ 'wb-calendar-day--active': selectedPlanDate === day.date, 'wb-calendar-day--marked': planHasItems(day.date), 'wb-calendar-day--today': day.date === today }" :aria-label="`${planDateLabel(day.date)}${planHasItems(day.date) ? ', has planned items' : ''}`" :aria-pressed="selectedPlanDate === day.date" @click="selectedPlanDate = day.date">
-                <span>{{ Number(day.date.slice(-2)) }}</span>
-                <i v-if="planHasItems(day.date)" aria-hidden="true" />
-              </button>
+          <Transition :name="`wb-calendar-month-${calendarDirection}`" mode="out-in">
+            <div :key="calendarMonth.toISOString().slice(0, 7)" class="wb-calendar-grid" role="grid" :aria-label="calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' })">
+              <span v-for="(label, index) in ['S','M','T','W','T','F','S']" :key="`${label}-${index}`" class="wb-calendar-weekday">{{ label }}</span>
+              <div v-for="(day, index) in planCalendarCells" :key="day?.date || `empty-${index}`" class="wb-calendar-cell" role="gridcell">
+                <button v-if="day" class="wb-calendar-day" :class="{ 'wb-calendar-day--active': selectedPlanDate === day.date, 'wb-calendar-day--marked': planHasItems(day.date), 'wb-calendar-day--today': day.date === today }" :aria-label="`${planDateLabel(day.date)}${planHasItems(day.date) ? ', has planned items' : ''}`" :aria-pressed="selectedPlanDate === day.date" @click="selectedPlanDate = day.date">
+                  <span>{{ Number(day.date.slice(-2)) }}</span>
+                  <i v-if="planHasItems(day.date)" aria-hidden="true" />
+                </button>
+              </div>
             </div>
-          </div>
+          </Transition>
           <div class="wb-calendar-legend"><span><i class="wb-legend-dot wb-legend-dot--task" />Tasks</span><span><i class="wb-legend-dot wb-legend-dot--opportunity" />Saved opportunities</span></div>
           <aside class="wb-calendar-preview" aria-live="polite">
             <div class="wb-view-heading"><div><p class="wb-kicker">Selected day</p><h4>{{ planDateLabel(selectedPlanDate) }}</h4></div><span v-if="!planHasItems(selectedPlanDate)" class="wb-muted">Quiet day</span></div>
@@ -1605,7 +1614,7 @@ function calendarFacts(date: string) {
         <div class="quick-task-form__field"><span>Connect to an opportunity</span><ThemedSelect v-model="taskParent" label="Connect to an opportunity" :options="taskParentOptions" full-width :disabled="taskEditor.saving || taskEditor.saved" /></div>
         <div v-if="taskMilestones.length" class="quick-task-form__field"><span>Milestone</span><ThemedSelect v-model="taskMilestone" label="Milestone" :options="taskMilestoneOptions" full-width :disabled="taskEditor.saving || taskEditor.saved" /></div>
         <div class="quick-calendar" @pointermove="quickDateFromPoint" @pointerup="finishQuickDrag" @pointercancel="finishQuickDrag">
-          <div class="quick-calendar__head"><button type="button" class="quick-calendar__arrow" aria-label="Previous month" :disabled="taskEditor.saving || taskEditor.saved" @click="calendarOffset--">←</button><strong>{{ calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) }}</strong><button type="button" class="quick-calendar__arrow" aria-label="Next month" :disabled="taskEditor.saving || taskEditor.saved" @click="calendarOffset++">→</button></div>
+          <div class="quick-calendar__head"><button type="button" class="quick-calendar__arrow" aria-label="Previous month" :disabled="taskEditor.saving || taskEditor.saved" @click="shiftCalendarMonth(-1)">←</button><strong>{{ calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) }}</strong><button type="button" class="quick-calendar__arrow" aria-label="Next month" :disabled="taskEditor.saving || taskEditor.saved" @click="shiftCalendarMonth(1)">→</button></div>
           <div class="quick-calendar__grid"><span v-for="(label, index) in ['S','M','T','W','T','F','S']" :key="`${label}-${index}`" class="quick-calendar__label">{{ label }}</span><span v-for="(day, index) in quickCalendarDays" :key="day ? day.date : `quick-blank-${index}`" class="quick-calendar__cell" :class="day ? quickTaskCellClass(day.date) : {}"><button v-if="day" :data-quick-date="day.date" :data-date="day.date" :aria-label="`Select ${day.date}`" :aria-pressed="quickTaskIsSelected(day.date)" type="button" class="quick-calendar__day" :disabled="taskEditor.saving || taskEditor.saved" :class="{ 'quick-calendar__day--selected': quickTaskIsSelected(day.date), 'quick-calendar__day--today': day.date === today, ...quickTaskRangeClass(day.date) }" @pointerdown.prevent="beginQuickDrag($event, day.date)" @click="clickQuickDate($event, day.date)">{{ Number(day.date.slice(-2)) }}</button></span></div>
           <p class="quick-calendar__range">{{ dateLabel(taskEditor.dueDate) }}<span v-if="taskEditor.rangeEnd && taskEditor.rangeEnd !== taskEditor.dueDate"> → {{ dateLabel(taskEditor.rangeEnd) }}</span></p>
         </div>
@@ -2772,8 +2781,30 @@ function calendarFacts(date: string) {
   padding: clamp(18px, 3vw, 26px);
 }
 .wb-calendar-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.wb-calendar-month-title { min-width: 0; }
 .wb-calendar-header h3 { margin: 5px 0 0; font-size: clamp(19px, 2vw, 24px); font-weight: 500; letter-spacing: -.035em; }
 .wb-calendar-nav { display: flex; gap: 6px; }
+.wb-calendar-month-next-enter-active,
+.wb-calendar-month-next-leave-active,
+.wb-calendar-month-previous-enter-active,
+.wb-calendar-month-previous-leave-active {
+  transition:
+    opacity 240ms ease,
+    transform 360ms cubic-bezier(.16, 1, .3, 1),
+    filter 240ms ease;
+}
+.wb-calendar-month-next-enter-from,
+.wb-calendar-month-previous-leave-to {
+  opacity: 0;
+  transform: translateX(14px);
+  filter: blur(2px);
+}
+.wb-calendar-month-next-leave-to,
+.wb-calendar-month-previous-enter-from {
+  opacity: 0;
+  transform: translateX(-14px);
+  filter: blur(2px);
+}
 .wb-calendar-nav__button {
   display: grid;
   width: 42px;
@@ -2901,6 +2932,10 @@ function calendarFacts(date: string) {
 @media (prefers-reduced-motion: reduce) {
   .wb-plan-view-enter-active,
   .wb-plan-view-leave-active,
+  .wb-calendar-month-next-enter-active,
+  .wb-calendar-month-next-leave-active,
+  .wb-calendar-month-previous-enter-active,
+  .wb-calendar-month-previous-leave-active,
   .wb-calendar-nav__button,
   .wb-calendar-day,
   .wb-preview-item,

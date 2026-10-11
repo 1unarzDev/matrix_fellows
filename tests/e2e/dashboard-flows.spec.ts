@@ -301,6 +301,29 @@ test('fixture: save, reviewed pursuit, canonical views, reload, and contribution
   await page.video()?.saveAs(`/tmp/matrix-dashboard-evidence/planning-${info.project.name}.webm`)
 })
 
+test('fixture: my plan calendar glides between months', async ({ page }) => {
+  await setup(page)
+  await page.goto('/dashboard?section=opportunities')
+  await page.getByRole('button', { name: 'My plan', exact: true }).click()
+  await page.getByRole('button', { name: 'calendar', exact: true }).click()
+
+  const calendar = page.locator('.wb-plan-calendar')
+  const monthTitle = calendar.locator('h3')
+  const initialMonth = await monthTitle.textContent()
+
+  await calendar.getByRole('button', { name: 'Next month', exact: true }).click()
+  await expect
+    .poll(() => page.locator('.wb-calendar-month-next-enter-active').count())
+    .toBeGreaterThan(0)
+  await expect.poll(() => monthTitle.textContent()).not.toBe(initialMonth)
+
+  await calendar.getByRole('button', { name: 'Previous month', exact: true }).click()
+  await expect
+    .poll(() => page.locator('.wb-calendar-month-previous-enter-active').count())
+    .toBeGreaterThan(0)
+  await expect.poll(() => monthTitle.textContent()).toBe(initialMonth)
+})
+
 test('fixture: officer research evidence, autosave preserves in-flight typing and reload', async ({
   page,
 }, info) => {

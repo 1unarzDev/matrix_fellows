@@ -125,11 +125,12 @@ async function retry(id: string) { busy.value = true; try { await $fetch('/api/w
   border: 1px solid rgb(239 235 224 / 13%);
   border-radius: 28px;
   background:
-    radial-gradient(34rem 18rem at 100% 0%, rgb(228 187 114 / 9%), transparent 70%),
-    linear-gradient(145deg, rgb(244 241 233 / 6%), rgb(244 241 233 / 2.5%) 48%, transparent 78%),
-    rgb(10 12 16 / 60%);
-  box-shadow: 0 26px 90px rgb(0 0 0 / 24%), inset 0 1px 0 rgb(255 255 255 / 7%);
-  backdrop-filter: blur(26px) saturate(118%);
+    radial-gradient(34rem 18rem at 100% 0%, rgb(228 187 114 / 7%), transparent 70%),
+    linear-gradient(145deg, rgb(244 241 233 / 4%), rgb(244 241 233 / 1.5%) 48%, transparent 78%),
+    rgb(10 12 16 / 38%);
+  box-shadow: 0 24px 74px rgb(0 0 0 / 16%), inset 0 1px 0 rgb(255 255 255 / 6%);
+  -webkit-backdrop-filter: blur(24px) saturate(116%);
+  backdrop-filter: blur(24px) saturate(116%);
 }
 .research-overview::before {
   content: '';
@@ -208,9 +209,12 @@ async function retry(id: string) { busy.value = true; try { await $fetch('/api/w
   gap: 12px;
   margin-top: 24px;
   padding: 16px;
-  border: 1px solid rgb(228 187 114 / 17%);
+  border: 1px solid rgb(239 235 224 / 15%);
   border-radius: 20px;
-  background: rgb(0 0 0 / 12%);
+  background: transparent;
+  box-shadow: inset 0 1px rgb(255 255 255 / 5%);
+  -webkit-backdrop-filter: blur(12px) saturate(110%);
+  backdrop-filter: blur(12px) saturate(110%);
 }
 .research-capture label {
   display: grid;
@@ -233,7 +237,7 @@ async function retry(id: string) { busy.value = true; try { await $fetch('/api/w
   border: 1px solid rgb(255 255 255 / 12%);
   border-radius: 12px;
   color: #efeee8;
-  background: rgb(9 11 15 / 74%);
+  background: rgb(255 255 255 / 2%);
   padding: 11px 12px;
   font: 12px/1.5 Manrope, sans-serif;
   transition: border-color .25s, box-shadow .25s, background-color .25s;
@@ -244,7 +248,7 @@ async function retry(id: string) { busy.value = true; try { await $fetch('/api/w
 .research-capture textarea:focus {
   outline: none;
   border-color: rgb(228 187 114 / 60%);
-  background: rgb(9 11 15 / 90%);
+  background: rgb(255 255 255 / 6%);
   box-shadow: 0 0 0 4px rgb(228 187 114 / 7%);
 }
 .research-capture__row {

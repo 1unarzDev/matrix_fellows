@@ -110,15 +110,25 @@ test('dashboard catalog shares featured panels, rounded navigation and responsiv
     await expect(page.getByRole('button', { name: 'Legacy saved work', exact: true })).toHaveCount(
       0,
     )
-    const draft = page
-      .getByRole('navigation', { name: 'Dashboard sections' })
-      .getByRole('button', { name: 'Draft review', exact: true })
-    await draft.scrollIntoViewIfNeeded()
-    expect(await draft.evaluate((el) => getComputedStyle(el).borderTopLeftRadius)).toBe('15px')
-    await page
-      .getByRole('navigation', { name: 'Dashboard sections' })
-      .getByRole('button', { name: 'Opportunities', exact: true })
-      .scrollIntoViewIfNeeded()
+    const narrow = width <= 760
+    if (narrow) {
+      const selector = page.getByRole('combobox', { name: 'Dashboard section', exact: true })
+      await expect(selector).toBeVisible()
+      await expect(page.locator('.studio-nav')).toBeHidden()
+      await selector.selectOption('drafts')
+      await expect(page.getByRole('heading', { name: 'Draft review', exact: true })).toBeVisible()
+      await selector.selectOption('opportunities')
+    } else {
+      const draft = page
+        .getByRole('navigation', { name: 'Dashboard sections' })
+        .getByRole('button', { name: 'Draft review', exact: true })
+      await draft.scrollIntoViewIfNeeded()
+      expect(await draft.evaluate((el) => getComputedStyle(el).borderTopLeftRadius)).toBe('15px')
+      await page
+        .getByRole('navigation', { name: 'Dashboard sections' })
+        .getByRole('button', { name: 'Opportunities', exact: true })
+        .scrollIntoViewIfNeeded()
+    }
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(
       true,
     )
@@ -127,9 +137,16 @@ test('dashboard catalog shares featured panels, rounded navigation and responsiv
       fullPage: true,
       animations: 'disabled',
     })
-    await draft.click()
+    if (narrow) {
+      await page.getByRole('combobox', { name: 'Dashboard section', exact: true }).selectOption('drafts')
+    } else {
+      const draft = page
+        .getByRole('navigation', { name: 'Dashboard sections' })
+        .getByRole('button', { name: 'Draft review', exact: true })
+      await draft.click()
+      await expect(draft).toHaveAttribute('aria-current', 'page')
+    }
     await expect(page.getByRole('heading', { name: 'Draft review', exact: true })).toBeVisible()
-    await expect(draft).toHaveAttribute('aria-current', 'page')
     await page.screenshot({
       path: `/tmp/matrix-dashboard-polish/drafts-${width}-${info.project.name}.png`,
       fullPage: true,
@@ -138,4 +155,28 @@ test('dashboard catalog shares featured panels, rounded navigation and responsiv
   }
   await page.goto('/dashboard?section=saved')
   await expect(page.locator('.opportunity-card--featured')).toBeVisible()
+})
+
+test('mobile dashboard section selector stays contained and navigates cleanly', async ({ page }) => {
+  const state = await setup(page)
+  state.workspace.member.role = 'officer'
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/dashboard?section=today')
+
+  const selector = page.getByRole('combobox', { name: 'Dashboard section', exact: true })
+  await expect(selector).toBeVisible()
+  await expect(page.locator('.studio-nav')).toBeHidden()
+  await expect(page.locator('.studio-mobile-nav__control')).toBeInViewport()
+  const controlWidth = await page.locator('.studio-mobile-nav__control').evaluate((el) => el.getBoundingClientRect().width)
+  expect(controlWidth).toBeGreaterThan(300)
+  expect(controlWidth).toBeLessThanOrEqual(390)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(
+    true,
+  )
+
+  await selector.selectOption('drafts')
+  await expect(page.getByRole('heading', { name: 'Draft review', exact: true })).toBeVisible()
+  await expect(selector).toHaveValue('drafts')
+  await selector.selectOption('today')
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible()
 })

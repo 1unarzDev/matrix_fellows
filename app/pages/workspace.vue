@@ -55,6 +55,9 @@ const sections = computed(() =>
         'settings',
       ].map((value) => allSections.find((section) => section.value === value)!),
 )
+const currentSection = computed(
+  () => sections.value.find((section) => section.value === tab.value) || sections.value[0],
+)
 const commandOpen = ref(false)
 const commandDialog = ref<HTMLDialogElement>()
 const sectionNav = ref<HTMLElement>()
@@ -904,6 +907,22 @@ onMounted(async () => {
           }}</span>
         </button>
       </nav>
+      <div class="studio-mobile-nav">
+        <label class="studio-mobile-nav__label" for="dashboard-section-select">Section</label>
+        <div class="studio-mobile-nav__control">
+          <SiteIcon :name="currentSection?.icon || 'spark'" :size="16" />
+          <select
+            id="dashboard-section-select"
+            v-model="tab"
+            aria-label="Dashboard section"
+          >
+            <option v-for="section in sections" :key="section.value" :value="section.value">
+              {{ section.label }}
+            </option>
+          </select>
+          <span class="studio-mobile-nav__chevron" aria-hidden="true">⌄</span>
+        </div>
+      </div>
       <DashboardWorkbench
         v-show="['today', 'opportunities', 'activities'].includes(tab)"
         :workspace="data"
@@ -2243,6 +2262,9 @@ onMounted(async () => {
   display: grid;
   gap: 7px;
 }
+.studio-mobile-nav {
+  display: none;
+}
 .studio-nav button {
   display: flex;
   align-items: center;
@@ -2573,21 +2595,6 @@ onMounted(async () => {
     scrollbar-width: thin;
     scrollbar-color: #d8b97766 transparent;
   }
-  .studio-nav::after {
-    content: '›';
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 8px;
-    display: grid;
-    width: 28px;
-    place-items: center;
-    border-radius: 10px 0 0 10px;
-    background: linear-gradient(90deg, transparent, rgb(17 19 22 / 76%) 58%);
-    color: #d8b977;
-    font-size: 15px;
-    pointer-events: none;
-  }
   .studio-nav button {
     white-space: nowrap;
     flex-shrink: 0;
@@ -2622,11 +2629,89 @@ onMounted(async () => {
   .search {
     flex-basis: 100%;
   }
-  .studio-nav button {
-    padding: 12px;
-  }
   .studio-nav {
-    margin-inline: -4px;
+    display: none;
+  }
+  .studio-mobile-nav {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  .studio-mobile-nav__label {
+    padding-inline: 3px;
+    color: #928b9e;
+    font-size: 10px;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+  }
+  .studio-mobile-nav__control {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    min-height: 49px;
+    padding: 0 14px;
+    overflow: hidden;
+    border: 1px solid rgb(216 185 119 / 23%);
+    border-radius: 16px;
+    color: #e8dcc1;
+    background: linear-gradient(115deg, rgb(216 185 119 / 11%), rgb(185 163 237 / 7%));
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 7%), 0 12px 34px rgb(7 7 12 / 14%);
+    transition:
+      border-color 0.35s ease,
+      box-shadow 0.35s ease,
+      transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .studio-mobile-nav__control::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(105deg, rgb(255 255 255 / 8%), transparent 36%);
+    opacity: 0.65;
+  }
+  .studio-mobile-nav__control:focus-within {
+    border-color: rgb(216 185 119 / 56%);
+    box-shadow: 0 0 0 3px rgb(216 185 119 / 11%), inset 0 1px 0 rgb(255 255 255 / 9%), 0 18px 42px rgb(7 7 12 / 19%);
+    transform: translateY(-1px);
+  }
+  .studio-mobile-nav__control > svg {
+    position: relative;
+    flex: 0 0 auto;
+    color: #d8b977;
+  }
+  .studio-mobile-nav__control select {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    min-width: 0;
+    appearance: none;
+    border: 0;
+    outline: 0;
+    padding: 14px 30px 14px 0;
+    color: #eee7da;
+    background: transparent;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .studio-mobile-nav__control option {
+    color: #211e28;
+    background: #eee8db;
+  }
+  .studio-mobile-nav__chevron {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    color: #d8b977;
+    font-size: 18px;
+    line-height: 1;
+    pointer-events: none;
+    transform: translateY(-57%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .studio-mobile-nav__control:focus-within .studio-mobile-nav__chevron {
+    transform: translateY(-42%);
   }
   .job-row {
     flex-wrap: wrap;

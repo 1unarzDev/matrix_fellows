@@ -42,6 +42,8 @@ async function setup(page: Page) {
       return route.fulfill({
         json: { pursuits: [], tasks: [], activities: [], events: [], capacityHours: null },
       })
+    if (path === '/api/workspace/auth/providers')
+      return route.fulfill({ json: { google: true, azure: true, passkey: true } })
     return route.fulfill({ json: { items: [], providers: { gmail: false, outlook: false } } })
   })
 }
@@ -56,7 +58,7 @@ test('fixture: native registration, rename, removal and password management', as
   let keys: any[] = []
   let registration: any
   await page.route('**/api/workspace/auth/security', (route) =>
-    route.fulfill({ json: { passkeys: keys, passkeyAvailable: true, fresh: true } }),
+    route.fulfill({ json: { email: 'synthetic-member@example.org', passkeys: keys, passkeyAvailable: true, fresh: true } }),
   )
   await page.route('**/api/workspace/auth/passkey', async (route) => {
     const body = route.request().postDataJSON()
@@ -104,7 +106,7 @@ test('fixture: native registration, rename, removal and password management', as
     },
   })
   await page.goto('/dashboard?section=settings')
-  await page.getByRole('button', { name: 'Add a passkey', exact: true }).click()
+  await page.getByRole('button', { name: 'Set up a passkey', exact: true }).click()
   await expect(page.getByText('Passkey added.', { exact: true })).toBeVisible()
   expect(registration.credential.response.attestationObject).toBeTruthy()
   expect(registration.credential.response.clientDataJSON).toBeTruthy()
@@ -117,7 +119,7 @@ test('fixture: native registration, rename, removal and password management', as
   })
   page.once('dialog', (dialog) => dialog.accept())
   await page.getByRole('button', { name: 'Remove', exact: true }).click()
-  await expect(page.getByText('No passkeys registered yet.', { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Set up a passkey', exact: true })).toBeVisible()
   await page.getByLabel('New password', { exact: true }).fill('a-new-long-password')
   await page.getByLabel('Confirm password', { exact: true }).fill('another-long-password')
   await page.getByRole('button', { name: 'Update password', exact: true }).click()
@@ -128,14 +130,12 @@ test('fixture: stale sessions require a fresh sign-in and provider failure prese
 }) => {
   await setup(page)
   await page.route('**/api/workspace/auth/security', (route) =>
-    route.fulfill({ json: { passkeys: [], passkeyAvailable: false, fresh: false } }),
+    route.fulfill({ json: { email: 'synthetic-member@example.org', passkeys: [], passkeyAvailable: false, fresh: false } }),
   )
   await page.goto('/dashboard?section=settings')
-  await expect(page.getByRole('button', { name: 'Add a passkey', exact: true })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Set up a passkey', exact: true })).toBeDisabled()
   await expect(page.getByRole('button', { name: 'Update password', exact: true })).toBeDisabled()
-  await expect(page.getByRole('link', { name: 'sign in again', exact: true })).toHaveAttribute(
-    'href',
-    '/login?reauth=1',
-  )
-  await expect(page.getByText(/Passkeys are currently unavailable/)).toBeVisible()
+  await expect(page.getByText('Needed', { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: /Send an email/ })).toBeEnabled()
+  await expect(page.getByText(/Works when passkeys are enabled/)).toBeVisible()
 })

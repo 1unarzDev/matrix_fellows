@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
     await readCredentialFlow<RecoveryFlow>(event, RECOVERY_COOKIE)
     return { recovery: true }
   }
-  const { tokens } = await requireWorkspaceSecurity(event, false)
+  const { member, tokens } = await requireWorkspaceSecurity(event, false)
   let passkeys: {
     id: string
     friendly_name?: string
@@ -25,6 +25,7 @@ export default defineEventHandler(async (event) => {
     passkeyAvailable = false
   }
   return {
+    email: member.email,
     passkeys,
     passkeyAvailable,
     fresh: !!tokens.authenticated_at && Date.now() - tokens.authenticated_at <= 5 * 60000,

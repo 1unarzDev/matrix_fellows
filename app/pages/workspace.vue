@@ -3142,7 +3142,11 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 22px;
-  align-items: start;
+  align-items: stretch;
+}
+.settings-grid > .settings-panel {
+  height: 100%;
+  box-sizing: border-box;
 }
 .settings-grid > .account-security {
   margin-bottom: 0;

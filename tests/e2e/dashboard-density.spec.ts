@@ -40,7 +40,7 @@ test('populated canonical agenda stays usable at narrow widths and 200 percent C
   })
   await page.getByRole('button', { name: /^Synthetic chemistry preparation 1:/ }).click()
   const panel = page.getByRole('dialog')
-  await expect(panel.getByLabel('Task', { exact: true })).toBeFocused()
+  await expect(panel.getByLabel('Task name', { exact: true })).toBeFocused()
   await page.keyboard.press('Escape')
   await expect(panel).toHaveCount(0)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(

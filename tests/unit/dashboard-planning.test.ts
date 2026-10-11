@@ -6,8 +6,44 @@ import {
   pursuitPatchSchema,
   planCalendar,
   planWorkload,
+  taskCreateSchema,
+  taskPatchSchema,
 } from '../../shared/utils/dashboard-planning'
 import type { DashboardPlan, PlanTask, PlanDate, PlanPursuit } from '../../shared/types/dashboard'
+it('accepts minimal task creation and requires atomic connection updates', () => {
+  expect(
+    taskCreateSchema.parse({
+      task: { title: 'Read workshop requirements' },
+      opportunityId: 'catalog:test-workshop',
+    }).task.status,
+  ).toBe('todo')
+  expect(
+    taskPatchSchema.safeParse({
+      expectedVersion: 1,
+      task: { title: 'Review' },
+      opportunityId: 'catalog:test-workshop',
+    }).success,
+  ).toBe(false)
+  expect(
+    taskPatchSchema.safeParse({
+      expectedVersion: 1,
+      task: { title: 'Review' },
+      opportunityId: 'catalog:test-workshop',
+      pursuitId: null,
+      activityId: null,
+    }).success,
+  ).toBe(true)
+  expect(
+    taskCreateSchema.safeParse({
+      task: { title: 'Review' },
+      opportunityId: 'catalog:test-workshop',
+      activityId: '11111111-1111-4111-8111-111111111111',
+    }).success,
+  ).toBe(false)
+  expect(taskPatchSchema.safeParse({ expectedVersion: 1, task: { title: 'Review' } }).success).toBe(
+    true,
+  )
+})
 it('accepts the catalog text identity rather than requiring a fabricated UUID', () => {
   expect(
     pursueSchema.safeParse({

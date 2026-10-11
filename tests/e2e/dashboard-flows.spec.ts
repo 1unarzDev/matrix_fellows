@@ -15,6 +15,128 @@ test('fixture: saved discovery does not depend on the current public page', asyn
   expect(state.plan.tasks).toHaveLength(0)
 })
 
+test('fixture: discovery pagination glides in the direction of travel', async ({ page }) => {
+  test.setTimeout(60_000)
+  const state = await setup(page)
+  const second = {
+    ...state.opportunity,
+    id: 'catalog:synthetic-remote-workshop',
+    title: 'Synthetic remote methods workshop',
+    description: 'A second sourced route for pagination and transition fixtures.',
+  }
+  const firstPage = [
+    state.opportunity,
+    { ...state.opportunity, id: 'catalog:synthetic-first-two', title: 'Synthetic first page two' },
+    { ...state.opportunity, id: 'catalog:synthetic-first-three', title: 'Synthetic first page three' },
+    { ...state.opportunity, id: 'catalog:synthetic-first-four', title: 'Synthetic first page four' },
+  ]
+  const secondPage = [
+    second,
+    { ...second, id: 'catalog:synthetic-remote-two', title: 'Synthetic remote methods two' },
+    { ...second, id: 'catalog:synthetic-remote-three', title: 'Synthetic remote methods three' },
+    { ...second, id: 'catalog:synthetic-remote-four', title: 'Synthetic remote methods four' },
+  ]
+  await page.route('**/api/opportunities**', async (route) => {
+    const requestPage = Number(new URL(route.request().url()).searchParams.get('page') || '1')
+    await new Promise((resolve) => setTimeout(resolve, 400))
+    await route.fulfill({
+      json: {
+        items: requestPage === 2 ? secondPage : firstPage,
+        page: requestPage,
+        pageCount: 2,
+        total: 8,
+      },
+    })
+  })
+  await page.goto('/dashboard?section=opportunities')
+  await expect(page.getByText(state.opportunity.title, { exact: true })).toBeVisible({ timeout: 15_000 })
+  const nextTransition = page.locator('.wb-results-next-enter-active')
+  const previousTransition = page.locator('.wb-results-previous-enter-active')
+  const resultsStage = page.locator('.wb-results-stage')
+  await resultsStage.scrollIntoViewIfNeeded()
+  const beforeTransition = await resultsStage.boundingBox()
+  await expect(nextTransition).toHaveCount(0)
+  await expect(previousTransition).toHaveCount(0)
+  async function observeTransition(direction: 'next' | 'previous', action: () => Promise<void>) {
+    const observation = page.evaluate(
+      (transition) =>
+        new Promise<{ active: boolean; stageHeight: number; documentHeight: number }>((resolve) => {
+          const selector = `.wb-results-${transition}-enter-active`
+          const stageMetrics = () => {
+            const stage = document.querySelector<HTMLElement>('.wb-results-stage')
+            return {
+              active: Boolean(document.querySelector(selector)),
+              stageHeight: stage?.getBoundingClientRect().height || 0,
+              documentHeight: document.documentElement.scrollHeight,
+            }
+          }
+          let settled = false
+          const finish = (result: ReturnType<typeof stageMetrics>) => {
+            if (settled) return
+            settled = true
+            observer.disconnect()
+            window.clearInterval(poll)
+            window.clearTimeout(timeout)
+            resolve(result)
+          }
+          const observer = new MutationObserver((records) => {
+            const result = stageMetrics()
+            const transitionRecorded = records.some((record) => {
+              if (record.type !== 'attributes') return false
+              const current = (record.target as Element).getAttribute('class') || ''
+              const previous = record.oldValue || ''
+              return current.includes(`${transition}-enter-active`) || previous.includes(`${transition}-enter-active`)
+            })
+            if (transitionRecorded || result.active) finish({ ...result, active: transitionRecorded || result.active })
+          })
+          observer.observe(document.body, {
+            attributes: true,
+            attributeFilter: ['class'],
+            attributeOldValue: true,
+            childList: true,
+            subtree: true,
+          })
+          const poll = window.setInterval(() => {
+            const result = stageMetrics()
+            if (result.active) finish(result)
+          }, 40)
+          const timeout = window.setTimeout(() => finish(stageMetrics()), 8_000)
+          const initial = stageMetrics()
+          if (initial.active) finish(initial)
+        }),
+      direction,
+    )
+    await action()
+    const result = await observation
+    expect(result.active).toBe(true)
+    return result
+  }
+
+  const nextResult = await observeTransition('next', () =>
+    page.getByRole('button', { name: 'Next opportunity page', exact: true }).click({ force: true }),
+  )
+  expect(nextResult.stageHeight).toBeGreaterThan(0)
+  expect(nextResult.documentHeight).toBeGreaterThan(0)
+  const duringTransition = await resultsStage.boundingBox()
+  if (beforeTransition && duringTransition)
+    expect(duringTransition.height).toBeGreaterThanOrEqual(beforeTransition.height - 4)
+  await expect(page.getByText(second.title, { exact: true })).toBeVisible()
+  await expect(nextTransition).toHaveCount(0)
+  const previousResult = await observeTransition('previous', () =>
+    page.getByRole('button', { name: 'Previous opportunity page', exact: true }).click({ force: true }),
+  )
+  expect(previousResult.stageHeight).toBeGreaterThan(0)
+  expect(previousResult.documentHeight).toBeGreaterThan(0)
+  await expect(page.getByText(state.opportunity.title, { exact: true })).toBeVisible()
+
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await expect(page.getByText(state.opportunity.title, { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Next opportunity page', exact: true }).click({ force: true })
+  await expect(page.getByText(second.title, { exact: true })).toBeVisible()
+  await expect(nextTransition).toHaveCount(0)
+  await expect(previousTransition).toHaveCount(0)
+})
+
 test('fixture: first-run profile edits receive navigation protection', async ({ page }) => {
   const state = await setup(page)
   state.workspace.profiles = []
@@ -99,7 +221,6 @@ test('fixture: save, reviewed pursuit, canonical views, reload, and contribution
   await expect(page.getByRole('dialog')).toContainText('Feb 15, 2027')
   await page.getByRole('button', { name: 'Pursue', exact: false }).click()
   const review = page.getByRole('dialog')
-  await review.getByLabel('Internal target', { exact: true }).first().fill(dueDate)
   expect((await review.getByRole('checkbox').boundingBox())?.width).toBeLessThanOrEqual(24)
   if (!process.env.DASHBOARD_RECORD_ONLY)
     await review.screenshot({
@@ -114,9 +235,11 @@ test('fixture: save, reviewed pursuit, canonical views, reload, and contribution
   await page.getByRole('button', { name: new RegExp(`^${original}`) }).click()
   await page
     .getByRole('dialog')
-    .getByLabel('Task', { exact: true })
+    .getByLabel('Task name', { exact: true })
     .fill('Synthetic review of poster requirements')
+  await page.getByRole('dialog').locator(`[data-date="${dueDate}"]`).click()
   await page.getByRole('button', { name: 'Save task', exact: true }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
   await expect(
     page.getByRole('button', { name: /^Synthetic review of poster requirements/ }),
   ).toBeVisible()
@@ -303,6 +426,18 @@ test('fixture: keyboard, reduced motion, 1024 layout and CPU-throttled input', a
 
 test('fixture: Today command center makes planning a magnetic, low-friction flow', async ({ page }) => {
   const state = await setup(page)
+  state.workspace.catalogSaves.push(state.opportunity.id)
+  state.opportunity.milestones = [
+    {
+      label: 'Synthetic submission cutoff',
+      date: new Date(`${dueDate}T12:00:00Z`).toISOString().slice(0, 10),
+      kind: 'deadline',
+      timezone: null,
+      evidence: 'Synthetic fixture date',
+      url: state.opportunity.url,
+      precision: 'date-only',
+    },
+  ]
   state.plan.activities.push({
     id: 'activity-orbit',
     title: 'Spectroscopy notebook',
@@ -335,14 +470,46 @@ test('fixture: Today command center makes planning a magnetic, low-friction flow
   await page.getByRole('button', { name: /Add a task/ }).first().click()
   const dialog = page.getByRole('dialog')
   await expect(dialog).toBeVisible()
+  await expect(dialog.locator('input[type="number"]')).toHaveCount(0)
+  await expect(dialog.getByText('Status', { exact: true })).toHaveCount(0)
+  await expect(dialog.getByText('Start', { exact: true })).toHaveCount(0)
+  await expect(dialog.getByText('End', { exact: true })).toHaveCount(0)
   await dialog.getByLabel('Task name').fill('Map an experiment')
-  await dialog.locator('.quick-calendar__day').filter({ hasText: String(targetDay) }).click()
+  const opportunitySelect = dialog.getByLabel('Connect to an opportunity', { exact: true })
+  await opportunitySelect.selectOption(`opportunity:${state.opportunity.id}`)
+  const milestoneSelect = dialog.getByLabel('Milestone', { exact: true })
+  await expect(milestoneSelect).toBeVisible()
+  await milestoneSelect.selectOption({ label: /Synthetic submission cutoff/ })
+  await expect(milestoneSelect).toHaveValue(/Synthetic submission cutoff/)
+  await opportunitySelect.selectOption('')
+  await expect(dialog.getByLabel('Milestone', { exact: true })).toHaveCount(0)
+  await opportunitySelect.selectOption(`opportunity:${state.opportunity.id}`)
+  await expect(dialog.getByLabel('Milestone', { exact: true })).toBeVisible()
+
+  const rangeStart = new Date(`${targetDateKey}T12:00:00Z`)
+  rangeStart.setUTCDate(rangeStart.getUTCDate() + 2)
+  const rangeStartKey = rangeStart.toISOString().slice(0, 10)
+  const rangeEnd = new Date(`${rangeStartKey}T12:00:00Z`)
+  rangeEnd.setUTCDate(rangeEnd.getUTCDate() + 2)
+  const rangeEndKey = rangeEnd.toISOString().slice(0, 10)
+  const rangeStartDay = dialog.locator(`[data-date="${rangeStartKey}"]`)
+  const rangeEndDay = dialog.locator(`[data-date="${rangeEndKey}"]`)
+  await rangeEndDay.hover()
+  await page.mouse.down()
+  await rangeStartDay.hover()
+  await page.mouse.up()
+  await expect(dialog.locator(`[data-date="${rangeStartKey}"]`)).toHaveAttribute('aria-pressed', 'true')
+  await expect(dialog.locator(`[data-date="${rangeEndKey}"]`)).toHaveAttribute('aria-pressed', 'true')
   await dialog.locator('button.quick-task-form__save').click()
+  await expect(dialog.locator('button.quick-task-form__save')).toHaveText('Saved ✓')
   await expect(dialog).toHaveCount(0)
   const taskWrite = state.writes.find((write) => write.path === '/api/workspace/plan/tasks')
-  expect(taskWrite?.body.task).toMatchObject({ title: 'Map an experiment', dueDate: targetDateKey })
+  expect(taskWrite?.body.task).toMatchObject({ title: 'Map an experiment', dueDate: rangeEndKey })
   expect(taskWrite?.body.task.scheduledStart).toBeTruthy()
   expect(taskWrite?.body.task.scheduledEnd).toBeTruthy()
+  expect(taskWrite?.body.task).not.toHaveProperty('estimatedHours')
+  expect(taskWrite?.body.task).not.toHaveProperty('notes')
+  expect(taskWrite?.body.task).not.toHaveProperty('dependsOn')
 
   await page.getByRole('button', { name: /Active · pause/ }).click()
   await expect.poll(() => state.writes.filter((write) => write.path === '/api/workspace/plan/activities/activity-orbit').length).toBe(1)

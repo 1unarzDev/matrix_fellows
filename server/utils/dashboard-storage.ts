@@ -28,6 +28,8 @@ export function taskFromRow(r: any): PlanTask {
     id: r.id,
     title: r.title,
     notes: r.notes,
+    opportunityId: r.opportunity_id || null,
+    milestoneKey: r.milestone_key || null,
     pursuitId: r.pursuit_id,
     activityId: r.activity_id,
     status: r.status,

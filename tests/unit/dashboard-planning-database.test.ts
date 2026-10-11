@@ -13,6 +13,7 @@ beforeAll(async () => {
   await db.exec(
     'alter table outreach_planner_items add column target_id uuid;alter table outreach_planner_items add column profile_id uuid;alter table outreach_planner_items add column opportunity_id text;',
   )
+  await db.exec('grant select, update on outreach_members to service_role')
   await db.exec(
     await readFile(
       new URL(
@@ -22,6 +23,16 @@ beforeAll(async () => {
       'utf8',
     ),
   )
+  await db.exec(
+    'create table opportunities(id text primary key, published boolean default true, suppressed boolean default false);grant select on opportunities to service_role',
+  )
+  for (const migration of [
+    '20261010123000_dashboard_opportunity_intake.sql',
+    '20261011095921_dashboard_task_opportunity_links.sql',
+  ])
+    await db.exec(
+      await readFile(new URL(`../../supabase/migrations/${migration}`, import.meta.url), 'utf8'),
+    )
 }, 20000)
 afterAll(async () => {
   await db?.close()
@@ -110,8 +121,100 @@ it('rejects cross-owner parents and preserves immutable official dates on task m
   ).toHaveLength(0)
 })
 it('enforces dependencies in the database, not just in the editor', async () => {
- const a=(await db.query<{id:string}>("insert into dashboard_tasks(user_id,title) values($1,'A') returning id",[owner])).rows[0]!.id
- const b=(await db.query<{id:string}>("insert into dashboard_tasks(user_id,title,depends_on) values($1,'B',array[$2::uuid]) returning id",[owner,a])).rows[0]!.id
- await expect(db.query('update dashboard_tasks set depends_on=array[$1::uuid] where id=$2',[b,a])).rejects.toThrow(/Dependency cycle/)
- await expect(db.query("insert into dashboard_tasks(user_id,title,depends_on) values($1,'Other',array[$2::uuid])",[other,a])).rejects.toThrow(/private tasks/)
+  const a = (
+    await db.query<{ id: string }>(
+      "insert into dashboard_tasks(user_id,title) values($1,'A') returning id",
+      [owner],
+    )
+  ).rows[0]!.id
+  const b = (
+    await db.query<{ id: string }>(
+      "insert into dashboard_tasks(user_id,title,depends_on) values($1,'B',array[$2::uuid]) returning id",
+      [owner, a],
+    )
+  ).rows[0]!.id
+  await expect(
+    db.query('update dashboard_tasks set depends_on=array[$1::uuid] where id=$2', [b, a]),
+  ).rejects.toThrow(/Dependency cycle/)
+  await expect(
+    db.query(
+      "insert into dashboard_tasks(user_id,title,depends_on) values($1,'Other',array[$2::uuid])",
+      [other, a],
+    ),
+  ).rejects.toThrow(/private tasks/)
+})
+it('links a saved opportunity without a pursuit and preserves it after unpublication', async () => {
+  await db.query("insert into opportunities(id) values ('catalog:test-workshop')")
+  await db.exec('set role service_role')
+  const { rows } = await db.query<{ id: string }>(
+    "insert into dashboard_tasks(user_id,title,opportunity_id,milestone_key) values($1,'Read workshop requirements','catalog:test-workshop','2027-02-15|Registration') returning id",
+    [owner],
+  )
+  await db.exec('reset role')
+  await db.exec("update opportunities set published=false where id='catalog:test-workshop'")
+  await db.query("update dashboard_tasks set title='Prepare workshop question' where id=$1", [
+    rows[0]!.id,
+  ])
+  expect(
+    (
+      await db.query('select opportunity_id,milestone_key from dashboard_tasks where id=$1', [
+        rows[0]!.id,
+      ])
+    ).rows[0],
+  ).toEqual({
+    opportunity_id: 'catalog:test-workshop',
+    milestone_key: '2027-02-15|Registration',
+  })
+  await expect(
+    db.query(
+      "insert into dashboard_tasks(user_id,title,opportunity_id) values($1,'Unavailable','catalog:test-workshop')",
+      [owner],
+    ),
+  ).rejects.toThrow(/accessible opportunity/)
+})
+it('rejects private opportunity references across members and retains owner read isolation', async () => {
+  const intake = (
+    await db.query<{ id: string }>(
+      "insert into dashboard_opportunity_intakes(user_id,url,disposition,title,reason) values($1,'https://example.edu/contest','personal','Contest','Small local contest') returning id",
+      [owner],
+    )
+  ).rows[0]!.id
+  await db.query(
+    "insert into dashboard_personal_opportunities(id,intake_id,user_id,url,data) values('personal:test-contest',$1,$2,'https://example.edu/contest','{}')",
+    [intake, owner],
+  )
+  const task = (
+    await db.query<{ id: string }>(
+      "insert into dashboard_tasks(user_id,title,opportunity_id) values($1,'Prepare entry','personal:test-contest') returning id",
+      [owner],
+    )
+  ).rows[0]!.id
+  await expect(
+    db.query(
+      "insert into dashboard_tasks(user_id,title,opportunity_id) values($1,'Other entry','personal:test-contest')",
+      [other],
+    ),
+  ).rejects.toThrow(/accessible opportunity/)
+  await db.exec(`set role authenticated;set request.jwt.claim.sub='${other}'`)
+  expect((await db.query('select id from dashboard_tasks where id=$1', [task])).rows).toHaveLength(
+    0,
+  )
+  await db.exec('reset role')
+  const activity = (
+    await db.query<{ id: string }>(
+      "insert into dashboard_activities(user_id,title) values($1,'Project') returning id",
+      [owner],
+    )
+  ).rows[0]!.id
+  await expect(
+    db.query('update dashboard_tasks set activity_id=$1 where id=$2', [activity, task]),
+  ).rejects.toThrow(/dashboard_task_one_connection/)
+  await db.query(
+    'update dashboard_tasks set opportunity_id=null,activity_id=$1,milestone_key=null where id=$2',
+    [activity, task],
+  )
+  expect(
+    (await db.query('select activity_id,opportunity_id from dashboard_tasks where id=$1', [task]))
+      .rows[0],
+  ).toEqual({ activity_id: activity, opportunity_id: null })
 })

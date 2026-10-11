@@ -2,6 +2,7 @@ import { expect, type Page } from '@playwright/test'
 import {
   pursueSchema,
   taskPatchSchema,
+  taskCreateSchema,
   activityInputSchema,
   contributionSchema,
 } from '../../shared/utils/dashboard-planning'
@@ -152,9 +153,20 @@ export async function setup(page: Page, conflict = false) {
     if (method !== 'GET') writes.push({ path, body })
     if (path === '/api/workspace') return json(workspace)
     if (path === '/api/workspace/plan') return json(plan)
-    if (path === '/api/workspace/research-profile') return json({profile:{displayName:workspace.profiles[0]?.fullName || '',declaredInterests:workspace.profiles[0]?.interests || [],goals:workspace.profiles[0]?.goals || ''},artifacts:[],claims:[],providerStatus:'Local metadata'})
-    if (path === '/api/workspace/officers') return json({officers:[]})
-    if (path === '/api/workspace/research-profile/preferences') return json({lens:'nearby',reachableLocations:['Arlington']})
+    if (path === '/api/workspace/research-profile')
+      return json({
+        profile: {
+          displayName: workspace.profiles[0]?.fullName || '',
+          declaredInterests: workspace.profiles[0]?.interests || [],
+          goals: workspace.profiles[0]?.goals || '',
+        },
+        artifacts: [],
+        claims: [],
+        providerStatus: 'Local metadata',
+      })
+    if (path === '/api/workspace/officers') return json({ officers: [] })
+    if (path === '/api/workspace/research-profile/preferences')
+      return json({ lens: 'nearby', reachableLocations: ['Arlington'] })
     if (path === '/api/workspace/society-context') {
       if (method === 'GET') return json(societyContext)
       const source = {
@@ -212,8 +224,18 @@ export async function setup(page: Page, conflict = false) {
         title: 'Synthetic source reference',
         kind: 'personal',
         disposition: 'personal',
-        item: { ...opportunity, id: 'personal:synthetic-source', title: 'Synthetic source reference', url: body.url },
-        candidate: { ...opportunity, id: 'personal:synthetic-source', title: 'Synthetic source reference', url: body.url },
+        item: {
+          ...opportunity,
+          id: 'personal:synthetic-source',
+          title: 'Synthetic source reference',
+          url: body.url,
+        },
+        candidate: {
+          ...opportunity,
+          id: 'personal:synthetic-source',
+          title: 'Synthetic source reference',
+          url: body.url,
+        },
         reason: 'A bounded opportunity for your own dashboard.',
         confidence: 0.72,
         source: { url: body.url, retrievedAt: stamp, label: 'Bounded source review' },
@@ -227,8 +249,18 @@ export async function setup(page: Page, conflict = false) {
         title: 'Synthetic source reference',
         kind: 'personal',
         disposition: 'personal',
-        item: { ...opportunity, id: 'personal:synthetic-source', title: 'Synthetic source reference', url: body.url },
-        candidate: { ...opportunity, id: 'personal:synthetic-source', title: 'Synthetic source reference', url: body.url },
+        item: {
+          ...opportunity,
+          id: 'personal:synthetic-source',
+          title: 'Synthetic source reference',
+          url: body.url,
+        },
+        candidate: {
+          ...opportunity,
+          id: 'personal:synthetic-source',
+          title: 'Synthetic source reference',
+          url: body.url,
+        },
         reason: 'A bounded opportunity for your own dashboard.',
         confidence: 0.72,
         source: { url: body.url, retrievedAt: stamp, label: 'Bounded source review' },
@@ -292,14 +324,19 @@ export async function setup(page: Page, conflict = false) {
       const parsed = taskPatchSchema.parse(body)
       const item = plan.tasks.find((t: any) => t.id === path.split('/').at(-1))
       Object.assign(item, parsed.task, { version: item.version + 1 })
+      for (const key of ['opportunityId', 'pursuitId', 'activityId', 'milestoneKey'] as const)
+        if (parsed[key] !== undefined) item[key] = parsed[key]
       return json(item)
     }
     if (path === '/api/workspace/plan/tasks' && method === 'POST') {
+      const parsed = taskCreateSchema.parse(body)
       const item = {
-        ...body.task,
-        id: `task-fixture-${plan.tasks.length + 1}`,
+        ...parsed.task,
+        id: `88888888-8888-4888-8888-${String(plan.tasks.length + 1).padStart(12, '0')}`,
         pursuitId: body.pursuitId || null,
         activityId: body.activityId || null,
+        opportunityId: parsed.opportunityId || null,
+        milestoneKey: parsed.milestoneKey || null,
         version: 1,
         createdAt: stamp,
         updatedAt: stamp,

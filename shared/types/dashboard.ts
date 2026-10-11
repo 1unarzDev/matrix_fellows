@@ -38,6 +38,9 @@ export interface PlanTask {
   id: string
   title: string
   notes: string
+  /** Catalog opportunity reference for a saved item that is not yet a pursuit. */
+  opportunityId?: string | null
+  milestoneKey?: string | null
   pursuitId: string | null
   activityId: string | null
   status: 'todo' | 'doing' | 'done'

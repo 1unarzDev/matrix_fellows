@@ -164,9 +164,40 @@ export const eventInputSchema = z
     (v) => v.taskId === null,
     'Schedule task work in the task editor, not as a duplicate event.',
   )
-export const taskPatchSchema = z
-  .object({ expectedVersion: z.number().int().positive(), task: taskInputSchema })
+const taskConnections = {
+  opportunityId: z
+    .string()
+    .regex(/^[a-z0-9][a-z0-9:_-]{0,199}$/)
+    .nullable()
+    .optional(),
+  pursuitId: z.string().uuid().nullable().optional(),
+  activityId: z.string().uuid().nullable().optional(),
+  milestoneKey: z.string().max(1000).nullable().optional(),
+}
+function validTaskConnection(value: {
+  opportunityId?: string | null
+  pursuitId?: string | null
+  activityId?: string | null
+}) {
+  return [value.opportunityId, value.pursuitId, value.activityId].filter(Boolean).length <= 1
+}
+export const taskCreateSchema = z
+  .object({ task: taskInputSchema, ...taskConnections })
   .strict()
+  .refine(validTaskConnection, 'Choose one connection.')
+export const taskPatchSchema = z
+  .object({
+    expectedVersion: z.number().int().positive(),
+    task: taskInputSchema,
+    ...taskConnections,
+  })
+  .strict()
+  .refine(validTaskConnection, 'Choose one connection.')
+  .refine((value) => {
+    const keys = ['opportunityId', 'pursuitId', 'activityId'] as const
+    const provided = keys.filter((key) => value[key] !== undefined).length
+    return provided === 0 || provided === keys.length
+  }, 'Update the connection as a whole.')
 export const pursuitPatchSchema = z
   .object({
     expectedVersion: z.number().int().positive(),

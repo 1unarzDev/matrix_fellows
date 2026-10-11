@@ -1,22 +1,13 @@
-import { z } from 'zod'
 import { requireWorkspaceMember, assertWorkspaceOrigin } from '../../../utils/workspace-auth'
 import { workspaceStorage, workspaceBody, workspaceResult } from '../../../utils/workspace-storage'
 import { taskFromRow } from '../../../utils/dashboard-storage'
-import { taskInputSchema, taskToRow } from '#shared/utils/dashboard-planning'
+import { taskCreateSchema, taskToRow } from '#shared/utils/dashboard-planning'
+import { assertWorkspaceOpportunity } from '../../../utils/workspace-access'
 export default defineEventHandler(async (event) => {
   assertWorkspaceOrigin(event)
   const member = await requireWorkspaceMember(event)
-  const v = await workspaceBody(
-    event,
-    z
-      .object({
-        task: taskInputSchema,
-        pursuitId: z.string().uuid().nullable().default(null),
-        activityId: z.string().uuid().nullable().default(null),
-      })
-      .strict()
-      .refine((v) => !(v.pursuitId && v.activityId), 'Choose one parent.'),
-  )
+  const v = await workspaceBody(event, taskCreateSchema)
+  await assertWorkspaceOpportunity(event, v.opportunityId)
   const db = workspaceStorage(event)
   if (v.task.dependsOn.length)
     workspaceResult(
@@ -39,8 +30,10 @@ export default defineEventHandler(async (event) => {
         .insert({
           ...taskToRow(v.task),
           user_id: member.userId,
-          pursuit_id: v.pursuitId,
-          activity_id: v.activityId,
+          pursuit_id: v.pursuitId || null,
+          activity_id: v.activityId || null,
+          opportunity_id: v.opportunityId || null,
+          milestone_key: v.milestoneKey || null,
         })
         .select()
         .single(),

@@ -69,6 +69,9 @@ const catalogError = ref('')
 const catalogPage = ref(1)
 const catalogPages = ref(1)
 const catalogSource = ref<'all' | 'saved' | null>(null)
+const catalogTransition = ref<'next' | 'previous'>('next')
+const catalogResultsStage = ref<HTMLElement | null>(null)
+const catalogResultsStageHeight = ref<string | undefined>(undefined)
 const savedCollectionInfo = ref<{
   capped: boolean
   limit: number
@@ -79,6 +82,9 @@ let catalogAbort: AbortController | null = null
 onBeforeUnmount(() => {
   catalogRequestVersion++
   catalogAbort?.abort()
+  window.removeEventListener('pointermove', quickDateFromPoint)
+  window.removeEventListener('pointerup', finishQuickDrag)
+  window.removeEventListener('pointercancel', finishQuickDrag)
 })
 const includeClosed = ref(queryText('past') === '1')
 const savedOnly = ref(queryText('saved') === '1')
@@ -106,7 +112,7 @@ const activeFilters = computed(() =>
       value,
       label: opportunityFilterLabels[key]?.[value] || value,
       id: `${key}:${value}`,
-    })),
+    }))
   ),
 )
 function clearFilters() {
@@ -124,21 +130,37 @@ const decisions = computed(() => decisionData.value?.decisions || [])
 const selected = ref<Opportunity | null>(null)
 const pursuing = ref(false)
 const acknowledgedUncertainty = ref(false)
-const proposedTasks = ref<
-  { title: string; dueDate: string | null; estimatedHours: number | null }[]
->([])
+const proposedTasks = ref<{ title: string }[]>([])
 const taskEditor = ref<any>(null)
+const taskDialog = ref<{ celebrate: () => void; close: () => void } | null>(null)
 const taskParent = computed({
   get: () =>
     taskEditor.value?.activityId
       ? `activity:${taskEditor.value.activityId}`
       : taskEditor.value?.pursuitId
         ? `pursuit:${taskEditor.value.pursuitId}`
-        : '',
+        : taskEditor.value?.opportunityId
+          ? `opportunity:${taskEditor.value.opportunityId}`
+          : '',
   set: (value: string) => {
     if (!taskEditor.value) return
+    if (value !== taskParent.value) taskEditor.value.milestoneKey = null
     taskEditor.value.activityId = value.startsWith('activity:') ? value.slice(9) : null
     taskEditor.value.pursuitId = value.startsWith('pursuit:') ? value.slice(8) : null
+    taskEditor.value.opportunityId = value.startsWith('opportunity:') ? value.slice(12) : null
+    taskEditor.value.connectionDirty = true
+  },
+})
+const taskMilestone = computed({
+  get: () => taskEditor.value?.milestoneKey || '',
+  set: (value: string) => {
+    if (!taskEditor.value) return
+    taskEditor.value.milestoneKey = value || null
+    taskEditor.value.connectionDirty = true
+    const [date] = value.split('|')
+    if (!date) return
+    selectQuickDate(date)
+    setTaskCalendarMonth(date)
   },
 })
 const activityEditor = ref(false)
@@ -187,6 +209,27 @@ watch(
 )
 const savedOpportunities = useSavedOpportunities()
 const saves = savedOpportunities.ids
+const taskSavedOpportunityRecords = ref<Opportunity[]>([])
+const savedTaskOpportunities = computed(() =>
+  [...new Set([...saves.value, taskEditor.value?.opportunityId].filter(Boolean) as string[])]
+    .map((id) => {
+      const item =
+        catalog.value.find((candidate) => candidate.id === id) ||
+        taskSavedOpportunityRecords.value.find((candidate) => candidate.id === id)
+      return { id, title: item?.title || 'Saved opportunity' }
+    })
+    .filter((item) => !pursuits.value.some((pursuit) => pursuit.opportunityId === item.id)),
+)
+async function loadTaskSavedOpportunities() {
+  try {
+    const result = await $fetch<{ items: Opportunity[] }>('/api/workspace/catalog-saves', {
+      query: { page: 1, pageSize: 50 },
+    })
+    taskSavedOpportunityRecords.value = result.items || []
+  } catch {
+    // Existing IDs remain selectable with a compact fallback label.
+  }
+}
 watch(
   () => [props.workspace.member.userId, props.workspace.catalogSaves] as const,
   ([owner, value]) => {
@@ -233,6 +276,33 @@ const calendarDays = computed(() => {
 const quickCalendarDays = computed<(typeof calendarDays.value[number] | null)[]>(() => {
   const first = new Date(`${calendarMonth.value.toISOString().slice(0, 7)}-01T12:00:00Z`)
   return [...Array.from({ length: first.getUTCDay() }, () => null), ...calendarDays.value]
+})
+const selectedPursuit = computed(() => {
+  const id = taskEditor.value?.pursuitId
+  return id ? pursuits.value.find((p) => p.id === id) || null : null
+})
+const taskMilestones = computed(() => {
+  const opportunity = [...catalog.value, ...taskSavedOpportunityRecords.value].find(
+    (item) => item.id === taskEditor.value?.opportunityId,
+  )
+  const savedMilestones = opportunity
+    ? getTimeline(opportunity)
+        .filter((point) => !point.superseded && /^\d{4}-\d{2}-\d{2}$/.test(point.date))
+        .map((point) => ({ value: `${point.date}|${point.label}`, date: point.date, label: point.label }))
+    : []
+  const milestones = selectedPursuit.value ? (selectedPursuit.value.officialDates || [])
+    .filter((point) => point.localDate && /^\d{4}-\d{2}-\d{2}$/.test(point.localDate))
+    .map((point) => ({
+      value: `${point.localDate}|${point.wording}`,
+      date: point.localDate as string,
+      label: point.wording,
+    })) : savedMilestones
+  const existing = taskEditor.value?.milestoneKey
+  if (existing && !milestones.some((milestone) => milestone.value === existing)) {
+    const [date, ...label] = existing.split('|')
+    milestones.unshift({ value: existing, date, label: label.join('|') || 'Saved milestone' })
+  }
+  return milestones
 })
 function chicagoMidnight(date: string) {
   const guess = new Date(`${date}T06:00:00Z`)
@@ -351,6 +421,9 @@ async function request(path: string, method: 'POST' | 'PATCH' | 'DELETE', body?:
 async function loadCatalog(page = 1, search = query.value) {
   const version = ++catalogRequestVersion
   const savedMode = savedOnly.value
+  if (page !== catalogPage.value) {
+    catalogTransition.value = page > catalogPage.value ? 'next' : 'previous'
+  }
   catalogAbort?.abort()
   catalogAbort = new AbortController()
   catalogPending.value = true
@@ -410,7 +483,21 @@ const results = computed(() =>
             !decisions.value.some((d) => d.opportunityId === o.id && d.decision === 'pass')),
       ),
 )
+function holdCatalogResultsStage() {
+  const stage = catalogResultsStage.value
+  if (!stage) return
+  catalogResultsStageHeight.value = `${Math.ceil(stage.getBoundingClientRect().height)}px`
+}
+function releaseCatalogResultsStage() {
+  catalogResultsStageHeight.value = undefined
+}
+function releaseCatalogResultsStageIfEmpty() {
+  if (!results.value.length) releaseCatalogResultsStage()
+}
 onMounted(async () => {
+  window.addEventListener('pointermove', quickDateFromPoint)
+  window.addEventListener('pointerup', finishQuickDrag)
+  window.addEventListener('pointercancel', finishQuickDrag)
   await loadCatalog()
   await restoreSelection()
 })
@@ -492,16 +579,12 @@ function reviewPursuit(item: Opportunity) {
   proposedTasks.value = [
     {
       title: 'Verify eligibility and the current application cycle',
-      dueDate: null,
-      estimatedHours: null,
     },
     ...(item.internship?.applicationMaterials || [])
       .slice(0, 5)
-      .map((title) => ({ title: `Prepare ${title}`, dueDate: null, estimatedHours: null })),
+      .map((title) => ({ title: `Prepare ${title}` })),
     {
       title: 'Review requirements and complete the external submission',
-      dueDate: null,
-      estimatedHours: null,
     },
   ]
 }
@@ -517,11 +600,7 @@ async function confirmPursuit() {
     acknowledgedUncertainty: acknowledgedUncertainty.value,
     reviewedTasks: proposedTasks.value
       .filter((t) => t.title.trim())
-      .map((t) => ({
-        ...t,
-        estimatedHours: typeof t.estimatedHours === 'number' ? t.estimatedHours : null,
-        dueDate: t.dueDate || null,
-      })),
+      .map((t) => ({ title: t.title })),
   })
   if (ok) {
     pursuing.value = false
@@ -595,63 +674,147 @@ function normalizePublishedDate(
   return { precision: 'approximate', localDate: value, instant: null }
 }
 function editTask(task?: any, activityId?: string) {
-  taskEditor.value = task
-    ? { ...task, expectedVersion: task.version }
-    : {
-        title: '',
-        dueDate: '',
-        estimatedHours: null,
-        status: 'todo',
-        activityId: activityId || null,
-        pursuitId: null,
-        notes: '',
-        scheduledStart: '',
-        scheduledEnd: '',
-      }
+  void loadTaskSavedOpportunities()
+  if (task) {
+    const dueDate = task.dueDate || localDay(task.scheduledStart)
+    const rangeEnd = task.scheduledEnd
+      ? localDay(new Date(Date.parse(task.scheduledEnd) - 1).toISOString())
+      : dueDate
+    taskEditor.value = {
+      ...task,
+      quick: true,
+      expectedVersion: task.version,
+      originalDueDate: task.dueDate || null,
+      dueDate,
+      rangeEnd: rangeEnd || dueDate,
+      milestoneKey: task.milestoneKey || null,
+      connectionDirty: false,
+      calendarDirty: false,
+      saved: false,
+    }
+    setTaskCalendarMonth(dueDate)
+    return
+  }
+  taskEditor.value = {
+    quick: true,
+    title: '',
+    dueDate: '',
+    rangeEnd: '',
+    activityId: activityId || null,
+    pursuitId: null,
+    opportunityId: null,
+    milestoneKey: null,
+    connectionDirty: true,
+    calendarDirty: false,
+    saved: false,
+    status: 'todo',
+  }
+  setTaskCalendarMonth(today)
 }
 function editQuickTask(date = today) {
+  void loadTaskSavedOpportunities()
   taskEditor.value = {
     quick: true,
     title: '',
     dueDate: date,
     rangeEnd: date,
-    estimatedHours: null,
     status: 'todo',
     activityId: null,
     pursuitId: null,
-    notes: '',
-    scheduledStart: '',
-    scheduledEnd: '',
+    opportunityId: null,
+    milestoneKey: null,
+    connectionDirty: true,
+    calendarDirty: true,
+    saved: false,
   }
+  setTaskCalendarMonth(date)
 }
+function setTaskCalendarMonth(date: string) {
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return
+  const target = new Date(`${date}T12:00:00Z`)
+  const base = new Date(`${today.slice(0, 7)}-01T12:00:00Z`)
+  calendarOffset.value =
+    (target.getUTCFullYear() - base.getUTCFullYear()) * 12 +
+    target.getUTCMonth() - base.getUTCMonth()
+}
+const quickDragAnchor = ref('')
+const quickDragMoved = ref(false)
 function toggleQuickDrag(date: string) {
   if (!quickSelecting.value) return
-  if (taskEditor.value?.quick) taskEditor.value.rangeEnd = date
+  if (!taskEditor.value) return
+  const anchor = quickDragAnchor.value || taskEditor.value.dueDate || date
+  if (date !== anchor) quickDragMoved.value = true
+  if (date < anchor) {
+    taskEditor.value.dueDate = date
+    taskEditor.value.rangeEnd = anchor
+  } else {
+    taskEditor.value.dueDate = anchor
+    taskEditor.value.rangeEnd = date
+  }
+  taskEditor.value.calendarDirty = true
 }
 function finishQuickDrag() {
   quickSelecting.value = false
+  quickDragAnchor.value = ''
+  window.setTimeout(() => {
+    quickDragMoved.value = false
+  }, 0)
+}
+function selectQuickDate(date: string) {
+  if (!taskEditor.value) return
+  taskEditor.value.dueDate = date
+  taskEditor.value.rangeEnd = date
+  taskEditor.value.calendarDirty = true
+}
+function beginQuickDrag(event: PointerEvent, date: string) {
+  if (event.pointerType === 'mouse' && event.button !== 0) return
+  quickDragAnchor.value = date
+  quickDragMoved.value = false
+  quickSelecting.value = true
+  selectQuickDate(date)
+}
+function quickDateFromPoint(event: PointerEvent) {
+  if (!quickSelecting.value) return
+  const element = document.elementFromPoint(event.clientX, event.clientY)
+  const day = element?.closest<HTMLElement>('[data-quick-date]')?.dataset.quickDate
+  if (day) toggleQuickDrag(day)
 }
 function quickTaskDate(date: string) {
-  if (!taskEditor.value?.quick) return
-  if (!taskEditor.value.dueDate || taskEditor.value.rangeEnd !== taskEditor.value.dueDate) {
-    taskEditor.value.dueDate = date
-    taskEditor.value.rangeEnd = date
-    return
-  }
-  const start = taskEditor.value.dueDate
-  if (date < start) {
-    taskEditor.value.dueDate = date
-    taskEditor.value.rangeEnd = start
-  } else taskEditor.value.rangeEnd = date
+  selectQuickDate(date)
+}
+function clickQuickDate(event: MouseEvent, date: string) {
+  if (event.detail === 0 || !quickDragMoved.value) selectQuickDate(date)
 }
 function quickTaskIsSelected(date: string) {
-  if (!taskEditor.value?.quick) return false
+  if (!taskEditor.value) return false
   const start = taskEditor.value.dueDate || ''
   const end = taskEditor.value.rangeEnd || start
   return date >= start && date <= end
 }
+function quickTaskCellClass(date: string) {
+  if (!quickTaskIsSelected(date)) return {}
+  const start = taskEditor.value.dueDate
+  const end = taskEditor.value.rangeEnd || start
+  const day = new Date(`${date}T12:00:00Z`)
+  const last = new Date(Date.UTC(day.getUTCFullYear(), day.getUTCMonth() + 1, 0)).getUTCDate()
+  return {
+    'quick-calendar__cell--selected': true,
+    'quick-calendar__cell--range': start !== end,
+    'quick-calendar__cell--start': date === start || day.getUTCDay() === 0 || day.getUTCDate() === 1,
+    'quick-calendar__cell--end': date === end || day.getUTCDay() === 6 || day.getUTCDate() === last,
+  }
+}
+function quickTaskRangeClass(date: string) {
+  if (!taskEditor.value || !quickTaskIsSelected(date)) return {}
+  const start = taskEditor.value.dueDate || ''
+  const end = taskEditor.value.rangeEnd || start
+  return {
+    'quick-calendar__day--range-start': date === start,
+    'quick-calendar__day--range-end': date === end,
+  }
+}
 function quickTaskSession(task: any) {
-  if (!task.quick || !task.dueDate) return
+  if (!task.dueDate) return
   const endDate = task.rangeEnd || task.dueDate
   const start = chicagoMidnight(task.dueDate)
   const following = new Date(`${endDate}T12:00:00Z`)
@@ -660,20 +823,49 @@ function quickTaskSession(task: any) {
 }
 async function saveTask() {
   const task = taskEditor.value
-  if (!task?.title.trim()) return
-  const input = { ...taskInput(task), ...(quickTaskSession(task) || {}) }
+  if (!task?.title.trim() || task.saving || task.saved) return
+  task.saving = true
+  // The composer intentionally sends only the fields a person can act on. The
+  // database keeps legacy planning columns for existing records, while their
+  // editor no longer asks people to manage estimates, statuses or work sessions.
+  const selectedDueDate = task.id && !task.calendarDirty
+    ? task.originalDueDate || task.dueDate || null
+    : task.rangeEnd || task.dueDate || null
+  const input: Record<string, unknown> = task.id
+    ? {
+        ...taskInput(task),
+        title: task.title,
+        dueDate: selectedDueDate,
+        ...(task.calendarDirty ? quickTaskSession(task) || {} : {}),
+      }
+    : { title: task.title, dueDate: selectedDueDate, ...(quickTaskSession(task) || {}) }
+  const connections = {
+    opportunityId: task.opportunityId || null,
+    pursuitId: task.pursuitId || null,
+    activityId: task.activityId || null,
+    milestoneKey: task.milestoneKey || null,
+  }
   const body = task.id
-    ? { expectedVersion: task.version, task: input }
-    : { task: input, pursuitId: task.pursuitId || null, activityId: task.activityId || null }
-  if (
-    await request(
-      task.id ? `/plan/tasks/${task.id}` : '/plan/tasks',
-      task.id ? 'PATCH' : 'POST',
-      body,
-    )
-  ) {
-    taskEditor.value = null
+    ? {
+        expectedVersion: task.version,
+        task: input,
+        ...(task.connectionDirty ? connections : {}),
+      }
+    : { task: input, ...connections }
+  const saved = await request(
+    task.id ? `/plan/tasks/${task.id}` : '/plan/tasks',
+    task.id ? 'PATCH' : 'POST',
+    body,
+  )
+  if (taskEditor.value !== task) return
+  task.saving = false
+  if (saved) {
+    task.saved = true
+    taskDialog.value?.celebrate()
     notice.value = 'Task saved.'
+    window.setTimeout(() => {
+      if (taskEditor.value === task) taskDialog.value?.close()
+    }, 420)
   }
 }
 async function completeTask(task: any) {
@@ -816,11 +1008,7 @@ function sessionInput(value: string | null) {
   return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
 }
 function openTask(task: any) {
-  editTask({
-    ...task,
-    scheduledStart: sessionInput(task.scheduledStart),
-    scheduledEnd: sessionInput(task.scheduledEnd),
-  })
+  editTask(task)
 }
 function taskInput(task: any) {
   return {
@@ -834,7 +1022,7 @@ function taskInput(task: any) {
     dependsOn: task.dependsOn || [],
   }
 }
-function localDay(value?: string | null) {
+function localDay(value?: string | Date | null) {
   if (!value) return ''
   return new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/Chicago',
@@ -1002,33 +1190,54 @@ function calendarFacts(date: string) {
         </p>
         <p v-if="catalogPending" class="wb-muted" role="status">Checking the catalog…</p>
         <OpportunitySaveNotice />
-        <div class="wb-results">
-          <OpportunityCard
-            v-for="item in results"
-            :key="item.id"
-            :item="item"
-            :now="catalogNow"
-            compact
-            inspect
-            @inspect="inspectOpportunity(item)"
+        <div
+          ref="catalogResultsStage"
+          class="wb-results-stage"
+          :style="catalogResultsStageHeight ? { minHeight: catalogResultsStageHeight } : undefined"
+        >
+          <Transition
+            :name="`wb-results-${catalogTransition}`"
+            mode="out-in"
+            @before-leave="holdCatalogResultsStage"
+            @after-leave="releaseCatalogResultsStageIfEmpty"
+            @after-enter="releaseCatalogResultsStage"
+            @enter-cancelled="releaseCatalogResultsStage"
+            @leave-cancelled="releaseCatalogResultsStage"
           >
-            <template #actions>
-              <div class="wb-card-actions">
-                <button type="button" class="wb-inspect" @click="inspectOpportunity(item)">
-                  Details <SiteIcon name="right" :size="14" aria-hidden="true" />
-                </button>
-                <button
-                  v-if="decisions.some((d) => d.opportunityId === item.id && d.decision === 'pass')"
-                  class="wb-text"
-                  :disabled="busy"
-                  @click="decideOpportunity(item, 'clear')"
-                >
-                  Undo pass
-                </button>
-                <OpportunitySaveButton :id="item.id" compact />
-              </div>
-            </template>
-          </OpportunityCard>
+            <div
+              v-if="results.length"
+              :key="`${catalogSource}:${savedOnly}:${catalogPage}:${results.map((item) => item.id).join(',')}`"
+              class="wb-results"
+              :aria-busy="catalogPending"
+            >
+              <OpportunityCard
+                v-for="item in results"
+                :key="item.id"
+                :item="item"
+                :now="catalogNow"
+                compact
+                inspect
+                @inspect="inspectOpportunity(item)"
+              >
+                <template #actions>
+                  <div class="wb-card-actions">
+                    <button type="button" class="wb-inspect" @click="inspectOpportunity(item)">
+                      Details <SiteIcon name="right" :size="14" aria-hidden="true" />
+                    </button>
+                    <button
+                      v-if="decisions.some((d) => d.opportunityId === item.id && d.decision === 'pass')"
+                      class="wb-text"
+                      :disabled="busy"
+                      @click="decideOpportunity(item, 'clear')"
+                    >
+                      Undo pass
+                    </button>
+                    <OpportunitySaveButton :id="item.id" compact />
+                  </div>
+                </template>
+              </OpportunityCard>
+            </div>
+          </Transition>
         </div>
         <div v-if="!catalogPending && !results.length" class="wb-surface wb-empty">
           <h3>No actionable results in this set.</h3>
@@ -1037,19 +1246,20 @@ function calendarFacts(date: string) {
         </div>
         <div v-if="catalogSource === (savedOnly ? 'saved' : 'all')" class="wb-pagination">
           <button
-            class="wb-button"
+            class="wb-pagination-control"
+            aria-label="Previous opportunity page"
             :disabled="catalogPage <= 1 || catalogPending"
             @click="loadCatalog(catalogPage - 1)"
-          >
-            Previous</button
+          ><SiteIcon name="right" :size="15" aria-hidden="true" class="wb-pagination-control__icon--previous" /><span
+              >Previous</span
+            ></button
           ><span>Page {{ catalogPage }} of {{ catalogPages }}</span
           ><button
-            class="wb-button"
+            class="wb-pagination-control"
+            aria-label="Next opportunity page"
             :disabled="catalogPage >= catalogPages || catalogPending"
             @click="loadCatalog(catalogPage + 1)"
-          >
-            Next
-          </button>
+          ><span>Next</span><SiteIcon name="right" :size="15" aria-hidden="true" /></button>
         </div>
       </div>
       <template v-else>
@@ -1087,10 +1297,7 @@ function calendarFacts(date: string) {
               @toggle="completeTask(task)"
             /><button class="wb-task-title" @click="openTask(task)">
               <strong>{{ task.title }}</strong
-              ><span>{{ taskReason(task) }}</span></button
-            ><span class="wb-muted">{{
-              task.estimatedHours == null ? 'Unknown effort' : `${task.estimatedHours}h`
-            }}</span>
+              ><span>{{ taskReason(task) }}</span></button>
           </div>
         </div>
         <template v-if="view === 'calendar'">
@@ -1452,9 +1659,6 @@ function calendarFacts(date: string) {
           Eligibility remains unconfirmed until you check every organizer rule. These are suggested
           internal tasks, not official deadlines.
         </p>
-        <p class="wb-muted">
-          {{ scheduledHours.toFixed(1) }}h already scheduled this week. Unknown estimates are not zero.
-        </p>
         <form class="wb-form" @submit.prevent="confirmPursuit">
           <label class="wb-acknowledgement"
             ><input v-model="acknowledgedUncertainty" type="checkbox" required />I understand that
@@ -1464,18 +1668,6 @@ function calendarFacts(date: string) {
           <fieldset v-for="(task, index) in proposedTasks" :key="index" class="wb-review-task">
             <legend>Step {{ index + 1 }}</legend>
             <label>Task<input v-model="task.title" required maxlength="240" /></label>
-            <div class="wb-formgrid">
-              <label>Internal target<input v-model="task.dueDate" type="date" /></label
-              ><label
-                >Estimated hours<input
-                  v-model.number="task.estimatedHours"
-                  type="number"
-                  min="0"
-                  max="500"
-                  step="0.5"
-                  placeholder="Unknown"
-              /></label>
-            </div>
             <button type="button" class="wb-text" @click="proposedTasks.splice(index, 1)">
               Remove suggestion
             </button>
@@ -1483,7 +1675,7 @@ function calendarFacts(date: string) {
           <button
             type="button"
             class="wb-button"
-            @click="proposedTasks.push({ title: '', dueDate: null, estimatedHours: null })"
+            @click="proposedTasks.push({ title: '' })"
           >
             + Add step
           </button>
@@ -1523,89 +1715,22 @@ function calendarFacts(date: string) {
       </div></DashboardDialog
     >
     <DashboardDialog
-      v-if="taskEditor?.quick"
-      title="Add task"
+      ref="taskDialog"
+      v-if="taskEditor"
+      :title="taskEditor.id ? 'Edit task' : 'Add task'"
       compact
       @close="taskEditor = null"
-      ><form class="quick-task-form" @submit.prevent="saveTask" @pointerup="finishQuickDrag">
-        <label class="quick-task-form__title">Task name<input v-model="taskEditor.title" required maxlength="240" autofocus placeholder="Name this task" /></label>
-        <label class="quick-task-form__field">Connect to an opportunity <select v-model="taskParent"><option value="">Personal task</option><option v-for="p in pursuits" :key="p.id" :value="`pursuit:${p.id}`">{{ p.title }}</option></select></label>
-        <div class="quick-calendar" @pointerup="finishQuickDrag">
-          <div class="quick-calendar__head"><button type="button" class="quick-calendar__arrow" @click="calendarOffset--">←</button><strong>{{ calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) }}</strong><button type="button" class="quick-calendar__arrow" @click="calendarOffset++">→</button></div>
-          <div class="quick-calendar__grid"><span v-for="(label, index) in ['S','M','T','W','T','F','S']" :key="`${label}-${index}`" class="quick-calendar__label">{{ label }}</span><span v-for="(day, index) in quickCalendarDays" :key="day ? day.date : `quick-blank-${index}`" class="quick-calendar__cell"><button v-if="day" type="button" class="quick-calendar__day" :class="{ 'quick-calendar__day--selected': quickTaskIsSelected(day.date), 'quick-calendar__day--today': day.date === today }" @pointerdown="quickSelecting = true; quickTaskDate(day.date)" @pointerenter="toggleQuickDrag(day.date)">{{ Number(day.date.slice(-2)) }}</button></span></div>
+      ><form class="quick-task-form" @submit.prevent="saveTask">
+        <label class="quick-task-form__title">Task name<input v-model="taskEditor.title" required maxlength="240" autofocus placeholder="Name this task" :disabled="taskEditor.saving || taskEditor.saved" /></label>
+        <label class="quick-task-form__field">Connect to an opportunity <select v-model="taskParent" :disabled="taskEditor.saving || taskEditor.saved"><option value="">Personal task</option><option v-for="p in pursuits" :key="p.id" :value="`pursuit:${p.id}`">{{ p.title }}</option><option v-for="opportunity in savedTaskOpportunities" :key="`saved-${opportunity.id}`" :value="`opportunity:${opportunity.id}`">{{ opportunity.title }}<template v-if="opportunity.title === 'Saved opportunity'"> · {{ opportunity.id }}</template></option><optgroup v-if="activities.length" label="Projects"><option v-for="a in activities" :key="a.id" :value="`activity:${a.id}`">{{ a.title }}{{ a.milestone ? ` · ${a.milestone}` : '' }}</option></optgroup></select></label>
+        <label v-if="taskMilestones.length" class="quick-task-form__field">Milestone <select v-model="taskMilestone" :disabled="taskEditor.saving || taskEditor.saved"><option value="">Choose a milestone (optional)</option><option v-for="milestone in taskMilestones" :key="milestone.value" :value="milestone.value">{{ milestone.label }} · {{ dateLabel(milestone.date) }}</option></select></label>
+        <div class="quick-calendar" @pointermove="quickDateFromPoint" @pointerup="finishQuickDrag" @pointercancel="finishQuickDrag">
+          <div class="quick-calendar__head"><button type="button" class="quick-calendar__arrow" aria-label="Previous month" :disabled="taskEditor.saving || taskEditor.saved" @click="calendarOffset--">←</button><strong>{{ calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) }}</strong><button type="button" class="quick-calendar__arrow" aria-label="Next month" :disabled="taskEditor.saving || taskEditor.saved" @click="calendarOffset++">→</button></div>
+          <div class="quick-calendar__grid"><span v-for="(label, index) in ['S','M','T','W','T','F','S']" :key="`${label}-${index}`" class="quick-calendar__label">{{ label }}</span><span v-for="(day, index) in quickCalendarDays" :key="day ? day.date : `quick-blank-${index}`" class="quick-calendar__cell" :class="day ? quickTaskCellClass(day.date) : {}"><button v-if="day" :data-quick-date="day.date" :data-date="day.date" :aria-label="`Select ${day.date}`" :aria-pressed="quickTaskIsSelected(day.date)" type="button" class="quick-calendar__day" :disabled="taskEditor.saving || taskEditor.saved" :class="{ 'quick-calendar__day--selected': quickTaskIsSelected(day.date), 'quick-calendar__day--today': day.date === today, ...quickTaskRangeClass(day.date) }" @pointerdown.prevent="beginQuickDrag($event, day.date)" @click="clickQuickDate($event, day.date)">{{ Number(day.date.slice(-2)) }}</button></span></div>
           <p class="quick-calendar__range">{{ dateLabel(taskEditor.dueDate) }}<span v-if="taskEditor.rangeEnd && taskEditor.rangeEnd !== taskEditor.dueDate"> → {{ dateLabel(taskEditor.rangeEnd) }}</span></p>
         </div>
         <p v-if="error" class="wb-message wb-error" role="alert">{{ error }}</p>
-        <button class="quick-task-form__save" :disabled="busy">{{ busy ? 'Saving…' : 'Save task' }}</button>
-      </form></DashboardDialog
-    >
-    <DashboardDialog
-      v-else-if="taskEditor"
-      :title="taskEditor.id ? 'Edit task' : 'Add task'"
-      @close="taskEditor = null"
-      ><form class="wb-form" @submit.prevent="saveTask">
-        <label>Task<input v-model="taskEditor.title" required maxlength="240" autofocus /></label
-        ><label>Notes<textarea v-model="taskEditor.notes" rows="3" /></label>
-        <label
-          >Related work<select v-model="taskParent" :disabled="Boolean(taskEditor.id)">
-            <option value="">Standalone task</option>
-            <optgroup label="Applications">
-              <option v-for="p in pursuits" :key="p.id" :value="`pursuit:${p.id}`">
-                {{ p.title }}
-              </option>
-            </optgroup>
-            <optgroup label="Activities">
-              <option v-for="a in activities" :key="a.id" :value="`activity:${a.id}`">
-                {{ a.title }}
-              </option>
-            </optgroup>
-          </select></label
-        >
-        <label v-if="tasks.some((t) => t.id !== taskEditor.id)"
-          >Dependencies <span class="wb-muted">optional · choose existing tasks</span
-          ><select v-model="taskEditor.dependsOn" multiple size="3">
-            <option
-              v-for="dependency in tasks.filter((t) => t.id !== taskEditor.id)"
-              :key="dependency.id"
-              :value="dependency.id"
-            >
-              {{ dependency.title }}{{ dependency.status === 'done' ? ' · done' : '' }}
-            </option>
-          </select></label
-        >
-        <div class="wb-formgrid">
-          <label>Internal due date<input v-model="taskEditor.dueDate" type="date" /></label
-          ><label
-            >Estimated hours<input
-              v-model.number="taskEditor.estimatedHours"
-              type="number"
-              min="0"
-              max="500"
-              step="0.5"
-              placeholder="Unknown"
-          /></label>
-        </div>
-        <label
-          >Status<select v-model="taskEditor.status">
-            <option value="todo">To do</option>
-            <option value="doing">In progress</option>
-            <option value="done">Completed</option>
-          </select></label
-        >
-        <fieldset>
-          <legend>Optional work session</legend>
-          <p class="wb-muted">
-            Your browser’s local time. This schedules work; it does not change an official cutoff.
-          </p>
-          <div class="wb-formgrid">
-            <label>Start<input v-model="taskEditor.scheduledStart" type="datetime-local" /></label
-            ><label>End<input v-model="taskEditor.scheduledEnd" type="datetime-local" /></label>
-          </div>
-        </fieldset>
-        <p v-if="error" class="wb-message wb-error" role="alert">{{ error }}</p>
-        <button class="wb-button wb-primary" :disabled="busy">
-          {{ busy ? 'Saving…' : 'Save task' }}
-        </button>
+        <button class="quick-task-form__save" :disabled="busy || taskEditor.saving || taskEditor.saved">{{ taskEditor.saved ? 'Saved ✓' : busy || taskEditor.saving ? 'Saving…' : 'Save task' }}</button>
       </form></DashboardDialog
     >
     <DashboardDialog
@@ -2143,6 +2268,29 @@ function calendarFacts(date: string) {
   gap: 20px;
   margin-top: 20px;
 }
+.wb-results-stage {
+  min-height: clamp(260px, 28vw, 390px);
+}
+.wb-results-next-enter-active,
+.wb-results-next-leave-active,
+.wb-results-previous-enter-active,
+.wb-results-previous-leave-active {
+  transition:
+    opacity 260ms ease,
+    transform 440ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 260ms ease;
+}
+.wb-results-next-enter-from,
+.wb-results-next-leave-to,
+.wb-results-previous-enter-from,
+.wb-results-previous-leave-to {
+  opacity: 0;
+  filter: blur(2px);
+}
+.wb-results-next-enter-from { transform: translate3d(18px, 0, 0); }
+.wb-results-next-leave-to { transform: translate3d(-18px, 0, 0); }
+.wb-results-previous-enter-from { transform: translate3d(-18px, 0, 0); }
+.wb-results-previous-leave-to { transform: translate3d(18px, 0, 0); }
 .wb-inspect {
   display: inline-flex;
   align-items: center;
@@ -2182,6 +2330,21 @@ function calendarFacts(date: string) {
     transition: none;
     transform: none;
   }
+  .wb-results-next-enter-active,
+  .wb-results-next-leave-active,
+  .wb-results-previous-enter-active,
+  .wb-results-previous-leave-active,
+  .wb-pagination-control,
+  .wb-pagination-control svg {
+    transition: none;
+  }
+  .wb-results-next-enter-from,
+  .wb-results-next-leave-to,
+  .wb-results-previous-enter-from,
+  .wb-results-previous-leave-to {
+    filter: none;
+    transform: none;
+  }
 }
 .wb-pagination {
   display: flex;
@@ -2191,6 +2354,57 @@ function calendarFacts(date: string) {
   padding: 24px;
   color: var(--wb-muted);
   font-size: 12px;
+}
+.wb-pagination-control {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 0 17px;
+  border: 1px solid rgb(244 240 231 / 16%);
+  border-radius: 999px;
+  color: rgb(244 240 231 / 72%);
+  background: linear-gradient(145deg, rgb(244 240 231 / 5.5%), rgb(13 27 36 / 32%));
+  box-shadow: inset 0 1px rgb(255 255 255 / 4.5%);
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    transform 420ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 420ms ease,
+    color 420ms ease,
+    background-color 420ms ease,
+    box-shadow 420ms ease;
+}
+.wb-pagination-control:not(:disabled):hover,
+.wb-pagination-control:not(:disabled):focus-visible {
+  transform: translate3d(0, -1px, 0) scale(1.02);
+  border-color: color-mix(in srgb, var(--wb-gold) 48%, transparent);
+  color: var(--wb-gold);
+  background: linear-gradient(145deg, rgb(244 240 231 / 8%), rgb(216 185 119 / 7%));
+  box-shadow: 0 8px 24px rgb(0 0 0 / 15%), 0 0 18px rgb(216 185 119 / 6%);
+}
+.wb-pagination-control:not(:disabled):active {
+  transform: translate3d(0, 0, 0) scale(0.96);
+  transition-duration: 80ms;
+}
+.wb-pagination-control:disabled {
+  cursor: not-allowed;
+  opacity: 0.3;
+}
+.wb-pagination-control svg {
+  transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.wb-pagination-control:not(:disabled):hover svg,
+.wb-pagination-control:not(:disabled):focus-visible svg {
+  transform: translate3d(3px, 0, 0);
+}
+.wb-pagination-control:not(:disabled):hover .wb-pagination-control__icon--previous,
+.wb-pagination-control:not(:disabled):focus-visible .wb-pagination-control__icon--previous {
+  transform: translate3d(-3px, 0, 0) rotate(180deg);
+}
+.wb-pagination-control__icon--previous {
+  transform: rotate(180deg);
 }
 .wb-empty {
   padding: 40px;
@@ -2330,9 +2544,15 @@ function calendarFacts(date: string) {
 .quick-task-form__title input,.quick-task-form__field select { width:100%; min-height:48px; padding:0 14px; border:1px solid rgb(211 196 239 / 18%); border-radius:13px; background:rgb(255 255 255 / 4%); color:#f2edf5; font:inherit; outline:none; transition:border-color .3s,box-shadow .3s,background .3s; }
 .quick-task-form__title input { font-size:13px; }.quick-task-form__title input::placeholder { color:#767180; }.quick-task-form__title input:focus,.quick-task-form__field select:focus { border-color:#d8b97780; background:rgb(216 185 119 / 6%); box-shadow:0 0 0 4px rgb(216 185 119 / 8%); }
 .quick-task-form__field select option { background:#1d1a27; color:#f2edf5; }
-.quick-calendar { position:relative; z-index:1; padding:17px; border:1px solid rgb(216 185 119 / 19%); border-radius:18px; background:linear-gradient(145deg,rgb(216 185 119 / 7%),rgb(185 163 237 / 5%)); box-shadow:inset 0 1px rgb(255 255 255 / 7%); }
+.quick-calendar { position:relative; z-index:1; isolation:isolate; overflow:hidden; padding:17px; border:1px solid rgb(228 187 114 / 20%); border-radius:20px; background:radial-gradient(26rem 13rem at 100% 0%,rgb(228 187 114 / 8%),transparent 70%),rgb(244 241 233 / 3.5%); box-shadow:inset 0 1px rgb(255 255 255 / 6%),0 18px 45px rgb(0 0 0 / 12%); backdrop-filter:blur(18px) saturate(118%); }
+.quick-calendar::before { content:''; position:absolute; inset:0; z-index:-1; pointer-events:none; background:url('/textures/glass-grain.svg') repeat; opacity:.1; mix-blend-mode:soft-light; }
 .quick-calendar__head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; color:#e8d09b; font-size:12px; }.quick-calendar__arrow { display:grid; place-items:center; width:30px; height:30px; border:1px solid rgb(216 185 119 / 20%); border-radius:50%; background:transparent; color:#d8b977; cursor:pointer; transition:transform .3s,background .3s; }.quick-calendar__arrow:hover { transform:scale(1.1); background:rgb(216 185 119 / 10%); }
-.quick-calendar__grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:5px; }.quick-calendar__label { color:#777280; font-size:9px; text-align:center; }.quick-calendar__cell { display:grid; place-items:center; min-height:34px; }.quick-calendar__day { display:grid; place-items:center; width:100%; min-height:34px; border:1px solid transparent; border-radius:9px; background:transparent; color:#c3bdca; font-size:11px; cursor:pointer; transition:transform .3s,background .3s,border-color .3s,color .3s; }.quick-calendar__day:hover { transform:translateY(-2px); border-color:rgb(216 185 119 / 42%); color:#fff3ce; }.quick-calendar__day--selected { background:linear-gradient(145deg,rgb(216 185 119 / 36%),rgb(185 163 237 / 18%)); border-color:rgb(216 185 119 / 55%); color:#fff0c5; box-shadow:0 0 15px rgb(216 185 119 / 12%); }.quick-calendar__day--today { box-shadow:inset 0 -2px #d8b977; }.quick-calendar__range { min-height:17px; margin:13px 0 0; color:#a79ead; font-size:10px; }.quick-calendar__range span { color:#e2c486; }
+.quick-calendar__grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:5px; touch-action:none; }.quick-calendar__label { color:#777280; font-size:9px; text-align:center; }.quick-calendar__cell { position:relative; display:grid; place-items:center; min-height:34px; }.quick-calendar__cell--selected::before { content:''; position:absolute; inset:3px -3px; background:linear-gradient(180deg,rgb(228 187 114 / 18%),rgb(228 187 114 / 9%)); border-block:1px solid rgb(228 187 114 / 28%); pointer-events:none; transition:background .22s ease,box-shadow .22s ease; box-shadow:0 0 16px rgb(228 187 114 / 7%); }
+.quick-calendar__cell--start::before { left:0; border-radius:9px 0 0 9px; }
+.quick-calendar__cell--end::before { right:0; border-radius:0 9px 9px 0; }
+.quick-calendar__cell--start.quick-calendar__cell--end::before { border-radius:9px; }
+.quick-calendar__cell--range .quick-calendar__day--selected { border-color:transparent; background:transparent; box-shadow:none; }
+.quick-calendar__cell--range .quick-calendar__day--range-start,.quick-calendar__cell--range .quick-calendar__day--range-end { border-color:rgb(228 187 114 / 55%); background:rgb(228 187 114 / 13%); box-shadow:0 0 15px rgb(228 187 114 / 12%); }.quick-calendar__day { position:relative; display:grid; place-items:center; width:100%; min-height:34px; border:1px solid transparent; border-radius:9px; background:transparent; color:#c3bdca; font-size:11px; cursor:pointer; transition:transform .3s,background .3s,border-color .3s,color .3s; }.quick-calendar__day:hover { transform:translateY(-2px); border-color:rgb(228 187 114 / 42%); color:#fff3ce; }.quick-calendar__day:focus-visible { outline:2px solid rgb(228 187 114 / 74%); outline-offset:2px; }.quick-calendar__day--selected { background:rgb(228 187 114 / 13%); border-color:rgb(228 187 114 / 55%); color:#fff0c5; box-shadow:0 0 15px rgb(228 187 114 / 12%),inset 0 1px rgb(255 255 255 / 8%); }.quick-calendar__day--range-start::before,.quick-calendar__day--range-end::after { content:''; position:absolute; top:50%; width:8px; height:2px; background:#e7c779; box-shadow:0 0 9px #e7c779aa; }.quick-calendar__day--range-start::before { left:-7px; }.quick-calendar__day--range-end::after { right:-7px; }.quick-calendar__day--today { box-shadow:inset 0 -2px #d8b977; }.quick-calendar__range { min-height:17px; margin:13px 0 0; color:#a79ead; font-size:10px; }.quick-calendar__range span { color:#e2c486; }
 .quick-task-form__save { position:relative; z-index:1; display:flex; align-items:center; justify-content:center; gap:9px; min-height:49px; border:1px solid rgb(216 185 119 / 57%); border-radius:15px; background:linear-gradient(110deg,rgb(216 185 119 / 25%),rgb(185 163 237 / 16%)); color:#f5dfaf; font-size:12px; cursor:pointer; box-shadow:0 0 25px rgb(216 185 119 / 10%); transition:transform .45s cubic-bezier(.2,.8,.2,1),box-shadow .45s,background .45s; }.quick-task-form__save:hover:not(:disabled) { transform:translateY(-3px); background:linear-gradient(110deg,rgb(216 185 119 / 34%),rgb(185 163 237 / 23%)); box-shadow:0 12px 30px rgb(216 185 119 / 17%); }.quick-task-form__save:active:not(:disabled) { transform:scale(.98); }.quick-task-form__save-star { font-size:17px; }
 @media (prefers-reduced-motion:reduce) { .quick-task-form__save,.quick-calendar__day,.quick-calendar__arrow { transition:none; } }
 .wb-form label {

@@ -25,3 +25,18 @@ If activation fails, roll back the frontend release, retain all additive tables 
 Capacity is unknown when null, not zero. Workload reports scheduled allocations in the requested window, total unscheduled backlog, and a separate unknown-estimate count. It never adds parent rollups. Calendar export is a one-time `.ics` download, not a subscription or external synchronization. Date-only facts stay all-day; month-only, conflicting and approximate facts are not exported as invented timestamps. IANA zones and AoE are validated; public source facts are a member-reviewed snapshot, not evidence of live source verification.
 
 Activity contributions remain member-supplied evidence and do not automatically become profile achievements. Marking Submitted records explicit member confirmation, not an external form submission. No mail is sent by planning handlers.
+
+## October 11 task experience
+
+The current dashboard does not ask members to manage capacity or task estimates.
+Task creation/editing uses a name, optional saved opportunity/project connection,
+optional milestone and one calendar for a day or dragged range. Existing notes,
+estimates, dependencies, status and exact-time sessions remain compatible storage;
+name-only edits preserve them. Completion stays a separate task action.
+
+Apply `20261011095921_dashboard_task_opportunity_links.sql` before deploying this
+composer. It adds nullable `opportunity_id` and `milestone_key` references without
+creating a pursuit or extra tasks. The database validates private opportunity
+ownership and permits one parent; connection changes use the same expected-version
+boundary as task edits. Keep the additive columns during a frontend rollback.
+See the [verification record](../quality/dashboard-task-composer-2026-10-11.md).

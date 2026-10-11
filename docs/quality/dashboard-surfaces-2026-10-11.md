@@ -44,3 +44,10 @@ and stale-session restrictions against synthetic API fixtures. Screenshots were
 inspected at `/tmp/matrix-dashboard-evidence/settings-alignment-{desktop,mobile}.png`.
 This is UI verification; no live credentials, account changes, or mailbox consent
 were exercised.
+
+Settings follow-up released at commit `0e0b3fa`, pushed to `origin/main`, as Worker
+version `7e05a720-caff-4d2d-8077-db6f0561d47f`. The Settings dashboard and canonical
+`workspace.DPW7s2Iw.css` asset returned HTTP 200 after rollout; the published CSS
+contains shared panel-heading styles and excludes the removed introduction styles.
+No migrations or secrets changed. The preceding Worker version was
+`c545647d-76d0-4e6a-aab1-2bc3f829eedf`.

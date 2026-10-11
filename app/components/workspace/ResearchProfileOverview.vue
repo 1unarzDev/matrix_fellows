@@ -70,45 +70,257 @@ async function retry(id: string) { busy.value = true; try { await $fetch('/api/w
 </script>
 <template>
   <section class="research-overview" aria-labelledby="research-overview-title">
-    <h2 id="research-overview-title">Your research overview</h2>
-    <p v-if="data">{{ data.profile.displayName }}<span v-if="data.profile.declaredInterests.length"> · {{ data.profile.declaredInterests.join(', ') }}</span></p>
-    <p v-if="data?.profile.goals">{{ data.profile.goals }}</p>
-    <p>Your declared interests and goals are self-reported. A research link can be your work, a contribution, or something you want to explore.</p>
-    <form @submit.prevent="add">
-      <label> Add your research <input v-model="url" type="url" required placeholder="https://github.com/team/project"  /></label>
-      <label>Your connection <select v-model="relationship"><option value="interest">I am interested in this</option><option value="contributed">I contributed</option><option value="created">I created this</option></select></label>
-      <label v-if="relationship !== 'interest'">What was your contribution? <textarea v-model="contribution" maxlength="1500" placeholder="Describe your own role; team work remains separately attributed." /></label>
-      <button class="research-add" :class="{ 'research-add--queued': savingLink }" :disabled="!url" type="submit"><span class="research-add__icon" aria-hidden="true">✦</span>{{ savingLink ? 'Queue another link' : 'Add research link' }}</button>
+    <header class="research-overview__header">
+      <div>
+        <p class="research-overview__eyebrow">Research context</p>
+        <h2 id="research-overview-title">{{ data?.profile.displayName || 'Your profile' }}</h2>
+        <p class="research-overview__summary">{{ data?.profile.goals || 'Add a public project, paper, repository, poster, or portfolio to get started.' }}</p>
+      </div>
+      <span class="research-overview__badge"><i aria-hidden="true"></i>{{ data?.artifacts.length ? `${data.artifacts.length} source${data.artifacts.length === 1 ? '' : 's'}` : 'Ready to add' }}</span>
+    </header>
+    <div class="research-overview__context" v-if="data?.profile.declaredInterests.length">
+      <span v-for="interest in data.profile.declaredInterests.slice(0, 5)" :key="interest">{{ interest }}</span>
+    </div>
+    <form class="research-capture" @submit.prevent="add">
+      <label class="research-capture__url"><span>Add one research link</span><input v-model="url" type="url" required placeholder="https://github.com/team/project" /></label>
+      <div class="research-capture__row">
+        <label><span>How does it relate to you?</span><select v-model="relationship"><option value="interest">I’m exploring it</option><option value="contributed">I contributed</option><option value="created">I created it</option></select></label>
+        <button class="research-add" :class="{ 'research-add--queued': savingLink }" :disabled="!url" type="submit"><span class="research-add__icon" aria-hidden="true">✦</span>{{ savingLink ? 'Queue another' : 'Add link' }}</button>
+      </div>
+      <label v-if="relationship !== 'interest'" class="research-capture__contribution"><span>Your contribution <small>optional detail</small></span><textarea v-model="contribution" maxlength="1500" rows="2" placeholder="A short note about your role; team work remains separately attributed." /></label>
     </form>
-    <p role="status">{{ message }}</p>
+    <p v-if="message" role="status" class="research-overview__message">{{ message }}</p>
     <TransitionGroup v-if="displayArtifacts.length" name="research-artifact" tag="ul">
       <li v-for="artifact in displayArtifacts" :key="artifact.id" :class="{ 'research-artifact--pending': artifact.id.startsWith('pending-') }">
-        <a :href="artifact.canonical_url" target="_blank" rel="noopener noreferrer">{{ artifact.canonical_url }}</a>
-        <p>{{ artifact.summary || 'Processing source metadata…' }}</p>
-        <small>{{ artifact.state }} · {{ artifact.relationship === 'interest' ? 'Interest only' : 'Contribution self-reported' }}</small>
+        <div class="research-artifact__main"><span class="research-artifact__mark" aria-hidden="true">↗</span><div><a :href="artifact.canonical_url" target="_blank" rel="noopener noreferrer">{{ artifact.canonical_url }}</a><p>{{ artifact.summary || 'Processing source metadata…' }}</p></div></div>
+        <small>{{ artifact.state }} · {{ artifact.relationship === 'interest' ? 'Exploring' : 'Contribution self-reported' }}</small>
         <span v-if="artifact.id.startsWith('pending-')" class="research-artifact__pulse" aria-label="Processing in background"><i /><i /><i /></span>
         <button v-if="!artifact.id.startsWith('pending-') && ((artifact.state === 'failed' && artifact.error_code !== 'attempts_exhausted') || artifact.error_code === 'quota_waiting')" :disabled="busy" @click="retry(artifact.id)">Retry acquisition</button>
       </li>
     </TransitionGroup>
-    <div v-for="claim in data?.claims.filter(c => !c.withdrawn_at && c.predicate === 'contribution')" :key="claim.id" class="research-claim"><p>{{ claim.statement }}</p><small>{{ claim.support_state === 'self_reported' ? 'Self-reported contribution' : claim.support_state }}</small><form v-if="editingId === claim.id" @submit.prevent="correct(claim, 'edit')"><label>Edit your contribution<textarea v-model="editedStatement" maxlength="1500" required /></label><button :disabled="busy">Save correction</button><button type="button" @click="editingId = ''">Cancel</button></form><div><button :disabled="busy" @click="editingId = claim.id; editedStatement = claim.statement">Edit</button><button :disabled="busy" @click="correct(claim, 'interest')">Only an interest</button><button :disabled="busy" @click="correct(claim, 'wrong_attribution')">Wrong attribution</button><button :disabled="busy" @click="correct(claim, claim.sharing_scope === 'officer' ? 'exclude' : 'share')">{{ claim.sharing_scope === 'officer' ? 'Exclude from society proposals' : 'Share with officers for proposals' }}</button></div></div>
+    <details v-if="data?.claims.some(c => !c.withdrawn_at && c.predicate === 'contribution')" class="research-details">
+      <summary>Your attributed contributions <span>{{ data.claims.filter(c => !c.withdrawn_at && c.predicate === 'contribution').length }}</span></summary>
+      <div v-for="claim in data?.claims.filter(c => !c.withdrawn_at && c.predicate === 'contribution')" :key="claim.id" class="research-claim"><p>{{ claim.statement }}</p><small>{{ claim.support_state === 'self_reported' ? 'Self-reported contribution' : claim.support_state }}</small><form v-if="editingId === claim.id" @submit.prevent="correct(claim, 'edit')"><label>Edit your contribution<textarea v-model="editedStatement" maxlength="1500" required /></label><button :disabled="busy">Save correction</button><button type="button" @click="editingId = ''">Cancel</button></form><div><button :disabled="busy" @click="editingId = claim.id; editedStatement = claim.statement">Edit</button><button :disabled="busy" @click="correct(claim, 'interest')">Only an interest</button><button :disabled="busy" @click="correct(claim, 'wrong_attribution')">Wrong attribution</button><button :disabled="busy" @click="correct(claim, claim.sharing_scope === 'officer' ? 'exclude' : 'share')">{{ claim.sharing_scope === 'officer' ? 'Exclude from society proposals' : 'Share with officers for proposals' }}</button></div></div>
+    </details>
     <section v-if="projectFacts.length" aria-labelledby="project-source-facts">
-      <h3 id="project-source-facts">What your linked projects describe</h3>
-      <p>These source statements describe the project. They do not establish your contribution or skill level.</p>
+      <h3 id="project-source-facts">What linked sources describe</h3>
+      <p>These are project facts, not automatic proof of your contribution or skill level.</p>
       <div v-for="claim in projectFacts" :key="claim.id" class="research-claim">
         <p><strong>{{ claim.predicate === 'project_question' ? 'Research question or goal' : 'Project method' }}</strong></p>
         <blockquote>{{ claim.statement }}</blockquote>
         <small>{{ claim.adoption === 'candidate' ? 'Suggested project fact' : 'Accepted project fact' }} · <a v-if="sourceUrl(claim)" :href="sourceUrl(claim)" target="_blank" rel="noopener noreferrer">{{ claim.provenance?.section || 'Source' }}</a> · snapshot {{ claim.snapshot_id?.slice(0, 8) }}</small>
         <div><button v-if="claim.adoption === 'candidate'" :disabled="busy" @click="correct(claim, 'accept')">Keep project fact</button><button :disabled="busy" @click="correct(claim, 'reject')">Dismiss or correct attribution</button><button v-if="claim.adoption === 'accepted'" :disabled="busy" @click="correct(claim, claim.sharing_scope === 'officer' ? 'exclude' : 'share')">{{ claim.sharing_scope === 'officer' ? 'Exclude from society proposals' : 'Share project context with officers' }}</button></div>
       </div>
-      <h3>Useful next steps</h3>
-      <p>Which method did you personally use, or which question would you like to explore? Add only your own contribution above.</p>
-      <p>A small reproduction, comparison, or focused feedback question can support an honest inquiry. Time, data access, and supervision remain unconfirmed.</p>
+      <p class="research-overview__hint">Add a contribution note only when you are ready. A focused question is enough to start an honest inquiry.</p>
     </section>
-    <p class="research-status">{{ data?.providerStatus }}</p>
-    <p v-if="!displayArtifacts.length">No work sample is required. Your interests can support a thoughtful learning or feedback inquiry.</p>
+    <p v-if="!displayArtifacts.length" class="research-overview__empty">No work sample is required. Start with a link or keep your profile interest-based.</p>
   </section>
 </template>
 <style scoped>
-.research-overview{padding:1rem;border:1px solid var(--color-border,#d5d5d5);border-radius:12px;margin-bottom:1rem}.research-overview h2{font-size:1.2rem;font-weight:600}.research-overview p{margin:.7rem 0}.research-overview form{display:grid;gap:.75rem}.research-overview label{display:grid;gap:.3rem}.research-overview input,.research-overview select,.research-overview textarea{min-height:44px;padding:.6rem;border:1px solid #999;border-radius:6px;background:transparent;width:100%;max-width:100%;color:inherit}.research-overview button{min-height:44px;padding:.45rem .75rem;border:1px solid #999;border-radius:6px;margin:.25rem .25rem .25rem 0}.research-overview li{padding:.75rem 0;overflow-wrap:anywhere}.research-status,.research-overview small{opacity:.75}.research-claim{padding:.6rem 0;border-top:1px solid #ccc}
-.research-add{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;border-color:color-mix(in srgb,#d8b977 60%,#999);background:linear-gradient(110deg,rgb(216 185 119 / 20%),rgb(185 163 237 / 14%));transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s,background .35s}.research-add:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 10px 24px rgb(216 185 119 / 16%);background:linear-gradient(110deg,rgb(216 185 119 / 30%),rgb(185 163 237 / 21%))}.research-add--queued{cursor:wait}.research-add__icon{color:#d8b977;font-size:1rem}.research-artifact-enter-active,.research-artifact-leave-active{transition:opacity .4s ease,transform .4s cubic-bezier(.2,.8,.2,1)}.research-artifact-enter-from,.research-artifact-leave-to{opacity:0;transform:translateY(-10px) scale(.98)}.research-artifact--pending{position:relative;border-color:rgb(216 185 119 / 38%);background:linear-gradient(100deg,rgb(216 185 119 / 8%),rgb(185 163 237 / 5%));animation:research-pending-glow 2.8s ease-in-out infinite}.research-artifact__pulse{display:inline-flex;gap:3px;margin-left:.4rem;vertical-align:middle}.research-artifact__pulse i{display:block;width:4px;height:4px;border-radius:50%;background:#d8b977;animation:research-dot 1.2s ease-in-out infinite}.research-artifact__pulse i:nth-child(2){animation-delay:.16s}.research-artifact__pulse i:nth-child(3){animation-delay:.32s}@keyframes research-pending-glow{0%,100%{box-shadow:0 0 0 rgb(216 185 119 / 0%)}50%{box-shadow:0 0 24px rgb(216 185 119 / 12%)}}@keyframes research-dot{0%,80%,100%{opacity:.3;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}@media (prefers-reduced-motion:reduce){.research-add,.research-artifact-enter-active,.research-artifact-leave-active{transition:none}.research-artifact--pending,.research-artifact__pulse i{animation:none}}
+.research-overview {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: clamp(22px, 4vw, 36px);
+  border: 1px solid rgb(239 235 224 / 13%);
+  border-radius: 28px;
+  background:
+    radial-gradient(34rem 18rem at 100% 0%, rgb(228 187 114 / 9%), transparent 70%),
+    linear-gradient(145deg, rgb(244 241 233 / 6%), rgb(244 241 233 / 2.5%) 48%, transparent 78%),
+    rgb(10 12 16 / 60%);
+  box-shadow: 0 26px 90px rgb(0 0 0 / 24%), inset 0 1px 0 rgb(255 255 255 / 7%);
+  backdrop-filter: blur(26px) saturate(118%);
+}
+.research-overview::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: url('/textures/glass-grain.svg') repeat;
+  opacity: .11;
+  mix-blend-mode: soft-light;
+}
+.research-overview__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+.research-overview__eyebrow,
+.profile-disclosure__eyebrow {
+  margin: 0;
+  color: #d8b977;
+  font-size: 9px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+.research-overview h2 {
+  margin: 7px 0 5px;
+  color: #efeee8;
+  font: 500 clamp(23px, 3vw, 32px)/1.15 Manrope, sans-serif;
+  letter-spacing: -.05em;
+}
+.research-overview__summary {
+  max-width: 62ch;
+  margin: 0;
+  color: #aaa8b1;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.research-overview__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  padding: 8px 11px;
+  border: 1px solid rgb(228 187 114 / 22%);
+  border-radius: 999px;
+  color: #dfc88f;
+  background: rgb(228 187 114 / 6%);
+  font-size: 10px;
+  white-space: nowrap;
+}
+.research-overview__badge i,
+.profile-hero__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #d8b977;
+  box-shadow: 0 0 13px rgb(216 185 119 / 80%);
+}
+.research-overview__context {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 20px;
+}
+.research-overview__context span {
+  padding: 6px 9px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 999px;
+  color: #c7bdcd;
+  background: rgb(255 255 255 / 3%);
+  font-size: 10px;
+}
+.research-capture {
+  display: grid;
+  gap: 12px;
+  margin-top: 24px;
+  padding: 16px;
+  border: 1px solid rgb(228 187 114 / 17%);
+  border-radius: 20px;
+  background: rgb(0 0 0 / 12%);
+}
+.research-capture label {
+  display: grid;
+  gap: 7px;
+  color: #d9d3df;
+  font-size: 11px;
+}
+.research-capture label > span {
+  letter-spacing: .02em;
+}
+.research-capture label small {
+  color: #8e899b;
+  font-size: 10px;
+}
+.research-capture input,
+.research-capture select,
+.research-capture textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 12px;
+  color: #efeee8;
+  background: rgb(9 11 15 / 74%);
+  padding: 11px 12px;
+  font: 12px/1.5 Manrope, sans-serif;
+  transition: border-color .25s, box-shadow .25s, background-color .25s;
+}
+.research-capture textarea { resize: vertical; }
+.research-capture input:focus,
+.research-capture select:focus,
+.research-capture textarea:focus {
+  outline: none;
+  border-color: rgb(228 187 114 / 60%);
+  background: rgb(9 11 15 / 90%);
+  box-shadow: 0 0 0 4px rgb(228 187 114 / 7%);
+}
+.research-capture__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+}
+.research-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 42px;
+  padding: 0 17px;
+  border: 1px solid rgb(228 187 114 / 48%);
+  border-radius: 999px;
+  color: #15131a;
+  background: #e4bb72;
+  box-shadow: 0 8px 24px rgb(228 187 114 / 10%);
+  font: 600 11px Manrope, sans-serif;
+  cursor: pointer;
+  transition: transform .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s, background-color .35s;
+}
+.research-add:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 13px 32px rgb(228 187 114 / 20%); background: #efd18e; }
+.research-add:disabled { opacity: .48; cursor: not-allowed; }
+.research-add--queued { cursor: wait; }
+.research-add__icon { font-size: 15px; }
+.research-overview__message { margin: 12px 0 0; color: #dbc88d; font-size: 11px; }
+.research-overview ul { margin: 18px 0 0; padding: 0; list-style: none; }
+.research-overview li {
+  position: relative;
+  display: grid;
+  gap: 9px;
+  padding: 14px 0;
+  border-top: 1px solid rgb(255 255 255 / 9%);
+}
+.research-artifact__main { display: flex; align-items: flex-start; gap: 11px; min-width: 0; }
+.research-artifact__mark { display: grid; place-items: center; flex: 0 0 auto; width: 25px; height: 25px; border: 1px solid rgb(228 187 114 / 30%); border-radius: 50%; color: #e4bb72; font-size: 13px; }
+.research-overview li a { overflow-wrap: anywhere; color: #ded1ac; font-size: 12px; text-decoration: none; }
+.research-overview li a:hover { color: #fff0c5; }
+.research-overview li p { margin: 4px 0 0; color: #aaa3b2; font-size: 11px; line-height: 1.55; }
+.research-overview li small { color: #8e899b; font-size: 10px; }
+.research-overview li > button,
+.research-claim button { width: fit-content; border: 1px solid rgb(228 187 114 / 27%); border-radius: 999px; padding: 7px 10px; color: #d8b977; background: transparent; font: 10px Manrope, sans-serif; cursor: pointer; }
+.research-overview li > button:hover,
+.research-claim button:hover { background: rgb(228 187 114 / 8%); }
+.research-artifact__pulse { position: absolute; right: 0; top: 17px; display: inline-flex; gap: 3px; }
+.research-artifact__pulse i { width: 4px; height: 4px; border-radius: 50%; background: #d8b977; animation: research-dot 1.2s ease-in-out infinite; }
+.research-artifact__pulse i:nth-child(2) { animation-delay: .16s; }
+.research-artifact__pulse i:nth-child(3) { animation-delay: .32s; }
+.research-details { margin-top: 18px; border-top: 1px solid rgb(255 255 255 / 9%); }
+.research-details summary { display: flex; justify-content: space-between; gap: 12px; padding: 16px 0 4px; color: #d7c7a0; cursor: pointer; font-size: 12px; }
+.research-details summary span { color: #91899c; font-size: 10px; }
+.research-claim { padding: 13px 0; border-top: 1px solid rgb(255 255 255 / 8%); }
+.research-claim p { margin: 0; color: #c8c0ce; font-size: 12px; line-height: 1.6; }
+.research-claim small { display: block; margin-top: 6px; color: #8e899b; font-size: 10px; }
+.research-claim > div { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+.research-claim form { display: grid; gap: 8px; margin-top: 12px; }
+.research-claim form label { display: grid; gap: 5px; color: #aaa3b2; font-size: 11px; }
+.research-claim textarea { min-height: 68px; border: 1px solid rgb(255 255 255 / 12%); border-radius: 10px; padding: 8px; color: #efeee8; background: rgb(9 11 15 / 74%); }
+.research-overview section[aria-labelledby="project-source-facts"] { margin-top: 22px; padding-top: 18px; border-top: 1px solid rgb(255 255 255 / 9%); }
+.research-overview section[aria-labelledby="project-source-facts"] h3 { margin: 0 0 6px; color: #e6d7b4; font-size: 14px; font-weight: 500; }
+.research-overview section[aria-labelledby="project-source-facts"] > p { margin: 0; color: #aaa3b2; font-size: 11px; line-height: 1.6; }
+.research-overview blockquote { margin: 8px 0 0; padding-left: 11px; border-left: 2px solid rgb(216 185 119 / 32%); color: #c6bbcb; font-size: 11px; line-height: 1.6; }
+.research-overview__hint { margin: 16px 0 0 !important; color: #9c94a4 !important; }
+.research-overview__empty { margin: 17px 0 0; color: #98909f; font-size: 11px; }
+@keyframes research-dot { 0%,80%,100% { opacity: .3; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+@media (max-width: 620px) {
+  .research-overview__header { display: grid; gap: 14px; }
+  .research-overview__badge { width: fit-content; }
+  .research-capture__row { grid-template-columns: 1fr; }
+  .research-add { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .research-add, .research-capture input, .research-capture select, .research-capture textarea { transition: none; }
+  .research-artifact__pulse i { animation: none; }
+}
 </style>

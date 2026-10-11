@@ -1743,151 +1743,44 @@ onMounted(async () => {
           </section>
           </template>
 
-          <template v-else-if="tab === 'profiles'"
-            ><section class="ws-panel" aria-label="Practical participation preferences">
-              <ThemedSelect v-model="lens" label="Practical participation" :options="[{value:'nearby',label:'Nearby or remote'},{value:'remote',label:'Remote only'},{value:'travel',label:'Travel is practical'}]" />
-              <label class="ws-field">Reachable cities or campuses<input v-model="reachableLocations" placeholder="Arlington, Dallas" /></label>
-              <button class="ws-button" :disabled="busy" @click="saveAccessPreferences">Save access preferences</button>
-            </section><ResearchProfileOverview v-if="profileForm.id" :profile-id="profileForm.id" @updated="refresh" />
-            <details class="ws-panel secondary-panel"><summary>Advanced profile editing</summary>
-            <form @submit.prevent="saveProfile">
-              <p class="ws-kicker">Your context changes the proposal</p>
-              <h2>Your research profile</h2>
-              <p class="ws-muted">
-                Describe only work and skills you can substantiate. This private profile belongs to
-                your account; it is not a public member directory.
-              </p>
-              <div class="ws-divider" />
-              <div class="ws-grid">
-                <label class="ws-field"
-                  >Full name<input v-model="profileForm.fullName" required /></label
-                ><label class="ws-field"
-                  >Research interests, comma separated<input
-                    v-model="profileForm.interests" /></label
-                ><label class="ws-field"
-                  >Skills you can demonstrate<input
-                    v-model="profileForm.skills"
-                    placeholder="Python, microscopy, literature review…" /></label
-                ><label class="ws-field"
-                  >Availability & commitment<input v-model="profileForm.availability" /></label
-                ><label class="ws-field"
-                  >Location / practical travel range<input v-model="profileForm.location" /></label
-                ><label class="ws-field"
-                  >Research goals<textarea v-model="profileForm.goals" />
-                </label>
+          <template v-else-if="tab === 'profiles'">
+            <section class="profile-hero ws-panel" aria-labelledby="profile-page-title">
+              <div>
+                <p class="ws-kicker">Your research profile</p>
+                <h2 id="profile-page-title">A clear starting point for better matches.</h2>
+                <p class="ws-muted">Add one public link and we’ll organize the useful context in the background. You can correct anything before it is used in a proposal.</p>
               </div>
-              <h3>Personal context</h3>
-              <div class="profile-context-block">
-                <p class="ws-kicker">A truthful introduction, in your voice</p>
+              <div class="profile-hero__status" aria-label="Profile workflow">
+                <span class="profile-hero__dot" aria-hidden="true"></span>
+                <span>Private by default</span>
+              </div>
+            </section>
+            <ResearchProfileOverview v-if="profileForm.id" :profile-id="profileForm.id" @updated="refresh" />
+            <details class="ws-panel profile-preferences">
+              <summary><span><small class="profile-disclosure__eyebrow">Matching context</small><strong>Where and when work is practical</strong></span><em>Optional</em></summary>
+              <div class="profile-preferences__body">
+                <ThemedSelect v-model="lens" label="Participation preference" :options="[{value:'nearby',label:'Nearby or remote'},{value:'remote',label:'Remote only'},{value:'travel',label:'Travel is practical'}]" />
+                <label class="ws-field">Reachable cities or campuses<input v-model="reachableLocations" placeholder="Arlington, Dallas" /></label>
+                <button class="ws-button" :disabled="busy" @click="saveAccessPreferences">Save matching context</button>
+              </div>
+            </details>
+            <details class="ws-panel profile-preferences profile-advanced">
+              <summary><span><small class="profile-disclosure__eyebrow">Corrections</small><strong>Edit basic profile details</strong></span><em>Optional</em></summary>
+              <form class="profile-compact-form" @submit.prevent="saveProfile">
+                <p class="ws-muted">Use this only to correct the essentials. Research links are the preferred way to add projects and evidence.</p>
                 <div class="ws-grid">
-                  <label class="ws-field"
-                    >Relevant affiliations<input
-                      v-model="profileForm.affiliations"
-                      maxlength="1500"
-                      placeholder="Organizations or labs, comma separated"
-                    /><small
-                      >Only affiliations you actually hold. These stay private until included in an
-                      individually reviewed proposal.</small
-                    ></label
-                  ><label class="ws-field"
-                    >Signature<textarea
-                      v-model="profileForm.signature"
-                      maxlength="500"
-                      placeholder="Your name, role, and preferred professional contact"
-                    />
-                  </label>
+                  <label class="ws-field">Name<input v-model="profileForm.fullName" required /></label>
+                  <label class="ws-field">Interests<input v-model="profileForm.interests" placeholder="Robotics, biology, public health" /></label>
+                  <label class="ws-field">What you hope to explore<textarea v-model="profileForm.goals" rows="2" /></label>
+                  <label class="ws-field">Current availability<input v-model="profileForm.availability" placeholder="A few hours on weekends" /></label>
                 </div>
-                <label class="ws-field"
-                  >Personal introduction<textarea
-                    v-model="profileForm.introduction"
-                    maxlength="600"
-                    placeholder="One or two sentences about your background and interests…"
-                  /><small
-                    >Used only for your own profile-tailored proposals—not automatically copied into
-                    shared society outreach.</small
-                  ></label
-                >
-                <h3>Relevant achievements</h3>
-                <p class="ws-muted">
-                  Specific, evidenced accomplishments can support an appropriate individual
-                  proposal. Avoid unrelated awards or inflated descriptions.
-                </p>
-                <div v-for="(achievement, i) in profileForm.achievements" :key="i" class="sample">
-                  <label class="ws-field"
-                    >Achievement title<input
-                      v-model="achievement.title"
-                      required
-                      maxlength="200" /></label
-                  ><label class="ws-field"
-                    >What you achieved and your contribution<textarea
-                      v-model="achievement.description"
-                      required
-                      maxlength="800"
-                    /></label
-                  ><label class="ws-field"
-                    >Public supporting source<input
-                      v-model="achievement.url"
-                      type="url"
-                      required
-                      placeholder="https://…" /></label
-                  ><button
-                    type="button"
-                    class="ws-button"
-                    @click="profileForm.achievements.splice(i, 1)"
-                  >
-                    Remove achievement
-                  </button>
+                <div class="consent">
+                  <AnimatedCheckbox v-model="profileForm.consentToShare" outlined label="Allow reviewed proposals to use this profile context." description="Nothing is sent without exact-email approval." />
                 </div>
-                <button
-                  type="button"
-                  class="ws-button"
-                  :disabled="profileForm.achievements.length >= 15"
-                  @click="profileForm.achievements.push({ title: '', description: '', url: '' })"
-                >
-                  <SiteIcon name="plus" :size="15" />Add an evidenced achievement
-                </button>
-              </div>
-              <h3 class="profile-section-heading">Work samples</h3>
-              <div v-for="(sample, i) in profileForm.workSamples" :key="i" class="sample">
-                <label class="ws-field"
-                  >Project title<input v-model="sample.title" required /></label
-                ><label class="ws-field"
-                  >Public work URL<input v-model="sample.url" type="url" required /></label
-                ><label class="ws-field"
-                  >Your actual contribution<textarea
-                    v-model="sample.contribution"
-                    required
-                  /></label
-                ><button
-                  type="button"
-                  class="ws-button"
-                  @click="profileForm.workSamples.splice(i, 1)"
-                >
-                  Remove sample
-                </button>
-              </div>
-              <button
-                type="button"
-                class="ws-button"
-                @click="profileForm.workSamples.push({ title: '', url: '', contribution: '' })"
-              >
-                <SiteIcon name="plus" :size="15" />Add a work sample
-              </button>
-              <div class="consent">
-                <AnimatedCheckbox
-                  v-model="profileForm.consentToShare"
-                  outlined
-                  label="Allow reviewed proposals to use my profile information."
-                  description="Nothing is sent without exact-email approval."
-                />
-              </div>
-              <div class="ws-actions">
-                <button class="ws-button ws-button--primary" :disabled="busy">
-                  Save my profile
-                </button>
-              </div>
-            </form></details></template
-          >
+                <button class="ws-button ws-button--primary" :disabled="busy || profileSaving">Save profile basics</button>
+              </form>
+            </details>
+          </template>
           <template v-else-if="tab === 'society'">
             <SocietyConnectionCloud :officer="canDiscover" :allow-add="false" />
           </template>
@@ -2333,6 +2226,93 @@ onMounted(async () => {
 }
 .profile-context-block > p + .ws-button {
   margin-top: 18px;
+}
+.profile-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 22px;
+  padding: clamp(24px, 4vw, 38px);
+  background:
+    radial-gradient(30rem 18rem at 100% 0%, rgb(228 187 114 / 9%), transparent 70%),
+    linear-gradient(145deg, rgb(244 241 233 / 6%), rgb(244 241 233 / 2.5%) 48%, transparent 78%),
+    rgb(10 12 16 / 57%);
+}
+.profile-hero h2 {
+  max-width: 17ch;
+  margin: 8px 0 4px;
+  font-size: clamp(24px, 4vw, 38px);
+  letter-spacing: -.06em;
+}
+.profile-hero .ws-muted {
+  max-width: 58ch;
+  margin: 0;
+  padding-bottom: 0;
+}
+.profile-hero__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  padding: 8px 11px;
+  border: 1px solid rgb(228 187 114 / 22%);
+  border-radius: 999px;
+  color: #d9c58f;
+  background: rgb(228 187 114 / 6%);
+  font-size: 10px;
+}
+.profile-preferences {
+  margin-top: 16px;
+  padding: 0;
+}
+.profile-preferences summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 20px 24px;
+  list-style: none;
+  cursor: pointer;
+}
+.profile-preferences summary::-webkit-details-marker { display: none; }
+.profile-preferences summary::after {
+  content: '+';
+  display: grid;
+  place-items: center;
+  width: 27px;
+  height: 27px;
+  border: 1px solid rgb(228 187 114 / 22%);
+  border-radius: 50%;
+  color: #d8b977;
+  font-size: 18px;
+  font-weight: 300;
+  transition: transform .35s cubic-bezier(.2,.8,.2,1), background-color .25s;
+}
+.profile-preferences[open] summary::after { transform: rotate(45deg); background: rgb(228 187 114 / 8%); }
+.profile-preferences summary > span { display: grid; gap: 5px; }
+.profile-preferences summary strong { color: #e5dfeb; font-size: 14px; font-weight: 500; }
+.profile-preferences summary em { margin-left: auto; color: #91899c; font-size: 10px; font-style: normal; }
+.profile-preferences__body,
+.profile-compact-form {
+  display: grid;
+  gap: 16px;
+  padding: 0 24px 24px;
+  border-top: 1px solid rgb(255 255 255 / 8%);
+}
+.profile-preferences__body { padding-top: 18px; }
+.profile-compact-form { padding-top: 20px; }
+.profile-compact-form > .ws-muted { margin: 0; padding-top: 0; }
+.profile-advanced { margin-bottom: 25px; }
+@media (max-width: 620px) {
+  .profile-hero { display: grid; align-items: start; }
+  .profile-hero__status { width: fit-content; }
+  .profile-preferences summary { padding-inline: 18px; }
+  .profile-preferences__body,
+  .profile-compact-form { padding-inline: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .profile-preferences summary::after { transition: none; }
 }
 @media (max-width: 700px) {
   .profile-context-block {

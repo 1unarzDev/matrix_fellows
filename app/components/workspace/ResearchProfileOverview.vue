@@ -212,13 +212,6 @@ async function retry(id: string) { busy.value = true; try { await $fetch('/api/w
   display: grid;
   gap: 12px;
   margin-top: 24px;
-  padding: 16px;
-  border: 1px solid rgb(239 235 224 / 15%);
-  border-radius: 20px;
-  background: transparent;
-  box-shadow: inset 0 1px rgb(255 255 255 / 5%);
-  -webkit-backdrop-filter: blur(12px) saturate(110%);
-  backdrop-filter: blur(12px) saturate(110%);
 }
 .research-capture label,
 .research-capture__relationship {

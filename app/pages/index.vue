@@ -773,7 +773,7 @@ onBeforeUnmount(() => {
         <OpportunityBoard :opportunities="data?.opportunities || defaultOpportunities" />
         <div
           data-closing-cta
-          class="pointer-events-none relative isolate mt-16 overflow-hidden rounded-2xl border border-paper/15 bg-paper/[.025] px-7 py-10 text-[#edf1ff] shadow-[inset_0_1px_0_#d3daed0d] sm:p-12 lg:p-16"
+          class="mf-glass-surface mf-glass-surface--light pointer-events-none relative isolate mt-16 overflow-hidden rounded-2xl px-7 py-10 text-[#edf1ff] sm:p-12 lg:p-16"
         >
           <div
             aria-hidden="true"

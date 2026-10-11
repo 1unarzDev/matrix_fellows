@@ -108,7 +108,7 @@ test('join form animates in, traps keyboard focus and retains an unfinished draf
   }
 })
 
-test('join surfaces use a transparent glass treatment on the page and in the modal', async ({
+test('join surfaces use the shared dashboard glass treatment on the page and in the modal', async ({
   page,
 }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
@@ -139,12 +139,13 @@ test('join surfaces use a transparent glass treatment on the page and in the mod
       filter: getComputedStyle(document.querySelector('.join-panel')!).backdropFilter,
     }
   })
-  expect(modalSurface.card[3]).toBeLessThanOrEqual(5)
-  expect(modalSurface.panel[3]).toBeGreaterThanOrEqual(5)
-  expect(modalSurface.panel[3]).toBeLessThanOrEqual(15)
+  expect(modalSurface.card[3]).toBeGreaterThanOrEqual(90)
+  expect(modalSurface.card[3]).toBeLessThanOrEqual(115)
+  expect(modalSurface.panel[3]).toBeGreaterThanOrEqual(90)
+  expect(modalSurface.panel[3]).toBeLessThanOrEqual(115)
   expect(modalSurface.backdrop[3]).toBeGreaterThanOrEqual(190)
   expect(modalSurface.backdrop[3]).toBeLessThanOrEqual(198)
-  expect(modalSurface.filter).toContain('blur(18px)')
+  expect(modalSurface.filter).toContain('blur(20px)')
 
   await page.goto('/join')
   await expect(
@@ -163,9 +164,7 @@ test('join surfaces use a transparent glass treatment on the page and in the mod
       filter: getComputedStyle(panel).backdropFilter,
     }
   })
-  expect(embeddedSurface.rgba[3]).toBeGreaterThanOrEqual(80)
-  expect(embeddedSurface.rgba[3]).toBeLessThanOrEqual(190)
-  // The existing phone treatment uses a cheaper blur than the desktop surface.
-  const mobile = await page.evaluate(() => matchMedia('(max-width: 639px)').matches)
-  expect(embeddedSurface.filter).toContain(mobile ? 'blur(28px)' : 'blur(36px)')
+  expect(embeddedSurface.rgba[3]).toBeGreaterThanOrEqual(90)
+  expect(embeddedSurface.rgba[3]).toBeLessThanOrEqual(115)
+  expect(embeddedSurface.filter).toContain('blur(20px)')
 })

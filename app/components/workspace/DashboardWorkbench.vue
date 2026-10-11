@@ -1910,10 +1910,42 @@ function calendarFacts(date: string) {
   margin-bottom: 20px;
 }
 .wb-search {
+  position: relative;
+  isolation: isolate;
   display: flex;
   align-items: center;
   gap: 10px;
   margin-bottom: 20px;
+  padding: 11px;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 9%);
+  border-radius: 20px;
+  background:
+    radial-gradient(32rem 10rem at 100% 0%, rgb(216 185 119 / 8%), transparent 70%),
+    linear-gradient(135deg, rgb(244 241 233 / 5%), rgb(185 163 237 / 3%) 55%, transparent 90%),
+    rgb(19 20 27 / 70%);
+  box-shadow: inset 0 1px rgb(255 255 255 / 8%), 0 16px 44px rgb(5 5 10 / 18%);
+  backdrop-filter: blur(22px) saturate(118%);
+  transition: border-color 280ms ease, box-shadow 360ms ease, transform 360ms cubic-bezier(.22,1,.36,1);
+}
+.wb-search::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: url('/textures/glass-grain.svg') repeat;
+  opacity: .09;
+  mix-blend-mode: soft-light;
+}
+.wb-search:focus-within {
+  border-color: rgb(216 185 119 / 42%);
+  box-shadow: inset 0 1px rgb(255 255 255 / 10%), 0 0 0 4px rgb(216 185 119 / 8%), 0 20px 55px rgb(5 5 10 / 23%);
+  transform: translateY(-1px);
+}
+.wb-search > * {
+  position: relative;
+  z-index: 1;
 }
 .workbench input:not([type='checkbox']),
 .workbench textarea,
@@ -1983,6 +2015,25 @@ function calendarFacts(date: string) {
 .wb-search > input {
   flex: 1;
   min-width: 0;
+  min-height: 48px;
+  border-color: rgb(255 255 255 / 12%);
+  border-radius: 14px;
+  background: rgb(7 8 13 / 48%);
+  box-shadow: inset 0 1px rgb(255 255 255 / 6%);
+  transition: border-color 240ms ease, background 240ms ease, box-shadow 300ms ease;
+}
+.wb-search > input:hover {
+  border-color: rgb(216 185 119 / 28%);
+  background: rgb(7 8 13 / 60%);
+}
+.wb-search > input:focus {
+  outline: none;
+  border-color: rgb(216 185 119 / 62%);
+  background: rgb(7 8 13 / 72%);
+  box-shadow: 0 0 0 3px rgb(216 185 119 / 10%), inset 0 1px rgb(255 255 255 / 8%);
+}
+.wb-search > input::placeholder {
+  color: rgb(176 173 184 / 72%);
 }
 .wb-toggle {
   display: flex;
@@ -2437,6 +2488,8 @@ function calendarFacts(date: string) {
   .wb-search {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 10px;
+    border-radius: 18px;
   }
   .wb-search > input {
     grid-column: 1 / -1;

@@ -1511,6 +1511,7 @@ onMounted(async () => {
                   :key="p.id"
                   class="candidate"
                   :class="{ selected: p.id === proposalId }"
+                  :aria-label="`Review draft: ${p.subject}`"
                   @click="openProposal(p)"
                 >
                   <span class="ws-chip">{{ p.status }} · revision {{ p.revision }}</span>

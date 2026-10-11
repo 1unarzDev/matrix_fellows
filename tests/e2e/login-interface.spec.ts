@@ -143,12 +143,12 @@ test('unified member access supports keyboard email, code errors and changing ad
     body: { provider: 'email', email: 'researcher@example.org' },
   })
   await expect(page.getByRole('button', { name: 'Verify code', exact: true })).toBeDisabled()
-  await code.fill('123456')
+  await code.fill('12345678')
   await code.press('Enter')
   await expect(page.getByRole('alert')).toContainText('That code has expired.')
   expect(requests[1]).toEqual({
     path: '/api/workspace/auth/callback',
-    body: { email: 'researcher@example.org', token: '123456' },
+    body: { email: 'researcher@example.org', token: '12345678' },
   })
   await page.getByRole('button', { name: 'Use another email', exact: true }).click()
   await expect(email).toBeVisible()

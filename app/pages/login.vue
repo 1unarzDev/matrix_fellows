@@ -21,6 +21,7 @@ const stateHeight = ref<number | null>(null)
 const stateContainer = ref<HTMLElement | null>(null)
 const userInitiated = ref(false)
 const morphingPassword = ref(false)
+const validEmailCode = computed(() => /^\d{6,8}$/.test(token.value))
 const needsConfirmation = computed(() => ['signup', 'reset'].includes(passwordMode.value))
 let passwordMorphTimer: ReturnType<typeof setTimeout> | undefined
 let stateObserver: ResizeObserver | undefined
@@ -449,8 +450,8 @@ onMounted(async () => {
               We sent a secure link to <strong>{{ email }}</strong>
             </p>
             <p class="login-helper">
-              Open the link to continue. If your email includes a six-digit code, you can enter it
-              below.
+              Open the link to continue. If your email includes a six- to eight-digit code, you can
+              enter it below.
             </p>
             <form class="login-form" @submit.prevent="verify">
               <label for="login-code">Email verification code</label
@@ -460,13 +461,14 @@ onMounted(async () => {
                 v-model="token"
                 inputmode="numeric"
                 autocomplete="one-time-code"
-                pattern="[0-9]{6}"
-                maxlength="6"
+                pattern="[0-9]{6,8}"
+                maxlength="8"
                 required
                 class="login-code"
                 placeholder="000000"
                 :disabled="busy"
-              /><button class="login-primary" :disabled="busy || token.length !== 6" type="submit">
+                @input="token = token.replace(/\D/g, '').slice(0, 8)"
+              /><button class="login-primary" :disabled="busy || !validEmailCode" type="submit">
                 <span>{{ busy ? 'Verifying…' : 'Verify code' }}</span
                 ><span v-if="busy" class="login-spinner" aria-hidden="true" /><SiteIcon
                   v-else

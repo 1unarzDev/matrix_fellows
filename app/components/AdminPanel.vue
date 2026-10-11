@@ -325,7 +325,7 @@ onBeforeUnmount(() => {
           aria-modal="true"
           aria-labelledby="admin-title"
           tabindex="-1"
-          class="admin-panel flex h-dvh w-full max-w-xl flex-col border-l border-paper/10 bg-ink bg-[radial-gradient(ellipse_at_top_right,#a9a0ed12,transparent_55%)] shadow-2xl outline-none [--color-acid:#c5c0eb] [&_button]:transition-[color,background-color,border-color,box-shadow] [&_button]:duration-700 [&_button]:ease-[cubic-bezier(.45,0,.25,1)] [&_button]:focus-visible:outline-2 [&_button]:focus-visible:outline-offset-4 [&_button]:focus-visible:outline-acid motion-reduce:[&_button]:transition-none"
+          class="admin-panel mf-glass-surface flex h-dvh w-full max-w-xl flex-col border-l border-paper/10 shadow-2xl outline-none [--color-acid:#c5c0eb] [&_button]:transition-[color,background-color,border-color,box-shadow] [&_button]:duration-700 [&_button]:ease-[cubic-bezier(.45,0,.25,1)] [&_button]:focus-visible:outline-2 [&_button]:focus-visible:outline-offset-4 [&_button]:focus-visible:outline-acid motion-reduce:[&_button]:transition-none"
           :class="{ 'admin-panel--locking': locking }"
           @keydown="handleKeys"
         >

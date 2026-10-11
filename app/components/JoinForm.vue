@@ -240,7 +240,7 @@ onBeforeUnmount(() => {
         >
           <section
             data-lenis-prevent
-            class="join-panel relative isolate flex w-full max-w-2xl flex-col overflow-hidden rounded-[1.75rem] sm:rounded-[2rem]"
+            class="join-panel mf-glass-surface relative isolate flex w-full max-w-2xl flex-col overflow-hidden rounded-[1.75rem] sm:rounded-[2rem]"
             :class="
               embedded
                 ? 'join-panel--embedded min-h-[38rem]'
@@ -571,24 +571,6 @@ onBeforeUnmount(() => {
 <style scoped>
 .join-panel {
   border: 1px solid color-mix(in srgb, var(--color-paper) 20%, transparent);
-  background:
-    radial-gradient(
-      38rem 24rem at 100% 0%,
-      color-mix(in srgb, var(--color-acid) 7%, transparent),
-      transparent 66%
-    ),
-    linear-gradient(
-      145deg,
-      color-mix(in srgb, var(--color-paper) 8%, transparent),
-      color-mix(in srgb, var(--color-paper) 2.8%, transparent) 48%,
-      transparent 78%
-    ),
-    color-mix(in srgb, var(--color-ink) 52%, transparent);
-  box-shadow:
-    0 30px 120px rgb(0 0 0 / 50%),
-    inset 0 1px 0 rgb(255 255 255 / 7%);
-  -webkit-backdrop-filter: blur(36px) saturate(118%);
-  backdrop-filter: blur(36px) saturate(118%);
 }
 .join-progress-fill {
   background: linear-gradient(
@@ -615,14 +597,6 @@ onBeforeUnmount(() => {
   --color-acid: #e4bb72;
   border-color: color-mix(in srgb, #e4bb72 18%, transparent);
   border-radius: 1.5rem;
-  background:
-    radial-gradient(28rem 18rem at 100% 0%, rgb(228 187 114 / 9%), transparent 70%),
-    color-mix(in srgb, var(--color-paper) 3.6%, transparent);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 5%),
-    0 18px 55px rgb(0 0 0 / 12%);
-  -webkit-backdrop-filter: blur(18px) saturate(118%);
-  backdrop-filter: blur(18px) saturate(118%);
   filter: drop-shadow(0 30px 70px rgb(0 0 0 / 45%));
   transition:
     opacity 260ms ease,
@@ -635,33 +609,15 @@ onBeforeUnmount(() => {
 .join-panel--embedded {
   box-shadow:
     0 32px 110px rgb(0 0 0 / 32%),
-    0 0 72px color-mix(in srgb, var(--color-acid) 5%, transparent),
-    inset 0 1px 0 rgb(255 255 255 / 8%);
+    0 0 72px color-mix(in srgb, var(--color-acid) 5%, transparent);
 }
 @media (max-width: 639px) {
   .join-panel--embedded {
     border-color: color-mix(in srgb, var(--color-paper) 16%, transparent);
     border-radius: 1.5rem;
-    background:
-      radial-gradient(
-        24rem 15rem at 105% -4%,
-        color-mix(in srgb, var(--color-acid) 8%, transparent),
-        transparent 68%
-      ),
-      radial-gradient(20rem 15rem at -12% 105%, rgb(104 176 167 / 0.045), transparent 70%),
-      linear-gradient(
-        150deg,
-        color-mix(in srgb, var(--color-paper) 5.5%, transparent),
-        color-mix(in srgb, var(--color-paper) 1.8%, transparent) 52%,
-        transparent 82%
-      ),
-      color-mix(in srgb, var(--color-ink) 46%, transparent);
     box-shadow:
       0 24px 80px rgb(0 0 0 / 28%),
-      0 0 54px color-mix(in srgb, var(--color-acid) 4%, transparent),
-      inset 0 1px 0 rgb(255 255 255 / 6%);
-    -webkit-backdrop-filter: blur(28px) saturate(122%);
-    backdrop-filter: blur(28px) saturate(122%);
+      0 0 54px color-mix(in srgb, var(--color-acid) 4%, transparent);
   }
 }
 .join-close {

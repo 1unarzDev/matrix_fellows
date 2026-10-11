@@ -69,7 +69,7 @@ onMounted(() => {
     class="opportunity-card flex min-w-0 flex-col overflow-hidden rounded-2xl border border-paper/15 transition-[transform,border-color,background-color,box-shadow] duration-700 ease-[cubic-bezier(.16,1,.3,1)] motion-reduce:transition-none"
     :class="
       compact
-        ? 'opportunity-card--featured'
+        ? 'opportunity-card--featured mf-glass-surface mf-glass-surface--interactive'
         : 'bg-paper/[.015] hover:border-paper/30 hover:bg-paper/[.025] hover:shadow-[0_16px_48px_#00000012]'
     "
   >
@@ -349,15 +349,7 @@ onMounted(() => {
 
 <style scoped>
 .opportunity-card--featured {
-  position: relative;
-  isolation: isolate;
   border-color: rgb(244 240 231 / 14%);
-  background: rgb(9 14 22 / 0.7%);
-  -webkit-backdrop-filter: blur(18px) saturate(112%);
-  backdrop-filter: blur(18px) saturate(112%);
-  box-shadow:
-    0 18px 56px rgb(0 7 15 / 9%),
-    inset 0 1px rgb(255 255 255 / 7%);
   transition:
     border-color 420ms ease,
     box-shadow 420ms ease;

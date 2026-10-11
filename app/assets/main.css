@@ -4,6 +4,42 @@
   @apply transition-[transform,scale,translate,background-color,border-color,color,box-shadow] duration-1000 ease-[cubic-bezier(.4,0,.2,1)] hover:-translate-y-px hover:scale-[1.008] active:translate-y-0 active:scale-[.995] active:duration-250 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acid motion-reduce:transform-none motion-reduce:scale-100 motion-reduce:translate-none motion-reduce:transition-none;
 }
 
+/* One restrained glass surface for public cards, admin tools, and the join flow. */
+.mf-glass-surface {
+  --mf-glass-line: rgb(244 241 233 / 14%);
+  position: relative;
+  isolation: isolate;
+  border: 1px solid var(--mf-glass-line);
+  background:
+    radial-gradient(120% 90% at 100% 0%, rgb(234 194 121 / 8%), transparent 58%),
+    linear-gradient(145deg, rgb(244 241 233 / 7%), rgb(244 241 233 / 2%) 48%, transparent 78%),
+    rgb(10 16 21 / 58%);
+  box-shadow:
+    0 18px 60px rgb(0 0 0 / 14%),
+    inset 0 1px 0 rgb(255 255 255 / 7%),
+    inset 0 -1px 0 rgb(255 255 255 / 2%);
+  -webkit-backdrop-filter: blur(24px) saturate(120%);
+  backdrop-filter: blur(24px) saturate(120%);
+  transition:
+    border-color 520ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 520ms cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 520ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.mf-glass-surface--interactive:hover,
+.mf-glass-surface--interactive:focus-within {
+  --mf-glass-line: rgb(230 217 187 / 30%);
+  box-shadow:
+    0 22px 66px rgb(0 0 0 / 17%),
+    0 0 30px rgb(234 194 121 / 5%),
+    inset 0 1px 0 rgb(255 255 255 / 9%),
+    inset 0 -1px 0 rgb(255 255 255 / 2%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .mf-glass-surface {
+    transition: none;
+  }
+}
+
 @layer base {
   /* :target is available before hydration: never paint desert dunes over a
      non-desert hash destination while JavaScript is still starting. */

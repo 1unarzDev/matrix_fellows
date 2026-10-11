@@ -69,7 +69,7 @@ onMounted(() => {
     class="opportunity-card flex min-w-0 flex-col overflow-hidden rounded-2xl border border-paper/15 transition-[transform,border-color,background-color,box-shadow] duration-700 ease-[cubic-bezier(.16,1,.3,1)] motion-reduce:transition-none"
     :class="
       compact
-        ? 'opportunity-card--featured mf-glass-surface mf-glass-surface--light mf-glass-surface--interactive'
+        ? 'opportunity-card--featured mf-glass-surface mf-glass-surface--home mf-glass-surface--light mf-glass-surface--interactive'
         : 'bg-paper/[.015] hover:border-paper/30 hover:bg-paper/[.025] hover:shadow-[0_16px_48px_#00000012]'
     "
   >

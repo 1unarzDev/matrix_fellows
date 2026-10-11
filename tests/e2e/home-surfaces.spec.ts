@@ -17,8 +17,11 @@ test('homepage opportunities use the shared dashboard glass surface', async ({ p
     }
   })
   expect(surface.image).toBe('none')
-  expect(surface.color[3]).toBeGreaterThanOrEqual(90)
-  expect(surface.color[3]).toBeLessThanOrEqual(115)
+  // Homepage cards intentionally use a more open fill than account/dashboard
+  // panels so the nebula remains visible behind the opportunity content.
+  expect(surface.color[3]).toBeGreaterThanOrEqual(35)
+  expect(surface.color[3]).toBeLessThanOrEqual(80)
+  await expect(card).toHaveClass(/mf-glass-surface--home/)
 })
 
 test('join popup follows the calendar popup surface and motion contract', async ({

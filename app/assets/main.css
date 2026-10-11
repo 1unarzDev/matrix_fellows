@@ -44,6 +44,19 @@
 .mf-glass-surface--light {
   background-color: rgb(20 21 28 / 42%);
 }
+/* Homepage opportunity surfaces stay open to the animated nebula behind them.
+   Keep the shared border and blur, but use a lighter fill than dashboard and
+   account panels so the cards feel connected to the scene. */
+.mf-glass-surface--home {
+  background-color: rgb(18 19 26 / 16%);
+}
+.mf-glass-surface--home.mf-glass-surface--light {
+  background-color: rgb(20 21 28 / 19%);
+}
+.mf-glass-surface--home.mf-glass-surface--interactive:hover,
+.mf-glass-surface--home.mf-glass-surface--interactive:focus-within {
+  background-color: rgb(20 21 28 / 23%);
+}
 @media (prefers-reduced-motion: reduce) {
   .mf-glass-surface {
     transition: none;

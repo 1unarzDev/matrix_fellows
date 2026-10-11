@@ -5,6 +5,7 @@ const dialog = ref<HTMLDialogElement | null>(null)
 let previousFocus: HTMLElement | null = null
 let closeTimer: ReturnType<typeof setTimeout> | null = null
 const closing = ref(false)
+const celebratory = ref(false)
 onBeforeMount(() => {
   previousFocus = document.activeElement as HTMLElement
 })
@@ -25,6 +26,12 @@ function close() {
   closing.value = true
   closeTimer = setTimeout(() => emit('close'), 180)
 }
+/** Mark a successful save before the caller closes the panel. */
+function celebrate() {
+  if (closing.value) return
+  celebratory.value = true
+}
+defineExpose({ close, celebrate })
 function backdrop(event: MouseEvent) {
   if (!dialog.value || event.target !== dialog.value) return
   const bounds = dialog.value.getBoundingClientRect()
@@ -42,11 +49,20 @@ function backdrop(event: MouseEvent) {
     ><dialog
       ref="dialog"
       class="dashboard-dialog"
-      :class="{ 'dashboard-dialog--compact': compact, 'dashboard-dialog--closing': closing }"
+      :class="{
+        'dashboard-dialog--compact': compact,
+        'dashboard-dialog--closing': closing,
+        'dashboard-dialog--celebrating': celebratory,
+      }"
       aria-labelledby="dashboard-dialog-title"
       @cancel.prevent="close"
       @click="backdrop"
     >
+      <span class="dashboard-dialog__glow" aria-hidden="true" />
+      <span class="dashboard-dialog__grain" aria-hidden="true" />
+      <span class="dashboard-dialog__sparkles" aria-hidden="true">
+        <i v-for="index in 8" :key="index" :style="{ '--spark-index': index }" />
+      </span>
       <header>
         <h2 id="dashboard-dialog-title">{{ props.title }}</h2>
         <button aria-label="Close panel" @click="close">×</button>
@@ -67,17 +83,113 @@ function backdrop(event: MouseEvent) {
   padding: 0;
   border: 1px solid #ffffff24;
   border-radius: 20px;
-  background: rgb(23 24 33 / 88%);
-  backdrop-filter: blur(24px) saturate(1.12);
+  background:
+    radial-gradient(34rem 20rem at 100% 0%, rgb(216 185 119 / 8%), transparent 70%),
+    linear-gradient(145deg, rgb(244 241 233 / 6%), rgb(244 241 233 / 2.4%) 50%, transparent 82%),
+    rgb(18 19 27 / 78%);
+  backdrop-filter: blur(30px) saturate(1.16);
   color: #efeee8;
-  box-shadow: 0 32px 120px #0009, inset 0 1px rgb(255 255 255 / 8%);
+  box-shadow:
+    0 32px 120px #0009,
+    inset 0 1px rgb(255 255 255 / 8%);
   font-family: Manrope, sans-serif;
   overflow: auto;
+  isolation: isolate;
   animation: panel-in 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.dashboard-dialog__glow,
+.dashboard-dialog__grain,
+.dashboard-dialog__sparkles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+}
+.dashboard-dialog__glow {
+  background: radial-gradient(ellipse at 100% 0%, rgb(244 241 233 / 8%), transparent 60%);
+  opacity: 0.6;
+  transition: opacity 650ms ease;
+}
+.dashboard-dialog__grain {
+  background: url('/textures/glass-grain.svg') repeat;
+  opacity: 0.09;
+  mix-blend-mode: soft-light;
+}
+.dashboard-dialog__sparkles i {
+  position: absolute;
+  left: var(--spark-left);
+  top: var(--spark-top);
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: rgb(228 187 114 / 75%);
+  box-shadow: 0 0 12px rgb(228 187 114 / 50%);
+  opacity: 0;
+}
+.dashboard-dialog__sparkles i:nth-child(1) {
+  --spark-left: 8%;
+  --spark-top: 14%;
+  --spark-x: -8px;
+  --spark-y: -18px;
+}
+.dashboard-dialog__sparkles i:nth-child(2) {
+  --spark-left: 24%;
+  --spark-top: 28%;
+  --spark-x: 6px;
+  --spark-y: -22px;
+}
+.dashboard-dialog__sparkles i:nth-child(3) {
+  --spark-left: 41%;
+  --spark-top: 11%;
+  --spark-x: -6px;
+  --spark-y: -20px;
+}
+.dashboard-dialog__sparkles i:nth-child(4) {
+  --spark-left: 58%;
+  --spark-top: 35%;
+  --spark-x: 8px;
+  --spark-y: -18px;
+}
+.dashboard-dialog__sparkles i:nth-child(5) {
+  --spark-left: 74%;
+  --spark-top: 16%;
+  --spark-x: -6px;
+  --spark-y: -24px;
+}
+.dashboard-dialog__sparkles i:nth-child(6) {
+  --spark-left: 87%;
+  --spark-top: 45%;
+  --spark-x: 6px;
+  --spark-y: -20px;
+}
+.dashboard-dialog__sparkles i:nth-child(7) {
+  --spark-left: 32%;
+  --spark-top: 70%;
+  --spark-x: -7px;
+  --spark-y: -18px;
+}
+.dashboard-dialog__sparkles i:nth-child(8) {
+  --spark-left: 68%;
+  --spark-top: 78%;
+  --spark-x: 7px;
+  --spark-y: -22px;
+}
+.dashboard-dialog--celebrating .dashboard-dialog__glow {
+  opacity: 1;
+  animation: dialog-glow 850ms ease-out both;
+}
+.dashboard-dialog--celebrating .dashboard-dialog__sparkles i {
+  animation: dialog-spark 720ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--spark-index) * 35ms);
+}
+.dashboard-dialog header,
+.dashboard-dialog-body {
+  position: relative;
+  z-index: 1;
 }
 .dashboard-dialog::backdrop {
   background: #080910a8;
-  backdrop-filter: blur(5px);
+  backdrop-filter: blur(12px);
 }
 .dashboard-dialog--compact {
   width: min(540px, calc(100% - 32px));
@@ -111,7 +223,10 @@ function backdrop(event: MouseEvent) {
   font-size: 24px;
   cursor: pointer;
   flex-shrink: 0;
-  transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
+  transition:
+    transform 180ms ease,
+    background 180ms ease,
+    border-color 180ms ease;
 }
 .dashboard-dialog header button:hover {
   transform: scale(1.05);
@@ -138,10 +253,46 @@ function backdrop(event: MouseEvent) {
   }
 }
 @keyframes panel-out {
-  from { opacity: 1; transform: none; }
-  to { opacity: 0; transform: translateY(10px) scale(.985); }
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
 }
-.dashboard-dialog--closing { animation: panel-out .18s ease-in forwards; pointer-events: none; }
+.dashboard-dialog--closing {
+  animation: panel-out 0.18s ease-in forwards;
+  pointer-events: none;
+}
+@keyframes dialog-glow {
+  0% {
+    transform: scale(0.88);
+    opacity: 0.4;
+  }
+  50% {
+    transform: scale(1.03);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+}
+@keyframes dialog-spark {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.6);
+  }
+  35% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--spark-x), var(--spark-y)) scale(0);
+  }
+}
 @media (max-width: 560px) {
   .dashboard-dialog {
     width: calc(100% - 16px);
@@ -160,10 +311,21 @@ function backdrop(event: MouseEvent) {
   .dashboard-dialog {
     animation: none;
   }
-  .dashboard-dialog--closing { animation: none; }
+  .dashboard-dialog--closing {
+    animation: none;
+  }
   .dashboard-dialog::backdrop {
     backdrop-filter: none;
   }
-  .dashboard-dialog header button { transition: none; }
+  .dashboard-dialog header button {
+    transition: none;
+  }
+  .dashboard-dialog--celebrating .dashboard-dialog__glow,
+  .dashboard-dialog--celebrating .dashboard-dialog__sparkles i {
+    animation: none;
+  }
+  .dashboard-dialog--celebrating .dashboard-dialog__glow {
+    opacity: 1;
+  }
 }
 </style>

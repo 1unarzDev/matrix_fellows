@@ -2538,83 +2538,79 @@ onMounted(async () => {
             />
             <details class="ws-panel profile-preferences profile-advanced">
               <summary>
-                <span
-                  ><small class="profile-disclosure__eyebrow">Profile details</small
-                  ><strong>Correct the essentials</strong></span
+                <span><strong>Profile details</strong></span
                 ><em>Optional</em>
               </summary>
-              <form class="profile-compact-form" @submit.prevent="saveProfile">
-                <p class="ws-muted">
-                  Use this only to correct the essentials. Research links are the preferred way to
-                  add projects and evidence.
-                </p>
-                <div class="ws-grid">
-                  <label class="ws-field"
-                    >Name<input v-model="profileForm.fullName" required
-                  /></label>
-                  <fieldset class="ws-field profile-interest-field">
-                    <legend>Interests</legend>
-                    <div class="profile-interest-badges" aria-label="Select interests">
-                      <button
-                        v-for="interest in defaultInterestOptions"
-                        :key="interest"
-                        type="button"
-                        class="profile-interest-badge"
-                        :class="{ 'is-selected': selectedInterests.includes(interest) }"
-                        :aria-pressed="selectedInterests.includes(interest)"
-                        @click="toggleProfileInterest(interest)"
-                      >
-                        {{ interest }}
-                      </button>
-                      <button
-                        v-for="interest in selectedInterests.filter(
-                          (value) => !defaultInterestOptions.includes(value),
-                        )"
-                        :key="`custom-${interest}`"
-                        type="button"
-                        class="profile-interest-badge is-selected"
-                        :aria-pressed="true"
-                        @click="toggleProfileInterest(interest)"
-                      >
-                        {{ interest }} <span aria-hidden="true">×</span>
-                      </button>
-                    </div>
-                    <div class="profile-interest-add">
-                      <input
-                        v-model="customInterest"
-                        placeholder="Add another interest"
-                        @keydown.enter.prevent="addCustomInterest"
-                      /><button
-                        type="button"
-                        class="ws-button"
-                        :disabled="!customInterest.trim()"
-                        @click="addCustomInterest"
-                      >
-                        Add
-                      </button>
-                    </div>
-                  </fieldset>
-                  <label class="ws-field"
-                    >What you hope to explore<textarea v-model="profileForm.goals" rows="2" />
-                  </label>
-                  <label class="ws-field"
-                    >Current availability<input
-                      v-model="profileForm.availability"
-                      placeholder="A few hours on weekends"
-                  /></label>
-                </div>
-                <div class="consent">
-                  <AnimatedCheckbox
-                    v-model="profileForm.consentToShare"
-                    outlined
-                    label="Allow reviewed proposals to use this profile context."
-                    description="Nothing is sent without exact-email approval."
-                  />
-                </div>
-                <button class="ws-button ws-button--primary" :disabled="busy || profileSaving">
-                  Save profile basics
-                </button>
-              </form>
+              <div class="profile-preferences__drawer">
+                <form class="profile-compact-form" @submit.prevent="saveProfile">
+                  <div class="ws-grid">
+                    <label class="ws-field"
+                      >Name<input v-model="profileForm.fullName" required
+                    /></label>
+                    <fieldset class="ws-field profile-interest-field">
+                      <legend>Interests</legend>
+                      <div class="profile-interest-badges" aria-label="Select interests">
+                        <button
+                          v-for="interest in defaultInterestOptions"
+                          :key="interest"
+                          type="button"
+                          class="profile-interest-badge"
+                          :class="{ 'is-selected': selectedInterests.includes(interest) }"
+                          :aria-pressed="selectedInterests.includes(interest)"
+                          @click="toggleProfileInterest(interest)"
+                        >
+                          {{ interest }}
+                        </button>
+                        <button
+                          v-for="interest in selectedInterests.filter(
+                            (value) => !defaultInterestOptions.includes(value),
+                          )"
+                          :key="`custom-${interest}`"
+                          type="button"
+                          class="profile-interest-badge is-selected"
+                          :aria-pressed="true"
+                          @click="toggleProfileInterest(interest)"
+                        >
+                          {{ interest }} <span aria-hidden="true">×</span>
+                        </button>
+                      </div>
+                      <div class="profile-interest-add">
+                        <input
+                          v-model="customInterest"
+                          placeholder="Add another interest"
+                          @keydown.enter.prevent="addCustomInterest"
+                        /><button
+                          type="button"
+                          class="ws-button"
+                          :disabled="!customInterest.trim()"
+                          @click="addCustomInterest"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </fieldset>
+                    <label class="ws-field"
+                      >What you hope to explore<textarea v-model="profileForm.goals" rows="2" />
+                    </label>
+                    <label class="ws-field"
+                      >Current availability<input
+                        v-model="profileForm.availability"
+                        placeholder="A few hours on weekends"
+                    /></label>
+                  </div>
+                  <div class="consent">
+                    <AnimatedCheckbox
+                      v-model="profileForm.consentToShare"
+                      outlined
+                      label="Allow reviewed proposals to use this profile context."
+                      description="Nothing is sent without exact-email approval."
+                    />
+                  </div>
+                  <button class="ws-button ws-button--primary" :disabled="busy || profileSaving">
+                    Save profile basics
+                  </button>
+                </form>
+              </div>
             </details>
           </template>
           <template v-else-if="tab === 'society'">
@@ -3199,20 +3195,32 @@ onMounted(async () => {
 .profile-compact-form {
   padding-top: 20px;
 }
-.profile-preferences[open] > .profile-preferences__body,
-.profile-preferences[open] > .profile-compact-form {
-  animation: profile-disclosure-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
-  transform-origin: top;
+.profile-preferences__drawer {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  overflow: hidden;
+  transform: translateY(-8px);
+  transition:
+    grid-template-rows 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.28s ease,
+    transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
 }
-@keyframes profile-disclosure-in {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.profile-preferences__drawer > .profile-compact-form {
+  min-height: 0;
+}
+.profile-preferences[open] > .profile-preferences__drawer {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transform: none;
+}
+.profile-compact-form .ws-grid {
+  align-items: start;
+  column-gap: 22px;
+  row-gap: 18px;
+}
+.profile-compact-form .ws-field {
+  margin-bottom: 0;
 }
 .profile-compact-form > .ws-muted {
   margin: 0;
@@ -3305,10 +3313,10 @@ onMounted(async () => {
 @media (prefers-reduced-motion: reduce) {
   .profile-preferences summary,
   .profile-preferences summary::after,
-  .profile-preferences[open] > .profile-preferences__body,
-  .profile-preferences[open] > .profile-compact-form {
+  .profile-preferences__drawer {
     transition: none;
     animation: none;
+    transform: none;
   }
 }
 @media (max-width: 700px) {

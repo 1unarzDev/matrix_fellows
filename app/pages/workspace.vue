@@ -5,6 +5,7 @@ import AccountSecurity from '~/components/workspace/AccountSecurity.vue'
 import DashboardWorkbench from '../components/workspace/DashboardWorkbench.vue'
 import type { OutreachProfile, OutreachProposal, OutreachTarget } from '#shared/types/outreach'
 import { explainResearchFit, orderResearchTargets } from '#shared/utils/research-fit'
+import { researchTopics } from '#shared/utils/research-topics'
 import type { OutreachMatchPreview } from '#shared/types/outreach-planning'
 import OutreachMessagePlan from '~/components/workspace/OutreachMessagePlan.vue'
 import CandidateRefinementForm from '~/components/workspace/CandidateRefinementForm.vue'
@@ -30,10 +31,10 @@ const tab = computed({
       : route.query.section === 'research' && canDiscover.value
         ? 'queue'
         : route.query.section === 'drafts'
-        ? 'queue'
-        : route.query.section === 'saved'
-        ? 'opportunities'
-        : 'today',
+          ? 'queue'
+          : route.query.section === 'saved'
+            ? 'opportunities'
+            : 'today',
   set: (section: string) => patchQuery({ section }, true),
 })
 const canDiscover = computed(() => ['officer', 'admin'].includes(data.value?.member.role || ''))
@@ -97,9 +98,7 @@ function commandNavigate(section: string) {
   tab.value = section
   commandOpen.value = false
 }
-const visibleProposals = computed(() =>
-  canDiscover.value ? data.value?.proposals || [] : [],
-)
+const visibleProposals = computed(() => (canDiscover.value ? data.value?.proposals || [] : []))
 const initializedAccess = ref(false)
 const query = ref(typeof route.query.q === 'string' ? route.query.q : '')
 const status = ref('active')
@@ -108,7 +107,10 @@ const reachableLocations = ref('Arlington')
 const fitPreferences = computed(() => ({
   lens: lens.value,
   interests: data.value?.profiles.find((p) => p.id === profileId.value)?.interests || [],
-  reachableLocations: reachableLocations.value.split(',').map(v=>v.trim()).filter(Boolean),
+  reachableLocations: reachableLocations.value
+    .split(',')
+    .map((v) => v.trim())
+    .filter(Boolean),
 }))
 const selectedId = ref(typeof route.query.target === 'string' ? route.query.target : '')
 watch([selectedId, query, lens], () => {
@@ -143,15 +145,29 @@ async function loadSharedProfiles() {
   sharedProfilesLoading.value = true
   sharedProfilesError.value = ''
   try {
-    const response = await $fetch<{ profiles: { id: string; fullName: string }[]; total: number }>('/api/workspace/research-profile/shared', { query: { page: sharedProfilePage.value } })
-    const profiles = response.profiles.map(p => ({ profileId: p.id, displayName: p.fullName }))
-    sharedProfiles.value = sharedProfilePage.value === 0 ? profiles : [...sharedProfiles.value, ...profiles.filter(p => !sharedProfiles.value.some(existing => existing.profileId === p.profileId))]
+    const response = await $fetch<{ profiles: { id: string; fullName: string }[]; total: number }>(
+      '/api/workspace/research-profile/shared',
+      { query: { page: sharedProfilePage.value } },
+    )
+    const profiles = response.profiles.map((p) => ({ profileId: p.id, displayName: p.fullName }))
+    sharedProfiles.value =
+      sharedProfilePage.value === 0
+        ? profiles
+        : [
+            ...sharedProfiles.value,
+            ...profiles.filter(
+              (p) => !sharedProfiles.value.some((existing) => existing.profileId === p.profileId),
+            ),
+          ]
     sharedProfileTotal.value = response.total
-  } catch { sharedProfilesError.value = 'Member profiles could not be loaded.' }
-  finally { sharedProfilesLoading.value = false }
+  } catch {
+    sharedProfilesError.value = 'Member profiles could not be loaded.'
+  } finally {
+    sharedProfilesLoading.value = false
+  }
 }
 const selectedProjectId = ref('')
-const projectChoices = ref<{id:string;title:string}[]>([])
+const projectChoices = ref<{ id: string; title: string }[]>([])
 const projectsLoading = ref(false)
 const projectsError = ref('')
 let projectRequest = 0
@@ -161,17 +177,25 @@ const planningBusy = ref(false)
 const planningError = ref('')
 const creatingMessageDraft = ref(false)
 const createdMessageDraftId = ref('')
-const officers = ref<{id:string;label:string}[]>([])
-const messagePlanContext = computed(() => JSON.stringify({
-  targetId: selectedId.value,
-  targetVersion: data.value?.targets.find(target => target.id === selectedId.value)?.updatedAt,
-  kind: scope.value,
-  profileId: scope.value === 'student' ? profileId.value : null,
-  projectId: scope.value === 'student' ? selectedProjectId.value || null : null,
-  contributionOption: selectedContribution.value,
-}))
-watch(messagePlanContext, () => { matchPreview.value = null; planningError.value = ''; createdMessageDraftId.value = '' })
-watch(selectedId, () => { selectedContribution.value = '' })
+const officers = ref<{ id: string; label: string }[]>([])
+const messagePlanContext = computed(() =>
+  JSON.stringify({
+    targetId: selectedId.value,
+    targetVersion: data.value?.targets.find((target) => target.id === selectedId.value)?.updatedAt,
+    kind: scope.value,
+    profileId: scope.value === 'student' ? profileId.value : null,
+    projectId: scope.value === 'student' ? selectedProjectId.value || null : null,
+    contributionOption: selectedContribution.value,
+  }),
+)
+watch(messagePlanContext, () => {
+  matchPreview.value = null
+  planningError.value = ''
+  createdMessageDraftId.value = ''
+})
+watch(selectedId, () => {
+  selectedContribution.value = ''
+})
 async function loadProjects() {
   const request = ++projectRequest
   const representedProfile = profileId.value
@@ -182,21 +206,46 @@ async function loadProjects() {
   if (!canDiscover.value || scope.value !== 'student' || !representedProfile) return
   projectsLoading.value = true
   try {
-    const result = await $fetch<{projects:{id:string;title:string}[]}>('/api/workspace/research-profile/projects', { query: { profileId: representedProfile } })
-    if (request === projectRequest && profileId.value === representedProfile && scope.value === 'student') projectChoices.value = result.projects
-  } catch { if (request === projectRequest) projectsError.value = 'Projects could not be loaded. You can use the member’s profile or try again.' }
-  finally { if (request === projectRequest) projectsLoading.value = false }
+    const result = await $fetch<{ projects: { id: string; title: string }[] }>(
+      '/api/workspace/research-profile/projects',
+      { query: { profileId: representedProfile } },
+    )
+    if (
+      request === projectRequest &&
+      profileId.value === representedProfile &&
+      scope.value === 'student'
+    )
+      projectChoices.value = result.projects
+  } catch {
+    if (request === projectRequest)
+      projectsError.value =
+        'Projects could not be loaded. You can use the member’s profile or try again.'
+  } finally {
+    if (request === projectRequest) projectsLoading.value = false
+  }
 }
 watch([profileId, scope], loadProjects)
 const contributionChoices = computed(() => {
   const acquisition = selected.value?.dossier.acquisition as any
   // Offer only angles with a literal quotation in acquired source evidence.
-  return (acquisition?.publicAnalysis?.proposalOptions || []).flatMap((option:any,index:number) =>
-    typeof option.quote === 'string' && option.quote.trim() && acquisition.pages?.some((page:any) => page.text?.includes(option.quote))
-      ? [{ value:String(index), label:option.title }] : [])
+  return (acquisition?.publicAnalysis?.proposalOptions || []).flatMap(
+    (option: any, index: number) =>
+      typeof option.quote === 'string' &&
+      option.quote.trim() &&
+      acquisition.pages?.some((page: any) => page.text?.includes(option.quote))
+        ? [{ value: String(index), label: option.title }]
+        : [],
+  )
 })
 async function previewMatch() {
-  if (!canDiscover.value || !selected.value || planningBusy.value || busy.value || (scope.value === 'student' && !profileId.value)) return
+  if (
+    !canDiscover.value ||
+    !selected.value ||
+    planningBusy.value ||
+    busy.value ||
+    (scope.value === 'student' && !profileId.value)
+  )
+    return
   const context = messagePlanContext.value
   const targetId = selected.value.id
   planningBusy.value = true
@@ -204,25 +253,73 @@ async function previewMatch() {
   matchPreview.value = null
   createdMessageDraftId.value = ''
   try {
-    const result = await $fetch<{items:OutreachMatchPreview[]}>('/api/workspace/matches', { method:'POST', body: {
-      targetId,
-      ...(scope.value === 'student' ? {profileId:profileId.value, ...(selectedProjectId.value ? {projectId:selectedProjectId.value} : {})} : {}),
-      ...(selectedContribution.value !== '' ? {contributionOption:Number(selectedContribution.value)} : {}),
-    } })
+    const result = await $fetch<{ items: OutreachMatchPreview[] }>('/api/workspace/matches', {
+      method: 'POST',
+      body: {
+        targetId,
+        ...(scope.value === 'student'
+          ? {
+              profileId: profileId.value,
+              ...(selectedProjectId.value ? { projectId: selectedProjectId.value } : {}),
+            }
+          : {}),
+        ...(selectedContribution.value !== ''
+          ? { contributionOption: Number(selectedContribution.value) }
+          : {}),
+      },
+    })
     if (context !== messagePlanContext.value || !canDiscover.value) return
-    const match = result.items.find(item => item.targetId === targetId && item.profileId === (scope.value === 'student' ? profileId.value : null) && (item.projectId || null) === (scope.value === 'student' ? selectedProjectId.value || null : null))
+    const match = result.items.find(
+      (item) =>
+        item.targetId === targetId &&
+        item.profileId === (scope.value === 'student' ? profileId.value : null) &&
+        (item.projectId || null) ===
+          (scope.value === 'student' ? selectedProjectId.value || null : null),
+    )
     matchPreview.value = match || null
-    if (!match) planningError.value = 'No available match for this context. Check the candidate’s status, source evidence, and saved participation preferences.'
-  } catch (cause:any) {
-    if (context === messagePlanContext.value) planningError.value = cause?.data?.statusMessage || 'The message plan could not be built. Your choices are preserved; try again.'
-  } finally { planningBusy.value = false }
+    if (!match)
+      planningError.value =
+        'No available match for this context. Check the candidate’s status, source evidence, and saved participation preferences.'
+  } catch (cause: any) {
+    if (context === messagePlanContext.value)
+      planningError.value =
+        cause?.data?.statusMessage ||
+        'The message plan could not be built. Your choices are preserved; try again.'
+  } finally {
+    planningBusy.value = false
+  }
 }
 async function saveAccessPreferences() {
- await mutate('/research-profile/preferences','POST',{lens:lens.value,reachableLocations:reachableLocations.value.split(',').map(v=>v.trim()).filter(Boolean)},'Access preferences saved.')
+  await mutate(
+    '/research-profile/preferences',
+    'POST',
+    {
+      lens: lens.value,
+      reachableLocations: reachableLocations.value
+        .split(',')
+        .map((v) => v.trim())
+        .filter(Boolean),
+    },
+    'Access preferences saved.',
+  )
 }
-onMounted(async()=> {
- try { const preference=await $fetch<{lens:'nearby'|'remote'|'travel';reachableLocations:string[]}>('/api/workspace/research-profile/preferences');lens.value=preference.lens;reachableLocations.value=preference.reachableLocations.join(', ') } catch {}
- if(canDiscover.value) { try { const roster=await $fetch<{officers:{id:string;label:string}[]}>('/api/workspace/officers');officers.value=roster.officers || [] } catch {} }
+onMounted(async () => {
+  try {
+    const preference = await $fetch<{
+      lens: 'nearby' | 'remote' | 'travel'
+      reachableLocations: string[]
+    }>('/api/workspace/research-profile/preferences')
+    lens.value = preference.lens
+    reachableLocations.value = preference.reachableLocations.join(', ')
+  } catch {}
+  if (canDiscover.value) {
+    try {
+      const roster = await $fetch<{ officers: { id: string; label: string }[] }>(
+        '/api/workspace/officers',
+      )
+      officers.value = roster.officers || []
+    } catch {}
+  }
 })
 const unsaved = computed(() =>
   Boolean(
@@ -245,7 +342,9 @@ onMounted(() => window.addEventListener('beforeunload', unloadGuard))
 onBeforeUnmount(() => window.removeEventListener('beforeunload', unloadGuard))
 const selected = computed(() => data.value?.targets.find((t) => t.id === selectedId.value))
 const selectedDecision = ref<'ready' | 'deferred' | 'rejected'>('ready')
-watch(selectedId, () => { selectedDecision.value = 'ready' })
+watch(selectedId, () => {
+  selectedDecision.value = 'ready'
+})
 async function updateSelectedStatus() {
   if (!selected.value || busy.value) return
   const messages = {
@@ -314,7 +413,10 @@ const queueSignals = computed(() => {
   ].filter((signal): signal is { label: string; value: number } => typeof signal.value === 'number')
 })
 function sourceUrlForQuote(quote: string) {
-  return acquisition.value?.pages?.find((page) => page.text.includes(quote))?.url || selected.value?.canonicalUrl
+  return (
+    acquisition.value?.pages?.find((page) => page.text.includes(quote))?.url ||
+    selected.value?.canonicalUrl
+  )
 }
 const targets = computed(() =>
   orderResearchTargets(
@@ -494,6 +596,25 @@ const profileForm = reactive({
 const profileBaseline = ref(JSON.stringify(profileForm))
 const profileExpectedUpdatedAt = ref('')
 const profileSaving = ref(false)
+const defaultInterestOptions: string[] = researchTopics.map((topic) => topic.label)
+const customInterest = ref('')
+const selectedInterests = computed(() => split(profileForm.interests))
+function toggleProfileInterest(interest: string) {
+  const current = selectedInterests.value
+  profileForm.interests = current.includes(interest)
+    ? current.filter((value) => value !== interest).join(', ')
+    : [...current, interest].join(', ')
+}
+function addCustomInterest() {
+  const interest = customInterest.value.trim().replace(/\s+/g, ' ')
+  if (
+    !interest ||
+    selectedInterests.value.some((value) => value.toLowerCase() === interest.toLowerCase())
+  )
+    return
+  profileForm.interests = [...selectedInterests.value, interest].join(', ')
+  customInterest.value = ''
+}
 watch(data, (value) => {
   if (!value) return
   if (!initializedAccess.value) {
@@ -503,7 +624,8 @@ watch(data, (value) => {
     }
   }
   if (!canDiscover.value && ['research'].includes(String(route.query.section))) tab.value = 'today'
-  const p = value.profiles.find((profile) => profile.id === value.primaryProfileId) || value.profiles[0]
+  const p =
+    value.profiles.find((profile) => profile.id === value.primaryProfileId) || value.profiles[0]
   if (p && !profileSaving.value && (!profileForm.id || profileForm.id !== p.id)) {
     Object.assign(profileForm, {
       id: p.id,
@@ -553,27 +675,50 @@ async function saveProfile() {
   }
 }
 async function plan() {
-  if (!canDiscover.value || !selected.value || !matchPreview.value || busy.value || creatingMessageDraft.value) return
+  if (
+    !canDiscover.value ||
+    !selected.value ||
+    !matchPreview.value ||
+    busy.value ||
+    creatingMessageDraft.value
+  )
+    return
   if (createdMessageDraftId.value) {
-    const existing = data.value?.proposals.find(proposal => proposal.id === createdMessageDraftId.value)
-    if (existing) { openProposal(existing); await focusMessageDraft(); return }
+    const existing = data.value?.proposals.find(
+      (proposal) => proposal.id === createdMessageDraftId.value,
+    )
+    if (existing) {
+      openProposal(existing)
+      await focusMessageDraft()
+      return
+    }
   }
   const context = messagePlanContext.value
   creatingMessageDraft.value = true
   const result = await mutate<{ proposal: OutreachProposal }>(
-    '/planner', 'POST', {
+    '/planner',
+    'POST',
+    {
       targetId: selected.value.id,
       matchId: matchPreview.value.id,
-      ...(scope.value === 'student' && selectedProjectId.value ? {projectId:selectedProjectId.value} : {}),
-      ...(selectedContribution.value !== '' ? {contributionOption:Number(selectedContribution.value)} : {}),
+      ...(scope.value === 'student' && selectedProjectId.value
+        ? { projectId: selectedProjectId.value }
+        : {}),
+      ...(selectedContribution.value !== ''
+        ? { contributionOption: Number(selectedContribution.value) }
+        : {}),
       kind: scope.value,
       style: 'conversation',
       profileId: scope.value === 'student' ? profileId.value : null,
-    }, 'Draft created. Review the email and its evidence before approval.',
+    },
+    'Draft created. Review the email and its evidence before approval.',
   )
   creatingMessageDraft.value = false
   if (result?.proposal) {
-    if (context !== messagePlanContext.value) { notice.value = 'Draft created for the earlier selection. Find it in Messages to review.'; return }
+    if (context !== messagePlanContext.value) {
+      notice.value = 'Draft created for the earlier selection. Find it in Messages to review.'
+      return
+    }
     createdMessageDraftId.value = result.proposal.id
     openProposal(result.proposal)
     await focusMessageDraft()
@@ -582,8 +727,11 @@ async function plan() {
 async function focusMessageDraft() {
   await nextTick()
   const editor = document.querySelector<HTMLTextAreaElement>('.email-body')
-  editor?.scrollIntoView({block:'center', behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth'})
-  editor?.focus({preventScroll:true})
+  editor?.scrollIntoView({
+    block: 'center',
+    behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+  })
+  editor?.focus({ preventScroll: true })
 }
 async function toggleSave(t: OutreachTarget) {
   const saved = data.value?.saves.includes(t.id)
@@ -602,21 +750,47 @@ const uncertainSends = ref<string[]>([])
 const savingDraft = ref(false)
 const draftSaveState = ref('')
 const draftConflict = ref(false)
-const revisionPreview = ref<{baseRevision:number;subject:string;body:string;notices:string[];buffer:string} | null>(null)
+const revisionPreview = ref<{
+  baseRevision: number
+  subject: string
+  body: string
+  notices: string[]
+  buffer: string
+} | null>(null)
 const revising = ref(false)
 const handoffOwner = ref('')
-async function proposeRevision(action: 'shorten' | 'smaller_ask' | 'direct' | 'remove_claim', claimId?: string) {
+async function proposeRevision(
+  action: 'shorten' | 'smaller_ask' | 'direct' | 'remove_claim',
+  claimId?: string,
+) {
   if (!proposal.value || changed.value || revising.value) return
   const current = proposal.value
   const buffer = JSON.stringify(draft)
   revising.value = true
   try {
-    const result = await $fetch<Omit<NonNullable<typeof revisionPreview.value>, 'buffer'>>(`/api/workspace/proposals/${current.id}/revise`, {method:'POST',body:{revision:current.revision,action,...(claimId?{claimId}:{})}})
-    if (proposalId.value === current.id) revisionPreview.value = {...result,buffer}
-  } catch (cause: any) { draftSaveState.value = cause?.data?.statusMessage || 'The proposed revision is unavailable. Your edits are preserved.' }
-  finally { revising.value = false }
+    const result = await $fetch<Omit<NonNullable<typeof revisionPreview.value>, 'buffer'>>(
+      `/api/workspace/proposals/${current.id}/revise`,
+      {
+        method: 'POST',
+        body: { revision: current.revision, action, ...(claimId ? { claimId } : {}) },
+      },
+    )
+    if (proposalId.value === current.id) revisionPreview.value = { ...result, buffer }
+  } catch (cause: any) {
+    draftSaveState.value =
+      cause?.data?.statusMessage ||
+      'The proposed revision is unavailable. Your edits are preserved.'
+  } finally {
+    revising.value = false
+  }
 }
-const revisionCanApply = computed(() => Boolean(revisionPreview.value && proposal.value?.revision === revisionPreview.value.baseRevision && JSON.stringify(draft) === revisionPreview.value.buffer))
+const revisionCanApply = computed(() =>
+  Boolean(
+    revisionPreview.value &&
+    proposal.value?.revision === revisionPreview.value.baseRevision &&
+    JSON.stringify(draft) === revisionPreview.value.buffer,
+  ),
+)
 function applyRevisionPreview() {
   if (!revisionCanApply.value || !revisionPreview.value) return
   draft.subject = revisionPreview.value.subject
@@ -625,8 +799,16 @@ function applyRevisionPreview() {
 }
 async function handoffDraft() {
   if (!proposal.value || changed.value || !handoffOwner.value) return
-  const result = await mutate(`/proposals/${proposal.value.id}/handoff`, 'POST', {ownerId:handoffOwner.value}, 'Draft handed off. The new owner must choose their mailbox and approve a fresh revision.')
-  if (result) { proposalId.value = ''; handoffOwner.value = '' }
+  const result = await mutate(
+    `/proposals/${proposal.value.id}/handoff`,
+    'POST',
+    { ownerId: handoffOwner.value },
+    'Draft handed off. The new owner must choose their mailbox and approve a fresh revision.',
+  )
+  if (result) {
+    proposalId.value = ''
+    handoffOwner.value = ''
+  }
 }
 const revisions = ref<{ revision: number; subject: string; body: string; created_at: string }[]>([])
 let autosaveTimer: ReturnType<typeof setTimeout> | undefined
@@ -773,7 +955,14 @@ async function loadResearch() {
   researchLoading.value = true
   researchError.value = ''
   try {
-    const result = await $fetch('/api/workspace/research', { query: { sourceOffset: sourceOffset.value, jobOffset: jobOffset.value, limit: 40, ...(sourceFilter.value ? { sourceId: sourceFilter.value } : {}) } })
+    const result = await $fetch('/api/workspace/research', {
+      query: {
+        sourceOffset: sourceOffset.value,
+        jobOffset: jobOffset.value,
+        limit: 40,
+        ...(sourceFilter.value ? { sourceId: sourceFilter.value } : {}),
+      },
+    })
     if (version === researchLoadVersion && canDiscover.value) research.value = result
   } catch (e: any) {
     if (version !== researchLoadVersion || !canDiscover.value) return
@@ -787,25 +976,35 @@ function researchAction(action: string) {
   researchBusy.value = true
   researchError.value = ''
   researchActionState.value = 'queued'
-  researchActionMessage.value = action === 'run'
-    ? 'Research run queued. You can keep working while agents gather evidence.'
-    : action === 'settings'
-      ? 'Research limits saved locally. Syncing them in the background…'
-      : research.value.settings.paused ? 'Resuming the research schedule…' : 'Pausing the research schedule…'
+  researchActionMessage.value =
+    action === 'run'
+      ? 'Research run queued. You can keep working while agents gather evidence.'
+      : action === 'settings'
+        ? 'Research limits saved locally. Syncing them in the background…'
+        : research.value.settings.paused
+          ? 'Resuming the research schedule…'
+          : 'Pausing the research schedule…'
   const previousSettings = { ...research.value.settings }
-  const settings = action === 'settings'
-    ? {
-        weekly_limit: research.value.settings.weekly_limit,
-        batch_limit: research.value.settings.batch_limit,
-        queue_limit: research.value.settings.queue_limit,
-        concurrency: research.value.settings.concurrency,
-        ai_enabled: research.value.settings.ai_enabled,
-        terms_confirmed: research.value.settings.terms_confirmed,
-      }
-    : undefined
+  const settings =
+    action === 'settings'
+      ? {
+          weekly_limit: research.value.settings.weekly_limit,
+          batch_limit: research.value.settings.batch_limit,
+          queue_limit: research.value.settings.queue_limit,
+          concurrency: research.value.settings.concurrency,
+          ai_enabled: research.value.settings.ai_enabled,
+          terms_confirmed: research.value.settings.terms_confirmed,
+        }
+      : undefined
   if (action === 'pause' || action === 'resume') research.value.settings.paused = action === 'pause'
   if (action === 'run') {
-    const localJob = { id: `queued-${Date.now()}`, kind: 'Discovery', status: 'queued', created_at: new Date().toISOString(), error: null }
+    const localJob = {
+      id: `queued-${Date.now()}`,
+      kind: 'Discovery',
+      status: 'queued',
+      created_at: new Date().toISOString(),
+      error: null,
+    }
     research.value.jobs = [localJob, ...(research.value.jobs || [])]
   }
   void (async () => {
@@ -815,14 +1014,22 @@ function researchAction(action: string) {
         body: { action, ...(settings ? { settings } : {}) },
       })
       researchActionState.value = 'saved'
-      researchActionMessage.value = action === 'run' ? 'Research run accepted. New evidence will appear here when ready.' : 'Research settings updated.'
+      researchActionMessage.value =
+        action === 'run'
+          ? 'Research run accepted. New evidence will appear here when ready.'
+          : 'Research settings updated.'
       await loadResearch()
     } catch (e: any) {
-      if (action === 'pause' || action === 'resume' || action === 'settings') Object.assign(research.value!.settings, previousSettings)
-      if (action === 'run') research.value!.jobs = research.value!.jobs.filter((job: any) => !String(job.id).startsWith('queued-'))
+      if (action === 'pause' || action === 'resume' || action === 'settings')
+        Object.assign(research.value!.settings, previousSettings)
+      if (action === 'run')
+        research.value!.jobs = research.value!.jobs.filter(
+          (job: any) => !String(job.id).startsWith('queued-'),
+        )
       researchActionState.value = 'failed'
       researchActionMessage.value = ''
-      researchError.value = e?.data?.message || e?.data?.statusMessage || 'The research action could not be completed.'
+      researchError.value =
+        e?.data?.message || e?.data?.statusMessage || 'The research action could not be completed.'
     } finally {
       researchBusy.value = false
     }
@@ -834,16 +1041,22 @@ async function retryResearchJob(jobId: string) {
   try {
     await mutate('/research', 'POST', { action: 'retry', jobId }, 'Stage retry queued.')
     await loadResearch()
-  } finally { researchBusy.value = false }
+  } finally {
+    researchBusy.value = false
+  }
 }
 const editingSource = ref('')
 const sourceForm = reactive({ enabled: false, aiExcerpt: '', aiReviewed: false, snapshotHash: '' })
 async function openSource(source: any) {
   try {
-    const detail = await $fetch<{ source: any }>(`/api/workspace/research/sources/${encodeURIComponent(source.id)}`)
+    const detail = await $fetch<{ source: any }>(
+      `/api/workspace/research/sources/${encodeURIComponent(source.id)}`,
+    )
     source = detail.source
   } catch (cause: any) {
-    researchError.value = cause?.data?.statusMessage || 'The source snapshot could not be loaded. Retry before reviewing.'
+    researchError.value =
+      cause?.data?.statusMessage ||
+      'The source snapshot could not be loaded. Retry before reviewing.'
     return
   }
   editingSource.value = source.id
@@ -859,16 +1072,27 @@ function saveSource() {
   const sourceId = editingSource.value
   const payload = { ...sourceForm }
   const source = research.value?.sources.find((item: any) => item.id === sourceId)
-  const previous = source ? { enabled: source.enabled, ai_excerpt: source.ai_excerpt, ai_reviewed: source.ai_reviewed } : null
-  if (source) Object.assign(source, { enabled: payload.enabled, ai_excerpt: payload.aiExcerpt, ai_reviewed: payload.aiReviewed })
+  const previous = source
+    ? { enabled: source.enabled, ai_excerpt: source.ai_excerpt, ai_reviewed: source.ai_reviewed }
+    : null
+  if (source)
+    Object.assign(source, {
+      enabled: payload.enabled,
+      ai_excerpt: payload.aiExcerpt,
+      ai_reviewed: payload.aiReviewed,
+    })
   editingSource.value = ''
   researchBusy.value = true
   researchActionState.value = 'queued'
-  researchActionMessage.value = 'Source review saved locally. Updating the research runner in the background…'
+  researchActionMessage.value =
+    'Source review saved locally. Updating the research runner in the background…'
   researchError.value = ''
   void (async () => {
     try {
-      await $fetch('/api/workspace/research', { method: 'POST', body: { action: 'source', sourceId, ...payload } })
+      await $fetch('/api/workspace/research', {
+        method: 'POST',
+        body: { action: 'source', sourceId, ...payload },
+      })
       researchActionState.value = 'saved'
       researchActionMessage.value = 'Source review updated. Future runs will use the new excerpt.'
       await loadResearch()
@@ -883,20 +1107,28 @@ function saveSource() {
     }
   })()
 }
-watch(() => route.query.section, (section) => {
-  if (section === 'research') researchExpanded.value = true
-})
-watch(() => tab.value === 'queue' && canDiscover.value && researchExpanded.value, (visible) => {
-  if (visible) void loadResearch()
-}, { immediate: true })
+watch(
+  () => route.query.section,
+  (section) => {
+    if (section === 'research') researchExpanded.value = true
+  },
+)
+watch(
+  () => tab.value === 'queue' && canDiscover.value && researchExpanded.value,
+  (visible) => {
+    if (visible) void loadResearch()
+  },
+  { immediate: true },
+)
 const historicalMailboxes = ref<any[]>([])
 const connecting = ref(false)
 const providers = ref({ gmail: false, outlook: false })
 async function loadMailboxes() {
   try {
-    const response = await $fetch<{ items: any[]; providers: { gmail: boolean; outlook: boolean } }>(
-      '/api/workspace/mailboxes',
-    )
+    const response = await $fetch<{
+      items: any[]
+      providers: { gmail: boolean; outlook: boolean }
+    }>('/api/workspace/mailboxes')
     providers.value = response.providers
     historicalMailboxes.value = response.items || []
   } catch {
@@ -1010,9 +1242,7 @@ onMounted(async () => {
           :key="section.value"
           :class="{ active: tab === section.value }"
           :data-group-start="section.value === 'queue'"
-          :data-secondary="
-            ['profiles', 'society', 'settings'].includes(section.value)
-          "
+          :data-secondary="['profiles', 'society', 'settings'].includes(section.value)"
           :aria-current="tab === section.value ? 'page' : undefined"
           :aria-label="section.value === 'queue' ? section.label : undefined"
           @click="tab = section.value"
@@ -1044,10 +1274,7 @@ onMounted(async () => {
         "
         @navigate="tab = $event"
       />
-      <Transition
-        v-if="!['today', 'opportunities'].includes(tab)"
-        name="ws-content"
-        mode="out-in"
+      <Transition v-if="!['today', 'opportunities'].includes(tab)" name="ws-content" mode="out-in"
         ><section :key="tab" class="studio-content">
           <template v-if="tab === 'queue'">
             <div class="section-top">
@@ -1063,209 +1290,380 @@ onMounted(async () => {
                 </button>
               </div>
             </div>
-            <section v-if="canDiscover" class="ws-panel research-runs-panel" aria-labelledby="research-runs-title">
-              <button class="research-runs-toggle" :aria-expanded="researchExpanded" aria-controls="workspace-research-runs" @click="researchExpanded = !researchExpanded">
+            <section
+              v-if="canDiscover"
+              class="ws-panel research-runs-panel"
+              aria-labelledby="research-runs-title"
+            >
+              <button
+                class="research-runs-toggle"
+                :aria-expanded="researchExpanded"
+                aria-controls="workspace-research-runs"
+                @click="researchExpanded = !researchExpanded"
+              >
                 <SiteIcon name="globe" :size="19" />
-                <span class="research-runs-heading"><strong id="research-runs-title">Research runs</strong><small>Schedule, sources & activity</small></span>
-                <span v-if="research" class="ws-chip">{{ research.settings.paused ? 'Paused' : 'Scheduled' }}</span>
+                <span class="research-runs-heading"
+                  ><strong id="research-runs-title">Research runs</strong
+                  ><small>Schedule, sources & activity</small></span
+                >
+                <span v-if="research" class="ws-chip">{{
+                  research.settings.paused ? 'Paused' : 'Scheduled'
+                }}</span>
                 <SiteIcon class="research-runs-chevron" name="down" :size="16" />
               </button>
-              <div id="workspace-research-runs" class="research-runs-disclosure" :class="{ 'is-open': researchExpanded }" :inert="!researchExpanded" :aria-hidden="!researchExpanded">
-                <div class="research-runs-clip"><div class="research-runs-body">
-                  <p class="ws-muted research-runs-intro">Monday, Wednesday & Friday at 16:00 UTC. Research gathers evidence; every email still needs your approval.</p>
-            <div v-if="researchError" role="alert" class="ws-alert ws-error">
-              {{ researchError }}
-            </div>
-            <Transition name="research-action"><p v-if="researchActionMessage" class="research-action-status" :class="`research-action-status--${researchActionState}`" role="status"><span class="research-action-status__orb" aria-hidden="true" />{{ researchActionMessage }}</p></Transition>
-            <div v-if="research" class="research-run-sections">
-              <article class="research-run-section">
-                <div class="section-top">
-                  <h3>Schedule & analysis</h3>
-                  <span class="ws-chip">{{
-                    research.settings.paused ? 'Paused' : 'Scheduled'
-                  }}</span>
-                </div>
-                <p class="ws-muted">{{ research.health.note }}</p>
-                <p class="ws-muted">
-                  Free-only AI access. Jobs pause on quota limits; no paid fallback. Research uses
-                  public professional information, never private member or mailbox content.
-                </p>
-                <div class="ws-actions">
-                  <button
-                    class="ws-button ws-button--primary"
-                    :disabled="researchBusy || researchLoading || research.settings.paused"
-                    @click="researchAction('run')"
-                  >
-                    Queue a research run</button
-                  ><button
-                    v-if="data.member.role === 'admin'"
-                    class="ws-button"
-                    :disabled="researchBusy || researchLoading"
-                    @click="researchAction(research.settings.paused ? 'resume' : 'pause')"
-                  >
-                    {{ research.settings.paused ? 'Resume scheduling' : 'Pause scheduling' }}
-                  </button>
-                </div>
-                <details v-if="data.member.role === 'admin'" class="research-run-detail">
-                  <summary>Limits & Gemini settings<SiteIcon name="down" :size="14" /></summary>
-                <div class="research-run-detail__content"><div class="research-run-detail__inner">
-                <form
-                  class="research-config"
-                  @submit.prevent="researchAction('settings')"
-                >
-                  <div class="ws-grid">
-                    <label class="ws-field"
-                      >Maximum new leads / week<input
-                        v-model.number="research.settings.weekly_limit"
-                        type="number"
-                        min="1"
-                        max="100"
-                        required /></label
-                    ><label class="ws-field"
-                      >Maximum leads / run<input
-                        v-model.number="research.settings.batch_limit"
-                        type="number"
-                        min="1"
-                        max="15"
-                        required /></label
-                    ><label class="ws-field"
-                      >Unreviewed queue ceiling<input
-                        v-model.number="research.settings.queue_limit"
-                        type="number"
-                        min="1"
-                        max="250"
-                        required /></label
-                    ><label class="ws-field"
-                      >Concurrent research tasks<input
-                        v-model.number="research.settings.concurrency"
-                        type="number"
-                        min="1"
-                        max="2"
-                        required
-                    /></label>
-                  </div>
-                  <div class="consent">
-                    <AnimatedCheckbox
-                      v-model="research.settings.ai_enabled"
-                      outlined
-                      label="Enable optional Gemini analysis on eligible public sources."
-                    />
-                  </div>
-                  <div class="consent">
-                    <AnimatedCheckbox
-                      v-model="research.settings.terms_confirmed"
-                      outlined
-                      label="I reviewed the API/data-use terms and confirmed this project's permitted free-tier use."
-                    />
-                  </div>
-                  <button class="ws-button" :disabled="researchBusy || researchLoading">Save research limits</button>
-                </form>
-                </div></div>
-                </details>
-              </article>
-              <details class="research-run-section research-run-detail">
-                <summary>Vetted discovery sources<SiteIcon name="down" :size="14" /></summary>
-                <div class="research-run-detail__content"><div class="research-run-detail__inner">
-                <form class="ws-actions" @submit.prevent="sourceOffset = 0; jobOffset = 0; loadResearch()">
-                  <label class="ws-field">Find source by ID<input v-model="sourceFilter" placeholder="Registry or target source ID" /></label>
-                  <button class="ws-button">Filter sources</button>
-                </form>
-                <div v-for="source in research.sources" :key="source.id" class="job-row">
-                  <a :href="source.url" target="_blank" rel="noopener noreferrer">{{
-                    source.url
-                  }}</a
-                  ><span class="ws-chip">{{ source.enabled ? 'Enabled' : 'Disabled' }}</span
-                  ><button
-                    v-if="data.member.role === 'admin'"
-                    class="ws-button"
-                    @click="openSource(source)"
-                  >
-                    Review source
-                  </button>
-                </div>
-                <p v-if="!research.sources.length" class="ws-muted">
-                  No vetted sources enabled. An administrator must configure sources before jobs can
-                  run.
-                </p>
-                <div v-if="research.pagination" class="ws-actions">
-                  <button class="ws-button" :disabled="sourceOffset === 0" @click="sourceOffset = Math.max(0, sourceOffset - 40); loadResearch()">Previous sources</button>
-                  <span class="ws-muted">{{ research.sources.length ? sourceOffset + 1 : 0 }}–{{ sourceOffset + research.sources.length }} of {{ research.pagination.sourceTotal }}</span>
-                  <button class="ws-button" :disabled="sourceOffset + research.sources.length >= research.pagination.sourceTotal" @click="sourceOffset += 40; loadResearch()">Next sources</button>
-                </div>
-                <Transition name="ws-content"
-                  ><form v-if="editingSource" class="send-confirm" @submit.prevent="saveSource">
-                    <h3>Review research-only excerpt</h3>
-                    <a
-                      class="ws-button"
-                      :href="research.sources.find((s: any) => s.id === editingSource)?.url"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      >Compare with official source<SiteIcon name="arrow" :size="14"
-                    /></a>
-                    <p class="ws-muted">
-                      Only a reviewed public research excerpt may enter optional AI analysis. Remove
-                      emails, phone numbers, student names/IDs, and any private or sensitive
-                      information. Confirm the excerpt matches the acquired source.
+              <div
+                id="workspace-research-runs"
+                class="research-runs-disclosure"
+                :class="{ 'is-open': researchExpanded }"
+                :inert="!researchExpanded"
+                :aria-hidden="!researchExpanded"
+              >
+                <div class="research-runs-clip">
+                  <div class="research-runs-body">
+                    <p class="ws-muted research-runs-intro">
+                      Monday, Wednesday & Friday at 16:00 UTC. Research gathers evidence; every
+                      email still needs your approval.
                     </p>
-                    <label class="ws-field"
-                      >Public research excerpt<textarea
-                        v-model="sourceForm.aiExcerpt"
-                        @input="sourceForm.aiReviewed = false"
-                        maxlength="12000"
-                      />
-                    </label>
-                    <div class="consent">
-                      <AnimatedCheckbox
-                        v-model="sourceForm.enabled"
-                        outlined
-                        label="Enable this vetted discovery source."
-                      />
+                    <div v-if="researchError" role="alert" class="ws-alert ws-error">
+                      {{ researchError }}
                     </div>
-                    <div class="consent">
-                      <AnimatedCheckbox
-                        v-model="sourceForm.aiReviewed"
-                        outlined
-                        label="I reviewed this excerpt for source accuracy and absence of personal information."
-                      />
+                    <Transition name="research-action"
+                      ><p
+                        v-if="researchActionMessage"
+                        class="research-action-status"
+                        :class="`research-action-status--${researchActionState}`"
+                        role="status"
+                      >
+                        <span class="research-action-status__orb" aria-hidden="true" />{{
+                          researchActionMessage
+                        }}
+                      </p></Transition
+                    >
+                    <div v-if="research" class="research-run-sections">
+                      <article class="research-run-section">
+                        <div class="section-top">
+                          <h3>Schedule & analysis</h3>
+                          <span class="ws-chip">{{
+                            research.settings.paused ? 'Paused' : 'Scheduled'
+                          }}</span>
+                        </div>
+                        <p class="ws-muted">{{ research.health.note }}</p>
+                        <p class="ws-muted">
+                          Free-only AI access. Jobs pause on quota limits; no paid fallback.
+                          Research uses public professional information, never private member or
+                          mailbox content.
+                        </p>
+                        <div class="ws-actions">
+                          <button
+                            class="ws-button ws-button--primary"
+                            :disabled="researchBusy || researchLoading || research.settings.paused"
+                            @click="researchAction('run')"
+                          >
+                            Queue a research run</button
+                          ><button
+                            v-if="data.member.role === 'admin'"
+                            class="ws-button"
+                            :disabled="researchBusy || researchLoading"
+                            @click="researchAction(research.settings.paused ? 'resume' : 'pause')"
+                          >
+                            {{
+                              research.settings.paused ? 'Resume scheduling' : 'Pause scheduling'
+                            }}
+                          </button>
+                        </div>
+                        <details v-if="data.member.role === 'admin'" class="research-run-detail">
+                          <summary>
+                            Limits & Gemini settings<SiteIcon name="down" :size="14" />
+                          </summary>
+                          <div class="research-run-detail__content">
+                            <div class="research-run-detail__inner">
+                              <form
+                                class="research-config"
+                                @submit.prevent="researchAction('settings')"
+                              >
+                                <div class="ws-grid">
+                                  <label class="ws-field"
+                                    >Maximum new leads / week<input
+                                      v-model.number="research.settings.weekly_limit"
+                                      type="number"
+                                      min="1"
+                                      max="100"
+                                      required /></label
+                                  ><label class="ws-field"
+                                    >Maximum leads / run<input
+                                      v-model.number="research.settings.batch_limit"
+                                      type="number"
+                                      min="1"
+                                      max="15"
+                                      required /></label
+                                  ><label class="ws-field"
+                                    >Unreviewed queue ceiling<input
+                                      v-model.number="research.settings.queue_limit"
+                                      type="number"
+                                      min="1"
+                                      max="250"
+                                      required /></label
+                                  ><label class="ws-field"
+                                    >Concurrent research tasks<input
+                                      v-model.number="research.settings.concurrency"
+                                      type="number"
+                                      min="1"
+                                      max="2"
+                                      required
+                                  /></label>
+                                </div>
+                                <div class="consent">
+                                  <AnimatedCheckbox
+                                    v-model="research.settings.ai_enabled"
+                                    outlined
+                                    label="Enable optional Gemini analysis on eligible public sources."
+                                  />
+                                </div>
+                                <div class="consent">
+                                  <AnimatedCheckbox
+                                    v-model="research.settings.terms_confirmed"
+                                    outlined
+                                    label="I reviewed the API/data-use terms and confirmed this project's permitted free-tier use."
+                                  />
+                                </div>
+                                <button
+                                  class="ws-button"
+                                  :disabled="researchBusy || researchLoading"
+                                >
+                                  Save research limits
+                                </button>
+                              </form>
+                            </div>
+                          </div>
+                        </details>
+                      </article>
+                      <details class="research-run-section research-run-detail">
+                        <summary>
+                          Vetted discovery sources<SiteIcon name="down" :size="14" />
+                        </summary>
+                        <div class="research-run-detail__content">
+                          <div class="research-run-detail__inner">
+                            <form
+                              class="ws-actions"
+                              @submit.prevent="
+                                sourceOffset = 0
+                                jobOffset = 0
+                                loadResearch()
+                              "
+                            >
+                              <label class="ws-field"
+                                >Find source by ID<input
+                                  v-model="sourceFilter"
+                                  placeholder="Registry or target source ID"
+                              /></label>
+                              <button class="ws-button">Filter sources</button>
+                            </form>
+                            <div
+                              v-for="source in research.sources"
+                              :key="source.id"
+                              class="job-row"
+                            >
+                              <a :href="source.url" target="_blank" rel="noopener noreferrer">{{
+                                source.url
+                              }}</a
+                              ><span class="ws-chip">{{
+                                source.enabled ? 'Enabled' : 'Disabled'
+                              }}</span
+                              ><button
+                                v-if="data.member.role === 'admin'"
+                                class="ws-button"
+                                @click="openSource(source)"
+                              >
+                                Review source
+                              </button>
+                            </div>
+                            <p v-if="!research.sources.length" class="ws-muted">
+                              No vetted sources enabled. An administrator must configure sources
+                              before jobs can run.
+                            </p>
+                            <div v-if="research.pagination" class="ws-actions">
+                              <button
+                                class="ws-button"
+                                :disabled="sourceOffset === 0"
+                                @click="
+                                  sourceOffset = Math.max(0, sourceOffset - 40)
+                                  loadResearch()
+                                "
+                              >
+                                Previous sources
+                              </button>
+                              <span class="ws-muted"
+                                >{{ research.sources.length ? sourceOffset + 1 : 0 }}–{{
+                                  sourceOffset + research.sources.length
+                                }}
+                                of {{ research.pagination.sourceTotal }}</span
+                              >
+                              <button
+                                class="ws-button"
+                                :disabled="
+                                  sourceOffset + research.sources.length >=
+                                  research.pagination.sourceTotal
+                                "
+                                @click="
+                                  sourceOffset += 40
+                                  loadResearch()
+                                "
+                              >
+                                Next sources
+                              </button>
+                            </div>
+                            <Transition name="ws-content"
+                              ><form
+                                v-if="editingSource"
+                                class="send-confirm"
+                                @submit.prevent="saveSource"
+                              >
+                                <h3>Review research-only excerpt</h3>
+                                <a
+                                  class="ws-button"
+                                  :href="
+                                    research.sources.find((s: any) => s.id === editingSource)?.url
+                                  "
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  >Compare with official source<SiteIcon name="arrow" :size="14"
+                                /></a>
+                                <p class="ws-muted">
+                                  Only a reviewed public research excerpt may enter optional AI
+                                  analysis. Remove emails, phone numbers, student names/IDs, and any
+                                  private or sensitive information. Confirm the excerpt matches the
+                                  acquired source.
+                                </p>
+                                <label class="ws-field"
+                                  >Public research excerpt<textarea
+                                    v-model="sourceForm.aiExcerpt"
+                                    @input="sourceForm.aiReviewed = false"
+                                    maxlength="12000"
+                                  />
+                                </label>
+                                <div class="consent">
+                                  <AnimatedCheckbox
+                                    v-model="sourceForm.enabled"
+                                    outlined
+                                    label="Enable this vetted discovery source."
+                                  />
+                                </div>
+                                <div class="consent">
+                                  <AnimatedCheckbox
+                                    v-model="sourceForm.aiReviewed"
+                                    outlined
+                                    label="I reviewed this excerpt for source accuracy and absence of personal information."
+                                  />
+                                </div>
+                                <div class="ws-actions">
+                                  <button
+                                    class="ws-button ws-button--primary"
+                                    :disabled="researchBusy || researchLoading"
+                                  >
+                                    Save source review</button
+                                  ><button
+                                    type="button"
+                                    class="ws-button"
+                                    @click="editingSource = ''"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              </form></Transition
+                            >
+                          </div>
+                        </div>
+                      </details>
+                      <details class="research-run-section research-run-detail">
+                        <summary>Recent jobs<SiteIcon name="down" :size="14" /></summary>
+                        <div class="research-run-detail__content">
+                          <div class="research-run-detail__inner">
+                            <p class="ws-muted">
+                              {{
+                                research.health?.stages?.filter(
+                                  (s: any) => s.status === 'waiting_quota',
+                                ).length || 0
+                              }}
+                              recent stages waiting for quota. Completed evidence is reused on
+                              retry.
+                            </p>
+                            <p v-if="research.health?.usage" class="ws-muted">
+                              Today's reserved usage:
+                              {{ research.health.usage.source_requests }} source requests,
+                              {{ research.health.usage.source_bytes }} bytes,
+                              {{ research.health.usage.model_requests }} model requests and
+                              {{ research.health.usage.model_tokens }} tokens. Reservations include
+                              unknown-cost interrupted calls.
+                            </p>
+                            <p class="ws-muted">
+                              {{
+                                research.health?.coverage?.filter((s: any) => s.enabled).length || 0
+                              }}
+                              enabled sources in the displayed coverage inventory{{
+                                research.health?.coveragePartial ? ' (partial)' : ''
+                              }}. Coverage is bounded; current openings still require review.
+                            </p>
+                            <div v-for="job in research.jobs" :key="job.id" class="job-row">
+                              <div>
+                                <strong>{{ job.kind || 'Discovery' }}</strong
+                                ><small>{{ job.created_at || job.createdAt }}</small>
+                                <p v-if="job.error" class="ws-muted">{{ job.error }}</p>
+                              </div>
+                              <span class="ws-chip">{{
+                                job.failure_kind === 'quota_wait' ? 'Waiting for quota' : job.status
+                              }}</span>
+                              <button
+                                v-if="data.member.role === 'admin' && job.status === 'failed'"
+                                class="ws-button"
+                                :disabled="researchBusy || researchLoading"
+                                @click="retryResearchJob(job.id)"
+                              >
+                                Retry stage
+                              </button>
+                            </div>
+                            <div v-if="research.pagination" class="ws-actions">
+                              <button
+                                class="ws-button"
+                                :disabled="jobOffset === 0"
+                                @click="
+                                  jobOffset = Math.max(0, jobOffset - 40)
+                                  loadResearch()
+                                "
+                              >
+                                Previous jobs
+                              </button>
+                              <button
+                                class="ws-button"
+                                :disabled="
+                                  jobOffset + research.jobs.length >= research.pagination.jobTotal
+                                "
+                                @click="
+                                  jobOffset += 40
+                                  loadResearch()
+                                "
+                              >
+                                Next jobs
+                              </button>
+                            </div>
+                            <p v-if="!research.jobs.length" class="ws-muted">
+                              No research runs yet. Jobs will appear here after an approved source
+                              is queued.
+                            </p>
+                          </div>
+                        </div>
+                      </details>
                     </div>
-                    <div class="ws-actions">
-                      <button class="ws-button ws-button--primary" :disabled="researchBusy || researchLoading">
-                        Save source review</button
-                      ><button type="button" class="ws-button" @click="editingSource = ''">
-                        Cancel
+                    <div v-else class="ws-empty" role="status">
+                      {{
+                        researchLoading
+                          ? 'Loading research controls…'
+                          : 'Research controls unavailable.'
+                      }}<button v-if="!researchLoading" class="ws-button" @click="loadResearch">
+                        Try again
                       </button>
                     </div>
-                  </form></Transition
-                >
-                </div></div>
-              </details>
-              <details class="research-run-section research-run-detail">
-                <summary>Recent jobs<SiteIcon name="down" :size="14" /></summary>
-                <div class="research-run-detail__content"><div class="research-run-detail__inner">
-                <p class="ws-muted">{{ research.health?.stages?.filter((s:any)=>s.status==='waiting_quota').length || 0 }} recent stages waiting for quota. Completed evidence is reused on retry.</p>
-                <p v-if="research.health?.usage" class="ws-muted">Today's reserved usage: {{ research.health.usage.source_requests }} source requests, {{ research.health.usage.source_bytes }} bytes, {{ research.health.usage.model_requests }} model requests and {{ research.health.usage.model_tokens }} tokens. Reservations include unknown-cost interrupted calls.</p>
-                <p class="ws-muted">{{ research.health?.coverage?.filter((s:any)=>s.enabled).length || 0 }} enabled sources in the displayed coverage inventory{{ research.health?.coveragePartial ? ' (partial)' : '' }}. Coverage is bounded; current openings still require review.</p>
-                <div v-for="job in research.jobs" :key="job.id" class="job-row">
-                  <div>
-                    <strong>{{ job.kind || 'Discovery' }}</strong
-                    ><small>{{ job.created_at || job.createdAt }}</small>
-                    <p v-if="job.error" class="ws-muted">{{ job.error }}</p>
                   </div>
-                  <span class="ws-chip">{{ job.failure_kind === 'quota_wait' ? 'Waiting for quota' : job.status }}</span>
-                  <button v-if="data.member.role === 'admin' && job.status === 'failed'" class="ws-button" :disabled="researchBusy || researchLoading" @click="retryResearchJob(job.id)">Retry stage</button>
                 </div>
-                <div v-if="research.pagination" class="ws-actions">
-                  <button class="ws-button" :disabled="jobOffset === 0" @click="jobOffset = Math.max(0, jobOffset - 40); loadResearch()">Previous jobs</button>
-                  <button class="ws-button" :disabled="jobOffset + research.jobs.length >= research.pagination.jobTotal" @click="jobOffset += 40; loadResearch()">Next jobs</button>
-                </div>
-                <p v-if="!research.jobs.length" class="ws-muted">
-                  No research runs yet. Jobs will appear here after an approved source is queued.
-                </p>
-                </div></div>
-              </details>
-            </div>
-                  <div v-else class="ws-empty" role="status">{{ researchLoading ? 'Loading research controls…' : 'Research controls unavailable.' }}<button v-if="!researchLoading" class="ws-button" @click="loadResearch">Try again</button></div>
-                </div></div>
               </div>
             </section>
             <div class="queue-tools">
@@ -1319,7 +1717,9 @@ onMounted(async () => {
                   </p>
                   <div class="candidate-bottom">
                     <span>{{ target.location || 'Location unverified' }}</span
-                    ><span class="candidate-review">Review dossier <SiteIcon name="right" :size="12" /></span>
+                    ><span class="candidate-review"
+                      >Review dossier <SiteIcon name="right" :size="12"
+                    /></span>
                   </div>
                 </button>
                 <div v-if="!targets.length" class="ws-empty">
@@ -1352,7 +1752,11 @@ onMounted(async () => {
                     <span v-for="d in selected.disciplines" :key="d" class="ws-chip">{{ d }}</span>
                   </div>
                   <div class="ws-divider" />
-                  <p class="ws-muted dossier-note">Review the evidence and choose a clear first ask. After an email is accepted, this candidate leaves the active queue; future outcomes are recorded with the sent message rather than tracked as a separate relationship workspace.</p>
+                  <p class="ws-muted dossier-note">
+                    Review the evidence and choose a clear first ask. After an email is accepted,
+                    this candidate leaves the active queue; future outcomes are recorded with the
+                    sent message rather than tracked as a separate relationship workspace.
+                  </p>
                   <h3>What they work on</h3>
                   <p class="ws-muted preserve">
                     {{ selected.dossier.research || selected.description }}
@@ -1372,7 +1776,11 @@ onMounted(async () => {
                     }}
                   </p>
                   <section
-                    v-if="selected.assessment.rationale || queueSignals.length || selected.assessment.blockers?.length"
+                    v-if="
+                      selected.assessment.rationale ||
+                      queueSignals.length ||
+                      selected.assessment.blockers?.length
+                    "
                     class="assessment"
                     aria-labelledby="queue-rationale-title"
                   >
@@ -1381,13 +1789,19 @@ onMounted(async () => {
                         <p class="ws-kicker">Review signal</p>
                         <h3 id="queue-rationale-title">Why it is in the queue</h3>
                       </div>
-                      <span class="ws-chip">{{ selected.assessment.confidence || 'low' }} confidence</span>
+                      <span class="ws-chip"
+                        >{{ selected.assessment.confidence || 'low' }} confidence</span
+                      >
                     </div>
                     <p v-if="selected.assessment.rationale" class="ws-muted assessment-rationale">
                       {{ selected.assessment.rationale }}
                     </p>
                     <div v-if="queueSignals.length" class="assessment-signals">
-                      <div v-for="signal in queueSignals" :key="signal.label" class="assessment-signal">
+                      <div
+                        v-for="signal in queueSignals"
+                        :key="signal.label"
+                        class="assessment-signal"
+                      >
                         <span>{{ signal.label }}</span>
                         <strong>{{ signal.value }}/5</strong>
                       </div>
@@ -1452,13 +1866,16 @@ onMounted(async () => {
                           <h3>Research suggestions</h3>
                         </div>
                         <span class="ws-chip">
-                          {{ acquisition.publicAnalysis.quality
-                            ? `${acquisition.publicAnalysis.quality.score}/${acquisition.publicAnalysis.quality.maxScore} · ${acquisition.publicAnalysis.quality.disposition.replace('_', ' ')}`
-                            : 'Review required' }}
+                          {{
+                            acquisition.publicAnalysis.quality
+                              ? `${acquisition.publicAnalysis.quality.score}/${acquisition.publicAnalysis.quality.maxScore} · ${acquisition.publicAnalysis.quality.disposition.replace('_', ' ')}`
+                              : 'Review required'
+                          }}
                         </span>
                       </div>
                       <p class="ws-muted analysis-note">
-                        These are source-backed prompts for officer review. They do not establish a lab need, invitation, authorship, or availability.
+                        These are source-backed prompts for officer review. They do not establish a
+                        lab need, invitation, authorship, or availability.
                       </p>
                       <div class="ws-actions">
                         <span
@@ -1468,16 +1885,30 @@ onMounted(async () => {
                           >{{ theme }}</span
                         >
                       </div>
-                      <ul v-if="acquisition.publicAnalysis.researchSignals?.length" class="analysis-list">
-                        <li v-for="signal in acquisition.publicAnalysis.researchSignals" :key="signal.quote">
+                      <ul
+                        v-if="acquisition.publicAnalysis.researchSignals?.length"
+                        class="analysis-list"
+                      >
+                        <li
+                          v-for="signal in acquisition.publicAnalysis.researchSignals"
+                          :key="signal.quote"
+                        >
                           <strong>{{ signal.claim }}</strong>
                           <blockquote>{{ signal.quote }}</blockquote>
                         </li>
                       </ul>
-                      <div v-if="acquisition.publicAnalysis.accessSignals?.length" class="analysis-subsection">
+                      <div
+                        v-if="acquisition.publicAnalysis.accessSignals?.length"
+                        class="analysis-subsection"
+                      >
                         <p class="ws-kicker">Access signals</p>
                         <ul class="analysis-list">
-                          <li v-for="signal in acquisition.publicAnalysis.accessSignals" :key="signal">{{ signal }}</li>
+                          <li
+                            v-for="signal in acquisition.publicAnalysis.accessSignals"
+                            :key="signal"
+                          >
+                            {{ signal }}
+                          </li>
                         </ul>
                       </div>
                       <article
@@ -1488,39 +1919,82 @@ onMounted(async () => {
                         <div class="sample-heading">
                           <h3>{{ option.title }}</h3>
                           <a
-                            v-if="option.sourceUrl || sourceUrlForQuote(option.evidenceQuote || option.quote)"
-                            :href="option.sourceUrl || sourceUrlForQuote(option.evidenceQuote || option.quote)"
+                            v-if="
+                              option.sourceUrl ||
+                              sourceUrlForQuote(option.evidenceQuote || option.quote)
+                            "
+                            :href="
+                              option.sourceUrl ||
+                              sourceUrlForQuote(option.evidenceQuote || option.quote)
+                            "
                             target="_blank"
                             rel="noopener noreferrer"
                             class="source-pill"
-                          >Source <SiteIcon name="arrow" :size="12" /></a>
+                            >Source <SiteIcon name="arrow" :size="12"
+                          /></a>
                         </div>
                         <ul class="analysis-list">
-                          <li v-if="option.whyThisMatters"><strong>Why it matters:</strong> {{ option.whyThisMatters }}</li>
+                          <li v-if="option.whyThisMatters">
+                            <strong>Why it matters:</strong> {{ option.whyThisMatters }}
+                          </li>
                           <li><strong>Small task:</strong> {{ option.task }}</li>
                           <li><strong>Deliverable:</strong> {{ option.deliverable }}</li>
-                          <li v-if="option.recipientAsk"><strong>Ask:</strong> {{ option.recipientAsk }}</li>
+                          <li v-if="option.recipientAsk">
+                            <strong>Ask:</strong> {{ option.recipientAsk }}
+                          </li>
                         </ul>
                         <blockquote>{{ option.evidenceQuote || option.quote }}</blockquote>
-                        <ul v-if="option.constraints?.length || option.supervisionQuestions.length" class="analysis-list analysis-list--muted">
-                          <li v-for="constraint in option.constraints?.length ? option.constraints : option.supervisionQuestions" :key="constraint">{{ constraint }}</li>
+                        <ul
+                          v-if="option.constraints?.length || option.supervisionQuestions.length"
+                          class="analysis-list analysis-list--muted"
+                        >
+                          <li
+                            v-for="constraint in option.constraints?.length
+                              ? option.constraints
+                              : option.supervisionQuestions"
+                            :key="constraint"
+                          >
+                            {{ constraint }}
+                          </li>
                         </ul>
                       </article>
-                      <div v-if="acquisition.publicAnalysis.relatedLinks?.length" class="analysis-subsection">
+                      <div
+                        v-if="acquisition.publicAnalysis.relatedLinks?.length"
+                        class="analysis-subsection"
+                      >
                         <p class="ws-kicker">Related research</p>
                         <div class="analysis-links">
-                          <a v-for="link in acquisition.publicAnalysis.relatedLinks" :key="link.canonical_url" :href="link.canonical_url" target="_blank" rel="noopener noreferrer" class="evidence">
-                            <span>{{ link.name }}</span><SiteIcon name="arrow" :size="13" />
+                          <a
+                            v-for="link in acquisition.publicAnalysis.relatedLinks"
+                            :key="link.canonical_url"
+                            :href="link.canonical_url"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="evidence"
+                          >
+                            <span>{{ link.name }}</span
+                            ><SiteIcon name="arrow" :size="13" />
                           </a>
                         </div>
                       </div>
-                      <ul v-if="acquisition.publicAnalysis.unknowns.length" class="analysis-list analysis-list--muted">
+                      <ul
+                        v-if="acquisition.publicAnalysis.unknowns.length"
+                        class="analysis-list analysis-list--muted"
+                      >
                         <li v-for="unknown in acquisition.publicAnalysis.unknowns" :key="unknown">
                           {{ unknown }}
                         </li>
                       </ul>
-                      <ul v-if="acquisition.publicAnalysis.quality?.missing.length" class="analysis-list analysis-list--muted">
-                        <li v-for="missing in acquisition.publicAnalysis.quality.missing" :key="missing">Review gap: {{ missing }}</li>
+                      <ul
+                        v-if="acquisition.publicAnalysis.quality?.missing.length"
+                        class="analysis-list analysis-list--muted"
+                      >
+                        <li
+                          v-for="missing in acquisition.publicAnalysis.quality.missing"
+                          :key="missing"
+                        >
+                          Review gap: {{ missing }}
+                        </li>
                       </ul>
                     </div>
                   </details>
@@ -1546,14 +2020,41 @@ onMounted(async () => {
                   /></a>
                   <div class="ws-divider" />
                   <OutreachMessagePlan
-                    v-if="canDiscover" :key="selected.id" :target="selected"
-                    v-model:scope="scope" v-model:profile-id="profileId" v-model:project-id="selectedProjectId" v-model:angle="selectedContribution"
-                    :profiles="sharedProfiles" :projects="projectChoices" :angles="contributionChoices" :match="matchPreview"
-                    :planning="planningBusy" :creating="creatingMessageDraft" :busy="busy" :projects-loading="projectsLoading"
-                    :profile-error="sharedProfilesError" :project-error="projectsError" :plan-error="planningError" :officers="officers"
-                    :more-profiles="sharedProfiles.length < sharedProfileTotal" :profiles-loading="sharedProfilesLoading" :draft-created="Boolean(createdMessageDraftId)"
-                    @preview="previewMatch" @draft="plan" @edit="openTarget(selected)" @ready="selectedDecision = 'ready'; updateSelectedStatus()"
-                    @retry-profiles="loadSharedProfiles" @retry-projects="loadProjects" @more-profiles="sharedProfilePage++; loadSharedProfiles()"
+                    v-if="canDiscover"
+                    :key="selected.id"
+                    :target="selected"
+                    v-model:scope="scope"
+                    v-model:profile-id="profileId"
+                    v-model:project-id="selectedProjectId"
+                    v-model:angle="selectedContribution"
+                    :profiles="sharedProfiles"
+                    :projects="projectChoices"
+                    :angles="contributionChoices"
+                    :match="matchPreview"
+                    :planning="planningBusy"
+                    :creating="creatingMessageDraft"
+                    :busy="busy"
+                    :projects-loading="projectsLoading"
+                    :profile-error="sharedProfilesError"
+                    :project-error="projectsError"
+                    :plan-error="planningError"
+                    :officers="officers"
+                    :more-profiles="sharedProfiles.length < sharedProfileTotal"
+                    :profiles-loading="sharedProfilesLoading"
+                    :draft-created="Boolean(createdMessageDraftId)"
+                    @preview="previewMatch"
+                    @draft="plan"
+                    @edit="openTarget(selected)"
+                    @ready="
+                      selectedDecision = 'ready'
+                      updateSelectedStatus()
+                    "
+                    @retry-profiles="loadSharedProfiles"
+                    @retry-projects="loadProjects"
+                    @more-profiles="
+                      sharedProfilePage++
+                      loadSharedProfiles()
+                    "
                   />
                   <CandidateRefinementForm
                     v-if="canDiscover && editTarget && targetForm.id === selected.id"
@@ -1567,9 +2068,23 @@ onMounted(async () => {
                     <div class="research-status-action research-status-action--primary">
                       <div>
                         <p class="ws-kicker">Queue stage</p>
-                        <ThemedSelect v-model="selectedDecision" label="Move candidate" :options="[{value:'ready',label:'Keep active'},{value:'deferred',label:'For later'},{value:'rejected',label:'Not viable'}]" />
+                        <ThemedSelect
+                          v-model="selectedDecision"
+                          label="Move candidate"
+                          :options="[
+                            { value: 'ready', label: 'Keep active' },
+                            { value: 'deferred', label: 'For later' },
+                            { value: 'rejected', label: 'Not viable' },
+                          ]"
+                        />
                       </div>
-                      <button class="ws-button ws-button--primary" :disabled="busy" @click="updateSelectedStatus">Move candidate</button>
+                      <button
+                        class="ws-button ws-button--primary"
+                        :disabled="busy"
+                        @click="updateSelectedStatus"
+                      >
+                        Move candidate
+                      </button>
                     </div>
                     <details class="research-more-actions">
                       <summary>More candidate actions</summary>
@@ -1579,300 +2094,418 @@ onMounted(async () => {
                 </article>
                 <div v-else class="ws-empty dossier-empty">
                   <SiteIcon name="compass" :size="32" />
-                  <p>
-                    Choose a candidate to review its evidence and shape one clear next step.
-                  </p>
+                  <p>Choose a candidate to review its evidence and shape one clear next step.</p>
                 </div></Transition
               >
             </div>
-          <section v-if="canDiscover" class="outreach-draft-workspace"><div class="section-top">
-              <div>
-                <h2>Messages to review</h2>
+            <section v-if="canDiscover" class="outreach-draft-workspace">
+              <div class="section-top">
+                <div>
+                  <h2>Messages to review</h2>
+                </div>
+                <span class="ws-chip">Every send requires your approval</span>
               </div>
-              <span class="ws-chip">Every send requires your approval</span>
-            </div>
-            <div class="messages-review-surface">
-            <div class="queue-layout message-review-layout">
-              <div class="candidate-list message-list-panel">
-                <button
-                  v-for="p in visibleProposals"
-                  :key="p.id"
-                  class="candidate"
-                  :class="{ selected: p.id === proposalId }"
-                  :aria-label="`Review draft: ${p.subject}`"
-                  @click="openProposal(p)"
-                >
-                  <span class="ws-chip">{{ p.status }} · revision {{ p.revision }}</span>
-                  <h3 class="draft-title">{{ p.subject }}</h3>
-                  <p>{{ p.recipient }}</p>
-                  <small class="ws-muted">{{
-                    data.targets.find((t) => t.id === p.targetId)?.name
-                  }}</small>
-                </button>
-                <div v-if="!visibleProposals.length" class="ws-empty">
-                  Select a candidate in Outreach and shape a proposal. Nothing is sent
-                  automatically.
-                </div>
-              </div>
-              <form v-if="proposal" class="ws-panel message-editor-panel" @submit.prevent="saveDraft">
-                <h2>Review your inquiry</h2>
-                <p class="ws-muted">
-                  To
-                  {{
-                    data.targets.find((t) => t.id === proposal?.targetId)?.name || 'selected target'
-                  }}
-                  ·
-                  {{
-                    proposal.kind === 'society'
-                      ? 'Matrix Fellows'
-                      : sharedProfiles.find((p) => p.profileId === proposal?.profileId)?.displayName ||
-                        data.profiles.find((p) => p.id === proposal?.profileId)?.fullName ||
-                        'Represented member'
-                  }}
-                </p>
-                <p class="ws-muted">
-                  Verify personalizations, narrow the ask, and remove claims you cannot demonstrate.
-                  Editing invalidates approval.
-                </p>
-                <details class="sample">
-                  <summary>Evidence for this inquiry</summary>
-                  <a
-                    v-for="source in data.targets.find((t) => t.id === proposal?.targetId)?.dossier
-                      .evidence || []"
-                    :key="source.url + source.claim"
-                    class="evidence"
-                    :href="source.url"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    ><span>{{ source.claim }}</span
-                    ><small
-                      >{{ source.confidence }} · {{ source.retrievedAt.slice(0, 10) }}</small
-                    ></a
+              <div class="messages-review-surface">
+                <div class="queue-layout message-review-layout">
+                  <div class="candidate-list message-list-panel">
+                    <button
+                      v-for="p in visibleProposals"
+                      :key="p.id"
+                      class="candidate"
+                      :class="{ selected: p.id === proposalId }"
+                      :aria-label="`Review draft: ${p.subject}`"
+                      @click="openProposal(p)"
+                    >
+                      <span class="ws-chip">{{ p.status }} · revision {{ p.revision }}</span>
+                      <h3 class="draft-title">{{ p.subject }}</h3>
+                      <p>{{ p.recipient }}</p>
+                      <small class="ws-muted">{{
+                        data.targets.find((t) => t.id === p.targetId)?.name
+                      }}</small>
+                    </button>
+                    <div v-if="!visibleProposals.length" class="ws-empty">
+                      Select a candidate in Outreach and shape a proposal. Nothing is sent
+                      automatically.
+                    </div>
+                  </div>
+                  <form
+                    v-if="proposal"
+                    class="ws-panel message-editor-panel"
+                    @submit.prevent="saveDraft"
                   >
-                  <a
-                    v-for="sample in data.profiles.find((p) => p.id === proposal?.profileId)
-                      ?.workSamples || []"
-                    :key="sample.url"
-                    class="evidence"
-                    :href="sample.url"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    ><span>{{ sample.title }} · {{ sample.contribution }}</span
-                    ><small>Your member-supplied contribution; review before using it.</small></a
-                  >
-                </details>
-                <p v-if="draftSaveState" role="status" class="ws-muted">{{ draftSaveState }}</p>
-                <div class="ws-actions">
-                  <button type="button" class="ws-button" @click="copyDraft">Copy draft</button>
-                  <button type="button" class="ws-button" @click="loadRevisions">
-                    Revision history
-                  </button>
-                </div>
-                <details v-for="revision in revisions" :key="revision.revision" class="sample">
-                  <summary>
-                    Revision {{ revision.revision }} · {{ revision.created_at.slice(0, 10) }}
-                  </summary>
-                  <h3>{{ revision.subject }}</h3>
-                  <p class="preserve ws-muted">{{ revision.body }}</p>
-                </details>
-                <div class="ws-actions" v-if="proposal.status !== 'sent'">
-                  <button type="button" class="ws-button" :disabled="changed || revising" @click="proposeRevision('shorten')">Shorten</button>
-                  <button type="button" class="ws-button" :disabled="changed || revising" @click="proposeRevision('smaller_ask')">Make the ask smaller</button>
-                  <button type="button" class="ws-button" :disabled="changed || revising" @click="proposeRevision('direct')">Make it more direct</button>
-                </div>
-                <section v-if="revisionPreview" class="send-confirm" aria-label="Proposed revision preview">
-                  <h3>Proposed local edit</h3>
-                  <p v-for="message in revisionPreview.notices" :key="message" class="ws-muted">{{ message }}</p>
-                  <details><summary>Current message</summary><p class="preserve">{{ draft.body }}</p></details>
-                  <p class="preserve">{{ revisionPreview.body }}</p>
-                  <p v-if="!revisionCanApply" class="ws-muted">Your draft changed while this suggestion was prepared. Request a new preview to preserve your edits.</p>
-                  <button type="button" class="ws-button" :disabled="!revisionCanApply" @click="applyRevisionPreview">Use proposed edit</button>
-                  <button type="button" class="ws-button" @click="revisionPreview = null">Keep current text</button>
-                </section>
-                <details v-if="proposal.proposalPlan" class="sample">
-                  <summary>Selected plan and factual supports</summary>
-                  <p>{{ proposal.proposalPlan.connection }}</p>
-                  <p class="ws-muted">{{ proposal.proposalPlan.provenance === 'reviewed-model-analysis' ? 'Local draft informed by reviewed Gemini analysis' : 'Local evidence-based draft' }}</p>
-                  <p v-for="issue in proposal.proposalPlan.reviewIssues" :key="issue" class="ws-muted">{{ issue }}</p>
-                  <article v-for="support in proposal.proposalPlan.sentenceSupports" :key="support.sentence">
-                    <p>{{ support.sentence }}</p><small class="ws-muted">{{ support.classification }}</small>
-                    <a v-for="source in support.sources" :key="source.url + source.quote" :href="source.url" target="_blank" rel="noopener noreferrer">Source: {{ source.quote }}</a>
-                    <button v-for="claim in support.claimIds" :key="claim" type="button" class="ws-button" :disabled="changed || revising || proposal.status === 'sent'" @click="proposeRevision('remove_claim', claim)">Remove this claim</button>
-                  </article>
-                </details>
-                <details v-if="proposal.status !== 'sent'" class="sample"><summary>Hand this draft to an appointed officer</summary>
-                  <ThemedSelect v-model="handoffOwner" label="New draft owner" :options="[{value:'',label:'Choose an active officer'},...officers.map(o=>({value:o.id,label:o.label}))]" />
-                  <p class="ws-muted">Original authorship remains. Mailbox authorization never transfers.</p>
-                  <button type="button" class="ws-button" :disabled="changed || busy || !handoffOwner" @click="handoffDraft">Hand off draft</button>
-                </details>
-                <div class="ws-divider" />
-                <label class="ws-field"
-                  >Recipient<input
-                    v-model="draft.recipient"
-                    type="email"
-                    required
-                    :disabled="proposal.status === 'sent'"
-                /></label>
-                <div class="ws-field mailbox-field">
-                  <span>Send from your connected mailbox</span
-                  ><ThemedSelect
-                    v-model="draft.mailboxId"
-                    label="Send from your connected mailbox"
-                    :options="[
-                      { value: '', label: 'Choose a mailbox' },
-                      ...data.mailboxes
-                        .filter((m) => m.enabled)
-                        .map((m) => ({ value: m.id, label: m.email })),
-                    ]"
-                  />
-                </div>
-                <label class="ws-field"
-                  >Subject<input
-                    v-model="draft.subject"
-                    required
-                    maxlength="240"
-                    :disabled="proposal.status === 'sent'" /></label
-                ><label class="ws-field"
-                  >Email<textarea
-                    v-model="draft.body"
-                    required
-                    class="email-body"
-                    :disabled="proposal.status === 'sent'"
-                  />
-                </label>
-                <p class="ws-muted">
-                  Revision {{ proposal.revision }} ·
-                  {{ changed ? 'Unsaved changes' : proposal.status }}. No promised authorship,
-                  invented experience, or bulk follow-ups.
-                </p>
-                <div class="ws-actions" v-if="proposal.status !== 'sent'">
-                  <button
-                    class="ws-button"
-                    :disabled="busy || savingDraft || draftConflict || !changed"
-                  >
-                    Save changes</button
-                  ><button
-                    type="button"
-                    class="ws-button ws-button--primary"
-                    :disabled="
-                      busy || !!changed || !draft.mailboxId || proposal.status === 'approved'
-                    "
-                    @click="approveDraft"
-                  >
-                    Approve exact revision</button
-                  ><button
-                    type="button"
-                    class="ws-button ws-button--primary"
-                    :disabled="
-                      busy ||
-                      !!changed ||
-                      proposal.status !== 'approved' ||
-                      uncertainSends.includes(proposal.id)
-                    "
-                    @click="sendConfirm = !sendConfirm"
-                  >
-                    Review & send<SiteIcon name="mail" :size="14" />
-                  </button>
-                </div>
-                <Transition name="ws-content"
-                  ><div v-if="sendConfirm" class="send-confirm">
-                    <h3>Send this exact email?</h3>
+                    <h2>Review your inquiry</h2>
                     <p class="ws-muted">
-                      From {{ data.mailboxes.find((m) => m.id === draft.mailboxId)?.email }} to
-                      {{ draft.recipient }}. This is a real external message and cannot be recalled
-                      here.
+                      To
+                      {{
+                        data.targets.find((t) => t.id === proposal?.targetId)?.name ||
+                        'selected target'
+                      }}
+                      ·
+                      {{
+                        proposal.kind === 'society'
+                          ? 'Matrix Fellows'
+                          : sharedProfiles.find((p) => p.profileId === proposal?.profileId)
+                              ?.displayName ||
+                            data.profiles.find((p) => p.id === proposal?.profileId)?.fullName ||
+                            'Represented member'
+                      }}
                     </p>
-                    <h4>{{ proposal.subject }}</h4>
-                    <p class="preserve ws-muted">{{ proposal.body }}</p>
                     <p class="ws-muted">
-                      No attachments · reviewed revision {{ proposal.approvedRevision }}
+                      Verify personalizations, narrow the ask, and remove claims you cannot
+                      demonstrate. Editing invalidates approval.
                     </p>
-                    <div class="ws-actions">
-                      <button
-                        type="button"
-                        class="ws-button ws-button--primary"
-                        :disabled="busy"
-                        @click="sendDraft"
+                    <details class="sample">
+                      <summary>Evidence for this inquiry</summary>
+                      <a
+                        v-for="source in data.targets.find((t) => t.id === proposal?.targetId)
+                          ?.dossier.evidence || []"
+                        :key="source.url + source.claim"
+                        class="evidence"
+                        :href="source.url"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        ><span>{{ source.claim }}</span
+                        ><small
+                          >{{ source.confidence }} · {{ source.retrievedAt.slice(0, 10) }}</small
+                        ></a
                       >
-                        Confirm send</button
-                      ><button type="button" class="ws-button" @click="sendConfirm = false">
-                        Keep reviewing
+                      <a
+                        v-for="sample in data.profiles.find((p) => p.id === proposal?.profileId)
+                          ?.workSamples || []"
+                        :key="sample.url"
+                        class="evidence"
+                        :href="sample.url"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        ><span>{{ sample.title }} · {{ sample.contribution }}</span
+                        ><small
+                          >Your member-supplied contribution; review before using it.</small
+                        ></a
+                      >
+                    </details>
+                    <p v-if="draftSaveState" role="status" class="ws-muted">{{ draftSaveState }}</p>
+                    <div class="ws-actions">
+                      <button type="button" class="ws-button" @click="copyDraft">Copy draft</button>
+                      <button type="button" class="ws-button" @click="loadRevisions">
+                        Revision history
                       </button>
                     </div>
-                  </div></Transition
+                    <details v-for="revision in revisions" :key="revision.revision" class="sample">
+                      <summary>
+                        Revision {{ revision.revision }} · {{ revision.created_at.slice(0, 10) }}
+                      </summary>
+                      <h3>{{ revision.subject }}</h3>
+                      <p class="preserve ws-muted">{{ revision.body }}</p>
+                    </details>
+                    <div class="ws-actions" v-if="proposal.status !== 'sent'">
+                      <button
+                        type="button"
+                        class="ws-button"
+                        :disabled="changed || revising"
+                        @click="proposeRevision('shorten')"
+                      >
+                        Shorten
+                      </button>
+                      <button
+                        type="button"
+                        class="ws-button"
+                        :disabled="changed || revising"
+                        @click="proposeRevision('smaller_ask')"
+                      >
+                        Make the ask smaller
+                      </button>
+                      <button
+                        type="button"
+                        class="ws-button"
+                        :disabled="changed || revising"
+                        @click="proposeRevision('direct')"
+                      >
+                        Make it more direct
+                      </button>
+                    </div>
+                    <section
+                      v-if="revisionPreview"
+                      class="send-confirm"
+                      aria-label="Proposed revision preview"
+                    >
+                      <h3>Proposed local edit</h3>
+                      <p v-for="message in revisionPreview.notices" :key="message" class="ws-muted">
+                        {{ message }}
+                      </p>
+                      <details>
+                        <summary>Current message</summary>
+                        <p class="preserve">{{ draft.body }}</p>
+                      </details>
+                      <p class="preserve">{{ revisionPreview.body }}</p>
+                      <p v-if="!revisionCanApply" class="ws-muted">
+                        Your draft changed while this suggestion was prepared. Request a new preview
+                        to preserve your edits.
+                      </p>
+                      <button
+                        type="button"
+                        class="ws-button"
+                        :disabled="!revisionCanApply"
+                        @click="applyRevisionPreview"
+                      >
+                        Use proposed edit
+                      </button>
+                      <button type="button" class="ws-button" @click="revisionPreview = null">
+                        Keep current text
+                      </button>
+                    </section>
+                    <details v-if="proposal.proposalPlan" class="sample">
+                      <summary>Selected plan and factual supports</summary>
+                      <p>{{ proposal.proposalPlan.connection }}</p>
+                      <p class="ws-muted">
+                        {{
+                          proposal.proposalPlan.provenance === 'reviewed-model-analysis'
+                            ? 'Local draft informed by reviewed Gemini analysis'
+                            : 'Local evidence-based draft'
+                        }}
+                      </p>
+                      <p
+                        v-for="issue in proposal.proposalPlan.reviewIssues"
+                        :key="issue"
+                        class="ws-muted"
+                      >
+                        {{ issue }}
+                      </p>
+                      <article
+                        v-for="support in proposal.proposalPlan.sentenceSupports"
+                        :key="support.sentence"
+                      >
+                        <p>{{ support.sentence }}</p>
+                        <small class="ws-muted">{{ support.classification }}</small>
+                        <a
+                          v-for="source in support.sources"
+                          :key="source.url + source.quote"
+                          :href="source.url"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          >Source: {{ source.quote }}</a
+                        >
+                        <button
+                          v-for="claim in support.claimIds"
+                          :key="claim"
+                          type="button"
+                          class="ws-button"
+                          :disabled="changed || revising || proposal.status === 'sent'"
+                          @click="proposeRevision('remove_claim', claim)"
+                        >
+                          Remove this claim
+                        </button>
+                      </article>
+                    </details>
+                    <details v-if="proposal.status !== 'sent'" class="sample">
+                      <summary>Hand this draft to an appointed officer</summary>
+                      <ThemedSelect
+                        v-model="handoffOwner"
+                        label="New draft owner"
+                        :options="[
+                          { value: '', label: 'Choose an active officer' },
+                          ...officers.map((o) => ({ value: o.id, label: o.label })),
+                        ]"
+                      />
+                      <p class="ws-muted">
+                        Original authorship remains. Mailbox authorization never transfers.
+                      </p>
+                      <button
+                        type="button"
+                        class="ws-button"
+                        :disabled="changed || busy || !handoffOwner"
+                        @click="handoffDraft"
+                      >
+                        Hand off draft
+                      </button>
+                    </details>
+                    <div class="ws-divider" />
+                    <label class="ws-field"
+                      >Recipient<input
+                        v-model="draft.recipient"
+                        type="email"
+                        required
+                        :disabled="proposal.status === 'sent'"
+                    /></label>
+                    <div class="ws-field mailbox-field">
+                      <span>Send from your connected mailbox</span
+                      ><ThemedSelect
+                        v-model="draft.mailboxId"
+                        label="Send from your connected mailbox"
+                        :options="[
+                          { value: '', label: 'Choose a mailbox' },
+                          ...data.mailboxes
+                            .filter((m) => m.enabled)
+                            .map((m) => ({ value: m.id, label: m.email })),
+                        ]"
+                      />
+                    </div>
+                    <label class="ws-field"
+                      >Subject<input
+                        v-model="draft.subject"
+                        required
+                        maxlength="240"
+                        :disabled="proposal.status === 'sent'" /></label
+                    ><label class="ws-field"
+                      >Email<textarea
+                        v-model="draft.body"
+                        required
+                        class="email-body"
+                        :disabled="proposal.status === 'sent'"
+                      />
+                    </label>
+                    <p class="ws-muted">
+                      Revision {{ proposal.revision }} ·
+                      {{ changed ? 'Unsaved changes' : proposal.status }}. No promised authorship,
+                      invented experience, or bulk follow-ups.
+                    </p>
+                    <div class="ws-actions" v-if="proposal.status !== 'sent'">
+                      <button
+                        class="ws-button"
+                        :disabled="busy || savingDraft || draftConflict || !changed"
+                      >
+                        Save changes</button
+                      ><button
+                        type="button"
+                        class="ws-button ws-button--primary"
+                        :disabled="
+                          busy || !!changed || !draft.mailboxId || proposal.status === 'approved'
+                        "
+                        @click="approveDraft"
+                      >
+                        Approve exact revision</button
+                      ><button
+                        type="button"
+                        class="ws-button ws-button--primary"
+                        :disabled="
+                          busy ||
+                          !!changed ||
+                          proposal.status !== 'approved' ||
+                          uncertainSends.includes(proposal.id)
+                        "
+                        @click="sendConfirm = !sendConfirm"
+                      >
+                        Review & send<SiteIcon name="mail" :size="14" />
+                      </button>
+                    </div>
+                    <Transition name="ws-content"
+                      ><div v-if="sendConfirm" class="send-confirm">
+                        <h3>Send this exact email?</h3>
+                        <p class="ws-muted">
+                          From {{ data.mailboxes.find((m) => m.id === draft.mailboxId)?.email }} to
+                          {{ draft.recipient }}. This is a real external message and cannot be
+                          recalled here.
+                        </p>
+                        <h4>{{ proposal.subject }}</h4>
+                        <p class="preserve ws-muted">{{ proposal.body }}</p>
+                        <p class="ws-muted">
+                          No attachments · reviewed revision {{ proposal.approvedRevision }}
+                        </p>
+                        <div class="ws-actions">
+                          <button
+                            type="button"
+                            class="ws-button ws-button--primary"
+                            :disabled="busy"
+                            @click="sendDraft"
+                          >
+                            Confirm send</button
+                          ><button type="button" class="ws-button" @click="sendConfirm = false">
+                            Keep reviewing
+                          </button>
+                        </div>
+                      </div></Transition
+                    >
+                  </form>
+                  <div v-else class="ws-empty dossier-empty message-empty-state">
+                    Choose a message to refine, approve, and send.
+                  </div>
+                </div>
+                <section
+                  class="ws-panel secondary-panel outbox-panel"
+                  :class="{ 'outbox-panel--expanded': outboxExpanded }"
                 >
-              </form>
-              <div v-else class="ws-empty dossier-empty message-empty-state">
-                Choose a message to refine, approve, and send.
+                  <button
+                    type="button"
+                    class="outbox-toggle"
+                    aria-label="Outbox & sending history"
+                    aria-controls="workspace-outbox-content"
+                    :aria-expanded="outboxExpanded"
+                    @click="outboxExpanded = !outboxExpanded"
+                  >
+                    <span class="outbox-heading">
+                      <span class="outbox-icon" aria-hidden="true"
+                        ><SiteIcon name="mail" :size="15"
+                      /></span>
+                      <span class="outbox-heading__copy">
+                        <strong>Outbox &amp; sending history</strong>
+                        <small>Provider acceptance and manual reconciliation</small>
+                      </span>
+                    </span>
+                    <span class="outbox-count">{{ outbox.length }}</span>
+                    <span class="outbox-toggle__chevron" aria-hidden="true"></span>
+                  </button>
+                  <div
+                    id="workspace-outbox-content"
+                    class="outbox-disclosure"
+                    :aria-hidden="!outboxExpanded"
+                    :inert="!outboxExpanded"
+                  >
+                    <div class="outbox-disclosure__clip">
+                      <div class="outbox-content">
+                        <p class="ws-muted">
+                          Accepted means the provider accepted the request, not confirmed delivery.
+                          Resolve uncertain sends only after checking your mailbox.
+                        </p>
+                        <div v-if="outboxError" class="ws-alert ws-error">{{ outboxError }}</div>
+                        <div v-for="item in outbox" :key="item.id" class="job-row outbox-row">
+                          <span class="outbox-row__icon" aria-hidden="true"
+                            ><SiteIcon name="mail" :size="14"
+                          /></span>
+                          <div>
+                            <strong>{{ item.subject }}</strong
+                            ><small>{{ item.recipient }} · revision {{ item.revision }}</small>
+                            <p v-if="item.error" class="ws-muted">{{ item.error }}</p>
+                          </div>
+                          <span class="ws-chip">{{ item.status }}</span
+                          ><button
+                            v-if="item.canReconcile"
+                            class="ws-button"
+                            @click="reconcileId = item.id"
+                          >
+                            Resolve after checking Sent mail
+                          </button>
+                        </div>
+                        <p v-if="!outbox.length" class="ws-muted">
+                          No sending history in your connected mailboxes.
+                        </p>
+                        <form v-if="reconcileId" class="send-confirm" @submit.prevent="reconcile">
+                          <h3>Record the verified outcome</h3>
+                          <ThemedSelect
+                            v-model="reconcileOutcome"
+                            label="What did you verify in the mailbox?"
+                            :options="[
+                              { value: 'sent', label: 'Email appears in Sent mail' },
+                              { value: 'not_sent', label: 'Verified that email was not sent' },
+                            ]"
+                          /><label class="ws-field"
+                            >Verification note<textarea
+                              v-model="reconcileNote"
+                              required
+                              minlength="15"
+                            />
+                          </label>
+                          <div class="ws-actions">
+                            <button class="ws-button">Record outcome</button
+                            ><button type="button" class="ws-button" @click="reconcileId = ''">
+                              Cancel
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+                </section>
               </div>
-            </div>
-            <section class="ws-panel secondary-panel outbox-panel" :class="{ 'outbox-panel--expanded': outboxExpanded }">
-              <button
-                type="button"
-                class="outbox-toggle"
-                aria-label="Outbox & sending history"
-                aria-controls="workspace-outbox-content"
-                :aria-expanded="outboxExpanded"
-                @click="outboxExpanded = !outboxExpanded"
-              >
-                <span class="outbox-heading">
-                  <span class="outbox-icon" aria-hidden="true"><SiteIcon name="mail" :size="15" /></span>
-                  <span class="outbox-heading__copy">
-                    <strong>Outbox &amp; sending history</strong>
-                    <small>Provider acceptance and manual reconciliation</small>
-                  </span>
-                </span>
-                <span class="outbox-count">{{ outbox.length }}</span>
-                <span class="outbox-toggle__chevron" aria-hidden="true"></span>
-              </button>
-              <div
-                id="workspace-outbox-content"
-                class="outbox-disclosure"
-                :aria-hidden="!outboxExpanded"
-                :inert="!outboxExpanded"
-              >
-              <div class="outbox-disclosure__clip"><div class="outbox-content">
-              <p class="ws-muted">
-                Accepted means the provider accepted the request, not confirmed delivery. Resolve
-                uncertain sends only after checking your mailbox.
-              </p>
-              <div v-if="outboxError" class="ws-alert ws-error">{{ outboxError }}</div>
-              <div v-for="item in outbox" :key="item.id" class="job-row outbox-row">
-                <span class="outbox-row__icon" aria-hidden="true"><SiteIcon name="mail" :size="14" /></span>
-                <div>
-                  <strong>{{ item.subject }}</strong
-                  ><small>{{ item.recipient }} · revision {{ item.revision }}</small>
-                  <p v-if="item.error" class="ws-muted">{{ item.error }}</p>
-                </div>
-                <span class="ws-chip">{{ item.status }}</span
-                ><button v-if="item.canReconcile" class="ws-button" @click="reconcileId = item.id">
-                  Resolve after checking Sent mail
-                </button>
-              </div>
-              <p v-if="!outbox.length" class="ws-muted">
-                No sending history in your connected mailboxes.
-              </p>
-              <form v-if="reconcileId" class="send-confirm" @submit.prevent="reconcile">
-                <h3>Record the verified outcome</h3>
-                <ThemedSelect
-                  v-model="reconcileOutcome"
-                  label="What did you verify in the mailbox?"
-                  :options="[
-                    { value: 'sent', label: 'Email appears in Sent mail' },
-                    { value: 'not_sent', label: 'Verified that email was not sent' },
-                  ]"
-                /><label class="ws-field"
-                  >Verification note<textarea v-model="reconcileNote" required minlength="15" />
-                </label>
-                <div class="ws-actions">
-                  <button class="ws-button">Record outcome</button
-                  ><button type="button" class="ws-button" @click="reconcileId = ''">Cancel</button>
-                </div>
-              </form>
-              </div></div></div>
             </section>
-            </div>
-          </section>
           </template>
 
           <template v-else-if="tab === 'profiles'">
@@ -1880,36 +2513,99 @@ onMounted(async () => {
               <div>
                 <p class="ws-kicker">Your research profile</p>
                 <h2 id="profile-page-title">A clear starting point for better matches.</h2>
-                <p class="ws-muted">Add one public link and we’ll organize the useful context in the background. You can correct anything before it is used in a proposal.</p>
+                <p class="ws-muted">
+                  Add one public link and we’ll organize the useful context in the background. You
+                  can correct anything before it is used in a proposal.
+                </p>
               </div>
               <div class="profile-hero__status" aria-label="Profile workflow">
                 <span class="profile-hero__dot" aria-hidden="true"></span>
                 <span>Private by default</span>
               </div>
             </section>
-            <ResearchProfileOverview v-if="profileForm.id" :profile-id="profileForm.id" @updated="refresh" />
-            <details class="ws-panel profile-preferences">
-              <summary><span><small class="profile-disclosure__eyebrow">Matching context</small><strong>Where and when work is practical</strong></span><em>Optional</em></summary>
-              <div class="profile-preferences__body">
-                <ThemedSelect v-model="lens" label="Participation preference" :options="[{value:'nearby',label:'Nearby or remote'},{value:'remote',label:'Remote only'},{value:'travel',label:'Travel is practical'}]" />
-                <label class="ws-field">Reachable cities or campuses<input v-model="reachableLocations" placeholder="Arlington, Dallas" /></label>
-                <button class="ws-button" :disabled="busy" @click="saveAccessPreferences">Save matching context</button>
-              </div>
-            </details>
+            <ResearchProfileOverview
+              v-if="profileForm.id"
+              :profile-id="profileForm.id"
+              @updated="refresh"
+            />
             <details class="ws-panel profile-preferences profile-advanced">
-              <summary><span><small class="profile-disclosure__eyebrow">Corrections</small><strong>Edit basic profile details</strong></span><em>Optional</em></summary>
+              <summary>
+                <span
+                  ><small class="profile-disclosure__eyebrow">Profile details</small
+                  ><strong>Correct the essentials</strong></span
+                ><em>Optional</em>
+              </summary>
               <form class="profile-compact-form" @submit.prevent="saveProfile">
-                <p class="ws-muted">Use this only to correct the essentials. Research links are the preferred way to add projects and evidence.</p>
+                <p class="ws-muted">
+                  Use this only to correct the essentials. Research links are the preferred way to
+                  add projects and evidence.
+                </p>
                 <div class="ws-grid">
-                  <label class="ws-field">Name<input v-model="profileForm.fullName" required /></label>
-                  <label class="ws-field">Interests<input v-model="profileForm.interests" placeholder="Robotics, biology, public health" /></label>
-                  <label class="ws-field">What you hope to explore<textarea v-model="profileForm.goals" rows="2" /></label>
-                  <label class="ws-field">Current availability<input v-model="profileForm.availability" placeholder="A few hours on weekends" /></label>
+                  <label class="ws-field"
+                    >Name<input v-model="profileForm.fullName" required
+                  /></label>
+                  <fieldset class="ws-field profile-interest-field">
+                    <legend>Interests</legend>
+                    <div class="profile-interest-badges" aria-label="Select interests">
+                      <button
+                        v-for="interest in defaultInterestOptions"
+                        :key="interest"
+                        type="button"
+                        class="profile-interest-badge"
+                        :class="{ 'is-selected': selectedInterests.includes(interest) }"
+                        :aria-pressed="selectedInterests.includes(interest)"
+                        @click="toggleProfileInterest(interest)"
+                      >
+                        {{ interest }}
+                      </button>
+                      <button
+                        v-for="interest in selectedInterests.filter(
+                          (value) => !defaultInterestOptions.includes(value),
+                        )"
+                        :key="`custom-${interest}`"
+                        type="button"
+                        class="profile-interest-badge is-selected"
+                        :aria-pressed="true"
+                        @click="toggleProfileInterest(interest)"
+                      >
+                        {{ interest }} <span aria-hidden="true">×</span>
+                      </button>
+                    </div>
+                    <div class="profile-interest-add">
+                      <input
+                        v-model="customInterest"
+                        placeholder="Add another interest"
+                        @keydown.enter.prevent="addCustomInterest"
+                      /><button
+                        type="button"
+                        class="ws-button"
+                        :disabled="!customInterest.trim()"
+                        @click="addCustomInterest"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  </fieldset>
+                  <label class="ws-field"
+                    >What you hope to explore<textarea v-model="profileForm.goals" rows="2" />
+                  </label>
+                  <label class="ws-field"
+                    >Current availability<input
+                      v-model="profileForm.availability"
+                      placeholder="A few hours on weekends"
+                  /></label>
                 </div>
                 <div class="consent">
-                  <AnimatedCheckbox v-model="profileForm.consentToShare" outlined label="Allow reviewed proposals to use this profile context." description="Nothing is sent without exact-email approval." />
+                  <AnimatedCheckbox
+                    v-model="profileForm.consentToShare"
+                    outlined
+                    label="Allow reviewed proposals to use this profile context."
+                    description="Nothing is sent without exact-email approval."
+                  />
                 </div>
-                <button class="ws-button ws-button--primary" :disabled="busy || profileSaving">Save profile basics</button>
+                <button class="ws-button ws-button--primary" :disabled="busy || profileSaving">
+                  Save profile basics
+                </button>
               </form>
             </details>
           </template>
@@ -1920,66 +2616,87 @@ onMounted(async () => {
             <div class="section-top"><h2>Settings</h2></div>
             <div class="settings-grid">
               <AccountSecurity />
-              <section class="ws-panel settings-panel mailbox-panel" aria-labelledby="mailbox-settings-title">
+              <section
+                class="ws-panel settings-panel mailbox-panel"
+                aria-labelledby="mailbox-settings-title"
+              >
                 <div class="settings-panel__heading">
                   <div>
                     <p class="settings-panel__eyebrow">Sending access</p>
                     <h2 id="mailbox-settings-title">Mailbox connections</h2>
                   </div>
-                  <span class="settings-panel__icon" aria-hidden="true"><SiteIcon name="mail" :size="17" /></span>
+                  <span class="settings-panel__icon" aria-hidden="true"
+                    ><SiteIcon name="mail" :size="17"
+                  /></span>
                 </div>
                 <p class="ws-muted">
-                  Connect the mailbox you control when you are ready to send. Every message still needs an exact, explicit approval.
+                  Connect the mailbox you control when you are ready to send. Every message still
+                  needs an exact, explicit approval.
                 </p>
-              <p class="ws-muted">
-                Tokens stay encrypted on the server. Connecting a mailbox does not grant inbox-reading access.
-              </p>
-              <div v-for="mailbox in historicalMailboxes" :key="mailbox.id" class="job-row">
-                <div>
-                  <h3>{{ mailbox.email }}</h3>
-                  <span class="ws-muted"
-                    >{{ mailbox.provider }} · {{ mailbox.enabled ? 'Connected' : 'Disabled' }}</span
+                <p class="ws-muted">
+                  Tokens stay encrypted on the server. Connecting a mailbox does not grant
+                  inbox-reading access.
+                </p>
+                <div v-for="mailbox in historicalMailboxes" :key="mailbox.id" class="job-row">
+                  <div>
+                    <h3>{{ mailbox.email }}</h3>
+                    <span class="ws-muted"
+                      >{{ mailbox.provider }} ·
+                      {{ mailbox.enabled ? 'Connected' : 'Disabled' }}</span
+                    >
+                  </div>
+                  <button
+                    class="ws-button ws-button--danger"
+                    :disabled="busy"
+                    @click="
+                      mutate(
+                        `/mailboxes/${mailbox.id}`,
+                        'DELETE',
+                        undefined,
+                        'Mailbox disconnected.',
+                      )
+                    "
                   >
+                    Disconnect
+                  </button>
                 </div>
-                <button
-                  class="ws-button ws-button--danger"
-                  :disabled="busy"
-                  @click="
-                    mutate(`/mailboxes/${mailbox.id}`, 'DELETE', undefined, 'Mailbox disconnected.')
-                  "
-                >
-                  Disconnect
-                </button>
-              </div>
-              <div v-if="canDiscover" class="ws-actions">
-                <button
-                  class="ws-button ws-button--primary"
-                  :disabled="connecting || !providers.gmail"
-                  @click="connectMailbox('gmail')"
-                >
-                  <SiteIcon name="mail" :size="15" />Connect Gmail</button
-                ><button
-                  class="ws-button"
-                  :disabled="connecting || !providers.outlook"
-                  @click="connectMailbox('outlook')"
-                >
-                  <SiteIcon name="mail" :size="15" />Connect Outlook
-                </button>
-              </div>
-              <p class="ws-muted connection-note">
-                Microsoft sign-in and Outlook mailbox access are separate capabilities. Outlook
-                sending is shown only when the server integration is configured.
-              </p>
-              <p v-if="!canDiscover" class="ws-muted mailbox-restriction">New mailbox connections and drafts require appointed officer access. You can disconnect a historical connection here.</p>
+                <div v-if="canDiscover" class="ws-actions">
+                  <button
+                    class="ws-button ws-button--primary"
+                    :disabled="connecting || !providers.gmail"
+                    @click="connectMailbox('gmail')"
+                  >
+                    <SiteIcon name="mail" :size="15" />Connect Gmail</button
+                  ><button
+                    class="ws-button"
+                    :disabled="connecting || !providers.outlook"
+                    @click="connectMailbox('outlook')"
+                  >
+                    <SiteIcon name="mail" :size="15" />Connect Outlook
+                  </button>
+                </div>
+                <p class="ws-muted connection-note">
+                  Microsoft sign-in and Outlook mailbox access are separate capabilities. Outlook
+                  sending is shown only when the server integration is configured.
+                </p>
+                <p v-if="!canDiscover" class="ws-muted mailbox-restriction">
+                  New mailbox connections and drafts require appointed officer access. You can
+                  disconnect a historical connection here.
+                </p>
               </section>
             </div>
-            <section class="ws-panel settings-panel account-panel" aria-labelledby="access-safety-title">
+            <section
+              class="ws-panel settings-panel account-panel"
+              aria-labelledby="access-safety-title"
+            >
               <div class="settings-panel__heading">
                 <div>
                   <p class="settings-panel__eyebrow">Quiet guardrails</p>
                   <h2 id="access-safety-title">Access &amp; safety</h2>
                 </div>
-                <span class="settings-panel__icon" aria-hidden="true"><SiteIcon name="lock" :size="17" /></span>
+                <span class="settings-panel__icon" aria-hidden="true"
+                  ><SiteIcon name="lock" :size="17"
+                /></span>
               </div>
               <p class="ws-muted">
                 This private dashboard belongs to your approved account. Your role:
@@ -1995,56 +2712,199 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-
-.ws-panel.research-runs-panel { margin: 0 0 24px; padding: 0; min-width: 0; }
-.research-runs-toggle {
-  display: flex; align-items: center; gap: 14px; width: 100%; padding: 20px 24px;
-  border: 0; background: transparent; color: #b9afc9; text-align: left; cursor: pointer;
-  border-radius: 28px; transition: color .25s, background-color .25s;
+.ws-panel.research-runs-panel {
+  margin: 0 0 24px;
+  padding: 0;
+  min-width: 0;
 }
-.research-runs-toggle:hover { color: #efdfb5; background: rgb(213 201 237 / 3%); }
-.research-runs-toggle:focus-visible { outline: 2px solid #d8b977; outline-offset: -5px; }
-.research-runs-heading { display: grid; gap: 5px; flex: 1; }
-.research-runs-heading strong { color: #e5dfeb; font-size: 14px; font-weight: 500; }
-.research-runs-heading small { color: #91899c; font-size: 12px; }
-.research-runs-chevron { flex-shrink: 0; transition: transform .45s cubic-bezier(.16,1,.3,1); }
-.research-runs-toggle[aria-expanded="true"] .research-runs-chevron { transform: rotate(180deg); }
-.research-runs-disclosure { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows .48s cubic-bezier(.16,1,.3,1), opacity .3s; }
-.research-runs-disclosure.is-open { grid-template-rows: 1fr; opacity: 1; }
-.research-runs-clip { min-height: 0; overflow: hidden; }
-.research-runs-body { padding: 0 24px 24px; }
-.research-runs-intro { margin: 0 0 22px; padding-top: 20px; border-top: 1px solid #d5c9ed15; line-height: 1.7; }
-.research-run-sections { display: grid; gap: 22px; }
-.research-run-section { min-width: 0; background: transparent; }
-.research-run-section > .section-top { margin-bottom: 12px; }
-.research-run-section h3 { margin: 0; font-size: 15px; }
-.research-run-section > .ws-muted { line-height: 1.7; }
-.research-run-section > .research-run-detail { margin-top: 20px; }
-.research-run-detail { border-top: 1px solid #d5c9ed15; }
-.research-run-detail > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: min(100%, 760px); margin-inline: auto; padding: 18px 0; color: #c6bed7; font-size: 13px; cursor: pointer; list-style: none; transition: color .25s; }
-.research-run-detail > summary::-webkit-details-marker { display: none; }
-.research-run-detail > summary:hover { color: #efdfb5; }
-.research-run-detail > summary svg { transition: transform .3s; }
-.research-run-detail[open] > summary svg { transform: rotate(180deg); }
-.research-run-detail__content { display: grid; grid-template-rows: 0fr; opacity: 0; transform: translateY(-8px); transition: grid-template-rows .45s cubic-bezier(.16,1,.3,1), opacity .28s ease, transform .45s cubic-bezier(.16,1,.3,1); }
-.research-run-detail[open] > .research-run-detail__content { grid-template-rows: 1fr; opacity: 1; transform: none; }
-.research-run-detail__inner { width: min(100%, 760px); min-height: 0; margin-inline: auto; overflow: hidden; }
-.research-run-section .job-row { gap: 12px; flex-wrap: wrap; }
-.research-run-section .job-row > a, .research-run-section .job-row > div { min-width: 0; overflow-wrap: anywhere; flex: 1 1 180px; }
-.research-run-section .ws-actions { row-gap: 12px; }
-.research-run-section .research-config { margin-top: 0; }
-.research-run-section .send-confirm { background: transparent; }
+.research-runs-toggle {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 20px 24px;
+  border: 0;
+  background: transparent;
+  color: #b9afc9;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 28px;
+  transition:
+    color 0.25s,
+    background-color 0.25s;
+}
+.research-runs-toggle:hover {
+  color: #efdfb5;
+  background: rgb(213 201 237 / 3%);
+}
+.research-runs-toggle:focus-visible {
+  outline: 2px solid #d8b977;
+  outline-offset: -5px;
+}
+.research-runs-heading {
+  display: grid;
+  gap: 5px;
+  flex: 1;
+}
+.research-runs-heading strong {
+  color: #e5dfeb;
+  font-size: 14px;
+  font-weight: 500;
+}
+.research-runs-heading small {
+  color: #91899c;
+  font-size: 12px;
+}
+.research-runs-chevron {
+  flex-shrink: 0;
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.research-runs-toggle[aria-expanded='true'] .research-runs-chevron {
+  transform: rotate(180deg);
+}
+.research-runs-disclosure {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 0.48s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.3s;
+}
+.research-runs-disclosure.is-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.research-runs-clip {
+  min-height: 0;
+  overflow: hidden;
+}
+.research-runs-body {
+  padding: 0 24px 24px;
+}
+.research-runs-intro {
+  margin: 0 0 22px;
+  padding-top: 20px;
+  border-top: 1px solid #d5c9ed15;
+  line-height: 1.7;
+}
+.research-run-sections {
+  display: grid;
+  gap: 22px;
+}
+.research-run-section {
+  min-width: 0;
+  background: transparent;
+}
+.research-run-section > .section-top {
+  margin-bottom: 12px;
+}
+.research-run-section h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.research-run-section > .ws-muted {
+  line-height: 1.7;
+}
+.research-run-section > .research-run-detail {
+  margin-top: 20px;
+}
+.research-run-detail {
+  border-top: 1px solid #d5c9ed15;
+}
+.research-run-detail > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: min(100%, 760px);
+  margin-inline: auto;
+  padding: 18px 0;
+  color: #c6bed7;
+  font-size: 13px;
+  cursor: pointer;
+  list-style: none;
+  transition: color 0.25s;
+}
+.research-run-detail > summary::-webkit-details-marker {
+  display: none;
+}
+.research-run-detail > summary:hover {
+  color: #efdfb5;
+}
+.research-run-detail > summary svg {
+  transition: transform 0.3s;
+}
+.research-run-detail[open] > summary svg {
+  transform: rotate(180deg);
+}
+.research-run-detail__content {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition:
+    grid-template-rows 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.28s ease,
+    transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.research-run-detail[open] > .research-run-detail__content {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transform: none;
+}
+.research-run-detail__inner {
+  width: min(100%, 760px);
+  min-height: 0;
+  margin-inline: auto;
+  overflow: hidden;
+}
+.research-run-section .job-row {
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.research-run-section .job-row > a,
+.research-run-section .job-row > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  flex: 1 1 180px;
+}
+.research-run-section .ws-actions {
+  row-gap: 12px;
+}
+.research-run-section .research-config {
+  margin-top: 0;
+}
+.research-run-section .send-confirm {
+  background: transparent;
+}
 @media (max-width: 620px) {
-  .research-runs-toggle { padding: 18px; gap: 10px; }
-  .research-runs-body { padding: 0 18px 18px; }
-  .research-runs-heading small { font-size: 11px; }
-  .research-runs-toggle .ws-chip { font-size: 10px; }
-  .research-run-section .ws-grid { grid-template-columns: 1fr; }
+  .research-runs-toggle {
+    padding: 18px;
+    gap: 10px;
+  }
+  .research-runs-body {
+    padding: 0 18px 18px;
+  }
+  .research-runs-heading small {
+    font-size: 11px;
+  }
+  .research-runs-toggle .ws-chip {
+    font-size: 10px;
+  }
+  .research-run-section .ws-grid {
+    grid-template-columns: 1fr;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .research-runs-disclosure, .research-runs-toggle, .research-runs-chevron,
-  .research-run-detail > summary, .research-run-detail > summary svg,
-  .research-run-detail__content { transition: none; transform: none; }
+  .research-runs-disclosure,
+  .research-runs-toggle,
+  .research-runs-chevron,
+  .research-run-detail > summary,
+  .research-run-detail > summary svg,
+  .research-run-detail__content {
+    transition: none;
+    transform: none;
+  }
 }
 
 .command-menu {
@@ -2219,15 +3079,13 @@ onMounted(async () => {
   gap: 24px;
   margin-bottom: 22px;
   padding: clamp(24px, 4vw, 38px);
-  background:
-    linear-gradient(145deg, rgb(244 241 233 / 2%), transparent 72%),
-    rgb(18 19 26 / 36%);
+  background: linear-gradient(145deg, rgb(244 241 233 / 2%), transparent 72%), rgb(18 19 26 / 36%);
 }
 .profile-hero h2 {
   max-width: 17ch;
   margin: 8px 0 4px;
   font-size: clamp(24px, 4vw, 38px);
-  letter-spacing: -.06em;
+  letter-spacing: -0.06em;
 }
 .profile-hero .ws-muted {
   max-width: 58ch;
@@ -2258,12 +3116,25 @@ onMounted(async () => {
   padding: 20px 24px;
   list-style: none;
   cursor: pointer;
-  transition: color .3s ease, background-color .3s ease, transform .35s cubic-bezier(.22,1,.36,1);
+  transition:
+    color 0.3s ease,
+    background-color 0.3s ease,
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.profile-preferences summary:hover { color: #f0dfb4; background: rgb(228 187 114 / 3%); }
-.profile-preferences summary:active { transform: scale(.995); }
-.profile-preferences summary:focus-visible { outline: 2px solid rgb(228 187 114 / 65%); outline-offset: -4px; }
-.profile-preferences summary::-webkit-details-marker { display: none; }
+.profile-preferences summary:hover {
+  color: #f0dfb4;
+  background: rgb(228 187 114 / 3%);
+}
+.profile-preferences summary:active {
+  transform: scale(0.995);
+}
+.profile-preferences summary:focus-visible {
+  outline: 2px solid rgb(228 187 114 / 65%);
+  outline-offset: -4px;
+}
+.profile-preferences summary::-webkit-details-marker {
+  display: none;
+}
 .profile-preferences summary::after {
   content: '+';
   display: grid;
@@ -2275,12 +3146,29 @@ onMounted(async () => {
   color: #d8b977;
   font-size: 18px;
   font-weight: 300;
-  transition: transform .35s cubic-bezier(.2,.8,.2,1), background-color .25s;
+  transition:
+    transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+    background-color 0.25s;
 }
-.profile-preferences[open] summary::after { transform: rotate(45deg); background: rgb(228 187 114 / 8%); }
-.profile-preferences summary > span { display: grid; gap: 5px; }
-.profile-preferences summary strong { color: #e5dfeb; font-size: 14px; font-weight: 500; }
-.profile-preferences summary em { margin-left: auto; color: #91899c; font-size: 10px; font-style: normal; }
+.profile-preferences[open] summary::after {
+  transform: rotate(45deg);
+  background: rgb(228 187 114 / 8%);
+}
+.profile-preferences summary > span {
+  display: grid;
+  gap: 5px;
+}
+.profile-preferences summary strong {
+  color: #e5dfeb;
+  font-size: 14px;
+  font-weight: 500;
+}
+.profile-preferences summary em {
+  margin-left: auto;
+  color: #91899c;
+  font-size: 10px;
+  font-style: normal;
+}
 .profile-preferences__body,
 .profile-compact-form {
   display: grid;
@@ -2288,25 +3176,123 @@ onMounted(async () => {
   padding: 0 24px 24px;
   border-top: 1px solid rgb(255 255 255 / 8%);
 }
-.profile-preferences__body { padding-top: 18px; }
-.profile-compact-form { padding-top: 20px; }
+.profile-preferences__body {
+  padding-top: 18px;
+}
+.profile-compact-form {
+  padding-top: 20px;
+}
 .profile-preferences[open] > .profile-preferences__body,
-.profile-preferences[open] > .profile-compact-form { animation: profile-disclosure-in .45s cubic-bezier(.22,1,.36,1) both; transform-origin: top; }
-@keyframes profile-disclosure-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
-.profile-compact-form > .ws-muted { margin: 0; padding-top: 0; }
-.profile-advanced { margin-bottom: 25px; }
+.profile-preferences[open] > .profile-compact-form {
+  animation: profile-disclosure-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: top;
+}
+@keyframes profile-disclosure-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.profile-compact-form > .ws-muted {
+  margin: 0;
+  padding-top: 0;
+}
+.profile-interest-field {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.profile-interest-field legend {
+  margin-bottom: 8px;
+  color: #e7e7ed;
+  font-size: 0.85rem;
+}
+.profile-interest-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.profile-interest-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 31px;
+  padding: 0 10px;
+  border: 1px solid rgb(244 241 233 / 13%);
+  border-radius: 999px;
+  color: rgb(244 241 233 / 62%);
+  background: rgb(244 241 233 / 3%);
+  font:
+    10px Manrope,
+    sans-serif;
+  cursor: pointer;
+  transition:
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    color 0.2s,
+    border-color 0.2s,
+    background-color 0.2s,
+    box-shadow 0.25s;
+}
+.profile-interest-badge:hover,
+.profile-interest-badge:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgb(216 185 119 / 46%);
+  color: #f0dfb4;
+  background: rgb(216 185 119 / 7%);
+  outline: none;
+}
+.profile-interest-badge.is-selected {
+  border-color: rgb(216 185 119 / 42%);
+  color: #e4bb72;
+  background: rgb(216 185 119 / 11%);
+  box-shadow: 0 5px 16px rgb(0 0 0 / 10%);
+}
+.profile-interest-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.profile-interest-add input {
+  min-width: 0;
+  max-width: none;
+}
+.profile-interest-add .ws-button {
+  min-height: 38px;
+  padding-inline: 14px;
+}
+.profile-advanced {
+  margin-bottom: 25px;
+}
 @media (max-width: 620px) {
-  .profile-hero { display: grid; align-items: start; }
-  .profile-hero__status { width: fit-content; }
-  .profile-preferences summary { padding-inline: 18px; }
+  .profile-hero {
+    display: grid;
+    align-items: start;
+  }
+  .profile-hero__status {
+    width: fit-content;
+  }
+  .profile-preferences summary {
+    padding-inline: 18px;
+  }
   .profile-preferences__body,
-  .profile-compact-form { padding-inline: 18px; }
+  .profile-compact-form {
+    padding-inline: 18px;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .profile-preferences summary,
   .profile-preferences summary::after,
   .profile-preferences[open] > .profile-preferences__body,
-  .profile-preferences[open] > .profile-compact-form { transition: none; animation: none; }
+  .profile-preferences[open] > .profile-compact-form {
+    transition: none;
+    animation: none;
+  }
 }
 @media (max-width: 700px) {
   .profile-context-block {
@@ -2409,15 +3395,26 @@ onMounted(async () => {
   flex: 0 0 auto;
 }
 /* Keep the original outreach panel appearance; grouping is layout only. */
-.messages-review-surface { min-width: 0; }
-.message-review-layout { grid-template-columns: minmax(220px, .62fr) minmax(0, 1.38fr); gap: 20px; }
-.message-empty-state { display: grid; place-items: center; min-height: 390px; }
+.messages-review-surface {
+  min-width: 0;
+}
+.message-review-layout {
+  grid-template-columns: minmax(220px, 0.62fr) minmax(0, 1.38fr);
+  gap: 20px;
+}
+.message-empty-state {
+  display: grid;
+  place-items: center;
+  min-height: 390px;
+}
 .outbox-panel {
   margin-top: 14px;
   padding: 0 clamp(18px, 3vw, 28px);
   border-color: rgb(239 235 224 / 9%);
   border-radius: 21px;
-  transition: border-color .35s ease, box-shadow .45s ease;
+  transition:
+    border-color 0.35s ease,
+    box-shadow 0.45s ease;
 }
 .outbox-panel:hover,
 .outbox-panel:focus-within {
@@ -2455,7 +3452,9 @@ onMounted(async () => {
   border-bottom: 1px solid currentColor;
   color: #a99c82;
   transform: translateY(-2px) rotate(45deg);
-  transition: transform .45s cubic-bezier(.22, 1, .36, 1), color .3s ease;
+  transition:
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    color 0.3s ease;
 }
 .outbox-panel--expanded .outbox-toggle__chevron {
   transform: translateY(2px) rotate(225deg);
@@ -2464,7 +3463,10 @@ onMounted(async () => {
   color: #d8b977;
 }
 .outbox-toggle .outbox-icon {
-  transition: transform .4s cubic-bezier(.22, 1, .36, 1), box-shadow .4s ease, border-color .4s ease;
+  transition:
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.4s ease,
+    border-color 0.4s ease;
 }
 .outbox-toggle:hover .outbox-icon,
 .outbox-toggle:focus-visible .outbox-icon {
@@ -2473,13 +3475,15 @@ onMounted(async () => {
   box-shadow: 0 0 17px rgb(216 185 119 / 12%);
 }
 .outbox-toggle:active .outbox-icon {
-  transform: translateY(0) scale(.94);
+  transform: translateY(0) scale(0.94);
 }
 .outbox-disclosure {
   display: grid;
   grid-template-rows: 0fr;
   opacity: 0;
-  transition: grid-template-rows .48s cubic-bezier(.22, 1, .36, 1), opacity .28s ease;
+  transition:
+    grid-template-rows 0.48s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.28s ease;
 }
 .outbox-panel--expanded .outbox-disclosure {
   grid-template-rows: 1fr;
@@ -2492,7 +3496,7 @@ onMounted(async () => {
 .outbox-content {
   padding: 3px 0 20px;
   transform: translateY(-7px);
-  transition: transform .48s cubic-bezier(.22, 1, .36, 1);
+  transition: transform 0.48s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .outbox-panel--expanded .outbox-content {
   transform: translateY(0);
@@ -2557,7 +3561,9 @@ onMounted(async () => {
   padding: 15px 8px;
   border-color: rgb(255 255 255 / 7%);
   border-radius: 13px;
-  transition: background-color .25s ease, transform .3s ease;
+  transition:
+    background-color 0.25s ease,
+    transform 0.3s ease;
 }
 .outbox-row:hover {
   background: rgb(255 255 255 / 3%);
@@ -2753,7 +3759,9 @@ onMounted(async () => {
   align-items: center;
   gap: 5px;
   color: #d8b977;
-  transition: gap 0.3s ease, color 0.3s ease;
+  transition:
+    gap 0.3s ease,
+    color 0.3s ease;
 }
 .candidate:hover .candidate-review,
 .candidate:focus-visible .candidate-review {
@@ -3009,10 +4017,10 @@ onMounted(async () => {
 .settings-panel {
   position: relative;
   overflow: hidden;
-  background:
-    linear-gradient(145deg, rgb(244 241 233 / 2%), transparent 72%),
-    rgb(18 19 26 / 36%);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 7%), 0 18px 58px rgb(0 0 0 / 15%);
+  background: linear-gradient(145deg, rgb(244 241 233 / 2%), transparent 72%), rgb(18 19 26 / 36%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 7%),
+    0 18px 58px rgb(0 0 0 / 15%);
 }
 :deep(.settings-panel > *) {
   position: relative;
@@ -3056,7 +4064,9 @@ onMounted(async () => {
   padding-inline: 8px;
   border-color: rgb(255 255 255 / 8%);
   border-radius: 12px;
-  transition: background-color 220ms ease, transform 320ms ease;
+  transition:
+    background-color 220ms ease,
+    transform 320ms ease;
 }
 .mailbox-panel .job-row:hover {
   background: rgb(228 187 114 / 5%);
@@ -3073,10 +4083,11 @@ onMounted(async () => {
   .settings-grid {
     grid-template-columns: 1fr;
   }
-
 }
 @media (prefers-reduced-motion: reduce) {
-  .mailbox-panel .job-row { transition: none; }
+  .mailbox-panel .job-row {
+    transition: none;
+  }
 }
 .account-panel,
 .merge-panel {
@@ -3205,7 +4216,9 @@ onMounted(async () => {
     border-radius: 16px;
     color: #e8dcc1;
     background: linear-gradient(115deg, rgb(216 185 119 / 11%), rgb(185 163 237 / 7%));
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 7%), 0 12px 34px rgb(7 7 12 / 14%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 7%),
+      0 12px 34px rgb(7 7 12 / 14%);
     transition:
       border-color 0.35s ease,
       box-shadow 0.35s ease,
@@ -3221,7 +4234,10 @@ onMounted(async () => {
   }
   .studio-mobile-nav__control:focus-within {
     border-color: rgb(216 185 119 / 56%);
-    box-shadow: 0 0 0 3px rgb(216 185 119 / 11%), inset 0 1px 0 rgb(255 255 255 / 9%), 0 18px 42px rgb(7 7 12 / 19%);
+    box-shadow:
+      0 0 0 3px rgb(216 185 119 / 11%),
+      inset 0 1px 0 rgb(255 255 255 / 9%),
+      0 18px 42px rgb(7 7 12 / 19%);
     transform: translateY(-1px);
   }
   .studio-mobile-nav__control > svg {
@@ -3274,6 +4290,154 @@ onMounted(async () => {
 </style>
 
 <style scoped>
-.research-dossier-actions{display:grid;gap:12px;margin-top:20px}.research-dossier-actions :deep(.themed-select){margin:0}.research-more-actions>summary{display:flex;align-items:center;justify-content:space-between;gap:14px;cursor:pointer;list-style:none}.research-more-actions>summary::-webkit-details-marker{display:none}.research-more-actions>summary:after{content:"＋";color:#d8b977;font-size:16px;transition:transform .35s}.research-more-actions[open]>summary:after{transform:rotate(45deg)}.research-more-actions{margin-top:3px;padding-top:13px;border-top:1px solid #ffffff10}.research-more-actions>summary{font-size:11px;color:#aca5b5;font-weight:450}.research-more-actions .ws-button{margin-top:13px}.research-status-action{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:10px;margin-top:12px}.research-status-action :deep(.themed-select){margin:0}.research-action-status__orb{will-change:box-shadow}.source-link{margin-top:10px}.research-dossier-actions,.research-more-actions{animation:research-flow-in .55s cubic-bezier(.22,1,.36,1) both}@keyframes research-flow-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@media(max-width:760px){.research-status-action{grid-template-columns:1fr}}@media(prefers-reduced-motion:reduce){.research-dossier-actions,.research-more-actions{animation:none}}
-.research-action-status{display:flex;align-items:center;gap:9px;margin:12px 0;padding:11px 14px;border:1px solid rgb(216 185 119 / 22%);border-radius:14px;color:#d9d1c2;background:linear-gradient(100deg,rgb(216 185 119 / 9%),rgb(185 163 237 / 6%));font-size:12px}.research-action-status--saved{border-color:rgb(146 218 177 / 26%);color:#c4e3cf}.research-action-status--failed{border-color:rgb(236 130 130 / 32%);color:#efb6b6}.research-action-status__orb{width:8px;height:8px;flex:0 0 8px;border-radius:50%;background:#d8b977;box-shadow:0 0 0 0 rgb(216 185 119 / 40%);animation:research-action-pulse 1.8s ease-out infinite}.research-action-status--saved .research-action-status__orb{background:#92dab1;animation:none}.research-action-status--failed .research-action-status__orb{background:#ec8282;animation:none}@keyframes research-action-pulse{0%{box-shadow:0 0 0 0 rgb(216 185 119 / 40%)}70%{box-shadow:0 0 0 8px rgb(216 185 119 / 0%)}100%{box-shadow:0 0 0 0 rgb(216 185 119 / 0%)}}.research-action-enter-active,.research-action-leave-active{transition:opacity .28s ease,transform .28s ease}.research-action-enter-from,.research-action-leave-to{opacity:0;transform:translateY(-6px)}@media (prefers-reduced-motion:reduce){.research-action-status__orb{animation:none}.research-action-enter-active,.research-action-leave-active{transition:none}}
+.research-dossier-actions {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+}
+.research-dossier-actions :deep(.themed-select) {
+  margin: 0;
+}
+.research-more-actions > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  cursor: pointer;
+  list-style: none;
+}
+.research-more-actions > summary::-webkit-details-marker {
+  display: none;
+}
+.research-more-actions > summary:after {
+  content: '＋';
+  color: #d8b977;
+  font-size: 16px;
+  transition: transform 0.35s;
+}
+.research-more-actions[open] > summary:after {
+  transform: rotate(45deg);
+}
+.research-more-actions {
+  margin-top: 3px;
+  padding-top: 13px;
+  border-top: 1px solid #ffffff10;
+}
+.research-more-actions > summary {
+  font-size: 11px;
+  color: #aca5b5;
+  font-weight: 450;
+}
+.research-more-actions .ws-button {
+  margin-top: 13px;
+}
+.research-status-action {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+  margin-top: 12px;
+}
+.research-status-action :deep(.themed-select) {
+  margin: 0;
+}
+.research-action-status__orb {
+  will-change: box-shadow;
+}
+.source-link {
+  margin-top: 10px;
+}
+.research-dossier-actions,
+.research-more-actions {
+  animation: research-flow-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes research-flow-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (max-width: 760px) {
+  .research-status-action {
+    grid-template-columns: 1fr;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .research-dossier-actions,
+  .research-more-actions {
+    animation: none;
+  }
+}
+.research-action-status {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 12px 0;
+  padding: 11px 14px;
+  border: 1px solid rgb(216 185 119 / 22%);
+  border-radius: 14px;
+  color: #d9d1c2;
+  background: linear-gradient(100deg, rgb(216 185 119 / 9%), rgb(185 163 237 / 6%));
+  font-size: 12px;
+}
+.research-action-status--saved {
+  border-color: rgb(146 218 177 / 26%);
+  color: #c4e3cf;
+}
+.research-action-status--failed {
+  border-color: rgb(236 130 130 / 32%);
+  color: #efb6b6;
+}
+.research-action-status__orb {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: #d8b977;
+  box-shadow: 0 0 0 0 rgb(216 185 119 / 40%);
+  animation: research-action-pulse 1.8s ease-out infinite;
+}
+.research-action-status--saved .research-action-status__orb {
+  background: #92dab1;
+  animation: none;
+}
+.research-action-status--failed .research-action-status__orb {
+  background: #ec8282;
+  animation: none;
+}
+@keyframes research-action-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgb(216 185 119 / 40%);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgb(216 185 119 / 0%);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgb(216 185 119 / 0%);
+  }
+}
+.research-action-enter-active,
+.research-action-leave-active {
+  transition:
+    opacity 0.28s ease,
+    transform 0.28s ease;
+}
+.research-action-enter-from,
+.research-action-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .research-action-status__orb {
+    animation: none;
+  }
+  .research-action-enter-active,
+  .research-action-leave-active {
+    transition: none;
+  }
+}
 </style>

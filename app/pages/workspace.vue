@@ -7,6 +7,7 @@ import type { OutreachProfile, OutreachProposal, OutreachTarget } from '#shared/
 import { explainResearchFit, orderResearchTargets } from '#shared/utils/research-fit'
 import type { OutreachMatchPreview } from '#shared/types/outreach-planning'
 import OutreachMessagePlan from '~/components/workspace/OutreachMessagePlan.vue'
+import CandidateRefinementForm from '~/components/workspace/CandidateRefinementForm.vue'
 definePageMeta({ alias: ['/dashboard'] })
 useSeoMeta({ title: 'Dashboard | Matrix Fellows', robots: 'noindex, nofollow' })
 const { data, loading, busy, error, notice, refresh, mutate } = useWorkspace()
@@ -1287,169 +1288,13 @@ onMounted(async () => {
                 ]"
               />
             </div>
-            <form v-if="editTarget" class="ws-panel target-form" @submit.prevent="saveTarget">
-              <h2>{{ targetForm.id ? 'Refine candidate' : 'Add a grounded candidate' }}</h2>
-              <div class="ws-grid">
-                <label class="ws-field"
-                  >Name<input v-model="targetForm.name" required maxlength="180" /></label
-                ><label class="ws-field"
-                  >Organization<input v-model="targetForm.organization" required /></label
-                ><label class="ws-field"
-                  >Official source URL<input
-                    v-model="targetForm.canonicalUrl"
-                    type="url"
-                    required /></label
-                ><label class="ws-field"
-                  >Public professional email<input
-                    v-model="targetForm.contactEmail"
-                    type="email" /></label
-                ><label class="ws-field"
-                  >Parent lab's official URL<input
-                    v-model="targetForm.labUrl"
-                    type="url"
-                    placeholder="https://…"
-                  /><small
-                    >Use only an affiliation supported by an official roster/source. Grouping
-                    contacts by lab prevents duplicate approaches to its members.</small
-                  ></label
-                ><label class="ws-field"
-                  >Disciplines, comma separated<input v-model="targetForm.disciplines" /></label
-                ><label class="ws-field">Location<input v-model="targetForm.location" /></label
-                ><ThemedSelect
-                  v-model="targetForm.kind"
-                  label="Candidate type"
-                  :options="['lab', 'pi', 'postdoc', 'phd', 'program', 'student']"
-                /><ThemedSelect
-                  v-model="targetForm.mode"
-                  label="Participation mode"
-                  :options="['unknown', 'remote', 'in_person', 'hybrid']"
-                />
-                <ThemedSelect
-                  v-model="targetForm.scope"
-                  label="Connection scope"
-                  :options="['society', 'student', 'both']"
-                />
-              </div>
-              <label class="ws-field"
-                >Concise description<textarea v-model="targetForm.description" required /></label
-              ><label class="ws-field"
-                >Research background<textarea v-model="targetForm.research" /></label
-              ><label class="ws-field"
-                >Access, eligibility & unresolved restrictions<textarea
-                  v-model="targetForm.eligibility"
-                /></label
-              ><label class="ws-field"
-                >Realistic collaboration opportunities<textarea
-                  v-model="targetForm.opportunities"
-                /></label
-              ><label class="ws-field"
-                >Proposal approaches, one per line<textarea v-model="targetForm.proposalAngles" />
-              </label>
-              <div class="ws-divider" />
-              <h3>Review notes & timing</h3>
-              <label class="ws-field">Internal notes<textarea v-model="targetForm.notes" /></label>
-              <label class="ws-field"
-                >Deferred until<input v-model="targetForm.deferUntil" type="datetime-local" /><small
-                  >For later status still requires the queue action. Date does not imply an
-                  automated email.</small
-                ></label
-              >
-              <label class="ws-field"
-                >Reason if not viable<textarea v-model="targetForm.rejectionReason" />
-              </label>
-              <h3>Evidence-backed priority assessment</h3>
-              <p class="ws-muted">
-                Leave a component empty when unknown. Total is a review priority, never a response
-                probability.
-              </p>
-              <div class="ws-grid">
-                <label class="ws-field"
-                  >Research fit /30<input
-                    v-model.number="targetForm.assessment.fit"
-                    type="number"
-                    min="0"
-                    max="30"
-                /></label>
-                <label class="ws-field"
-                  >Documented openness /25<input
-                    v-model.number="targetForm.assessment.openness"
-                    type="number"
-                    min="0"
-                    max="25"
-                /></label>
-                <label class="ws-field"
-                  >Our contribution /20<input
-                    v-model.number="targetForm.assessment.contribution"
-                    type="number"
-                    min="0"
-                    max="20"
-                /></label>
-                <label class="ws-field"
-                  >Practical feasibility /15<input
-                    v-model.number="targetForm.assessment.feasibility"
-                    type="number"
-                    min="0"
-                    max="15"
-                /></label>
-                <label class="ws-field"
-                  >Evidence strength /10<input
-                    v-model.number="targetForm.assessment.evidence"
-                    type="number"
-                    min="0"
-                    max="10"
-                /></label>
-                <ThemedSelect
-                  v-model="targetForm.assessment.confidence"
-                  label="Assessment confidence"
-                  :options="['low', 'medium', 'high']"
-                />
-              </div>
-              <label class="ws-field"
-                >Assessment rationale<textarea v-model="targetForm.assessment.rationale" />
-              </label>
-              <label class="ws-field"
-                >Blockers, one per line<textarea v-model="targetForm.assessment.blockers" />
-              </label>
-              <h3>Claim-level evidence</h3>
-              <div v-for="(e, i) in targetForm.evidence" :key="i" class="sample">
-                <label class="ws-field"
-                  >Official source URL<input v-model="e.url" type="url" required
-                /></label>
-                <label class="ws-field"
-                  >Supported claim<textarea v-model="e.claim" required />
-                </label>
-                <label class="ws-field"
-                  >Exact supporting quotation<textarea v-model="e.quote" />
-                </label>
-                <ThemedSelect
-                  v-model="e.confidence"
-                  label="Evidence confidence"
-                  :options="['verified', 'inferred', 'unknown']"
-                />
-                <button type="button" class="ws-button" @click="targetForm.evidence.splice(i, 1)">
-                  Remove evidence
-                </button>
-              </div>
-              <button
-                type="button"
-                class="ws-button"
-                @click="
-                  targetForm.evidence.push({
-                    url: '',
-                    claim: '',
-                    quote: '',
-                    retrievedAt: new Date().toISOString(),
-                    confidence: 'unknown',
-                  })
-                "
-              >
-                Add evidence
-              </button>
-              <div class="ws-actions">
-                <button class="ws-button ws-button--primary" :disabled="busy">Save candidate</button
-                ><button type="button" class="ws-button" @click="editTarget = false">Cancel</button>
-              </div>
-            </form>
+            <CandidateRefinementForm
+              v-if="editTarget && !targetForm.id"
+              :model-value="targetForm"
+              :busy="busy"
+              @save="saveTarget"
+              @cancel="editTarget = false"
+            />
             <div class="queue-layout outreach-queue-surface">
               <div class="candidate-list">
                 <button
@@ -1710,14 +1555,25 @@ onMounted(async () => {
                     @preview="previewMatch" @draft="plan" @edit="openTarget(selected)" @ready="selectedDecision = 'ready'; updateSelectedStatus()"
                     @retry-profiles="loadSharedProfiles" @retry-projects="loadProjects" @more-profiles="sharedProfilePage++; loadSharedProfiles()"
                   />
+                  <CandidateRefinementForm
+                    v-if="canDiscover && editTarget && targetForm.id === selected.id"
+                    :model-value="targetForm"
+                    :busy="busy"
+                    :editing="true"
+                    @save="saveTarget"
+                    @cancel="editTarget = false"
+                  />
                   <div v-if="canDiscover" class="research-dossier-actions">
+                    <div class="research-status-action research-status-action--primary">
+                      <div>
+                        <p class="ws-kicker">Queue stage</p>
+                        <ThemedSelect v-model="selectedDecision" label="Move candidate" :options="[{value:'ready',label:'Keep active'},{value:'deferred',label:'For later'},{value:'rejected',label:'Not viable'}]" />
+                      </div>
+                      <button class="ws-button ws-button--primary" :disabled="busy" @click="updateSelectedStatus">Move candidate</button>
+                    </div>
                     <details class="research-more-actions">
                       <summary>More candidate actions</summary>
                       <button class="ws-button" @click="openTarget(selected)">Edit evidence</button>
-                      <div class="research-status-action">
-                        <ThemedSelect v-model="selectedDecision" label="Queue status" :options="[{value:'ready',label:'Keep active'},{value:'deferred',label:'For later'},{value:'rejected',label:'Not viable'}]" />
-                        <button class="ws-button" :disabled="busy" @click="updateSelectedStatus">Update status</button>
-                      </div>
                     </details>
                   </div>
                 </article>

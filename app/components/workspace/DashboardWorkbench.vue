@@ -1202,11 +1202,11 @@ function calendarFacts(date: string) {
       <div class="wb-toolbar wb-plan-rail">
         <div class="wb-plan-rail__navigation">
           <div class="wb-segments" aria-label="Opportunity mode">
+            <span class="wb-segments__indicator" :class="{ 'is-plan': mode === 'plan' }" aria-hidden="true" />
             <button :aria-pressed="mode === 'discover'" @click="mode = 'discover'">Discover</button
             ><button :aria-pressed="mode === 'plan'" @click="mode = 'plan'">My plan</button>
           </div>
           <div v-if="mode === 'plan'" class="wb-viewbar" aria-label="Plan view">
-            <span class="wb-viewbar__label">View</span>
             <button
               v-for="v in ['agenda', 'calendar', 'timeline', 'board']"
               :key="v"
@@ -1260,7 +1260,8 @@ function calendarFacts(date: string) {
           >
         </form>
       </div>
-      <div v-if="mode === 'discover'" class="wb-discovery">
+      <Transition name="wb-mode-switch" mode="out-in">
+      <div v-if="mode === 'discover'" key="discover" class="wb-discovery">
         <TransitionGroup
           name="wb-filter-chip"
           tag="div"
@@ -1372,7 +1373,7 @@ function calendarFacts(date: string) {
           ><span>Next</span><SiteIcon name="right" :size="15" aria-hidden="true" /></button>
         </div>
       </div>
-      <template v-else>
+      <div v-else key="plan" class="wb-plan-mode">
         <Transition name="wb-plan-view" mode="out-in">
           <div :key="view" class="wb-plan-view">
         <div v-if="view === 'agenda'" class="wb-plan-surface wb-agenda">
@@ -1465,7 +1466,8 @@ function calendarFacts(date: string) {
         </section>
           </div>
         </Transition>
-      </template>
+      </div>
+      </Transition>
     </template>
 
     <DashboardDialog
@@ -1711,7 +1713,7 @@ function calendarFacts(date: string) {
 .wb-control-dock {
   position: relative;
   isolation: isolate;
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid rgb(244 241 233 / 12%);
   border-radius: 24px;
   background:
@@ -2011,6 +2013,15 @@ function calendarFacts(date: string) {
   padding-left: 16px;
   border-left: 1px solid rgb(244 241 233 / 12%);
 }
+.wb-segments { position: relative; isolation: isolate; }
+.wb-segments__indicator { position: absolute; z-index: -1; top: 2px; bottom: 2px; left: 2px; width: calc(50% - 2px); border: 1px solid rgb(216 185 119 / 25%); border-radius: 10px; background: rgb(216 185 119 / 9%); box-shadow: 0 5px 18px rgb(216 185 119 / 7%); transform: translateX(0); transition: transform .55s cubic-bezier(.22,1,.36,1), background .35s ease, border-color .35s ease; pointer-events: none; }
+.wb-segments__indicator.is-plan { transform: translateX(100%); }
+.wb-segments button { position: relative; z-index: 1; }
+.wb-plan-mode { min-width: 0; }
+.wb-mode-switch-enter-active, .wb-mode-switch-leave-active { transition: opacity .4s ease, transform .5s cubic-bezier(.22,1,.36,1); }
+.wb-mode-switch-enter-from { opacity: 0; transform: translateY(12px); }
+.wb-mode-switch-leave-to { opacity: 0; transform: translateY(-10px); }
+
 .wb-viewbar__label {
   padding: 0 8px 0 10px;
   color: rgb(244 241 233 / 34%);
@@ -2904,9 +2915,11 @@ function calendarFacts(date: string) {
 .wb-board-empty p { margin: 0; font-size: 11px; }
 @media (max-width: 700px) {
   .wb-plan-rail { display: grid; gap: 12px; }
-  .wb-plan-rail__navigation { display: grid; gap: 8px; }
-  .wb-plan-rail .wb-segments { width: max-content; max-width: 100%; }
-  .wb-plan-rail .wb-viewbar { width: 100%; margin-left: 0; padding: 8px 2px 0; overflow-x: auto; justify-content: flex-start; scrollbar-width: none; border-top: 1px solid rgb(244 241 233 / 12%); border-left: 0; }
+  .wb-plan-rail__navigation { display: flex; align-items: center; gap: 8px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+  .wb-plan-rail__navigation::-webkit-scrollbar { display: none; }
+  .wb-plan-rail .wb-segments { width: max-content; max-width: none; flex: 0 0 auto; }
+  .wb-plan-rail .wb-segments button { flex: 0 0 auto; padding-inline: 15px; }
+  .wb-plan-rail .wb-viewbar { width: max-content; margin-left: 0; padding: 0 0 0 8px; overflow: visible; justify-content: flex-start; border-top: 0; border-left: 1px solid rgb(244 241 233 / 12%); }
   .wb-plan-rail .wb-viewbar::-webkit-scrollbar { display: none; }
   .wb-plan-rail .wb-viewbar button { flex: 0 0 auto; padding-inline: 13px; }
   .wb-toolbar__actions { justify-content: stretch; }
@@ -2921,8 +2934,7 @@ function calendarFacts(date: string) {
 }
 @media (max-width: 420px) {
   .wb-plan-rail__navigation { min-width: 0; }
-  .wb-plan-rail .wb-segments { width: 100%; }
-  .wb-plan-rail .wb-segments button { flex: 1; }
+  .wb-plan-rail .wb-segments { width: max-content; }
   .wb-calendar-grid { gap: 3px; }
   .wb-calendar-day { font-size: 11px; }
   .wb-calendar-legend { gap: 9px 14px; }

@@ -50,7 +50,7 @@ test('member dashboard retains assigned research and excludes officer drafts', a
   await page.locator('.candidate-list').first().getByRole('button', { name: /Robotics Research Group/ }).click()
   await expect(page.getByRole('button', { name: 'Shape a proposal', exact: true })).toHaveCount(0)
   await expect(nav.getByRole('button', { name: 'Outreach', exact: true })).toHaveCount(1)
-  await page.goto('/dashboard?section=queue')
+  await page.goto('/dashboard?section=drafts')
   await expect(page.getByRole('heading', { name: 'Outreach', exact: true })).toHaveCount(1)
   await expect(page.getByRole('heading', { name: 'Messages to review', exact: true })).toHaveCount(0)
   expect(requests.some((request) => request.path === '/api/workspace/planner')).toBe(false)

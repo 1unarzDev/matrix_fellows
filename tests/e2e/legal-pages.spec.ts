@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Locator } from '@playwright/test'
 
 for (const [path, title] of [
   ['/privacy', 'Privacy policy'],
@@ -58,6 +58,37 @@ for (const [path, title] of [
     )
   })
 }
+
+test('legal section links preserve the hash and use smooth scrolling', async ({ page }) => {
+  await page.addInitScript(() => {
+    const original = Element.prototype.scrollIntoView
+    Element.prototype.scrollIntoView = function (options) {
+      document.documentElement.dataset.legalScrollBehavior =
+        typeof options === 'object' && options ? options.behavior || '' : ''
+      return original.call(this, options)
+    }
+  })
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await page.goto('/terms')
+
+  const desktopIndex = page.locator('.legal-desktop-index')
+  let firstSectionLink: Locator
+  if (await desktopIndex.isVisible()) {
+    firstSectionLink = desktopIndex.getByRole('link').first()
+  } else {
+    await page.locator('.legal-mobile-index summary').click()
+    firstSectionLink = page
+      .getByRole('navigation', { name: 'Policy sections' })
+      .getByRole('link')
+      .first()
+  }
+  const href = await firstSectionLink.getAttribute('href')
+  await firstSectionLink.click()
+
+  await expect(page).toHaveURL(new RegExp(`/terms/?${href?.replace('#', '\\#')}$`))
+  await expect(page.locator('html')).toHaveAttribute('data-legal-scroll-behavior', 'smooth')
+  await expect(page.locator('.legal-document')).toHaveCSS('backdrop-filter', /blur/)
+})
 
 test('login exposes both policies and sitemap includes them without private dashboard', async ({
   page,

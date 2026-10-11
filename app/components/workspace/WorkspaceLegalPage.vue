@@ -10,6 +10,30 @@ defineProps<{
     sections: Array<{ id: string; title: string; paragraphs: string[]; bullets?: string[] }>
   }
 }>()
+
+function handleSectionLinkClick(event: MouseEvent, sectionId: string) {
+  // Keep modified clicks available for opening/copying links while making the
+  // normal in-page action feel continuous. The hash is still updated so the
+  // destination remains shareable and survives a reload.
+  if (
+    event.defaultPrevented ||
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  ) {
+    return
+  }
+
+  const target = document.getElementById(sectionId)
+  if (!target) return
+
+  event.preventDefault()
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  window.history.pushState(null, '', `#${sectionId}`)
+  target.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' })
+}
 </script>
 
 <template>
@@ -31,16 +55,25 @@ defineProps<{
         <aside class="legal-index">
           <nav class="legal-desktop-index" aria-label="On this page">
             <p class="legal-index-label">On this page</p>
-            <a v-for="section in document.sections" :key="section.id" :href="`#${section.id}`">
+            <a
+              v-for="section in document.sections"
+              :key="section.id"
+              :href="`#${section.id}`"
+              @click="handleSectionLinkClick($event, section.id)"
+            >
               {{ section.title }}
             </a>
           </nav>
           <details class="legal-mobile-index">
             <summary>On this page <SiteIcon name="down" :size="14" /></summary>
             <nav aria-label="Policy sections">
-              <a v-for="section in document.sections" :key="section.id" :href="`#${section.id}`">{{
-                section.title
-              }}</a>
+              <a
+                v-for="section in document.sections"
+                :key="section.id"
+                :href="`#${section.id}`"
+                @click="handleSectionLinkClick($event, section.id)"
+                >{{ section.title }}</a
+              >
             </nav>
           </details>
         </aside>
@@ -113,7 +146,12 @@ defineProps<{
   width: min(100%, 1080px);
   border: 1px solid #eee1ff20;
   border-radius: 28px;
-  background: linear-gradient(135deg, #171820, #101219);
+  background:
+    radial-gradient(42rem 28rem at 100% 0%, rgb(216 185 119 / 5%), transparent 70%),
+    linear-gradient(145deg, rgb(244 241 233 / 5%), rgb(244 241 233 / 1.8%) 52%, transparent 82%),
+    rgb(15 16 23 / 74%);
+  -webkit-backdrop-filter: blur(28px) saturate(115%);
+  backdrop-filter: blur(28px) saturate(115%);
   box-shadow:
     inset 0 1px 0 #fff8ec0a,
     0 28px 100px #00000045;

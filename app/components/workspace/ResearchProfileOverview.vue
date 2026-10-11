@@ -4,6 +4,11 @@ const props = defineProps<{ profileId?: string }>()
 const emit = defineEmits<{ updated: [] }>()
 const { data, refresh } = await useFetch<{ profile: ResearchProfilePacket; artifacts: ResearchArtifact[]; claims: ResearchClaim[]; providerStatus: string }>('/api/workspace/research-profile')
 const url = ref(''), contribution = ref(''), relationship = ref<'interest' | 'created' | 'contributed'>('interest')
+const relationshipOptions = [
+  { value: 'interest', label: 'I’m exploring it', description: 'Keep the link as an interest or reference' },
+  { value: 'contributed', label: 'I contributed', description: 'Describe your role below if useful' },
+  { value: 'created', label: 'I created it', description: 'Describe what you built or led below' },
+]
 const projectFacts = computed(() => data.value?.claims.filter(c => c.origin === 'source' && ['project_method', 'project_question'].includes(c.predicate) && !c.withdrawn_at && c.adoption !== 'rejected') || [])
 function sourceUrl(claim: ResearchClaim) { return data.value?.artifacts.find(a => a.id === claim.artifact_id)?.canonical_url }
 const busy = ref(false), message = ref('')
@@ -84,7 +89,7 @@ async function retry(id: string) { busy.value = true; try { await $fetch('/api/w
     <form class="research-capture" @submit.prevent="add">
       <label class="research-capture__url"><span>Add one research link</span><input v-model="url" type="url" required placeholder="https://github.com/team/project" /></label>
       <div class="research-capture__row">
-        <label><span>How does it relate to you?</span><select v-model="relationship"><option value="interest">I’m exploring it</option><option value="contributed">I contributed</option><option value="created">I created it</option></select></label>
+        <div class="research-capture__relationship"><span>How does it relate to you?</span><ThemedSelect v-model="relationship" label="How does it relate to you?" :options="relationshipOptions" full-width /></div>
         <button class="research-add" :class="{ 'research-add--queued': savingLink }" :disabled="!url" type="submit"><span class="research-add__icon" aria-hidden="true">✦</span>{{ savingLink ? 'Queue another' : 'Add link' }}</button>
       </div>
       <label v-if="relationship !== 'interest'" class="research-capture__contribution"><span>Your contribution <small>optional detail</small></span><textarea v-model="contribution" maxlength="1500" rows="2" placeholder="A short note about your role; team work remains separately attributed." /></label>
@@ -216,7 +221,8 @@ async function retry(id: string) { busy.value = true; try { await $fetch('/api/w
   -webkit-backdrop-filter: blur(12px) saturate(110%);
   backdrop-filter: blur(12px) saturate(110%);
 }
-.research-capture label {
+.research-capture label,
+.research-capture__relationship {
   display: grid;
   gap: 7px;
   color: #d9d3df;
@@ -230,7 +236,6 @@ async function retry(id: string) { busy.value = true; try { await $fetch('/api/w
   font-size: 10px;
 }
 .research-capture input,
-.research-capture select,
 .research-capture textarea {
   width: 100%;
   box-sizing: border-box;
@@ -244,7 +249,6 @@ async function retry(id: string) { busy.value = true; try { await $fetch('/api/w
 }
 .research-capture textarea { resize: vertical; }
 .research-capture input:focus,
-.research-capture select:focus,
 .research-capture textarea:focus {
   outline: none;
   border-color: rgb(228 187 114 / 60%);
@@ -293,15 +297,21 @@ async function retry(id: string) { busy.value = true; try { await $fetch('/api/w
 .research-overview li p { margin: 4px 0 0; color: #aaa3b2; font-size: 11px; line-height: 1.55; }
 .research-overview li small { color: #8e899b; font-size: 10px; }
 .research-overview li > button,
-.research-claim button { width: fit-content; border: 1px solid rgb(228 187 114 / 27%); border-radius: 999px; padding: 7px 10px; color: #d8b977; background: transparent; font: 10px Manrope, sans-serif; cursor: pointer; }
+.research-claim button { width: fit-content; border: 1px solid rgb(228 187 114 / 27%); border-radius: 999px; padding: 7px 10px; color: #d8b977; background: transparent; font: 10px Manrope, sans-serif; cursor: pointer; transition: transform .3s cubic-bezier(.22,1,.36,1), background-color .25s, border-color .25s, box-shadow .3s; }
 .research-overview li > button:hover,
-.research-claim button:hover { background: rgb(228 187 114 / 8%); }
+.research-claim button:hover { transform: translateY(-1px); border-color: rgb(228 187 114 / 50%); background: rgb(228 187 114 / 8%); box-shadow: 0 7px 20px rgb(0 0 0 / 12%); }
+.research-overview li > button:active,
+.research-claim button:active { transform: translateY(0) scale(.98); }
+.research-overview li > button:focus-visible,
+.research-claim button:focus-visible { outline: 2px solid rgb(228 187 114 / 65%); outline-offset: 3px; }
 .research-artifact__pulse { position: absolute; right: 0; top: 17px; display: inline-flex; gap: 3px; }
 .research-artifact__pulse i { width: 4px; height: 4px; border-radius: 50%; background: #d8b977; animation: research-dot 1.2s ease-in-out infinite; }
 .research-artifact__pulse i:nth-child(2) { animation-delay: .16s; }
 .research-artifact__pulse i:nth-child(3) { animation-delay: .32s; }
 .research-details { margin-top: 18px; border-top: 1px solid rgb(255 255 255 / 9%); }
-.research-details summary { display: flex; justify-content: space-between; gap: 12px; padding: 16px 0 4px; color: #d7c7a0; cursor: pointer; font-size: 12px; }
+.research-details summary { display: flex; justify-content: space-between; gap: 12px; padding: 16px 0 4px; color: #d7c7a0; cursor: pointer; font-size: 12px; transition: color .25s, transform .3s cubic-bezier(.22,1,.36,1); }
+.research-details summary:hover { color: #f0dfb4; transform: translateX(2px); }
+.research-details summary:focus-visible { outline: 2px solid rgb(228 187 114 / 65%); outline-offset: 4px; border-radius: 6px; }
 .research-details summary span { color: #91899c; font-size: 10px; }
 .research-claim { padding: 13px 0; border-top: 1px solid rgb(255 255 255 / 8%); }
 .research-claim p { margin: 0; color: #c8c0ce; font-size: 12px; line-height: 1.6; }
@@ -324,7 +334,7 @@ async function retry(id: string) { busy.value = true; try { await $fetch('/api/w
   .research-add { width: 100%; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .research-add, .research-capture input, .research-capture select, .research-capture textarea { transition: none; }
+  .research-add, .research-capture input, .research-capture textarea, .research-overview li > button, .research-claim button, .research-details summary { transition: none; }
   .research-artifact__pulse i { animation: none; }
 }
 </style>

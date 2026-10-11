@@ -2393,7 +2393,11 @@ onMounted(async () => {
   padding: 20px 24px;
   list-style: none;
   cursor: pointer;
+  transition: color .3s ease, background-color .3s ease, transform .35s cubic-bezier(.22,1,.36,1);
 }
+.profile-preferences summary:hover { color: #f0dfb4; background: rgb(228 187 114 / 3%); }
+.profile-preferences summary:active { transform: scale(.995); }
+.profile-preferences summary:focus-visible { outline: 2px solid rgb(228 187 114 / 65%); outline-offset: -4px; }
 .profile-preferences summary::-webkit-details-marker { display: none; }
 .profile-preferences summary::after {
   content: '+';
@@ -2421,6 +2425,9 @@ onMounted(async () => {
 }
 .profile-preferences__body { padding-top: 18px; }
 .profile-compact-form { padding-top: 20px; }
+.profile-preferences[open] > .profile-preferences__body,
+.profile-preferences[open] > .profile-compact-form { animation: profile-disclosure-in .45s cubic-bezier(.22,1,.36,1) both; transform-origin: top; }
+@keyframes profile-disclosure-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 .profile-compact-form > .ws-muted { margin: 0; padding-top: 0; }
 .profile-advanced { margin-bottom: 25px; }
 @media (max-width: 620px) {
@@ -2431,7 +2438,10 @@ onMounted(async () => {
   .profile-compact-form { padding-inline: 18px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .profile-preferences summary::after { transition: none; }
+  .profile-preferences summary,
+  .profile-preferences summary::after,
+  .profile-preferences[open] > .profile-preferences__body,
+  .profile-preferences[open] > .profile-compact-form { transition: none; animation: none; }
 }
 @media (max-width: 700px) {
   .profile-context-block {

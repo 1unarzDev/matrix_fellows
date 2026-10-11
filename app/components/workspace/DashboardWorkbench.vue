@@ -392,6 +392,36 @@ const taskMilestones = computed(() => {
   }
   return milestones
 })
+const taskParentOptions = computed(() => [
+  { value: '', label: 'Personal task', description: 'A standalone next move' },
+  ...pursuits.value.map((pursuit) => ({
+    value: `pursuit:${pursuit.id}`,
+    label: pursuit.title,
+    description: 'Planned opportunity',
+  })),
+  ...savedTaskOpportunities.value.map((opportunity) => ({
+    value: `opportunity:${opportunity.id}`,
+    label: opportunity.title === 'Saved opportunity' ? `${opportunity.title} · ${opportunity.id}` : opportunity.title,
+    description: 'Saved opportunity',
+  })),
+  ...activities.value.map((activity) => ({
+    value: `activity:${activity.id}`,
+    label: activity.title,
+    description: activity.milestone ? `Active project · ${activity.milestone}` : 'Active project',
+  })),
+])
+const taskMilestoneOptions = computed(() => [
+  { value: '', label: 'No milestone', description: 'Optional' },
+  ...taskMilestones.value.map((milestone) => ({
+    value: milestone.value,
+    label: milestone.label,
+    description: dateLabel(milestone.date),
+  })),
+])
+const eventTypeOptions = [
+  { value: 'appointment', label: 'Appointment', description: 'A scheduled one-to-one commitment' },
+  { value: 'program', label: 'Program attendance', description: 'A scheduled program or event' },
+]
 function chicagoMidnight(date: string) {
   const guess = new Date(`${date}T06:00:00Z`)
   const hour = Number(
@@ -1572,8 +1602,8 @@ function calendarFacts(date: string) {
       @close="taskEditor = null"
       ><form class="quick-task-form" @submit.prevent="saveTask">
         <label class="quick-task-form__title">Task name<input v-model="taskEditor.title" required maxlength="240" autofocus placeholder="Name this task" :disabled="taskEditor.saving || taskEditor.saved" /></label>
-        <label class="quick-task-form__field">Connect to an opportunity <select v-model="taskParent" :disabled="taskEditor.saving || taskEditor.saved"><option value="">Personal task</option><option v-for="p in pursuits" :key="p.id" :value="`pursuit:${p.id}`">{{ p.title }}</option><option v-for="opportunity in savedTaskOpportunities" :key="`saved-${opportunity.id}`" :value="`opportunity:${opportunity.id}`">{{ opportunity.title }}<template v-if="opportunity.title === 'Saved opportunity'"> · {{ opportunity.id }}</template></option><optgroup v-if="activities.length" label="Projects"><option v-for="a in activities" :key="a.id" :value="`activity:${a.id}`">{{ a.title }}{{ a.milestone ? ` · ${a.milestone}` : '' }}</option></optgroup></select></label>
-        <label v-if="taskMilestones.length" class="quick-task-form__field">Milestone <select v-model="taskMilestone" :disabled="taskEditor.saving || taskEditor.saved"><option value="">Choose a milestone (optional)</option><option v-for="milestone in taskMilestones" :key="milestone.value" :value="milestone.value">{{ milestone.label }} · {{ dateLabel(milestone.date) }}</option></select></label>
+        <div class="quick-task-form__field"><span>Connect to an opportunity</span><ThemedSelect v-model="taskParent" label="Connect to an opportunity" :options="taskParentOptions" full-width :disabled="taskEditor.saving || taskEditor.saved" /></div>
+        <div v-if="taskMilestones.length" class="quick-task-form__field"><span>Milestone</span><ThemedSelect v-model="taskMilestone" label="Milestone" :options="taskMilestoneOptions" full-width :disabled="taskEditor.saving || taskEditor.saved" /></div>
         <div class="quick-calendar" @pointermove="quickDateFromPoint" @pointerup="finishQuickDrag" @pointercancel="finishQuickDrag">
           <div class="quick-calendar__head"><button type="button" class="quick-calendar__arrow" aria-label="Previous month" :disabled="taskEditor.saving || taskEditor.saved" @click="calendarOffset--">←</button><strong>{{ calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) }}</strong><button type="button" class="quick-calendar__arrow" aria-label="Next month" :disabled="taskEditor.saving || taskEditor.saved" @click="calendarOffset++">→</button></div>
           <div class="quick-calendar__grid"><span v-for="(label, index) in ['S','M','T','W','T','F','S']" :key="`${label}-${index}`" class="quick-calendar__label">{{ label }}</span><span v-for="(day, index) in quickCalendarDays" :key="day ? day.date : `quick-blank-${index}`" class="quick-calendar__cell" :class="day ? quickTaskCellClass(day.date) : {}"><button v-if="day" :data-quick-date="day.date" :data-date="day.date" :aria-label="`Select ${day.date}`" :aria-pressed="quickTaskIsSelected(day.date)" type="button" class="quick-calendar__day" :disabled="taskEditor.saving || taskEditor.saved" :class="{ 'quick-calendar__day--selected': quickTaskIsSelected(day.date), 'quick-calendar__day--today': day.date === today, ...quickTaskRangeClass(day.date) }" @pointerdown.prevent="beginQuickDrag($event, day.date)" @click="clickQuickDate($event, day.date)">{{ Number(day.date.slice(-2)) }}</button></span></div>
@@ -1589,12 +1619,7 @@ function calendarFacts(date: string) {
       @close="eventEditor = null"
       ><form class="wb-form" @submit.prevent="saveEvent">
         <label>Title<input v-model="eventEditor.title" required maxlength="240" /></label
-        ><label
-          >Type<select v-model="eventEditor.type">
-            <option value="appointment">Appointment</option>
-            <option value="program">Program attendance</option>
-          </select></label
-        >
+        ><div class="wb-form__select-field"><span>Type</span><ThemedSelect v-model="eventEditor.type" label="Type" :options="eventTypeOptions" full-width /></div>
         <div class="wb-formgrid">
           <label>Start<input v-model="eventEditor.start" type="datetime-local" required /></label
           ><label>End<input v-model="eventEditor.end" type="datetime-local" required /></label>
@@ -2493,7 +2518,8 @@ function calendarFacts(date: string) {
   gap: 18px;
 }
 .quick-task-form { display:flex; flex-direction:column; gap:17px; min-width:min(100%,430px); padding:4px 2px 2px; }
-.quick-task-form__title,.quick-task-form__field { position:relative; z-index:1; display:flex; flex-direction:column; gap:8px; color:#bcb5c8; font-size:11px; }
+.quick-task-form__title,.quick-task-form__field { position:relative; z-index:3; display:flex; flex-direction:column; gap:8px; color:#bcb5c8; font-size:11px; }
+.quick-task-form__field:has(.themed-select--open) { z-index:50; }
 .quick-task-form__title input,.quick-task-form__field select { width:100%; min-height:48px; padding:0 14px; border:1px solid rgb(211 196 239 / 18%); border-radius:13px; background:rgb(255 255 255 / 4%); color:#f2edf5; font:inherit; outline:none; transition:border-color .3s,box-shadow .3s,background .3s; }
 .quick-task-form__title input { font-size:13px; }.quick-task-form__title input::placeholder { color:#767180; }.quick-task-form__title input:focus,.quick-task-form__field select:focus { border-color:#d8b97780; background:rgb(216 185 119 / 6%); box-shadow:0 0 0 4px rgb(216 185 119 / 8%); }
 .quick-task-form__field select option { background:#1d1a27; color:#f2edf5; }
@@ -2509,6 +2535,13 @@ function calendarFacts(date: string) {
 .quick-task-form__save { position:relative; z-index:1; display:flex; align-items:center; justify-content:center; gap:9px; min-height:49px; border:1px solid rgb(216 185 119 / 57%); border-radius:15px; background:linear-gradient(110deg,rgb(216 185 119 / 25%),rgb(185 163 237 / 16%)); color:#f5dfaf; font-size:12px; cursor:pointer; box-shadow:0 0 25px rgb(216 185 119 / 10%); transition:transform .45s cubic-bezier(.2,.8,.2,1),box-shadow .45s,background .45s; }.quick-task-form__save:hover:not(:disabled) { transform:translateY(-3px); background:linear-gradient(110deg,rgb(216 185 119 / 34%),rgb(185 163 237 / 23%)); box-shadow:0 12px 30px rgb(216 185 119 / 17%); }.quick-task-form__save:active:not(:disabled) { transform:scale(.98); }.quick-task-form__save-star { font-size:17px; }
 @media (prefers-reduced-motion:reduce) { .quick-task-form__save,.quick-calendar__day,.quick-calendar__arrow { transition:none; } }
 .wb-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+  color: #d8d4df;
+}
+.wb-form__select-field {
   display: flex;
   flex-direction: column;
   gap: 8px;

@@ -9,8 +9,9 @@ const props = withDefaults(
     align?: 'left' | 'right'
     compact?: boolean
     fullWidth?: boolean
+    disabled?: boolean
   }>(),
-  { align: 'left', compact: false, fullWidth: false },
+  { align: 'left', compact: false, fullWidth: false, disabled: false },
 )
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 const id = useId()
@@ -68,6 +69,7 @@ function positionMenu() {
   placement.value = spaceBelow < menuHeight && spaceAbove > spaceBelow ? 'up' : 'down'
 }
 async function show(direction: 1 | -1 = 1) {
+  if (props.disabled || !normalized.value.length) return
   open.value = true
   const selected = normalized.value.findIndex((option) => option.value === props.modelValue)
   const fallback = direction > 0 ? 0 : normalized.value.length - 1
@@ -139,20 +141,27 @@ onBeforeUnmount(() => {
     ref="root"
     class="themed-select relative w-full"
     :style="{ zIndex: open ? 40 : 20 }"
-    :class="compact ? 'w-auto' : fullWidth ? 'sm:w-full' : 'sm:w-56'"
+    :class="[
+      compact ? 'w-auto' : fullWidth ? 'sm:w-full' : 'sm:w-56',
+      open ? 'themed-select--open' : '',
+    ]"
     @pointerdown.capture="markInternalPointerSequence"
     @focusout="focusOut"
   >
     <button
       ref="trigger"
       type="button"
+      :disabled="disabled"
       :aria-label="`${label}: ${current?.label || modelValue}`"
       aria-haspopup="listbox"
       :aria-expanded="open"
       :aria-controls="id"
       class="themed-select__trigger flex min-h-11 w-full items-center justify-between gap-3 border border-paper/15 bg-paper/[.025] text-left text-paper/85"
       :class="
-        compact ? 'rounded-full px-5 text-xs' : 'rounded-xl px-3 py-3.5 text-xs sm:px-4 sm:text-sm'
+        [
+          compact ? 'rounded-full px-5 text-xs' : 'rounded-xl px-3 py-3.5 text-xs sm:px-4 sm:text-sm',
+          disabled ? 'cursor-not-allowed opacity-50' : '',
+        ]
       "
       @click="open ? close() : show()"
       @keydown.down.prevent="show(1)"
@@ -185,6 +194,7 @@ onBeforeUnmount(() => {
           role="option"
           :aria-selected="modelValue === option.value"
           :tabindex="active === index ? 0 : -1"
+          :disabled="disabled"
           class="themed-select__option group flex min-h-12 w-full items-center gap-3.5 rounded-xl px-4 py-3 text-left focus:outline-none"
           :class="modelValue === option.value ? 'bg-acid/10 text-acid' : 'text-paper/70'"
           :style="`--option-index:${index}`"

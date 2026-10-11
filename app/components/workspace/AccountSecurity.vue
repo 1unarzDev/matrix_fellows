@@ -149,43 +149,33 @@ onMounted(() => {
       </div>
       <span class="settings-panel__icon" aria-hidden="true"><SiteIcon name="lock" :size="17" /></span>
     </div>
-      <p class="ws-muted">
-        Passkeys use your device’s fingerprint, face recognition, or security key. Email sign-in
-        remains available for recovery.
-      </p>
+      <p class="ws-muted">Choose a method to verify your account.</p>
       <p v-if="error" class="security-error" role="alert">{{ error }}</p>
       <p v-if="notice" role="status">{{ notice }}</p>
       <template v-if="security">
         <section class="security-verification" aria-labelledby="security-verification-title">
           <div class="security-verification__heading">
-            <div>
-              <p class="settings-panel__eyebrow">Security check</p>
-              <h3 id="security-verification-title">Choose how to verify your account</h3>
-            </div>
+            <h3 id="security-verification-title">Verify to continue</h3>
             <span class="security-verification__status" :class="{ 'is-ready': security.fresh }">
               {{ security.fresh ? 'Verified' : 'Needed' }}
             </span>
           </div>
-          <p class="ws-muted">
-            Password changes need a recent sign-in. Use the option that is easiest on this device;
-            the link and provider options return you to this dashboard.
-          </p>
           <div class="security-methods">
             <button class="security-method" type="button" :disabled="busy" @click="sendSignInEmail">
-              <span class="security-method__icon" aria-hidden="true"><SiteIcon name="mail" :size="16" /></span>
-              <span><strong>Send an email</strong><small>{{ security.email }}</small></span>
+              <span class="security-method__icon" aria-hidden="true"><SiteIcon name="mail" :size="15" /></span>
+              <strong>Email link</strong><small>{{ security.email }}</small>
             </button>
             <button class="security-method" type="button" :disabled="busy" @click="signInWithProvider('google')">
-              <span class="security-method__icon security-method__icon--google" aria-hidden="true">G</span>
-              <span><strong>Use Google</strong><small>{{ providers.google ? 'Continue with Google' : 'Set up Google in Supabase' }}</small></span>
+              <span class="security-method__icon" aria-hidden="true">G</span>
+              <strong>Google</strong><small v-if="!providers.google">Not configured</small>
             </button>
             <button class="security-method" type="button" :disabled="busy" @click="signInWithProvider('azure')">
-              <span class="security-method__icon security-method__icon--microsoft" aria-hidden="true"><SiteIcon name="dashboard" :size="14" /></span>
-              <span><strong>Use Microsoft</strong><small>{{ providers.azure ? 'Continue with Microsoft' : 'Set up Microsoft in Supabase' }}</small></span>
+              <span class="security-method__icon" aria-hidden="true"><SiteIcon name="dashboard" :size="13" /></span>
+              <strong>Microsoft</strong><small v-if="!providers.azure">Not configured</small>
             </button>
             <button class="security-method" type="button" :disabled="busy" @click="verifyWithPasskey">
-              <span class="security-method__icon" aria-hidden="true"><SiteIcon name="lock" :size="15" /></span>
-              <span><strong>Use a passkey</strong><small>{{ supported && security.passkeyAvailable ? 'Use this device or security key' : 'Works when passkeys are enabled on this device' }}</small></span>
+              <span class="security-method__icon" aria-hidden="true"><SiteIcon name="lock" :size="14" /></span>
+              <strong>Passkey</strong><small v-if="!(supported && security.passkeyAvailable)">Works when passkeys are enabled</small>
             </button>
           </div>
         </section>
@@ -302,12 +292,9 @@ onMounted(() => {
   z-index: 1;
 }
 .security-verification {
-  margin-top: 1.4rem;
-  padding: 1.25rem;
-  border: 1px solid rgb(255 255 255 / 12%);
-  border-radius: 20px;
-  background: rgb(255 255 255 / 2%);
-  backdrop-filter: blur(14px) saturate(112%);
+  margin-top: 1.25rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid rgb(255 255 255 / 10%);
 }
 .security-verification__heading {
   display: flex;
@@ -315,42 +302,38 @@ onMounted(() => {
   justify-content: space-between;
   gap: 14px;
 }
-.security-verification__heading h3 { margin: 5px 0 0; font-size: 16px; font-weight: 500; }
+.security-verification__heading h3 { margin: 0; font-size: 15px; font-weight: 500; letter-spacing: -.02em; }
 .security-verification__status {
-  flex: 0 0 auto;
-  padding: 5px 9px;
-  border: 1px solid rgb(228 187 114 / 28%);
-  border-radius: 999px;
-  color: #d8c189;
+  color: rgb(244 241 233 / 38%);
   font-size: 9px;
-  letter-spacing: .12em;
+  letter-spacing: .1em;
   text-transform: uppercase;
 }
-.security-verification__status.is-ready { border-color: rgb(155 204 173 / 32%); color: #acd8ba; }
-.security-methods { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-top: 1rem; }
+.security-verification__status.is-ready { color: rgb(180 211 190 / 72%); }
+.security-methods { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin-top: .7rem; }
 .security-method {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
-  padding: 11px 12px;
-  border: 1px solid rgb(255 255 255 / 12%);
-  border-radius: 13px;
-  background: rgb(255 255 255 / 1.5%);
-  color: #e9e5ee;
+  padding: 11px 10px;
+  border: 0;
+  border-right: 1px solid rgb(255 255 255 / 8%);
+  border-radius: 0;
+  background: transparent;
+  color: rgb(244 241 233 / 78%);
   text-align: left;
   cursor: pointer;
-  transition: border-color 220ms ease, background-color 220ms ease, transform 220ms ease;
+  transition: color 220ms ease, background-color 220ms ease;
 }
-.security-method:hover, .security-method:focus-visible { border-color: rgb(228 187 114 / 45%); background: rgb(228 187 114 / 6%); transform: translateY(-1px); }
-.security-method:focus-visible { outline: 2px solid #d8b977; outline-offset: 2px; }
-.security-method:disabled { opacity: .58; cursor: wait; transform: none; }
-.security-method__icon { display: grid; place-items: center; width: 29px; height: 29px; flex: 0 0 auto; border: 1px solid rgb(228 187 114 / 25%); border-radius: 50%; color: #e4bb72; font-size: 13px; font-weight: 600; }
-.security-method__icon--google { color: #c6d5ff; }
-.security-method__icon--microsoft { color: #b9c9ff; }
-.security-method span:last-child { display: grid; gap: 3px; min-width: 0; }
-.security-method strong { font-size: 11px; font-weight: 500; }
-.security-method small { overflow: hidden; color: #97919f; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.security-method:last-child { border-right: 0; }
+.security-method:hover, .security-method:focus-visible { background: rgb(255 255 255 / 4%); color: #f4f1e9; }
+.security-method:focus-visible { outline: 1px solid rgb(216 185 119 / 58%); outline-offset: -1px; }
+.security-method:disabled { opacity: .5; cursor: wait; }
+.security-method__icon { display: grid; place-items: center; width: 25px; height: 25px; flex: 0 0 auto; color: rgb(244 241 233 / 56%); font-size: 12px; font-weight: 600; }
+.security-method strong { align-self: center; font-size: 11px; font-weight: 500; }
+.security-method small { grid-column: 2; overflow: hidden; margin-top: -4px; color: rgb(244 241 233 / 38%); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
 .settings-password-card__heading {
   display: flex;
   align-items: flex-start;
@@ -362,22 +345,12 @@ onMounted(() => {
 }
 .settings-panel__eyebrow {
   margin: 0;
-  color: #d8b977;
+  color: rgb(216 185 119 / 62%);
   font-size: 9px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
 }
-.settings-password-card__mark {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border: 1px solid rgb(228 187 114 / 22%);
-  border-radius: 50%;
-  color: #e4bb72;
-  background: rgb(228 187 114 / 7%);
-  box-shadow: 0 0 22px rgb(228 187 114 / 8%);
-}
+.settings-password-card__mark { display: none; }
 label {
   display: grid;
   gap: 0.45rem;
@@ -411,7 +384,9 @@ a {
   }
 }
 @media (max-width: 560px) {
-  .security-methods { grid-template-columns: 1fr; }
+  .security-methods { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .security-method:nth-child(2) { border-right: 0; }
+  .security-method:nth-child(-n + 2) { border-bottom: 1px solid rgb(255 255 255 / 8%); }
 }
 @media (prefers-reduced-motion: reduce) {
   .security-method { transition: none; }

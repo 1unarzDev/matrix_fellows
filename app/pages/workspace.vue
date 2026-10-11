@@ -57,6 +57,26 @@ const sections = computed(() =>
 const currentSection = computed(
   () => sections.value.find((section) => section.value === tab.value) || sections.value[0],
 )
+const mobileSectionOptions = computed(() =>
+  sections.value.map((section) => ({
+    value: section.value,
+    label: section.label,
+    description:
+      section.value === 'today'
+        ? 'Your daily focus and planned work'
+        : section.value === 'queue'
+          ? 'Review outreach opportunities'
+          : section.value === 'opportunities'
+            ? 'Saved opportunities and dates'
+            : section.value === 'profiles'
+              ? 'Your research profile'
+              : section.value === 'society'
+                ? 'Shared Matrix Fellows context'
+                : section.value === 'research'
+                  ? 'Source and model activity'
+                  : 'Account and connection settings',
+  })),
+)
 const commandOpen = ref(false)
 const commandDialog = ref<HTMLDialogElement>()
 const sectionNav = ref<HTMLElement>()
@@ -931,19 +951,16 @@ onMounted(async () => {
         </button>
       </nav>
       <div class="studio-mobile-nav">
-        <label class="studio-mobile-nav__label" for="dashboard-section-select">Section</label>
+        <span class="studio-mobile-nav__label">Section</span>
         <div class="studio-mobile-nav__control">
           <SiteIcon :name="currentSection?.icon || 'spark'" :size="16" />
-          <select
-            id="dashboard-section-select"
+          <ThemedSelect
             v-model="tab"
-            aria-label="Dashboard section"
-          >
-            <option v-for="section in sections" :key="section.value" :value="section.value">
-              {{ section.label }}
-            </option>
-          </select>
-          <span class="studio-mobile-nav__chevron" aria-hidden="true">⌄</span>
+            class="studio-mobile-nav__select"
+            label="Dashboard section"
+            :options="mobileSectionOptions"
+            full-width
+          />
         </div>
       </div>
       <DashboardWorkbench
@@ -3071,7 +3088,7 @@ onMounted(async () => {
     gap: 11px;
     min-height: 49px;
     padding: 0 14px;
-    overflow: hidden;
+    overflow: visible;
     border: 1px solid rgb(216 185 119 / 23%);
     border-radius: 16px;
     color: #e8dcc1;
@@ -3100,38 +3117,32 @@ onMounted(async () => {
     flex: 0 0 auto;
     color: #d8b977;
   }
-  .studio-mobile-nav__control select {
+  .studio-mobile-nav__select {
     position: relative;
     z-index: 1;
-    width: 100%;
     min-width: 0;
-    appearance: none;
+    flex: 1;
+  }
+  .studio-mobile-nav__select :deep(.themed-select__trigger) {
+    min-height: 47px;
+    padding: 11px 10px 11px 0;
     border: 0;
-    outline: 0;
-    padding: 14px 30px 14px 0;
-    color: #eee7da;
     background: transparent;
-    font: inherit;
+    box-shadow: none;
+    color: #eee7da;
     font-size: 13px;
-    cursor: pointer;
   }
-  .studio-mobile-nav__control option {
-    color: #211e28;
-    background: #eee8db;
+  .studio-mobile-nav__select :deep(.themed-select__trigger:hover),
+  .studio-mobile-nav__select :deep(.themed-select__trigger[aria-expanded='true']) {
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+    transform: none;
   }
-  .studio-mobile-nav__chevron {
-    position: absolute;
-    right: 15px;
-    top: 50%;
-    color: #d8b977;
-    font-size: 18px;
-    line-height: 1;
-    pointer-events: none;
-    transform: translateY(-57%);
-    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  .studio-mobile-nav__control:focus-within .studio-mobile-nav__chevron {
-    transform: translateY(-42%);
+  .studio-mobile-nav__select :deep(.themed-select__menu) {
+    left: -42px;
+    width: min(360px, calc(100vw - 32px));
+    max-width: calc(100vw - 32px);
   }
   .job-row {
     flex-wrap: wrap;

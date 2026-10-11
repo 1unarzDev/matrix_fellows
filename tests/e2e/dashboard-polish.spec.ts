@@ -146,8 +146,9 @@ test('mobile dashboard section selector stays contained and navigates cleanly', 
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/dashboard?section=today')
 
-  const selector = page.getByRole('combobox', { name: 'Dashboard section', exact: true })
+  const selector = page.getByRole('button', { name: 'Dashboard section: Today', exact: true })
   await expect(selector).toBeVisible()
+  await expect(page.locator('.studio-mobile-nav select')).toHaveCount(0)
   await expect(page.locator('.studio-nav')).toBeHidden()
   await expect(page.locator('.studio-mobile-nav__control')).toBeInViewport()
   const controlWidth = await page
@@ -159,9 +160,10 @@ test('mobile dashboard section selector stays contained and navigates cleanly', 
     true,
   )
 
-  await selector.selectOption('queue')
+  await selector.click()
+  await page.getByRole('option', { name: /^Outreach\b/ }).click()
   await expect(page.getByRole('heading', { name: 'Outreach', exact: true })).toBeVisible()
-  await expect(selector).toHaveValue('queue')
-  await selector.selectOption('today')
+  await page.getByRole('button', { name: 'Dashboard section: Outreach', exact: true }).click()
+  await page.getByRole('option', { name: /^Today\b/ }).click()
   await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible()
 })

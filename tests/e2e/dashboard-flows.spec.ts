@@ -459,6 +459,14 @@ test('fixture: Today command center makes planning a magnetic, low-friction flow
   await expect(page.getByText(/weekly capacity/i)).toHaveCount(0)
   await expect(page.locator('.day-rail')).toBeVisible()
   await expect(page.locator('.day-panel__date')).toHaveText('Today')
+  await expect(page.locator('.day-rail')).toHaveCSS('touch-action', 'pan-y')
+  const railBounds = await page.locator('.day-rail').evaluate((element) => ({
+    clientWidth: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+    overflowX: getComputedStyle(element).overflowX,
+  }))
+  expect(railBounds.scrollWidth).toBeLessThanOrEqual(railBounds.clientWidth + 1)
+  expect(railBounds.overflowX).toBe('hidden')
 
   const targetDate = new Date(`${dueDate}T12:00:00Z`)
   targetDate.setUTCDate(targetDate.getUTCDate() + 2)
@@ -471,23 +479,26 @@ test('fixture: Today command center makes planning a magnetic, low-friction flow
   )
 
   await page.getByRole('button', { name: /Add a task/ }).first().click()
-  const dialog = page.getByRole('dialog')
+  const dialog = page.getByRole('dialog').filter({ has: page.getByLabel('Task name') })
   await expect(dialog).toBeVisible()
   await expect(dialog.locator('input[type="number"]')).toHaveCount(0)
   await expect(dialog.getByText('Status', { exact: true })).toHaveCount(0)
   await expect(dialog.getByText('Start', { exact: true })).toHaveCount(0)
   await expect(dialog.getByText('End', { exact: true })).toHaveCount(0)
   await dialog.getByLabel('Task name').fill('Map an experiment')
-  const opportunitySelect = dialog.getByLabel('Connect to an opportunity', { exact: true })
+  const opportunitySelect = dialog.locator('.quick-task-form__field select').first()
   await opportunitySelect.selectOption(`opportunity:${state.opportunity.id}`)
-  const milestoneSelect = dialog.getByLabel('Milestone', { exact: true })
+  const milestoneSelect = dialog.locator('.quick-task-form__field select').nth(1)
   await expect(milestoneSelect).toBeVisible()
-  await milestoneSelect.selectOption({ label: /Synthetic submission cutoff/ })
-  await expect(milestoneSelect).toHaveValue(/Synthetic submission cutoff/)
+  const milestoneOption = milestoneSelect.locator('option').filter({ hasText: 'Synthetic submission cutoff' }).first()
+  const milestoneValue = await milestoneOption.getAttribute('value')
+  expect(milestoneValue).toBeTruthy()
+  await milestoneSelect.selectOption(milestoneValue!)
+  await expect(milestoneSelect).toHaveValue(milestoneValue!)
   await opportunitySelect.selectOption('')
-  await expect(dialog.getByLabel('Milestone', { exact: true })).toHaveCount(0)
+  await expect(dialog.locator('.quick-task-form__field select').nth(1)).toHaveCount(0)
   await opportunitySelect.selectOption(`opportunity:${state.opportunity.id}`)
-  await expect(dialog.getByLabel('Milestone', { exact: true })).toBeVisible()
+  await expect(dialog.locator('.quick-task-form__field select').nth(1)).toBeVisible()
 
   const rangeStart = new Date(`${targetDateKey}T12:00:00Z`)
   rangeStart.setUTCDate(rangeStart.getUTCDate() + 2)

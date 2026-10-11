@@ -2927,14 +2927,6 @@ onMounted(async () => {
 .studio-nav button[data-group-start='true'] {
   margin-top: 20px;
 }
-.studio-nav button[data-group-start='true']::after {
-  content: '';
-  position: absolute;
-  top: -14px;
-  inset-inline: 10px;
-  height: 1px;
-  background: #ffffff16;
-}
 .personal-proposal > p {
   margin-block: 12px 20px;
 }
@@ -3338,27 +3330,6 @@ onMounted(async () => {
   align-items: center;
   gap: 18px;
   padding: 18px 0;
-}
-.studio-nav button {
-  position: relative;
-}
-.studio-nav button::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  width: 2px;
-  height: 12px;
-  border-radius: 4px;
-  background: #d6bd86;
-  opacity: 0;
-  transform: scaleY(0.4);
-  transition:
-    transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 0.35s;
-}
-.studio-nav button.active::before {
-  opacity: 0.9;
-  transform: scaleY(1);
 }
 .candidate h3 {
   font-size: 17px;
@@ -4122,15 +4093,7 @@ onMounted(async () => {
 @media (max-width: 1100px) {
   .studio-nav button[data-group-start='true'] {
     margin-top: 0;
-    margin-left: 12px;
-  }
-  .studio-nav button[data-group-start='true']::after {
-    top: 8px;
-    bottom: 8px;
-    left: -9px;
-    right: auto;
-    width: 1px;
-    height: auto;
+    margin-left: 0;
   }
   .studio-nav button[data-secondary='true'] {
     padding-block: 14px;

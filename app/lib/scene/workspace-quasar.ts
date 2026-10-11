@@ -12,6 +12,7 @@ export function createWorkspaceQuasar(canvas: HTMLCanvasElement) {
     canvas,
     alpha: true,
     antialias: false,
+    depth: false,
     powerPreference: 'low-power',
   })
   renderer.setClearColor(0x000000, 0)
@@ -31,7 +32,15 @@ export function createWorkspaceQuasar(canvas: HTMLCanvasElement) {
       void main() { gl_Position = vec4(position.xy, 0.0, 1.0); }
     `,
     fragmentShader: /* glsl */ `
+      // Keep high precision where the device exposes it. On constrained
+      // fragment units, mediump avoids a shader-link failure and is enough
+      // for this soft, heavily composited backdrop at the existing buffer
+      // size.
+      #ifdef GL_FRAGMENT_PRECISION_HIGH
       precision highp float;
+      #else
+      precision mediump float;
+      #endif
       uniform vec2 uResolution;
       uniform float uTime;
 
@@ -109,13 +118,22 @@ export function createWorkspaceQuasar(canvas: HTMLCanvasElement) {
         color += nebulaColor * nebulaFalloff * nebulaCore * (0.32 + nebulaNoise * 0.64);
         alpha += nebulaFalloff * nebulaCore * 0.26;
 
+        // The detailed disk is localized. Outside this radius its remaining
+        // exponential tails are below output precision; atmosphere, jets and
+        // stars still render at the same resolution everywhere.
+        float turbulent = 0.0;
+        float shadow = 1.0 - smoothstep(0.19, 0.205, screenRadius);
+        if (screenRadius < 2.6) {
         // Differential rotation: the inner material laps the outer material.
         vec2 disk = vec2(p.x, p.y / 0.24);
         float radius = length(disk);
         float angle = atan(disk.y, disk.x);
         float orbitalSpeed = 0.12 + 0.42 / (radius * radius + 0.22);
         float phase = angle - time * orbitalSpeed;
-        float turbulent = fbm(vec2(cos(phase) * 3.6 + radius * 5.5, sin(phase) * 3.6 - radius * 2.7));
+        // This tilted-disk band excludes the empty area above/below the flow.
+        // Its remaining analytic glow at the boundary is < 1e-12.
+        if (radius < 3.5) {
+        turbulent = fbm(vec2(cos(phase) * 3.6 + radius * 5.5, sin(phase) * 3.6 - radius * 2.7));
         // Break the mathematically flat ellipse at its silhouette. The lift
         // varies around the orbit, so the near and far edges rise into uneven
         // folds instead of ending on one shared plane.
@@ -208,6 +226,9 @@ export function createWorkspaceQuasar(canvas: HTMLCanvasElement) {
         // one long line run off into empty space.
         float filamentPuffs = 0.0;
         float filamentHot = 0.0;
+        // Both masks below are exactly zero outside this band. Preserve every
+        // filament, but avoid its expensive noise when it cannot contribute.
+        if (radius > 0.82 && radius < 1.62) {
         for (int fi = 0; fi < 24; fi++) {
           float ff = float(fi);
           float fSeed = hash21(vec2(ff * 1.91 + 6.0, 17.4));
@@ -217,6 +238,9 @@ export function createWorkspaceQuasar(canvas: HTMLCanvasElement) {
           float fAngle = TAU * (ff + fSeed * 0.62) / 24.0 + fDrift;
           float fDelta = atan(sin(angle - fAngle), cos(angle - fAngle));
           float fAngular = exp(-pow(fDelta / mix(0.045, 0.095, fSeed2), 2.0));
+          // Below a millionth of full intensity this puff cannot affect an
+          // 8-bit output pixel, even before the dashboard opacity treatment.
+          if (fAngular < 0.000001) continue;
           float fNoise = fbm(vec2(cos(angle) * 4.0 + ff * 0.31 + time * 0.03,
             sin(angle) * 4.0 - ff * 0.27 - time * 0.022));
           float fBase = 1.10 + fSeed * 0.13 + 0.018 * sin(time * 0.4 + ff);
@@ -230,6 +254,7 @@ export function createWorkspaceQuasar(canvas: HTMLCanvasElement) {
           float fPuff = fAngular * (fBody * 0.58 + fTip * 0.78) * fBreak;
           filamentPuffs += fPuff * (0.42 + 0.28 * fNoise);
           filamentHot += fPuff * (0.18 + 0.72 * fNoise);
+        }
         }
         filamentPuffs *= smoothstep(0.82, 1.04, radius) * (1.0 - smoothstep(1.34, 1.62, radius));
         filamentHot *= smoothstep(0.88, 1.08, radius) * (1.0 - smoothstep(1.36, 1.60, radius));
@@ -250,6 +275,8 @@ export function createWorkspaceQuasar(canvas: HTMLCanvasElement) {
         float nearStrand = pow(max(0.0, sin(angle * 6.0 - time * 0.17 + depthNoise * 9.0)), 3.0);
         color += mix(vec3(0.48, 0.075, 0.08), vec3(0.95, 0.31, 0.13), depthNoise) * nearVeil * (0.25 + nearStrand * 0.14);
         alpha += nearVeil * 0.30;
+
+        }
 
         // Lensed upper and lower arcs curl around the shadow.
         float ring = exp(-pow((screenRadius - 0.72) * 5.2, 2.0));
@@ -293,12 +320,14 @@ export function createWorkspaceQuasar(canvas: HTMLCanvasElement) {
         // A near-side crescent hugs the event-horizon silhouette. It is
         // composited after the shadow, so the lower disk visibly wraps over
         // the black hole instead of stopping at a straight planar edge.
+        if (p.y < -0.02) {
         float arcWarp = (fbm(vec2(angle * 3.2 + time * 0.12, screenRadius * 12.0)) - 0.5) * 0.012;
         float lowerArcMask = smoothstep(0.02, 0.62, -p.y);
         float lowerArc = exp(-pow((screenRadius + arcWarp - 0.218) * 24.0, 2.0)) * lowerArcMask;
         float arcFilament = 0.42 + 0.58 * fbm(vec2(angle * 4.8 - time * 0.22, screenRadius * 19.0));
         color += vec3(1.15, 0.67, 0.32) * lowerArc * arcFilament * 1.15;
         alpha += lowerArc * 0.78;
+        }
 
         // Short ray-march through the disk thickness. The sample position
         // shifts with depth, so the near and far surfaces do not collapse to
@@ -311,6 +340,7 @@ export function createWorkspaceQuasar(canvas: HTMLCanvasElement) {
           vec2 vp = vec2(p.x, p.y + bend + 0.035 * sin(p.x * 4.0 + vz * 3.0 + time * 0.22));
           float vr = length(vec2(vp.x, vp.y / 0.27));
           float shell = exp(-pow((vr - 0.82) * 3.8, 2.0)) * smoothstep(1.55, 0.22, vr);
+          if (shell < 0.000001) continue;
           float volumeNoise = fbm(vec2(vr * 7.0 - phase * 1.4 + vz * 2.0, angle * 2.5 + vz * 3.0 - time * 0.16));
           float density = shell * (0.18 + volumeNoise * 0.62) * (0.7 + 0.3 * (1.0 - abs(vz)));
           float sampleAlpha = density * 0.08;
@@ -322,6 +352,7 @@ export function createWorkspaceQuasar(canvas: HTMLCanvasElement) {
 
         // A broad, turbulent corona bridges the inner disk into the rim. Its
         // asymmetric lobe prevents the near side from ending in a clean wedge.
+        if (screenRadius < 1.6) {
         float coronaNoise = fbm(p * 5.4 + vec2(time * 0.08, -time * 0.06));
         float corona = exp(-pow((screenRadius - 0.245) * 8.2, 2.0)) * (0.58 + coronaNoise * 0.42);
         float coronaLobe = 0.88 + 0.42 * smoothstep(-0.75, 0.12, -p.x) + 0.22 * smoothstep(-0.08, 0.72, abs(p.y));
@@ -369,13 +400,13 @@ export function createWorkspaceQuasar(canvas: HTMLCanvasElement) {
         particle *= step(0.68, particleSeed) * smoothstep(0.16, 0.54, screenRadius) * (1.0 - smoothstep(0.54, 0.7, screenRadius));
         color += vec3(1.0, 0.62, 0.28) * particle * (0.72 + 0.5 * sin(time * 2.6 + particleSeed * 18.0));
         alpha += particle * 0.9;
+        }
 
         // Thin event-horizon glow, with the foreground shadow kept genuinely black.
         float horizon = exp(-pow((screenRadius - 0.205) * 36.0, 2.0));
         float pulse = 0.88 + 0.12 * sin(time * 2.3 + turbulent * 4.0);
         color += vec3(1.15, 0.95, 0.68) * horizon * pulse * 1.02;
         alpha += horizon * 0.8;
-        float shadow = 1.0 - smoothstep(0.19, 0.205, screenRadius);
         color *= 1.0 - shadow * 0.96;
 
         // Depth cue for the accretion plane: the far (upper) side is hidden
@@ -384,6 +415,7 @@ export function createWorkspaceQuasar(canvas: HTMLCanvasElement) {
         // volume instead of a flat ellipse, without ever painting over the
         // black interior of the hole.
         float frontSide = smoothstep(-0.04, 0.48, -p.y);
+        if (frontSide > 0.0) {
         float frontWarp = (fbm(p * 4.8 + vec2(time * 0.11, -time * 0.08)) - 0.5) * 0.055;
         float frontRadius = length(vec2(p.x * 0.96, (p.y - frontWarp) / 0.24));
         float frontBody = (1.0 - smoothstep(0.92, 1.36, frontRadius)) * smoothstep(0.28, 0.44, frontRadius);
@@ -397,10 +429,12 @@ export function createWorkspaceQuasar(canvas: HTMLCanvasElement) {
         color += vec3(1.0, 0.48, 0.18) * frontTendrils * 0.42;
         color += vec3(1.08, 0.72, 0.36) * frontHighlight * 0.78;
         alpha += frontFlow * 0.64 + frontTendrils * 0.2 + frontHighlight * 0.42;
+        }
 
         // Foreground veil: a warped near sheet crosses over most of the lower
         // shadow, while the upper/back cap remains dark. The stretched noise
         // keeps this from becoming a flat circular patch.
+        if (p.y < 0.26 && abs(p.x) < 0.41 && abs(p.y) < 0.6) {
         float occlusionNoise = fbm(p * 8.2 + vec2(time * 0.16, -time * 0.12));
         float occlusionSide = smoothstep(-0.26, 0.18, -p.y);
         float veilWarp = (fbm(vec2(p.x * 4.2 + time * 0.10, p.y * 2.6 - time * 0.08)) - 0.5) * 0.12
@@ -417,19 +451,24 @@ export function createWorkspaceQuasar(canvas: HTMLCanvasElement) {
         color += heat(0.42 + occlusionNoise * 0.22) * frontOcclusion * 1.08;
         color += vec3(0.62, 0.12, 0.09) * frontOcclusion * (1.0 - occlusionSide) * 0.16;
         alpha += frontOcclusion * 0.92;
+        }
 
+        if (p.y < 0.48 && screenRadius < 1.7) {
         float foregroundNoise = fbm(p * 6.0 + vec2(time * 0.14, -time * 0.10));
         float foregroundVeil = exp(-pow((screenRadius - 0.32 - (foregroundNoise - 0.5) * 0.055) * 4.4, 2.0));
         foregroundVeil *= smoothstep(-0.48, 0.08, -p.y) * (1.0 - shadow);
         foregroundVeil *= 0.48 + 0.52 * foregroundNoise;
         color += mix(vec3(0.56, 0.09, 0.10), vec3(1.02, 0.46, 0.18), foregroundNoise) * foregroundVeil * 0.92;
         alpha += foregroundVeil * 0.76;
+        }
 
         // Reassert the far/back cap after the foreground pass.
         float farCap = 1.0 - smoothstep(-0.16, 0.06, -p.y);
         float farShadowMask = shadow * farCap * 0.96;
         color *= 1.0 - farShadowMask;
         alpha *= 1.0 - farShadowMask;
+
+        }
 
         // Opposing relativistic jets. Their core breathes independently from
         // the disk so the beam reads as hot, pulsing plasma.
@@ -493,8 +532,13 @@ export function createWorkspaceQuasar(canvas: HTMLCanvasElement) {
   let frame = 0
   let elapsed = 0
   let previous = 0
-  let lastRender = 0
+  let nextFrameTime = 0
   let disposed = false
+  let contextLost = false
+  let inViewport = true
+  let lastWidth = 0
+  let lastHeight = 0
+  let lastPixelRatio = 0
   const reduced = matchMedia('(prefers-reduced-motion: reduce)')
 
   function resize() {
@@ -502,45 +546,105 @@ export function createWorkspaceQuasar(canvas: HTMLCanvasElement) {
     const height = Math.max(1, canvas.clientHeight)
     // This is a decorative backdrop. Keep the shader below full device
     // resolution so it never competes with input, scrolling, or text.
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25) * 0.72)
+    const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.25) * 0.72
+    if (width === lastWidth && height === lastHeight && pixelRatio === lastPixelRatio) return
+    lastWidth = width
+    lastHeight = height
+    lastPixelRatio = pixelRatio
+    renderer.setPixelRatio(pixelRatio)
     renderer.setSize(width, height, false)
     renderer.getDrawingBufferSize(uniforms.uResolution.value)
-    renderer.render(scene, camera)
+    if (!contextLost && !document.hidden && inViewport) renderer.render(scene, camera)
   }
 
   function draw(now: number) {
-    if (disposed || document.hidden) return
-    if (lastRender && now - lastRender < 1000 / 30) {
+    if (disposed || contextLost || document.hidden || !inViewport) return
+    if (nextFrameTime && now < nextFrameTime) {
       frame = requestAnimationFrame(draw)
       return
     }
-    lastRender = now
     elapsed += previous ? Math.min((now - previous) / 1000, 0.05) : 0
     previous = now
+    nextFrameTime = now + 1000 / 60
     uniforms.uTime.value = elapsed
     renderer.render(scene, camera)
     if (!reduced.matches) frame = requestAnimationFrame(draw)
   }
 
   function resume() {
-    cancelAnimationFrame(frame)
+    if (frame) cancelAnimationFrame(frame)
+    frame = 0
     previous = 0
-    if (!disposed && !document.hidden) frame = requestAnimationFrame(draw)
+    nextFrameTime = 0
+    if (!disposed && !contextLost && !document.hidden && inViewport)
+      frame = requestAnimationFrame(draw)
+  }
+
+  function pause() {
+    if (frame) cancelAnimationFrame(frame)
+    frame = 0
+    previous = 0
+  }
+
+  function contextLostHandler(event: Event) {
+    event.preventDefault()
+    contextLost = true
+    pause()
+  }
+
+  function contextRestoredHandler() {
+    contextLost = false
+    // Force the next resize pass to re-apply the drawing buffer dimensions;
+    // browsers may recreate the context with a fresh default framebuffer.
+    lastWidth = 0
+    lastHeight = 0
+    lastPixelRatio = 0
+    try {
+      resize()
+      resume()
+    } catch {
+      // A second restoration failure should leave the decorative layer paused
+      // without affecting the dashboard itself.
+      contextLost = true
+      pause()
+    }
   }
 
   const observer = new ResizeObserver(resize)
   observer.observe(canvas)
+  const intersection =
+    typeof IntersectionObserver === 'undefined'
+      ? undefined
+      : new IntersectionObserver(([entry]) => {
+          inViewport = Boolean(entry?.isIntersecting && entry.intersectionRatio > 0)
+          if (inViewport) resume()
+          else pause()
+        })
+  intersection?.observe(canvas)
   document.addEventListener('visibilitychange', resume)
   reduced.addEventListener('change', resume)
+  canvas.addEventListener('webglcontextlost', contextLostHandler)
+  canvas.addEventListener('webglcontextrestored', contextRestoredHandler)
   resize()
+  // Compile outside the first interactive frame when the browser exposes
+  // KHR_parallel_shader_compile through Three.js. The optional call keeps the
+  // visual fallback and test renderer compatible with older implementations.
+  const compileAsync = (renderer as THREE.WebGLRenderer & {
+    compileAsync?: (scene: THREE.Scene, camera: THREE.Camera) => Promise<unknown>
+  }).compileAsync
+  if (compileAsync) void compileAsync.call(renderer, scene, camera).catch(() => undefined)
   resume()
 
   return () => {
+    if (disposed) return
     disposed = true
-    cancelAnimationFrame(frame)
+    pause()
     observer.disconnect()
+    intersection?.disconnect()
     document.removeEventListener('visibilitychange', resume)
     reduced.removeEventListener('change', resume)
+    canvas.removeEventListener('webglcontextlost', contextLostHandler)
+    canvas.removeEventListener('webglcontextrestored', contextRestoredHandler)
     geometry.dispose()
     material.dispose()
     renderer.dispose()

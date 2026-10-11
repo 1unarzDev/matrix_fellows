@@ -2643,7 +2643,7 @@ function calendarFacts(date: string) {
   justify-content: space-between;
   padding: 18px 0;
   border-top: 1px solid var(--wb-line);
-  background: #191a22;
+  background: transparent;
 }
 .wb-filter-chips {
   position: relative;

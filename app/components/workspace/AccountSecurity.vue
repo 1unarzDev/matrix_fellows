@@ -18,6 +18,7 @@ const password = ref('')
 const confirmation = ref('')
 const names = reactive<Record<string, string>>({})
 const supported = ref(false)
+const passkeySetupRequested = ref(false)
 let controller: AbortController | undefined
 onBeforeUnmount(() => controller?.abort())
 async function addPasskey() {
@@ -39,6 +40,7 @@ async function load() {
       ),
     ])
     security.value = nextSecurity
+    passkeySetupRequested.value = false
     providers.value = nextProviders
     for (const key of security.value!.passkeys) names[key.id] = key.friendly_name || 'My passkey'
   } catch (cause) {
@@ -79,6 +81,11 @@ async function signInWithProvider(provider: Provider) {
   }
 }
 async function verifyWithPasskey() {
+  if (!security.value?.passkeys.length) {
+    passkeySetupRequested.value = true
+    notice.value = supported.value ? 'No passkey is registered on this account yet.' : 'Passkeys are not available on this device.'
+    return
+  }
   controller = new AbortController()
   await perform(() => usePasskey(false, controller!.signal), 'Identity verified. You can update security settings now.')
 }
@@ -173,7 +180,7 @@ onMounted(() => {
               <span class="security-method__icon" aria-hidden="true"><SiteIcon name="dashboard" :size="13" /></span>
               <strong>Microsoft</strong><small v-if="!providers.azure">Not configured</small>
             </button>
-            <button class="security-method" type="button" :disabled="busy" @click="verifyWithPasskey">
+            <button class="security-method" type="button" aria-label="Passkey" :disabled="busy" @click="verifyWithPasskey">
               <span class="security-method__icon" aria-hidden="true"><SiteIcon name="lock" :size="14" /></span>
               <strong>Passkey</strong><small v-if="!(supported && security.passkeyAvailable)">Works when passkeys are enabled</small>
             </button>
@@ -213,13 +220,12 @@ onMounted(() => {
             </button>
           </div>
         </div>
-        <button
-          class="ws-button ws-button--primary"
-          :disabled="busy || !security.fresh"
-          @click="addPasskey"
-        >
-          {{ security.passkeys.length ? 'Add another passkey' : 'Set up a passkey' }}
-        </button>
+        <div v-if="passkeySetupRequested" class="passkey-setup-prompt">
+          <p>{{ supported ? 'Set up a passkey on this device for faster sign-in.' : 'Passkeys are not available on this device.' }}</p>
+          <button v-if="supported" class="ws-button ws-button--primary" :disabled="busy || !security.fresh" @click="addPasskey">
+            Set up a passkey
+          </button>
+        </div>
         <form class="security-password settings-password-card" @submit.prevent="changePassword">
           <div class="settings-password-card__heading">
             <div>
@@ -277,6 +283,8 @@ onMounted(() => {
   display: grid;
   gap: 0.85rem;
 }
+.passkey-setup-prompt { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 14px; padding: 12px 0 0; border-top: 1px solid rgb(255 255 255 / 8%); }
+.passkey-setup-prompt p { margin: 0; color: rgb(244 241 233 / 48%); font-size: 11px; line-height: 1.5; }
 .security-password {
   position: relative;
   overflow: hidden;

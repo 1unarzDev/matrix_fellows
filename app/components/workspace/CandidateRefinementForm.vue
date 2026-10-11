@@ -61,7 +61,7 @@ function addEvidence() {
     <header class="candidate-refinement__header">
       <div>
         <p class="ws-kicker">{{ editing ? 'Refine candidate' : 'New candidate' }}</p>
-        <h2 ref="heading" tabindex="-1">{{ steps[step].title }}</h2>
+        <h2 ref="heading" tabindex="-1">{{ steps[step]?.title || steps[0]!.title }}</h2>
         <p class="candidate-refinement__hint">Only the essentials are required. You can add more context whenever it becomes available.</p>
       </div>
       <button type="button" class="candidate-refinement__close" aria-label="Close refinement" :disabled="busy" @click="emit('cancel')">×</button>

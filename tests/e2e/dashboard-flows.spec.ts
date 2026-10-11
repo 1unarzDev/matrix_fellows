@@ -274,26 +274,6 @@ test('fixture: save, reviewed pursuit, canonical views, reload, and contribution
       path: `/tmp/matrix-dashboard-evidence/plan-${info.project.name}.png`,
       fullPage: true,
     })
-  await page
-    .getByRole('navigation', { name: 'Dashboard sections' })
-    .getByRole('button', { name: 'Activities', exact: true })
-    .click()
-  await page.getByRole('button', { name: '+ Add activity', exact: true }).click()
-  await page.getByLabel('Name', { exact: true }).fill('Synthetic spectroscopy notebook')
-  await page.getByLabel('Your role', { exact: true }).fill('Analysis author')
-  await page.getByRole('button', { name: 'Create activity', exact: true }).click()
-  await page.getByRole('button', { name: /Synthetic spectroscopy notebook/ }).click()
-  await page
-    .getByLabel('What did you contribute?')
-    .fill('Implemented and tested baseline normalization.')
-  await page.getByLabel('What did you learn?').fill('The baseline depends on calibration.')
-  await page.getByRole('button', { name: 'Save contribution', exact: true }).click()
-  await expect(page.getByText('Implemented and tested baseline normalization.')).toBeVisible()
-  if (!process.env.DASHBOARD_RECORD_ONLY)
-    await page.screenshot({
-      path: `/tmp/matrix-dashboard-evidence/activity-${info.project.name}.png`,
-      fullPage: true,
-    })
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(
     true,
   )
@@ -367,6 +347,9 @@ test('fixture: keyboard, reduced motion, 1024 layout and CPU-throttled input', a
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('/dashboard?section=today')
   await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible({ timeout: 15_000 })
+  await expect(
+    page.getByRole('navigation', { name: 'Dashboard sections' }).getByRole('button', { name: 'Activities', exact: true }),
+  ).toHaveCount(0)
   await page.keyboard.press('Control+k')
   await expect(page.getByRole('dialog')).toBeVisible()
   await page.keyboard.press('Escape')

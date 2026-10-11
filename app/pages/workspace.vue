@@ -35,7 +35,6 @@ const allSections = [
   { value: 'today', label: 'Today', icon: 'spark' },
   { value: 'queue', label: 'Research', icon: 'compass' },
   { value: 'opportunities', label: 'Opportunities', icon: 'calendar' },
-  { value: 'activities', label: 'Activities', icon: 'atom' },
   { value: 'drafts', label: 'Draft review', icon: 'mail' },
   { value: 'profiles', label: 'Your profile', icon: 'spark' },
   { value: 'society', label: 'Society', icon: 'atom' },
@@ -49,7 +48,6 @@ const sections = computed(() =>
         'today',
         'queue',
         'opportunities',
-        'activities',
         'profiles',
         'society',
         'settings',
@@ -953,16 +951,15 @@ onMounted(async () => {
         </div>
       </div>
       <DashboardWorkbench
-        v-show="['today', 'opportunities', 'activities'].includes(tab)"
+        v-show="['today', 'opportunities'].includes(tab)"
         :workspace="data"
         :section="
-          (['today', 'opportunities', 'activities'].includes(tab) ? tab : 'today') as
-            'today' | 'opportunities' | 'activities'
+          (['today', 'opportunities'].includes(tab) ? tab : 'today') as 'today' | 'opportunities'
         "
         @navigate="tab = $event"
       />
       <Transition
-        v-if="!['today', 'opportunities', 'activities'].includes(tab)"
+        v-if="!['today', 'opportunities'].includes(tab)"
         name="ws-content"
         mode="out-in"
         ><section :key="tab" class="studio-content">

@@ -22,7 +22,7 @@ import {
 
 const props = defineProps<{
   workspace: OutreachWorkspace
-  section: 'today' | 'opportunities' | 'activities'
+  section: 'today' | 'opportunities'
 }>()
 const catalogNow = Date.now()
 const emit = defineEmits<{ navigate: [section: string] }>()
@@ -163,22 +163,8 @@ const taskMilestone = computed({
     setTaskCalendarMonth(date)
   },
 })
-const activityEditor = ref(false)
-const editedActivity = ref<PlanActivity | null>(null)
 const eventEditor = ref<any>(null)
 const quickSelecting = ref(false)
-const selectedActivity = ref(queryText('activity'))
-const activityForm = reactive({ title: '', goal: '', role: '', milestone: '', status: 'active' })
-const contributionForm = reactive({ summary: '', learning: '', artifactUrl: '' })
-const contributionBuffers = new Map<string, typeof contributionForm>()
-watch(selectedActivity, (id, previous) => {
-  if (previous) contributionBuffers.set(previous, { ...contributionForm })
-  Object.assign(
-    contributionForm,
-    contributionBuffers.get(id) || { summary: '', learning: '', artifactUrl: '' },
-  )
-  queryPatch({ activity: id || undefined })
-})
 watch([mode, view, query, includeClosed, savedOnly, showPassed], () =>
   queryPatch({
     mode: mode.value,
@@ -202,7 +188,6 @@ watch(
     includeClosed.value = queryText('past') === '1'
     savedOnly.value = queryText('saved') === '1'
     showPassed.value = queryText('passed') === '1'
-    selectedActivity.value = queryText('activity')
     if (searchChanged) await loadCatalog(1, restoredSearch)
     await restoreSelection()
   },
@@ -248,9 +233,6 @@ const tasks = computed(() => ledger.value?.tasks || [])
 const pursuits = computed(() => ledger.value?.pursuits || [])
 const activities = computed(() => ledger.value?.activities || [])
 const events = computed(() => ledger.value?.events || [])
-const currentActivity = computed(() =>
-  activities.value.find((a) => a.id === selectedActivity.value),
-)
 const today = new Intl.DateTimeFormat('en-CA', {
   timeZone: 'America/Chicago',
   year: 'numeric',
@@ -877,41 +859,6 @@ async function completeTask(task: any) {
   )
     notice.value = task.status === 'done' ? 'Task reopened.' : 'Task completed.'
 }
-async function saveActivity() {
-  if (!activityForm.title.trim()) return
-  if (
-    await request(
-      editedActivity.value ? `/plan/activities/${editedActivity.value.id}` : '/plan/activities',
-      editedActivity.value ? 'PATCH' : 'POST',
-      editedActivity.value
-        ? { expectedVersion: editedActivity.value.version, activity: { ...activityForm } }
-        : { ...activityForm },
-    )
-  ) {
-    activityEditor.value = false
-    Object.assign(activityForm, { title: '', goal: '', role: '', milestone: '', status: 'active' })
-    notice.value = editedActivity.value
-      ? 'Activity updated.'
-      : 'Activity created.'
-    editedActivity.value = null
-  }
-}
-function editActivity(activity?: PlanActivity) {
-  editedActivity.value = activity || null
-  Object.assign(
-    activityForm,
-    activity
-      ? {
-          title: activity.title,
-          goal: activity.goal,
-          role: activity.role,
-          milestone: activity.milestone,
-          status: activity.status,
-        }
-      : { title: '', goal: '', role: '', milestone: '', status: 'active' },
-  )
-  activityEditor.value = true
-}
 async function toggleActivityStatus(activity: PlanActivity) {
   await request(`/plan/activities/${activity.id}`, 'PATCH', {
     expectedVersion: activity.version,
@@ -957,20 +904,6 @@ async function saveEvent() {
     notice.value = 'Calendar event saved. No official date changed.'
   }
 }
-async function recordContribution() {
-  if (!currentActivity.value || !contributionForm.summary.trim()) return
-  if (
-    await request(`/plan/activities/${currentActivity.value.id}/contributions`, 'POST', {
-      expectedVersion: currentActivity.value.version,
-      description: contributionForm.summary,
-      learned: contributionForm.learning,
-      artifactUrl: contributionForm.artifactUrl || null,
-    })
-  ) {
-    Object.assign(contributionForm, { summary: '', learning: '', artifactUrl: '' })
-    notice.value = 'Contribution recorded. It has not been promoted to a profile achievement.'
-  }
-}
 async function updatePursuit(pursuit: any, status: string) {
   let confirmation = false
   if (status === 'submitted') {
@@ -995,9 +928,6 @@ async function updateOutcome(pursuit: any, outcome: string) {
     submissionReceipt: pursuit.submissionReceipt,
     confirmedSubmission: false,
   })
-}
-function activityTasks(id: string) {
-  return tasks.value.filter((t) => t.activityId === id)
 }
 function pursuitTasks(id: string) {
   return tasks.value.filter((t) => t.pursuitId === id)
@@ -1064,27 +994,19 @@ function calendarFacts(date: string) {
           {{
             section === 'today'
               ? 'Today'
-              : section === 'opportunities'
-                ? 'Opportunities'
-                : 'Activities'
+              : 'Opportunities'
           }}
         </h2>
         <p class="wb-muted">
           {{
             section === 'today'
               ? 'Due dates and tasks for the day.'
-              : section === 'opportunities'
-                ? 'Review saved opportunities and plan the next step.'
-                : 'Keep projects and contributions in one place.'
+              : 'Review saved opportunities and plan the next step.'
           }}
         </p>
       </div>
-      <button
-        v-if="section !== 'today'"
-        class="wb-button wb-primary"
-        @click="section === 'activities' ? editActivity() : editQuickTask()"
-      >
-        {{ section === 'activities' ? '+ Add activity' : '+ Add task' }}
+      <button v-if="section === 'opportunities'" class="wb-button wb-primary" @click="editQuickTask()">
+        + Add task
       </button>
     </header>
     <p v-if="error || loadError" class="wb-message wb-error" role="alert">
@@ -1482,103 +1404,6 @@ function calendarFacts(date: string) {
       </template>
     </template>
 
-    <div v-if="section === 'activities'" class="wb-activities">
-      <div class="wb-activity-list">
-        <button
-          v-for="activity in activities"
-          :key="activity.id"
-          class="wb-surface wb-activity"
-          :aria-pressed="selectedActivity === activity.id"
-          @click="selectedActivity = activity.id"
-        >
-          <span class="wb-kicker">{{ activity.status || 'Active' }}</span>
-          <h3>{{ activity.title }}</h3>
-          <p class="wb-muted">{{ activity.milestone || 'Choose the next milestone' }}</p>
-        </button>
-        <div v-if="!activities.length" class="wb-surface wb-empty">
-          <h3>Keep worthwhile work in one place.</h3>
-          <p class="wb-muted">
-            Research, leadership, employment, volunteering, artistic work, and family
-            responsibilities all belong here if you choose to track them.
-          </p>
-          <button class="wb-button" @click="editActivity()">Add your first activity</button>
-        </div>
-      </div>
-      <article v-if="currentActivity" class="wb-surface wb-activity-detail">
-        <p class="wb-kicker">Activity · your work</p>
-        <div class="wb-row">
-          <h3>{{ currentActivity.title }}</h3>
-          <button class="wb-text" @click="editActivity(currentActivity)">Edit activity</button>
-        </div>
-        <p>{{ currentActivity.goal }}</p>
-        <dl class="wb-details">
-          <div>
-            <dt>Your role</dt>
-            <dd>{{ currentActivity.role || 'Not recorded' }}</dd>
-          </div>
-          <div>
-            <dt>Current milestone</dt>
-            <dd>{{ currentActivity.milestone || 'Not set' }}</dd>
-          </div>
-        </dl>
-        <div class="wb-row">
-          <h4>Next tasks</h4>
-        </div>
-        <div v-for="task in activityTasks(currentActivity.id)" :key="task.id" class="wb-task">
-          <DashboardTaskToggle
-            :checked="task.status === 'done'"
-            :disabled="busy"
-            :label="`Toggle completion: ${task.title}`"
-            @toggle="completeTask(task)"
-          /><button class="wb-task-title" @click="openTask(task)">
-            <strong>{{ task.title }}</strong
-            ><span>{{ taskReason(task) }}</span>
-          </button>
-        </div>
-        <h4 class="wb-subheading">Record a contribution</h4>
-        <form class="wb-form" @submit.prevent="recordContribution">
-          <label
-            >What did you contribute?<textarea
-              v-model="contributionForm.summary"
-              required
-              rows="3"
-              placeholder="Describe your own work and what changed."
-            /></label
-          ><label
-            >What did you learn?<textarea v-model="contributionForm.learning" rows="2" /></label
-          ><label
-            >Supporting artifact URL <span class="wb-muted">optional</span
-            ><input v-model="contributionForm.artifactUrl" type="url" placeholder="https://…"
-          /></label>
-          <p class="wb-muted">
-            Private to your account. A note is evidence of work, not an automatic achievement or
-            group claim.
-          </p>
-          <button class="wb-button wb-primary" :disabled="busy">Save contribution</button>
-        </form>
-        <div
-          v-for="contribution in currentActivity.contributions || []"
-          :key="contribution.id"
-          class="wb-contribution"
-        >
-          <p>{{ contribution.description }}</p>
-          <p v-if="contribution.learned" class="wb-muted">Learned: {{ contribution.learned }}</p>
-          <a
-            v-if="contribution.artifactUrl"
-            class="wb-text"
-            :href="contribution.artifactUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-            >View artifact ↗</a
-          ><small class="wb-muted">{{ dateLabel(contribution.createdAt) }}</small>
-        </div>
-      </article>
-      <div v-else-if="activities.length" class="wb-surface wb-empty">
-        <h3>Select an activity</h3>
-        <p class="wb-muted">Review its milestone, next tasks, and contribution evidence.</p>
-      </div>
-    </div>
-
     <DashboardDialog
       v-if="selected && section === 'opportunities'"
       :title="pursuing ? 'Review your preparation plan' : selected.title"
@@ -1731,36 +1556,6 @@ function calendarFacts(date: string) {
         </div>
         <p v-if="error" class="wb-message wb-error" role="alert">{{ error }}</p>
         <button class="quick-task-form__save" :disabled="busy || taskEditor.saving || taskEditor.saved">{{ taskEditor.saved ? 'Saved ✓' : busy || taskEditor.saving ? 'Saving…' : 'Save task' }}</button>
-      </form></DashboardDialog
-    >
-    <DashboardDialog
-      v-if="activityEditor"
-      :title="editedActivity ? 'Edit activity' : 'Add an activity'"
-      @close="activityEditor = false"
-      ><form class="wb-form" @submit.prevent="saveActivity">
-        <label>Name<input v-model="activityForm.title" required maxlength="240" /></label
-        ><label>Question or purpose<textarea v-model="activityForm.goal" rows="3" /></label
-        ><label>Your role<input v-model="activityForm.role" /></label
-        ><label
-          >Current milestone<input
-            v-model="activityForm.milestone"
-            placeholder="A useful next deliverable"
-        /></label>
-        <label
-          >Status<select v-model="activityForm.status">
-            <option value="active">Active</option>
-            <option value="paused">Paused</option>
-            <option value="completed">Completed</option>
-          </select></label
-        >
-        <p class="wb-muted">
-          Applications and project work are separate. Your activity can continue after a submission
-          closes.
-        </p>
-        <p v-if="error" class="wb-message wb-error" role="alert">{{ error }}</p>
-        <button class="wb-button wb-primary" :disabled="busy">
-          {{ editedActivity ? 'Save activity' : 'Create activity' }}
-        </button>
       </form></DashboardDialog
     >
     <DashboardDialog
@@ -2491,30 +2286,6 @@ function calendarFacts(date: string) {
   width: 100%;
   font-size: 11px;
 }
-.wb-activities {
-  display: grid;
-  grid-template-columns: minmax(230px, 0.8fr) minmax(0, 1.4fr);
-  gap: 20px;
-  align-items: start;
-}
-.wb-activity-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.wb-activity {
-  text-align: left;
-  width: 100%;
-  cursor: pointer;
-  transition: border-color 0.2s;
-}
-.wb-activity[aria-pressed='true'] {
-  border-color: #d8b97765;
-  background: #d8b97709;
-}
-.wb-activity-detail > h3 {
-  font-size: 25px;
-}
 .wb-details {
   display: flex;
   flex-direction: column;
@@ -2611,15 +2382,6 @@ function calendarFacts(date: string) {
 .wb-subheading {
   margin-top: 30px !important;
 }
-.wb-contribution {
-  border-top: 1px solid var(--wb-line);
-  padding: 20px 0;
-  font-size: 13px;
-}
-.wb-contribution small {
-  display: block;
-  margin-top: 12px;
-}
 .wb-sr-only {
   position: absolute;
   width: 1px;
@@ -2641,13 +2403,6 @@ function calendarFacts(date: string) {
   }
   .wb-results {
     grid-template-columns: 1fr;
-  }
-  .wb-activities {
-    grid-template-columns: 1fr;
-  }
-  .wb-activity-list {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
   }
   .wb-calendar {
     grid-template-columns: 1fr 1fr;

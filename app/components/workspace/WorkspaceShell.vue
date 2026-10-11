@@ -419,8 +419,8 @@ withDefaults(
 :deep(.ws-content-enter-active),
 :deep(.ws-content-leave-active) {
   transition:
-    opacity 0.32s ease,
-    transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity 0.18s ease,
+    transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, transform;
   transform-origin: top center;
 }

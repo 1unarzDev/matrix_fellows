@@ -1295,7 +1295,7 @@ onMounted(async () => {
       </div>
       <!-- prettier-ignore -->
       <div class="studio-content-stage">
-        <Transition name="ws-content" mode="in-out">
+        <Transition name="ws-content" mode="out-in">
           <div v-if="tab === 'opportunities'" key="opportunities" class="studio-route">
             <KeepAlive>
               <DashboardWorkbench
@@ -3687,12 +3687,9 @@ onMounted(async () => {
   min-width: 0;
 }
 .studio-content-stage {
-  display: grid;
   min-width: 0;
-  align-items: start;
 }
 .studio-content-stage > .studio-route {
-  grid-area: 1 / 1;
   min-width: 0;
 }
 .section-top {

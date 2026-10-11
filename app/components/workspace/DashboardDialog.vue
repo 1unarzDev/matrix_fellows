@@ -67,9 +67,10 @@ function backdrop(event: MouseEvent) {
   padding: 0;
   border: 1px solid #ffffff24;
   border-radius: 20px;
-  background: #191a22;
+  background: rgb(23 24 33 / 88%);
+  backdrop-filter: blur(24px) saturate(1.12);
   color: #efeee8;
-  box-shadow: 0 32px 120px #0009;
+  box-shadow: 0 32px 120px #0009, inset 0 1px rgb(255 255 255 / 8%);
   font-family: Manrope, sans-serif;
   overflow: auto;
   animation: panel-in 0.24s cubic-bezier(0.22, 1, 0.36, 1);
@@ -87,7 +88,7 @@ function backdrop(event: MouseEvent) {
   justify-content: space-between;
   gap: 16px;
   padding: 22px 28px;
-  background: #191a22;
+  background: rgb(23 24 33 / 76%);
   position: sticky;
   top: 0;
   z-index: 1;
@@ -110,6 +111,12 @@ function backdrop(event: MouseEvent) {
   font-size: 24px;
   cursor: pointer;
   flex-shrink: 0;
+  transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
+}
+.dashboard-dialog header button:hover {
+  transform: scale(1.05);
+  border-color: rgb(216 185 119 / 45%);
+  background: rgb(216 185 119 / 9%);
 }
 .dashboard-dialog header button:focus-visible {
   outline: 2px solid #d8b977;
@@ -157,5 +164,6 @@ function backdrop(event: MouseEvent) {
   .dashboard-dialog::backdrop {
     backdrop-filter: none;
   }
+  .dashboard-dialog header button { transition: none; }
 }
 </style>

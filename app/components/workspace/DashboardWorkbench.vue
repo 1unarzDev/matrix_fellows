@@ -297,7 +297,7 @@ function taskReason(t: any) {
   if (t.dueDate && t.dueDate < today) return 'Internal target has passed · review your plan'
   if (t.dueDate === today) return 'Internal target today'
   if (t.dueDate) return `Internal target ${dateLabel(t.dueDate)}`
-  return 'Choose a time for this next step'
+  return 'No date set'
 }
 function actionable(item: Opportunity) {
   if (['discontinued', 'replaced', 'awaiting-announcement'].includes(item.lifecycle || ''))
@@ -673,7 +673,7 @@ async function saveTask() {
     )
   ) {
     taskEditor.value = null
-    notice.value = 'Task saved across all plan views.'
+    notice.value = 'Task saved.'
   }
 }
 async function completeTask(task: any) {
@@ -700,7 +700,7 @@ async function saveActivity() {
     Object.assign(activityForm, { title: '', goal: '', role: '', milestone: '', status: 'active' })
     notice.value = editedActivity.value
       ? 'Activity updated.'
-      : 'Activity created. Add the next useful milestone.'
+      : 'Activity created.'
     editedActivity.value = null
   }
 }
@@ -884,14 +884,15 @@ function calendarFacts(date: string) {
         <p class="wb-muted">
           {{
             section === 'today'
-              ? 'Your commitments, and the next useful step.'
+              ? 'Due dates and tasks for the day.'
               : section === 'opportunities'
-                ? 'Choose deliberately. Keep preparation manageable.'
-                : 'Sustained work, with a record of your contribution.'
+                ? 'Review saved opportunities and plan the next step.'
+                : 'Keep projects and contributions in one place.'
           }}
         </p>
       </div>
       <button
+        v-if="section !== 'today'"
         class="wb-button wb-primary"
         @click="section === 'activities' ? editActivity() : editTask()"
       >
@@ -1174,20 +1175,6 @@ function calendarFacts(date: string) {
                   >Source ↗</a
                 >
               </div>
-              <button
-                class="wb-text"
-                @click="
-                  editTask({
-                    title: '',
-                    dueDate: day.date,
-                    status: 'todo',
-                    estimatedHours: null,
-                    notes: '',
-                  })
-                "
-              >
-                + Add task
-              </button>
             </article>
           </div>
         </template>
@@ -1329,9 +1316,6 @@ function calendarFacts(date: string) {
         </dl>
         <div class="wb-row">
           <h4>Next tasks</h4>
-          <button class="wb-text" @click="editTask(undefined, currentActivity.id)">
-            + Add task
-          </button>
         </div>
         <div v-for="task in activityTasks(currentActivity.id)" :key="task.id" class="wb-task">
           <DashboardTaskToggle
@@ -1540,13 +1524,11 @@ function calendarFacts(date: string) {
     >
     <DashboardDialog
       v-if="taskEditor?.quick"
-      title="Place a next step"
+      title="Add task"
       compact
       @close="taskEditor = null"
       ><form class="quick-task-form" @submit.prevent="saveTask" @pointerup="finishQuickDrag">
-        <div class="quick-task-form__stars" aria-hidden="true"><i v-for="n in 12" :key="n" /></div>
-        <p class="wb-kicker">A small promise to yourself</p>
-        <label class="quick-task-form__title">Task name<input v-model="taskEditor.title" required maxlength="240" autofocus placeholder="What would feel good to move forward?" /></label>
+        <label class="quick-task-form__title">Task name<input v-model="taskEditor.title" required maxlength="240" autofocus placeholder="Name this task" /></label>
         <label class="quick-task-form__field">Connect to an opportunity <select v-model="taskParent"><option value="">Personal task</option><option v-for="p in pursuits" :key="p.id" :value="`pursuit:${p.id}`">{{ p.title }}</option></select></label>
         <div class="quick-calendar" @pointerup="finishQuickDrag">
           <div class="quick-calendar__head"><button type="button" class="quick-calendar__arrow" @click="calendarOffset--">←</button><strong>{{ calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) }}</strong><button type="button" class="quick-calendar__arrow" @click="calendarOffset++">→</button></div>
@@ -1554,12 +1536,12 @@ function calendarFacts(date: string) {
           <p class="quick-calendar__range">{{ dateLabel(taskEditor.dueDate) }}<span v-if="taskEditor.rangeEnd && taskEditor.rangeEnd !== taskEditor.dueDate"> → {{ dateLabel(taskEditor.rangeEnd) }}</span></p>
         </div>
         <p v-if="error" class="wb-message wb-error" role="alert">{{ error }}</p>
-        <button class="quick-task-form__save" :disabled="busy"><span class="quick-task-form__save-star">✦</span>{{ busy ? 'Settling into your plan…' : 'Save this moment' }}</button>
+        <button class="quick-task-form__save" :disabled="busy">{{ busy ? 'Saving…' : 'Save task' }}</button>
       </form></DashboardDialog
     >
     <DashboardDialog
       v-else-if="taskEditor"
-      :title="taskEditor.id ? 'Edit task' : 'Add a next step'"
+      :title="taskEditor.id ? 'Edit task' : 'Add task'"
       @close="taskEditor = null"
       ><form class="wb-form" @submit.prevent="saveTask">
         <label>Task<input v-model="taskEditor.title" required maxlength="240" autofocus /></label
@@ -2343,11 +2325,7 @@ function calendarFacts(date: string) {
   flex-direction: column;
   gap: 18px;
 }
-.quick-task-form { position:relative; overflow:hidden; display:flex; flex-direction:column; gap:17px; min-width:min(100%,430px); padding:4px 2px 2px; }
-.quick-task-form::before { content:''; position:absolute; z-index:-1; width:250px; height:250px; right:-110px; top:70px; border-radius:50%; background:radial-gradient(circle,rgb(232 169 93 / 16%),transparent 67%); filter:blur(12px); animation:quick-nebula 9s ease-in-out infinite alternate; }
-.quick-task-form__stars { position:absolute; inset:0; pointer-events:none; opacity:.6; }
-.quick-task-form__stars i { position:absolute; width:3px; height:3px; border-radius:50%; background:#eacb8e; box-shadow:0 0 9px #eacb8e; animation:quick-star 3s ease-in-out infinite alternate; }
-.quick-task-form__stars i:nth-child(1){left:7%;top:18%}.quick-task-form__stars i:nth-child(2){left:19%;top:74%;animation-delay:.4s}.quick-task-form__stars i:nth-child(3){left:84%;top:26%;animation-delay:.9s}.quick-task-form__stars i:nth-child(4){left:74%;top:68%;animation-delay:1.1s}.quick-task-form__stars i:nth-child(5){left:47%;top:7%;animation-delay:1.5s}.quick-task-form__stars i:nth-child(6){left:91%;top:82%;animation-delay:1.9s}.quick-task-form__stars i:nth-child(7){left:32%;top:38%;animation-delay:2.1s}.quick-task-form__stars i:nth-child(8){left:62%;top:90%;animation-delay:2.3s}.quick-task-form__stars i:nth-child(9){left:12%;top:51%;animation-delay:2.6s}.quick-task-form__stars i:nth-child(10){left:56%;top:22%;animation-delay:2.8s}.quick-task-form__stars i:nth-child(11){left:79%;top:48%;animation-delay:3s}.quick-task-form__stars i:nth-child(12){left:39%;top:85%;animation-delay:3.2s}
+.quick-task-form { display:flex; flex-direction:column; gap:17px; min-width:min(100%,430px); padding:4px 2px 2px; }
 .quick-task-form__title,.quick-task-form__field { position:relative; z-index:1; display:flex; flex-direction:column; gap:8px; color:#bcb5c8; font-size:11px; }
 .quick-task-form__title input,.quick-task-form__field select { width:100%; min-height:48px; padding:0 14px; border:1px solid rgb(211 196 239 / 18%); border-radius:13px; background:rgb(255 255 255 / 4%); color:#f2edf5; font:inherit; outline:none; transition:border-color .3s,box-shadow .3s,background .3s; }
 .quick-task-form__title input { font-size:13px; }.quick-task-form__title input::placeholder { color:#767180; }.quick-task-form__title input:focus,.quick-task-form__field select:focus { border-color:#d8b97780; background:rgb(216 185 119 / 6%); box-shadow:0 0 0 4px rgb(216 185 119 / 8%); }
@@ -2356,8 +2334,7 @@ function calendarFacts(date: string) {
 .quick-calendar__head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; color:#e8d09b; font-size:12px; }.quick-calendar__arrow { display:grid; place-items:center; width:30px; height:30px; border:1px solid rgb(216 185 119 / 20%); border-radius:50%; background:transparent; color:#d8b977; cursor:pointer; transition:transform .3s,background .3s; }.quick-calendar__arrow:hover { transform:scale(1.1); background:rgb(216 185 119 / 10%); }
 .quick-calendar__grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:5px; }.quick-calendar__label { color:#777280; font-size:9px; text-align:center; }.quick-calendar__cell { display:grid; place-items:center; min-height:34px; }.quick-calendar__day { display:grid; place-items:center; width:100%; min-height:34px; border:1px solid transparent; border-radius:9px; background:transparent; color:#c3bdca; font-size:11px; cursor:pointer; transition:transform .3s,background .3s,border-color .3s,color .3s; }.quick-calendar__day:hover { transform:translateY(-2px); border-color:rgb(216 185 119 / 42%); color:#fff3ce; }.quick-calendar__day--selected { background:linear-gradient(145deg,rgb(216 185 119 / 36%),rgb(185 163 237 / 18%)); border-color:rgb(216 185 119 / 55%); color:#fff0c5; box-shadow:0 0 15px rgb(216 185 119 / 12%); }.quick-calendar__day--today { box-shadow:inset 0 -2px #d8b977; }.quick-calendar__range { min-height:17px; margin:13px 0 0; color:#a79ead; font-size:10px; }.quick-calendar__range span { color:#e2c486; }
 .quick-task-form__save { position:relative; z-index:1; display:flex; align-items:center; justify-content:center; gap:9px; min-height:49px; border:1px solid rgb(216 185 119 / 57%); border-radius:15px; background:linear-gradient(110deg,rgb(216 185 119 / 25%),rgb(185 163 237 / 16%)); color:#f5dfaf; font-size:12px; cursor:pointer; box-shadow:0 0 25px rgb(216 185 119 / 10%); transition:transform .45s cubic-bezier(.2,.8,.2,1),box-shadow .45s,background .45s; }.quick-task-form__save:hover:not(:disabled) { transform:translateY(-3px); background:linear-gradient(110deg,rgb(216 185 119 / 34%),rgb(185 163 237 / 23%)); box-shadow:0 12px 30px rgb(216 185 119 / 17%); }.quick-task-form__save:active:not(:disabled) { transform:scale(.98); }.quick-task-form__save-star { font-size:17px; }
-@keyframes quick-nebula { from { transform:translate3d(-15px,0,0) scale(.9); opacity:.45; } to { transform:translate3d(12px,6px,0) scale(1.12); opacity:.9; } } @keyframes quick-star { from { opacity:.25; transform:scale(.7); } to { opacity:.9; transform:scale(1.35); } }
-@media (prefers-reduced-motion:reduce) { .quick-task-form::before,.quick-task-form__stars i { animation:none; }.quick-task-form__save,.quick-calendar__day,.quick-calendar__arrow { transition:none; } }
+@media (prefers-reduced-motion:reduce) { .quick-task-form__save,.quick-calendar__day,.quick-calendar__arrow { transition:none; } }
 .wb-form label {
   display: flex;
   flex-direction: column;

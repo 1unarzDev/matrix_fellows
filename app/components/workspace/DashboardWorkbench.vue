@@ -3915,6 +3915,13 @@ function calendarFacts(date: string) {
   cursor: default;
 }
 .wb-timeline {
+  border: 1px solid rgb(244 241 233 / 12%);
+  background: rgb(255 255 255 / 3%);
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 7%),
+    0 18px 58px rgb(0 0 0 / 15%);
+  -webkit-backdrop-filter: blur(22px) saturate(116%);
+  backdrop-filter: blur(22px) saturate(116%);
   padding: clamp(22px, 3vw, 32px);
 }
 .wb-timeline-list {

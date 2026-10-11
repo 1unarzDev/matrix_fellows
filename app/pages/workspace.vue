@@ -1107,6 +1107,7 @@ onMounted(async () => {
                 </div>
                 <details v-if="data.member.role === 'admin'" class="research-run-detail">
                   <summary>Limits & Gemini settings<SiteIcon name="down" :size="14" /></summary>
+                <div class="research-run-detail__content"><div class="research-run-detail__inner">
                 <form
                   class="research-config"
                   @submit.prevent="researchAction('settings')"
@@ -1158,10 +1159,12 @@ onMounted(async () => {
                   </div>
                   <button class="ws-button" :disabled="researchBusy || researchLoading">Save research limits</button>
                 </form>
+                </div></div>
                 </details>
               </article>
               <details class="research-run-section research-run-detail">
                 <summary>Vetted discovery sources<SiteIcon name="down" :size="14" /></summary>
+                <div class="research-run-detail__content"><div class="research-run-detail__inner">
                 <form class="ws-actions" @submit.prevent="sourceOffset = 0; jobOffset = 0; loadResearch()">
                   <label class="ws-field">Find source by ID<input v-model="sourceFilter" placeholder="Registry or target source ID" /></label>
                   <button class="ws-button">Filter sources</button>
@@ -1233,9 +1236,11 @@ onMounted(async () => {
                     </div>
                   </form></Transition
                 >
+                </div></div>
               </details>
               <details class="research-run-section research-run-detail">
                 <summary>Recent jobs<SiteIcon name="down" :size="14" /></summary>
+                <div class="research-run-detail__content"><div class="research-run-detail__inner">
                 <p class="ws-muted">{{ research.health?.stages?.filter((s:any)=>s.status==='waiting_quota').length || 0 }} recent stages waiting for quota. Completed evidence is reused on retry.</p>
                 <p v-if="research.health?.usage" class="ws-muted">Today's reserved usage: {{ research.health.usage.source_requests }} source requests, {{ research.health.usage.source_bytes }} bytes, {{ research.health.usage.model_requests }} model requests and {{ research.health.usage.model_tokens }} tokens. Reservations include unknown-cost interrupted calls.</p>
                 <p class="ws-muted">{{ research.health?.coverage?.filter((s:any)=>s.enabled).length || 0 }} enabled sources in the displayed coverage inventory{{ research.health?.coveragePartial ? ' (partial)' : '' }}. Coverage is bounded; current openings still require review.</p>
@@ -1255,6 +1260,7 @@ onMounted(async () => {
                 <p v-if="!research.jobs.length" class="ws-muted">
                   No research runs yet. Jobs will appear here after an approved source is queued.
                 </p>
+                </div></div>
               </details>
             </div>
                   <div v-else class="ws-empty" role="status">{{ researchLoading ? 'Loading research controls…' : 'Research controls unavailable.' }}<button v-if="!researchLoading" class="ws-button" @click="loadResearch">Try again</button></div>
@@ -2159,11 +2165,14 @@ onMounted(async () => {
 .research-run-section > .ws-muted { line-height: 1.7; }
 .research-run-section > .research-run-detail { margin-top: 20px; }
 .research-run-detail { border-top: 1px solid #d5c9ed15; }
-.research-run-detail > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 0; color: #c6bed7; font-size: 13px; cursor: pointer; list-style: none; transition: color .25s; }
+.research-run-detail > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: min(100%, 760px); margin-inline: auto; padding: 18px 0; color: #c6bed7; font-size: 13px; cursor: pointer; list-style: none; transition: color .25s; }
 .research-run-detail > summary::-webkit-details-marker { display: none; }
 .research-run-detail > summary:hover { color: #efdfb5; }
 .research-run-detail > summary svg { transition: transform .3s; }
 .research-run-detail[open] > summary svg { transform: rotate(180deg); }
+.research-run-detail__content { display: grid; grid-template-rows: 0fr; opacity: 0; transform: translateY(-8px); transition: grid-template-rows .45s cubic-bezier(.16,1,.3,1), opacity .28s ease, transform .45s cubic-bezier(.16,1,.3,1); }
+.research-run-detail[open] > .research-run-detail__content { grid-template-rows: 1fr; opacity: 1; transform: none; }
+.research-run-detail__inner { width: min(100%, 760px); min-height: 0; margin-inline: auto; overflow: hidden; }
 .research-run-section .job-row { gap: 12px; flex-wrap: wrap; }
 .research-run-section .job-row > a, .research-run-section .job-row > div { min-width: 0; overflow-wrap: anywhere; flex: 1 1 180px; }
 .research-run-section .ws-actions { row-gap: 12px; }
@@ -2178,7 +2187,8 @@ onMounted(async () => {
 }
 @media (prefers-reduced-motion: reduce) {
   .research-runs-disclosure, .research-runs-toggle, .research-runs-chevron,
-  .research-run-detail > summary, .research-run-detail > summary svg { transition: none; }
+  .research-run-detail > summary, .research-run-detail > summary svg,
+  .research-run-detail__content { transition: none; transform: none; }
 }
 
 .command-menu {

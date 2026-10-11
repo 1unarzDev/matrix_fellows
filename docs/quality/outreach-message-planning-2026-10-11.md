@@ -43,3 +43,9 @@ fresh plan. Member-only projects cannot be supplied to society drafts.
   These use synthetic fixtures and prove UI behavior, not live provider or email delivery.
 
 No migration, provider credential, mailbox consent, or sending behavior changed.
+
+Released at commit `fdde457`, pushed to `origin/main`, as Worker version
+`da66a8cc-d39f-4fca-abf1-7de261cd962a`. The production dashboard and published
+`workspace.BYp2tgfm.css` asset returned HTTP 200; the asset contains the message-plan
+disclosure, choice cards, and result selectors. This smoke check does not imply live
+Gemini execution, mailbox consent, or delivery.

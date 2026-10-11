@@ -1171,7 +1171,7 @@ onMounted(async () => {
                 ><button type="button" class="ws-button" @click="editTarget = false">Cancel</button>
               </div>
             </form>
-            <div class="queue-layout">
+            <div class="queue-layout outreach-queue-surface">
               <div class="candidate-list">
                 <button
                   v-for="target in targets"
@@ -1503,8 +1503,9 @@ onMounted(async () => {
               </div>
               <span class="ws-chip">Every send requires your approval</span>
             </div>
-            <div class="queue-layout">
-              <div class="candidate-list">
+            <div class="messages-review-surface">
+            <div class="queue-layout message-review-layout">
+              <div class="candidate-list message-list-panel">
                 <button
                   v-for="p in visibleProposals"
                   :key="p.id"
@@ -1524,7 +1525,7 @@ onMounted(async () => {
                   automatically.
                 </div>
               </div>
-              <form v-if="proposal" class="ws-panel" @submit.prevent="saveDraft">
+              <form v-if="proposal" class="ws-panel message-editor-panel" @submit.prevent="saveDraft">
                 <h2>Review your inquiry</h2>
                 <p class="ws-muted">
                   To
@@ -1712,20 +1713,28 @@ onMounted(async () => {
                   </div></Transition
                 >
               </form>
-              <div v-else class="ws-empty dossier-empty">
+              <div v-else class="ws-empty dossier-empty message-empty-state">
                 Choose a message to refine, approve, and send.
               </div>
             </div>
-            <details class="ws-panel secondary-panel">
+            <details class="ws-panel secondary-panel outbox-panel">
               <summary>
-                Outbox & sending history <span>{{ outbox.length }}</span>
+                <span class="outbox-heading">
+                  <span class="outbox-icon" aria-hidden="true"><SiteIcon name="mail" :size="15" /></span>
+                  <span class="outbox-heading__copy">
+                    <strong>Outbox &amp; sending history</strong>
+                    <small>Provider acceptance and manual reconciliation</small>
+                  </span>
+                </span>
+                <span class="outbox-count">{{ outbox.length }}</span>
               </summary>
               <p class="ws-muted">
                 Accepted means the provider accepted the request, not confirmed delivery. Resolve
                 uncertain sends only after checking your mailbox.
               </p>
               <div v-if="outboxError" class="ws-alert ws-error">{{ outboxError }}</div>
-              <div v-for="item in outbox" :key="item.id" class="job-row">
+              <div v-for="item in outbox" :key="item.id" class="job-row outbox-row">
+                <span class="outbox-row__icon" aria-hidden="true"><SiteIcon name="mail" :size="14" /></span>
                 <div>
                   <strong>{{ item.subject }}</strong
                   ><small>{{ item.recipient }} · revision {{ item.revision }}</small>
@@ -1757,6 +1766,7 @@ onMounted(async () => {
                 </div>
               </form>
             </details>
+            </div>
           </section>
           </template>
 
@@ -2435,6 +2445,189 @@ onMounted(async () => {
 .outreach-draft-workspace > .section-top .ws-chip {
   flex: 0 0 auto;
 }
+.messages-review-surface {
+  position: relative;
+  isolation: isolate;
+  padding: clamp(12px, 2vw, 18px);
+  border: 1px solid rgb(239 235 224 / 10%);
+  border-radius: 30px;
+  background:
+    radial-gradient(38rem 22rem at 82% 0%, rgb(216 185 119 / 4%), transparent 72%),
+    rgb(255 255 255 / 1.8%);
+  box-shadow: inset 0 1px rgb(255 255 255 / 5%), 0 24px 70px rgb(0 0 0 / 10%);
+  backdrop-filter: blur(24px) saturate(114%);
+}
+.messages-review-surface::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: inherit;
+  background: url('/textures/glass-grain.svg') repeat;
+  opacity: .045;
+  mix-blend-mode: soft-light;
+}
+.message-review-layout {
+  grid-template-columns: minmax(220px, .62fr) minmax(0, 1.38fr);
+  gap: 14px;
+}
+.messages-review-surface .message-list-panel {
+  align-content: start;
+  padding: 8px;
+  border-color: rgb(239 235 224 / 9%);
+  border-radius: 21px;
+  background: rgb(255 255 255 / 1.5%);
+  box-shadow: inset 0 1px rgb(255 255 255 / 4%);
+}
+.messages-review-surface .message-list-panel::before {
+  opacity: .025;
+}
+.messages-review-surface .message-list-panel .candidate {
+  padding: 18px 16px;
+  border-color: rgb(239 235 224 / 8%);
+  border-radius: 16px;
+  background: rgb(255 255 255 / 1.5%);
+  box-shadow: none;
+}
+.messages-review-surface .message-list-panel .candidate:hover {
+  background: rgb(255 255 255 / 4%);
+  box-shadow: 0 10px 26px rgb(0 0 0 / 9%);
+}
+.messages-review-surface .message-list-panel .candidate.selected {
+  border-color: rgb(216 185 119 / 42%);
+  background: linear-gradient(135deg, rgb(216 185 119 / 8%), rgb(185 163 237 / 3%));
+  box-shadow: inset 0 1px rgb(255 255 255 / 6%);
+}
+.message-editor-panel,
+.message-empty-state {
+  min-height: 100%;
+  border-color: rgb(239 235 224 / 11%);
+  background: rgb(255 255 255 / 2.8%);
+  box-shadow: inset 0 1px rgb(255 255 255 / 5%), 0 18px 44px rgb(0 0 0 / 7%);
+}
+.message-editor-panel:hover {
+  background: rgb(255 255 255 / 3.5%);
+}
+.message-empty-state {
+  display: grid;
+  place-items: center;
+  min-height: 390px;
+  padding: 30px;
+  border-style: solid;
+  color: #a7a0b1;
+  text-align: center;
+}
+.message-empty-state::before {
+  opacity: .04;
+}
+.outbox-panel {
+  margin-top: 14px;
+  padding: 0 clamp(18px, 3vw, 28px);
+  border-color: rgb(239 235 224 / 9%);
+  border-radius: 21px;
+  background: rgb(255 255 255 / 1.8%);
+  box-shadow: inset 0 1px rgb(255 255 255 / 4%);
+}
+.outbox-panel summary {
+  min-height: 72px;
+  margin: 0;
+}
+.outbox-panel summary span {
+  margin-left: 0;
+  color: inherit;
+  font-size: inherit;
+}
+.outbox-panel summary > .outbox-count {
+  margin-left: auto;
+}
+.outbox-panel summary::before {
+  display: none;
+}
+.outbox-heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.outbox-icon,
+.outbox-row__icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 1px solid rgb(216 185 119 / 22%);
+  border-radius: 12px;
+  color: #d8b977;
+  background: rgb(216 185 119 / 5%);
+}
+.outbox-icon {
+  width: 32px;
+  height: 32px;
+}
+.outbox-heading__copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.outbox-heading__copy strong {
+  color: #e9e3d8;
+  font-size: 14px;
+  font-weight: 500;
+}
+.outbox-heading__copy small {
+  color: #8f899a;
+  font-size: 10px;
+  font-weight: 400;
+}
+.outbox-count {
+  display: grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid rgb(216 185 119 / 18%);
+  border-radius: 999px;
+  color: #d8b977;
+  background: rgb(216 185 119 / 4%);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.outbox-panel > .ws-muted {
+  max-width: 58ch;
+  padding: 0 0 4px 44px;
+  color: #9a93a3;
+}
+.outbox-row {
+  align-items: center;
+  gap: 12px;
+  margin-inline: -8px;
+  padding: 15px 8px;
+  border-color: rgb(255 255 255 / 7%);
+  border-radius: 13px;
+  transition: background-color .25s ease, transform .3s ease;
+}
+.outbox-row:hover {
+  background: rgb(255 255 255 / 3%);
+  transform: translateX(2px);
+}
+.outbox-row__icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  color: #b9a3ed;
+  border-color: rgb(185 163 237 / 18%);
+  background: rgb(185 163 237 / 5%);
+}
+.outbox-row > div {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.outbox-row .ws-chip {
+  flex: 0 0 auto;
+}
+.outbox-row .ws-button {
+  flex: 0 0 auto;
+}
 .account {
   display: flex;
   align-items: center;
@@ -2526,6 +2719,37 @@ onMounted(async () => {
   grid-template-columns: minmax(220px, 0.72fr) minmax(0, 1.28fr);
   gap: 20px;
   align-items: start;
+}
+.outreach-queue-surface {
+  position: relative;
+  isolation: isolate;
+  padding: clamp(12px, 2vw, 18px);
+  border: 1px solid rgb(239 235 224 / 9%);
+  border-radius: 30px;
+  background:
+    radial-gradient(34rem 24rem at 84% 0%, rgb(216 185 119 / 4%), transparent 72%),
+    rgb(255 255 255 / 1.5%);
+  box-shadow: inset 0 1px rgb(255 255 255 / 4%), 0 24px 70px rgb(0 0 0 / 8%);
+  backdrop-filter: blur(24px) saturate(112%);
+}
+.outreach-queue-surface::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: inherit;
+  background: url('/textures/glass-grain.svg') repeat;
+  opacity: .035;
+  mix-blend-mode: soft-light;
+}
+.outreach-queue-surface > .candidate-list {
+  background: rgb(255 255 255 / 1.8%);
+  box-shadow: inset 0 1px rgb(255 255 255 / 4%);
+}
+.outreach-queue-surface > .dossier {
+  background: rgb(255 255 255 / 2.8%);
+  box-shadow: inset 0 1px rgb(255 255 255 / 5%), 0 18px 44px rgb(0 0 0 / 7%);
 }
 .candidate-list {
   position: relative;
@@ -3110,6 +3334,38 @@ onMounted(async () => {
   }
   .queue-layout {
     grid-template-columns: 1fr;
+  }
+  .messages-review-surface {
+    padding: 10px;
+    border-radius: 24px;
+  }
+  .message-review-layout {
+    gap: 10px;
+  }
+  .messages-review-surface .message-list-panel {
+    max-height: 330px;
+  }
+  .message-empty-state {
+    min-height: 220px;
+  }
+  .outbox-panel {
+    padding-inline: 14px;
+  }
+  .outbox-panel summary {
+    min-height: 68px;
+  }
+  .outbox-heading__copy small {
+    display: none;
+  }
+  .outbox-panel > .ws-muted {
+    padding-left: 0;
+  }
+  .outbox-row {
+    align-items: flex-start;
+  }
+  .outbox-row .ws-chip,
+  .outbox-row .ws-button {
+    margin-left: 40px;
   }
   .dossier,
   .dossier-empty {

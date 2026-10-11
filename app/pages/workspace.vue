@@ -1334,7 +1334,7 @@ onMounted(async () => {
                 <span v-if="research" class="ws-chip">{{
                   research.settings.paused ? 'Paused' : 'Scheduled'
                 }}</span>
-                <SiteIcon class="research-runs-chevron" name="down" :size="16" />
+                <span class="research-runs-chevron" aria-hidden="true" />
               </button>
               <div
                 id="workspace-research-runs"
@@ -1398,7 +1398,10 @@ onMounted(async () => {
                         </div>
                         <details v-if="data.member.role === 'admin'" class="research-run-detail">
                           <summary>
-                            Limits & Gemini settings<SiteIcon name="down" :size="14" />
+                            Limits &amp; Gemini settings<span
+                              class="research-run-chevron"
+                              aria-hidden="true"
+                            />
                           </summary>
                           <div class="research-run-detail__content">
                             <div class="research-run-detail__inner">
@@ -1464,7 +1467,10 @@ onMounted(async () => {
                       </article>
                       <details class="research-run-section research-run-detail">
                         <summary>
-                          Vetted discovery sources<SiteIcon name="down" :size="14" />
+                          Vetted discovery sources<span
+                            class="research-run-chevron"
+                            aria-hidden="true"
+                          />
                         </summary>
                         <div class="research-run-detail__content">
                           <div class="research-run-detail__inner">
@@ -1587,7 +1593,9 @@ onMounted(async () => {
                         </div>
                       </details>
                       <details class="research-run-section research-run-detail">
-                        <summary>Recent jobs<SiteIcon name="down" :size="14" /></summary>
+                        <summary>
+                          Recent jobs<span class="research-run-chevron" aria-hidden="true" />
+                        </summary>
                         <div class="research-run-detail__content">
                           <div class="research-run-detail__inner">
                             <p class="ws-muted">
@@ -2749,11 +2757,21 @@ onMounted(async () => {
   font-size: 12px;
 }
 .research-runs-chevron {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  margin: 0 3px 4px auto;
   flex-shrink: 0;
-  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+  transition:
+    transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    color 0.25s;
 }
 .research-runs-toggle[aria-expanded='true'] .research-runs-chevron {
-  transform: rotate(180deg);
+  margin-bottom: -2px;
+  transform: rotate(225deg);
 }
 .research-runs-disclosure {
   display: grid;
@@ -2809,8 +2827,8 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  width: min(100%, 760px);
-  margin-inline: auto;
+  width: 100%;
+  margin-inline: 0;
   padding: 18px 0;
   color: #c6bed7;
   font-size: 13px;
@@ -2827,14 +2845,28 @@ onMounted(async () => {
 .research-run-detail > summary svg {
   transition: transform 0.3s;
 }
-.research-run-detail[open] > summary svg {
-  transform: rotate(180deg);
+.research-run-chevron {
+  width: 9px;
+  height: 9px;
+  margin: 0 4px 4px auto;
+  flex: 0 0 auto;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+  transition:
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    color 0.25s;
+}
+.research-run-detail[open] > summary .research-run-chevron {
+  margin-bottom: -1px;
+  transform: rotate(225deg);
 }
 .research-run-detail__content {
   display: grid;
   grid-template-rows: 0fr;
   opacity: 0;
   transform: translateY(-8px);
+  overflow: hidden;
   transition:
     grid-template-rows 0.45s cubic-bezier(0.16, 1, 0.3, 1),
     opacity 0.28s ease,
@@ -2846,7 +2878,7 @@ onMounted(async () => {
   transform: none;
 }
 .research-run-detail__inner {
-  width: min(100%, 760px);
+  width: 100%;
   min-height: 0;
   margin-inline: auto;
   overflow: hidden;

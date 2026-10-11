@@ -11,6 +11,20 @@ import OutreachMessagePlan from '~/components/workspace/OutreachMessagePlan.vue'
 import CandidateRefinementForm from '~/components/workspace/CandidateRefinementForm.vue'
 definePageMeta({ alias: ['/dashboard'] })
 useSeoMeta({ title: 'Dashboard | Matrix Fellows', robots: 'noindex, nofollow' })
+const socialImage = new URL('/og/dashboard.png?v=dashboard-1', useRuntimeConfig().public.siteUrl).href
+useSeoMeta({
+  ogTitle: 'Your research workspace | Matrix Fellows',
+  ogDescription: 'Plan the next meaningful step with evidence, opportunities, and outreach.',
+  ogUrl: 'https://matrixfellows.com/dashboard',
+  ogImage: socialImage,
+  ogImageWidth: 1200,
+  ogImageHeight: 630,
+  ogImageType: 'image/png',
+  ogImageAlt: 'Matrix Fellows research workspace.',
+  twitterCard: 'summary_large_image',
+  twitterImage: socialImage,
+  twitterImageAlt: 'Matrix Fellows research workspace.',
+})
 const { data, loading, busy, error, notice, refresh, mutate } = useWorkspace()
 const route = useRoute()
 const callbackMessage = computed(() => {

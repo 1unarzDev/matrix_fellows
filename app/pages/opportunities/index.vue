@@ -205,12 +205,25 @@ onBeforeUnmount(() => {
 })
 
 const canonical = 'https://matrixfellows.com/opportunities'
+const socialImage = new URL(
+  '/og/opportunities.png?v=opportunities-1',
+  useRuntimeConfig().public.siteUrl,
+).href
 useSeoMeta({
   title: 'Research opportunities for students | Matrix Fellows',
   description:
     'Search vetted internships, summer research programs, workshops, competitions, and publication routes by field, preparation, cost, and next action.',
   ogTitle: 'Research opportunity catalog — Matrix Fellows',
   ogDescription: 'Find a specific route for sharing, developing, or publishing student research.',
+  ogUrl: canonical,
+  ogImage: socialImage,
+  ogImageWidth: 1200,
+  ogImageHeight: 630,
+  ogImageType: 'image/png',
+  ogImageAlt: 'Matrix Fellows — find your next research opportunity.',
+  twitterCard: 'summary_large_image',
+  twitterImage: socialImage,
+  twitterImageAlt: 'Matrix Fellows — find your next research opportunity.',
 })
 useHead({
   link: [{ rel: 'canonical', href: canonical }],

@@ -67,6 +67,12 @@ export default defineNuxtConfig({
           content: 'A research society connecting questions, people, and possibilities.',
         },
         { property: 'og:type', content: 'website' },
+        { property: 'og:image', content: 'https://matrixfellows.com/social-card.png?v=horizon-3' },
+        { property: 'og:image:width', content: '1200' },
+        { property: 'og:image:height', content: '630' },
+        { property: 'og:image:type', content: 'image/png' },
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'twitter:image', content: 'https://matrixfellows.com/social-card.png?v=horizon-3' },
       ],
       link: [{ rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg?v=matrix-mark-2' }],
       script: [

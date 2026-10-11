@@ -1,6 +1,20 @@
 <script setup lang="ts">
 import { usePasskey, passkeySupported, accountError } from '~/utils/passkeys'
 useSeoMeta({ title: 'Sign in or create an account | Matrix Fellows', robots: 'noindex, nofollow' })
+const socialImage = new URL('/og/login.png?v=login-1', useRuntimeConfig().public.siteUrl).href
+useSeoMeta({
+  ogTitle: 'Welcome to Matrix. | Matrix Fellows',
+  ogDescription: 'Secure member access for returning to research, opportunities, and outreach.',
+  ogUrl: 'https://matrixfellows.com/login',
+  ogImage: socialImage,
+  ogImageWidth: 1200,
+  ogImageHeight: 630,
+  ogImageType: 'image/png',
+  ogImageAlt: 'Matrix Fellows secure member access.',
+  twitterCard: 'summary_large_image',
+  twitterImage: socialImage,
+  twitterImageAlt: 'Matrix Fellows secure member access.',
+})
 const email = ref('')
 const token = ref('')
 const sent = ref(false)

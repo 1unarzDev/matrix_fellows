@@ -22,11 +22,24 @@ const next = computed(() => nextOpportunityMilestone(timeline.value, now))
 const portalLabel = computed(() => opportunityPortalLabel(item.value, now))
 const state = computed(() => getOpportunityState(item.value, now))
 const canonical = `https://matrixfellows.com/opportunities/${slug}`
+const socialImage = new URL(
+  '/og/opportunities.png?v=opportunities-1',
+  useRuntimeConfig().public.siteUrl,
+).href
 useSeoMeta({
   title: () => `${item.value.title} | Matrix Fellows opportunities`,
   description: () => item.value.description.slice(0, 155),
   ogTitle: () => item.value.title,
   ogDescription: () => item.value.description,
+  ogUrl: canonical,
+  ogImage: socialImage,
+  ogImageWidth: 1200,
+  ogImageHeight: 630,
+  ogImageType: 'image/png',
+  ogImageAlt: 'Matrix Fellows research opportunity catalog.',
+  twitterCard: 'summary_large_image',
+  twitterImage: socialImage,
+  twitterImageAlt: 'Matrix Fellows research opportunity catalog.',
 })
 useHead({ link: [{ rel: 'canonical', href: canonical }] })
 const policyLabel = computed(

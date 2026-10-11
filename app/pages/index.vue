@@ -13,7 +13,7 @@ import {
 
 const publicConfig = useRuntimeConfig().public
 const siteUrl = publicConfig.siteUrl
-const socialImage = new URL('/social-card.png?v=horizon-2', siteUrl).href
+const socialImage = new URL('/social-card.png?v=horizon-3', siteUrl).href
 const canonicalUrl = 'https://matrixfellows.com/'
 useHead({
   link: [{ rel: 'canonical', href: canonicalUrl }],

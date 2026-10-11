@@ -2200,8 +2200,8 @@ onMounted(async () => {
   margin-top: 24px;
   padding: 24px;
   border-radius: 22px;
-  background: radial-gradient(ellipse at 100% 0%, #bea6e808, transparent 70%), #c4ade904;
-  border: 1px solid #c4ade910;
+  background: rgb(255 255 255 / 2%);
+  border: 1px solid rgb(244 241 233 / 9%);
 }
 .profile-section-heading {
   margin-top: 32px !important;
@@ -2220,9 +2220,8 @@ onMounted(async () => {
   margin-bottom: 22px;
   padding: clamp(24px, 4vw, 38px);
   background:
-    radial-gradient(30rem 18rem at 100% 0%, rgb(228 187 114 / 9%), transparent 70%),
-    linear-gradient(145deg, rgb(244 241 233 / 6%), rgb(244 241 233 / 2.5%) 48%, transparent 78%),
-    rgb(10 12 16 / 57%);
+    linear-gradient(145deg, rgb(244 241 233 / 2%), transparent 72%),
+    rgb(18 19 26 / 36%);
 }
 .profile-hero h2 {
   max-width: 17ch;
@@ -2991,7 +2990,7 @@ onMounted(async () => {
   inset: 0;
   pointer-events: none;
   background: url('/textures/glass-grain.svg') repeat;
-  opacity: 0.11;
+  opacity: 0.025;
   mix-blend-mode: soft-light;
 }
 .settings-grid {
@@ -3011,10 +3010,9 @@ onMounted(async () => {
   position: relative;
   overflow: hidden;
   background:
-    radial-gradient(28rem 18rem at 100% 0%, rgb(228 187 114 / 8%), transparent 70%),
-    linear-gradient(145deg, rgb(244 241 233 / 6%), rgb(244 241 233 / 2.4%) 48%, transparent 78%),
-    rgb(10 12 16 / 54%);
-  box-shadow: 0 26px 90px rgb(0 0 0 / 24%), inset 0 1px 0 rgb(255 255 255 / 7%);
+    linear-gradient(145deg, rgb(244 241 233 / 2%), transparent 72%),
+    rgb(18 19 26 / 36%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 7%), 0 18px 58px rgb(0 0 0 / 15%);
 }
 :deep(.settings-panel > *) {
   position: relative;

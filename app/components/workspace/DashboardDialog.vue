@@ -91,7 +91,7 @@ function backdrop(event: MouseEvent) {
   background:
     radial-gradient(34rem 20rem at 100% 0%, rgb(216 185 119 / 8%), transparent 70%),
     linear-gradient(145deg, rgb(244 241 233 / 6%), rgb(244 241 233 / 2.4%) 50%, transparent 82%),
-    rgb(18 19 27 / 78%);
+    rgb(18 19 26 / 58%);
   backdrop-filter: blur(30px) saturate(1.16);
   color: #efeee8;
   box-shadow:
@@ -117,7 +117,7 @@ function backdrop(event: MouseEvent) {
 }
 .dashboard-dialog__grain {
   background: url('/textures/glass-grain.svg') repeat;
-  opacity: 0.09;
+  opacity: 0.03;
   mix-blend-mode: soft-light;
 }
 .dashboard-dialog__sparkles i {

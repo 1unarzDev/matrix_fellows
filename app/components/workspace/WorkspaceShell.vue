@@ -216,14 +216,13 @@ withDefaults(
   isolation: isolate;
   overflow: hidden;
   padding: clamp(22px, 3vw, 34px);
-  border: 1px solid rgb(239 235 224 / 11%);
-  border-radius: 28px;
-  background: rgb(20 21 27 / 58%);
-  backdrop-filter: blur(26px) saturate(118%);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 6%),
-    inset 0 -1px 0 rgb(216 185 119 / 3%),
-    0 20px 70px rgb(0 0 0 / 18%);
+  border: 1px solid rgb(244 241 233 / 12%);
+  border-radius: 24px;
+  background:
+    linear-gradient(145deg, rgb(244 241 233 / 2%), transparent 72%),
+    rgb(18 19 26 / 36%);
+  backdrop-filter: blur(20px) saturate(116%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 7%), 0 18px 58px rgb(0 0 0 / 15%);
   min-width: 0;
   transition:
     border-color 0.4s,
@@ -236,18 +235,15 @@ withDefaults(
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  opacity: 0.15;
+  opacity: 0.025;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='panel-grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23panel-grain)' opacity='.28'/%3E%3C/svg%3E");
   background-size: 180px 180px;
   mix-blend-mode: soft-light;
 }
 :deep(.ws-panel:hover) {
-  border-color: rgb(239 235 224 / 18%);
-  background-color: rgb(24 24 30 / 64%);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 8%),
-    0 20px 70px rgb(0 0 0 / 21%),
-    0 0 34px rgb(216 185 119 / 5%);
+  border-color: rgb(244 241 233 / 18%);
+  background-color: rgb(20 21 28 / 42%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 8%), 0 18px 58px rgb(0 0 0 / 17%);
 }
 :deep(h2) {
   font-family: Manrope, sans-serif;

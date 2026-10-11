@@ -127,13 +127,12 @@ async function retry(id: string) { busy.value = true; try { await $fetch('/api/w
   isolation: isolate;
   overflow: hidden;
   padding: clamp(22px, 4vw, 36px);
-  border: 1px solid rgb(239 235 224 / 13%);
-  border-radius: 28px;
+  border: 1px solid rgb(244 241 233 / 12%);
+  border-radius: 24px;
   background:
-    radial-gradient(34rem 18rem at 100% 0%, rgb(228 187 114 / 7%), transparent 70%),
-    linear-gradient(145deg, rgb(244 241 233 / 4%), rgb(244 241 233 / 1.5%) 48%, transparent 78%),
-    rgb(10 12 16 / 38%);
-  box-shadow: 0 24px 74px rgb(0 0 0 / 16%), inset 0 1px 0 rgb(255 255 255 / 6%);
+    linear-gradient(145deg, rgb(244 241 233 / 2%), transparent 72%),
+    rgb(18 19 26 / 36%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 7%), 0 18px 58px rgb(0 0 0 / 15%);
   -webkit-backdrop-filter: blur(24px) saturate(116%);
   backdrop-filter: blur(24px) saturate(116%);
 }
@@ -144,7 +143,7 @@ async function retry(id: string) { busy.value = true; try { await $fetch('/api/w
   z-index: -1;
   pointer-events: none;
   background: url('/textures/glass-grain.svg') repeat;
-  opacity: .11;
+  opacity: .025;
   mix-blend-mode: soft-light;
 }
 .research-overview__header {

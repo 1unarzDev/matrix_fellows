@@ -4044,49 +4044,41 @@ function calendarFacts(date: string) {
 @media (max-width: 700px) {
   .wb-plan-rail {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 12px;
+    width: 100%;
   }
   .wb-plan-rail__navigation {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    display: grid;
+    gap: 10px;
     min-width: 0;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  .wb-plan-rail__navigation::-webkit-scrollbar {
-    display: none;
+    width: 100%;
+    overflow: visible;
   }
   .wb-plan-rail .wb-segments {
-    width: 224px;
-    max-width: none;
-    flex: 0 0 auto;
+    width: 100%;
+    max-width: 100%;
   }
   .wb-plan-rail .wb-segments button {
     width: 100%;
     padding-inline: 10px;
   }
   .wb-plan-rail .wb-viewbar {
-    width: max-content;
-    margin-left: 0;
-    padding: 0 0 0 8px;
-    overflow: visible;
-    justify-content: flex-start;
-    border-top: 0;
-    border-left: 1px solid rgb(244 241 233 / 12%);
-  }
-  .wb-plan-rail .wb-viewbar::-webkit-scrollbar {
     display: none;
   }
-  .wb-plan-rail .wb-viewbar button {
-    flex: 0 0 auto;
-    padding-inline: 13px;
+  .wb-view-picker {
+    display: block;
+    width: 100%;
+    min-width: 0;
   }
   .wb-toolbar__actions {
-    justify-content: stretch;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    width: 100%;
   }
-  .wb-toolbar__actions > * {
-    flex: 1 1 0;
+  .wb-toolbar__actions .wb-export-button {
+    grid-column: auto;
   }
   .wb-toolbar__actions .wb-button,
   .wb-toolbar__actions :deep(.cloud-trigger-button),
@@ -4137,9 +4129,6 @@ function calendarFacts(date: string) {
 @media (max-width: 420px) {
   .wb-plan-rail__navigation {
     min-width: 0;
-  }
-  .wb-plan-rail .wb-segments {
-    width: 224px;
   }
   .wb-calendar-grid {
     gap: 3px;

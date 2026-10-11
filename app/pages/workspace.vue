@@ -1708,7 +1708,7 @@ onMounted(async () => {
               @cancel="editTarget = false"
             />
             <div class="queue-layout outreach-queue-surface">
-              <div class="candidate-list opportunity-list-panel">
+              <div class="candidate-list">
                 <button
                   v-for="target in targets"
                   :key="target.id"
@@ -3407,7 +3407,6 @@ onMounted(async () => {
   gap: 20px;
   align-items: stretch;
 }
-.opportunity-list-panel,
 .message-list-panel,
 .message-editor-panel,
 .outbox-panel {
@@ -3421,10 +3420,6 @@ onMounted(async () => {
     0 18px 58px rgb(0 0 0 / 14%);
   -webkit-backdrop-filter: blur(20px) saturate(116%);
   backdrop-filter: blur(20px) saturate(116%);
-}
-.opportunity-list-panel {
-  align-self: stretch;
-  padding: 14px;
 }
 .message-list-panel {
   align-self: stretch;

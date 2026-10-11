@@ -26,3 +26,5 @@ Captures: `/tmp/matrix-dashboard-evidence/opportunities-{discover,timeline,board
 ## Rollout
 
 This release changes UI and display composition only. No migration, secret change, mailbox consent, or research-provider activation is required. Deploy the built application using `wrangler.jsonc` with `--keep-vars` to preserve remotely managed configuration. The preceding application version was `04dca2d7-bc92-4d7f-9615-29e045d447cf`; application rollback does not roll back database data.
+
+Released application commit: `1a2c4a5`. Worker version: `802bce22-b313-4fa6-b353-a51aa065c891`, deployed to `matrixfellows.com`. The dashboard document and its new `workspace.8N4GIhaw.css` asset returned HTTP 200; the published CSS contains the unified dock and animated outbox disclosure and excludes the removed outreach grain wrappers. This is a deployment/static-asset smoke check, not proof of live account persistence or email delivery. The release was pushed to `origin/main`.

@@ -2051,6 +2051,12 @@ function calendarFacts(date: string) {
     0 18px 58px rgb(0 0 0 / 15%);
   backdrop-filter: blur(20px) saturate(116%);
 }
+.wb-control-dock {
+  z-index: 4;
+}
+.wb-plan-surface {
+  z-index: 1;
+}
 .wb-plan-surface::before,
 .wb-control-dock::before {
   content: '';
@@ -2352,6 +2358,11 @@ function calendarFacts(date: string) {
 .wb-view-picker {
   display: none;
   min-width: 190px;
+  position: relative;
+  z-index: 2;
+}
+.wb-view-picker :deep(.themed-select) {
+  width: 100%;
 }
 .wb-view-picker :deep(.themed-select__trigger) {
   min-height: 42px;
@@ -2360,7 +2371,19 @@ function calendarFacts(date: string) {
   background: rgb(255 255 255 / 3%);
 }
 .wb-view-picker :deep(.themed-select__menu) {
-  min-width: 230px;
+  width: 100%;
+  min-width: 100%;
+  max-width: none;
+  border-color: rgb(244 241 233 / 16%);
+  background: linear-gradient(145deg, rgb(244 241 233 / 7%), transparent 72%), rgb(18 19 26 / 92%);
+  box-shadow:
+    0 20px 54px rgb(0 0 0 / 38%),
+    inset 0 1px rgb(255 255 255 / 8%);
+  backdrop-filter: blur(22px) saturate(120%);
+}
+.wb-view-picker :deep(.themed-select__option[aria-selected='true']) {
+  background: rgb(216 185 119 / 11%) !important;
+  color: #f4f1e9;
 }
 .wb-plan-rail .wb-segments,
 .wb-plan-rail .wb-viewbar {

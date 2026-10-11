@@ -1694,7 +1694,7 @@ onMounted(async () => {
               @cancel="editTarget = false"
             />
             <div class="queue-layout outreach-queue-surface">
-              <div class="candidate-list">
+              <div class="candidate-list opportunity-list-panel">
                 <button
                   v-for="target in targets"
                   :key="target.id"
@@ -2107,7 +2107,7 @@ onMounted(async () => {
               </div>
               <div class="messages-review-surface">
                 <div class="queue-layout message-review-layout">
-                  <div class="candidate-list message-list-panel">
+                  <div class="candidate-list ws-panel secondary-panel message-list-panel">
                     <button
                       v-for="p in visibleProposals"
                       :key="p.id"
@@ -3401,6 +3401,34 @@ onMounted(async () => {
 .message-review-layout {
   grid-template-columns: minmax(220px, 0.62fr) minmax(0, 1.38fr);
   gap: 20px;
+  align-items: stretch;
+}
+.opportunity-list-panel,
+.message-list-panel,
+.message-editor-panel,
+.outbox-panel {
+  border: 1px solid rgb(239 235 224 / 11%);
+  border-radius: 21px;
+  background:
+    linear-gradient(145deg, rgb(244 241 233 / 5%), rgb(244 241 233 / 2%) 52%, transparent 82%),
+    rgb(18 19 26 / 58%);
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 6%),
+    0 18px 58px rgb(0 0 0 / 14%);
+  -webkit-backdrop-filter: blur(20px) saturate(116%);
+  backdrop-filter: blur(20px) saturate(116%);
+}
+.opportunity-list-panel {
+  align-self: stretch;
+  padding: 14px;
+}
+.message-list-panel {
+  align-self: stretch;
+  align-content: start;
+  padding: 14px;
+}
+.message-editor-panel {
+  align-self: stretch;
 }
 .message-empty-state {
   display: grid;
@@ -3410,7 +3438,7 @@ onMounted(async () => {
 .outbox-panel {
   margin-top: 14px;
   padding: 0 clamp(18px, 3vw, 28px);
-  border-color: rgb(239 235 224 / 9%);
+  border-color: rgb(239 235 224 / 11%);
   border-radius: 21px;
   transition:
     border-color 0.35s ease,
@@ -3698,9 +3726,9 @@ onMounted(async () => {
   text-align: left;
   width: 100%;
   padding: 18px 20px;
-  border: 1px solid #d5c9ed15;
+  border: 1px solid rgb(244 241 233 / 12%);
   border-radius: 22px;
-  background: #d5c9ed04;
+  background: rgb(244 241 233 / 4%);
   transition:
     border-color 0.35s,
     background 0.35s,
@@ -3709,12 +3737,12 @@ onMounted(async () => {
 }
 .candidate:hover {
   transform: translateY(-2px);
-  border-color: #d5c9ed35;
-  background: #d5c9ed09;
+  border-color: rgb(216 185 119 / 32%);
+  background: rgb(244 241 233 / 7%);
 }
 .candidate.selected {
-  border-color: #d6bc7955;
-  background: #d6bc7909;
+  border-color: rgb(216 185 119 / 48%);
+  background: rgb(216 185 119 / 9%);
 }
 .candidate-top {
   display: flex;

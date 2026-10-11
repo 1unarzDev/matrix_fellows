@@ -24,7 +24,12 @@ onUnmounted(() =>
 function close() {
   if (closing.value) return
   closing.value = true
-  closeTimer = setTimeout(() => emit('close'), 180)
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  if (reducedMotion) {
+    emit('close')
+    return
+  }
+  closeTimer = setTimeout(() => emit('close'), 260)
 }
 /** Mark a successful save before the caller closes the panel. */
 function celebrate() {
@@ -191,6 +196,9 @@ function backdrop(event: MouseEvent) {
   background: #080910a8;
   backdrop-filter: blur(12px);
 }
+.dashboard-dialog--closing::backdrop {
+  animation: backdrop-out 260ms ease-in forwards;
+}
 .dashboard-dialog--compact {
   width: min(540px, calc(100% - 32px));
 }
@@ -200,7 +208,10 @@ function backdrop(event: MouseEvent) {
   justify-content: space-between;
   gap: 16px;
   padding: 22px 28px;
-  background: rgb(23 24 33 / 76%);
+  background:
+    linear-gradient(145deg, rgb(244 241 233 / 5%), rgb(244 241 233 / 1.5%) 58%, transparent),
+    rgb(18 19 27 / 42%);
+  backdrop-filter: blur(18px) saturate(1.16);
   position: sticky;
   top: 0;
   z-index: 1;
@@ -263,8 +274,16 @@ function backdrop(event: MouseEvent) {
   }
 }
 .dashboard-dialog--closing {
-  animation: panel-out 0.18s ease-in forwards;
+  animation: panel-out 0.26s ease-in forwards;
   pointer-events: none;
+}
+@keyframes backdrop-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 @keyframes dialog-glow {
   0% {
@@ -316,6 +335,9 @@ function backdrop(event: MouseEvent) {
   }
   .dashboard-dialog::backdrop {
     backdrop-filter: none;
+  }
+  .dashboard-dialog--closing::backdrop {
+    animation: none;
   }
   .dashboard-dialog header button {
     transition: none;

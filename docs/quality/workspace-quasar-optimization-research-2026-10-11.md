@@ -30,6 +30,8 @@ RGBA32F is more portable than assuming R32F in all Three.js paths, but R32F coul
 
 ## Context and GPU selection
 
+Call `renderer.compileAsync(scene, camera)` before first rendering instead of forcing initial shader compilation during an interactive frame. Three.js recommends this asynchronous method because it uses `KHR_parallel_shader_compile` when available. This improves startup responsiveness; it does not reduce steady-state GPU shader cost. [WebGLRenderer reference](https://threejs.org/docs/pages/WebGLRenderer.html#compileAsync)
+
 Three.js passes `powerPreference` to the WebGL context as a hint, and defaults depth to true. A decorative full-screen pass can request `depth: false`; the existing material already disables depth testing/writes. `powerPreference: 'high-performance'` may select a discrete GPU on some systems but is not a performance guarantee, and does not solve inefficient shader work. [WebGLRenderer source](https://github.com/mrdoob/three.js/blob/dev/src/renderers/WebGLRenderer.js)
 
 The available Chromium in this environment returned Mesa llvmpipe for ANGLE GL/GLES, and SwiftShader for Vulkan/native and EGL alternatives. Tested `--use-angle=gl`, `--use-angle=gles`, `--use-gl=egl`, `--use-angle=vulkan --enable-features=Vulkan --use-vulkan=native`, `--use-gl=desktop`, and `--use-angle=gl-egl`, including the NVIDIA GLX vendor hint. No physical GPU renderer was obtained. Treat timings here as controlled software-renderer comparisons, not evidence that most real devices meet 60 FPS.

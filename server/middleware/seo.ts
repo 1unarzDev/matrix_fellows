@@ -54,7 +54,7 @@ export default defineEventHandler((event) => {
     path.startsWith('/models/') ||
     path.startsWith('/textures/') ||
     path.startsWith('/og/') ||
-    ['/favicon.svg', '/social-card.png', '/social-card.svg', '/constellation-license.txt'].includes(
+    ['/favicon.svg', '/social-card.png', '/constellation-license.txt'].includes(
       path,
     )
   )

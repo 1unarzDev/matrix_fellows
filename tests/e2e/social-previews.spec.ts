@@ -2,9 +2,10 @@ import { expect, test } from '@playwright/test'
 
 test('key routes expose branded social previews', async ({ page }) => {
   const routes = [
-    { path: '/', image: '/social-card.png?v=horizon-3' },
+    { path: '/', image: '/social-card.png?v=rendered-1' },
     { path: '/opportunities', image: '/og/opportunities.png?v=opportunities-1' },
     { path: '/login', image: '/og/login.png?v=login-1' },
+    { path: '/join', image: '/og/join.png?v=join-1' },
     { path: '/dashboard', image: '/og/dashboard.png?v=dashboard-1' },
   ]
 

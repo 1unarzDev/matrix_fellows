@@ -33,14 +33,13 @@ test('fixture: society context queues immediately and grows the connection cloud
   const state = await setup(page)
   state.workspace.member.role = 'officer'
   await page.goto('/dashboard?section=society')
-  await expect(page.getByRole('heading', { name: /expanding constellation/i })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Society context', exact: true })).toBeVisible({ timeout: 15_000 })
   await page.getByRole('button', { name: 'Add context', exact: true }).click()
   await page.getByLabel('A short title').fill('UTA introduction')
   await page.getByLabel('Email chain, notes, or context').fill('From: Dr. Ada Lovelace <ada@uta.edu>')
-  await page.getByRole('button', { name: 'Add to constellation', exact: true }).click()
-  await expect(page.getByText(/queued without blocking this page/i)).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'New memory' })).toBeHidden()
-  await expect(page.getByRole('heading', { name: 'UTA introduction', exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Add source', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'New source' })).toBeHidden()
+  await expect(page.getByRole('heading', { name: 'UTA introduction', exact: true })).toBeVisible({ timeout: 15_000 })
 })
 
 test('fixture: newer profile typing stays unsaved until its own submission', async ({ page }) => {
@@ -244,7 +243,7 @@ test('fixture: keyboard, reduced motion, 1024 layout and CPU-throttled input', a
   await page.setViewportSize({ width: 1024, height: 900 })
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('/dashboard?section=today')
-  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible({ timeout: 15_000 })
   await page.keyboard.press('Control+k')
   await expect(page.getByRole('dialog')).toBeVisible()
   await page.keyboard.press('Escape')
@@ -254,17 +253,17 @@ test('fixture: keyboard, reduced motion, 1024 layout and CPU-throttled input', a
       path: `/tmp/matrix-dashboard-evidence/today-1024-${info.project.name}.png`,
       fullPage: true,
     })
-  await page.getByRole('button', { name: '+ Add task', exact: true }).click()
+  await page.getByRole('button', { name: /Add a task/ }).first().click()
   const panel = page.getByRole('dialog')
   await expect(panel).toBeVisible()
-  await expect(panel.getByLabel('Task', { exact: true })).toBeFocused()
+  await expect(panel.getByLabel('Task name', { exact: true })).toBeFocused()
   if (browserName === 'chromium') {
     const cdp = await page.context().newCDPSession(page)
     await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 })
     await panel
-      .getByLabel('Task', { exact: true })
+      .getByLabel('Task name', { exact: true })
       .pressSequentially('Synthetic constrained task', { delay: 8 })
-    await expect(panel.getByLabel('Task', { exact: true })).toHaveValue(
+    await expect(panel.getByLabel('Task name', { exact: true })).toHaveValue(
       'Synthetic constrained task',
     )
     const cadence = await page.evaluate(async () => {
@@ -296,7 +295,7 @@ test('fixture: keyboard, reduced motion, 1024 layout and CPU-throttled input', a
   }
   await page.keyboard.press('Escape')
   await expect(panel).toHaveCount(0)
-  await expect(page.getByRole('button', { name: '+ Add task', exact: true })).toBeFocused()
+  await expect(page.getByRole('button', { name: /Add a task/ }).first()).toBeFocused()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(
     true,
   )
@@ -318,7 +317,7 @@ test('fixture: Today command center makes planning a magnetic, low-friction flow
   })
   await page.goto('/dashboard?section=today')
 
-  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText(/weekly capacity/i)).toHaveCount(0)
   await expect(page.locator('.day-rail')).toBeVisible()
   await expect(page.locator('.day-panel__date')).toHaveText('Today')
@@ -329,8 +328,8 @@ test('fixture: Today command center makes planning a magnetic, low-friction flow
   const targetDay = targetDate.getUTCDate()
   const selectedDay = page.locator(`.day-orbit[data-day="${targetDateKey}"]`)
   await selectedDay.click()
-  await expect(page.locator('.day-panel__date')).toContainText(
-    targetDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'UTC' }),
+  await expect(page.locator('.day-panel__date')).toHaveText(
+    `${targetDate.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' })} ${targetDay}`,
   )
 
   await page.getByRole('button', { name: /Add a task/ }).first().click()

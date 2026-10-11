@@ -493,15 +493,16 @@ export function createWorkspaceQuasar(canvas: HTMLCanvasElement) {
   let frame = 0
   let elapsed = 0
   let previous = 0
+  let lastRender = 0
   let disposed = false
   const reduced = matchMedia('(prefers-reduced-motion: reduce)')
 
   function resize() {
     const width = Math.max(1, canvas.clientWidth)
     const height = Math.max(1, canvas.clientHeight)
-    // Supersample the fullscreen pass so fine jet cores and inner particles do
-    // not collapse into one-pixel stair steps on standard-density displays.
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
+    // This is a decorative backdrop. Keep the shader below full device
+    // resolution so it never competes with input, scrolling, or text.
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25) * 0.72)
     renderer.setSize(width, height, false)
     renderer.getDrawingBufferSize(uniforms.uResolution.value)
     renderer.render(scene, camera)
@@ -509,6 +510,11 @@ export function createWorkspaceQuasar(canvas: HTMLCanvasElement) {
 
   function draw(now: number) {
     if (disposed || document.hidden) return
+    if (lastRender && now - lastRender < 1000 / 30) {
+      frame = requestAnimationFrame(draw)
+      return
+    }
+    lastRender = now
     elapsed += previous ? Math.min((now - previous) / 1000, 0.05) : 0
     previous = now
     uniforms.uTime.value = elapsed

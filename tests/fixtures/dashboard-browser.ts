@@ -294,6 +294,19 @@ export async function setup(page: Page, conflict = false) {
       Object.assign(item, parsed.task, { version: item.version + 1 })
       return json(item)
     }
+    if (path === '/api/workspace/plan/tasks' && method === 'POST') {
+      const item = {
+        ...body.task,
+        id: `task-fixture-${plan.tasks.length + 1}`,
+        pursuitId: body.pursuitId || null,
+        activityId: body.activityId || null,
+        version: 1,
+        createdAt: stamp,
+        updatedAt: stamp,
+      }
+      plan.tasks.push(item)
+      return json(item)
+    }
     if (path === '/api/workspace/plan/activities') {
       const item = {
         ...activityInputSchema.parse(body),

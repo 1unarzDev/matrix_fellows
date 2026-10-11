@@ -30,7 +30,7 @@ onBeforeUnmount(() => disposeScene?.())
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
-  opacity: 0.78;
+  opacity: 0.48;
   isolation: isolate;
 }
 
@@ -42,13 +42,13 @@ onBeforeUnmount(() => disposeScene?.())
 
 @media (max-width: 720px) {
   .workspace-quasar {
-    opacity: 0.5;
+    opacity: 0.34;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .workspace-quasar {
-    opacity: 0.64;
+  opacity: 0.4;
   }
 }
 </style>

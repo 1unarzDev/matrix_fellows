@@ -51,7 +51,7 @@ const {
   pending,
   error: loadError,
   refresh,
-} = await useFetch<DashboardPlan>('/api/workspace/plan', { server: false })
+} = useFetch<DashboardPlan>('/api/workspace/plan', { server: false })
 const busy = ref(false)
 const error = ref('')
 const notice = ref('')

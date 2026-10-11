@@ -5,7 +5,8 @@ import AccountSecurity from '~/components/workspace/AccountSecurity.vue'
 import DashboardWorkbench from '../components/workspace/DashboardWorkbench.vue'
 import type { OutreachProfile, OutreachProposal, OutreachTarget } from '#shared/types/outreach'
 import { explainResearchFit, orderResearchTargets } from '#shared/utils/research-fit'
-import { proposalStyles } from '#shared/utils/outreach-tailoring'
+import type { OutreachMatchPreview } from '#shared/types/outreach-planning'
+import OutreachMessagePlan from '~/components/workspace/OutreachMessagePlan.vue'
 definePageMeta({ alias: ['/dashboard'] })
 useSeoMeta({ title: 'Dashboard | Matrix Fellows', robots: 'noindex, nofollow' })
 const { data, loading, busy, error, notice, refresh, mutate } = useWorkspace()
@@ -134,37 +135,86 @@ const profileId = ref('')
 const sharedProfiles = ref<{ profileId: string; displayName: string }[]>([])
 const sharedProfilePage = ref(0)
 const sharedProfileTotal = ref(0)
+const sharedProfilesLoading = ref(false)
+const sharedProfilesError = ref('')
 async function loadSharedProfiles() {
-  if (!canDiscover.value) return
+  if (!canDiscover.value || sharedProfilesLoading.value) return
+  sharedProfilesLoading.value = true
+  sharedProfilesError.value = ''
   try {
     const response = await $fetch<{ profiles: { id: string; fullName: string }[]; total: number }>('/api/workspace/research-profile/shared', { query: { page: sharedProfilePage.value } })
-    sharedProfiles.value = response.profiles.map(p => ({profileId: p.id, displayName: p.fullName}))
+    const profiles = response.profiles.map(p => ({ profileId: p.id, displayName: p.fullName }))
+    sharedProfiles.value = sharedProfilePage.value === 0 ? profiles : [...sharedProfiles.value, ...profiles.filter(p => !sharedProfiles.value.some(existing => existing.profileId === p.profileId))]
     sharedProfileTotal.value = response.total
-  } catch { sharedProfiles.value = []; sharedProfileTotal.value = 0 }
+  } catch { sharedProfilesError.value = 'Member profiles could not be loaded.' }
+  finally { sharedProfilesLoading.value = false }
 }
-const proposalStyle = ref('conversation')
 const selectedProjectId = ref('')
 const projectChoices = ref<{id:string;title:string}[]>([])
+const projectsLoading = ref(false)
+const projectsError = ref('')
+let projectRequest = 0
 const selectedContribution = ref('')
-const matchPreview = ref<any>(null)
+const matchPreview = ref<OutreachMatchPreview | null>(null)
+const planningBusy = ref(false)
+const planningError = ref('')
+const creatingMessageDraft = ref(false)
+const createdMessageDraftId = ref('')
 const officers = ref<{id:string;label:string}[]>([])
+const messagePlanContext = computed(() => JSON.stringify({
+  targetId: selectedId.value,
+  targetVersion: data.value?.targets.find(target => target.id === selectedId.value)?.updatedAt,
+  kind: scope.value,
+  profileId: scope.value === 'student' ? profileId.value : null,
+  projectId: scope.value === 'student' ? selectedProjectId.value || null : null,
+  contributionOption: selectedContribution.value,
+}))
+watch(messagePlanContext, () => { matchPreview.value = null; planningError.value = ''; createdMessageDraftId.value = '' })
+watch(selectedId, () => { selectedContribution.value = '' })
 async function loadProjects() {
-  selectedProjectId.value = ''; matchPreview.value = null
-  if (!canDiscover.value || !profileId.value) { projectChoices.value=[]; return }
-  try { const result=await $fetch<{projects:{id:string;title:string}[]}>('/api/workspace/research-profile/projects',{query:{profileId:profileId.value}}); projectChoices.value=result.projects }
-  catch { projectChoices.value=[] }
+  const request = ++projectRequest
+  const representedProfile = profileId.value
+  selectedProjectId.value = ''
+  projectChoices.value = []
+  projectsError.value = ''
+  projectsLoading.value = false
+  if (!canDiscover.value || scope.value !== 'student' || !representedProfile) return
+  projectsLoading.value = true
+  try {
+    const result = await $fetch<{projects:{id:string;title:string}[]}>('/api/workspace/research-profile/projects', { query: { profileId: representedProfile } })
+    if (request === projectRequest && profileId.value === representedProfile && scope.value === 'student') projectChoices.value = result.projects
+  } catch { if (request === projectRequest) projectsError.value = 'Projects could not be loaded. You can use the member’s profile or try again.' }
+  finally { if (request === projectRequest) projectsLoading.value = false }
 }
-watch(profileId, loadProjects)
-watch([selectedId,selectedProjectId,selectedContribution,scope],()=>{matchPreview.value=null})
-const contributionChoices = computed(()=> {
- const acquisition=selected.value?.dossier.acquisition as any
- return (acquisition?.publicAnalysis?.proposalOptions || []).map((option:any,index:number)=>({value:String(index),label:option.title}))
+watch([profileId, scope], loadProjects)
+const contributionChoices = computed(() => {
+  const acquisition = selected.value?.dossier.acquisition as any
+  // Offer only angles with a literal quotation in acquired source evidence.
+  return (acquisition?.publicAnalysis?.proposalOptions || []).flatMap((option:any,index:number) =>
+    typeof option.quote === 'string' && option.quote.trim() && acquisition.pages?.some((page:any) => page.text?.includes(option.quote))
+      ? [{ value:String(index), label:option.title }] : [])
 })
 async function previewMatch() {
- if(!selected.value) return
- const result=await mutate<any>('/matches','POST',{targetId:selected.value.id,...(scope.value==='student'?{profileId:profileId.value}:{}),...(selectedProjectId.value?{projectId:selectedProjectId.value}:{}),...(selectedContribution.value!==''?{contributionOption:Number(selectedContribution.value)}:{})})
- matchPreview.value=result?.items?.[0] || null
- if(result && !matchPreview.value) notice.value='No practical match under the represented member’s saved access preferences. Review those constraints first.'
+  if (!canDiscover.value || !selected.value || planningBusy.value || busy.value || (scope.value === 'student' && !profileId.value)) return
+  const context = messagePlanContext.value
+  const targetId = selected.value.id
+  planningBusy.value = true
+  planningError.value = ''
+  matchPreview.value = null
+  createdMessageDraftId.value = ''
+  try {
+    const result = await $fetch<{items:OutreachMatchPreview[]}>('/api/workspace/matches', { method:'POST', body: {
+      targetId,
+      ...(scope.value === 'student' ? {profileId:profileId.value, ...(selectedProjectId.value ? {projectId:selectedProjectId.value} : {})} : {}),
+      ...(selectedContribution.value !== '' ? {contributionOption:Number(selectedContribution.value)} : {}),
+    } })
+    if (context !== messagePlanContext.value || !canDiscover.value) return
+    const match = result.items.find(item => item.targetId === targetId && item.profileId === (scope.value === 'student' ? profileId.value : null) && (item.projectId || null) === (scope.value === 'student' ? selectedProjectId.value || null : null))
+    matchPreview.value = match || null
+    if (!match) planningError.value = 'No available match for this context. Check the candidate’s status, source evidence, and saved participation preferences.'
+  } catch (cause:any) {
+    if (context === messagePlanContext.value) planningError.value = cause?.data?.statusMessage || 'The message plan could not be built. Your choices are preserved; try again.'
+  } finally { planningBusy.value = false }
 }
 async function saveAccessPreferences() {
  await mutate('/research-profile/preferences','POST',{lens:lens.value,reachableLocations:reachableLocations.value.split(',').map(v=>v.trim()).filter(Boolean)},'Access preferences saved.')
@@ -502,26 +552,37 @@ async function saveProfile() {
   }
 }
 async function plan() {
-  if (!canDiscover.value || !selected.value) return
+  if (!canDiscover.value || !selected.value || !matchPreview.value || busy.value || creatingMessageDraft.value) return
+  if (createdMessageDraftId.value) {
+    const existing = data.value?.proposals.find(proposal => proposal.id === createdMessageDraftId.value)
+    if (existing) { openProposal(existing); await focusMessageDraft(); return }
+  }
+  const context = messagePlanContext.value
+  creatingMessageDraft.value = true
   const result = await mutate<{ proposal: OutreachProposal }>(
-    '/planner',
-    'POST',
-    {
+    '/planner', 'POST', {
       targetId: selected.value.id,
-      ...(matchPreview.value ? {matchId:matchPreview.value.id} : {}),
-      ...(selectedProjectId.value ? {projectId:selectedProjectId.value} : {}),
+      matchId: matchPreview.value.id,
+      ...(scope.value === 'student' && selectedProjectId.value ? {projectId:selectedProjectId.value} : {}),
       ...(selectedContribution.value !== '' ? {contributionOption:Number(selectedContribution.value)} : {}),
       kind: scope.value,
-      style: proposalStyle.value,
+      style: 'conversation',
       profileId: scope.value === 'student' ? profileId.value : null,
-    },
-    'Proposal created. Review every claim before approval.',
+    }, 'Draft created. Review the email and its evidence before approval.',
   )
+  creatingMessageDraft.value = false
   if (result?.proposal) {
+    if (context !== messagePlanContext.value) { notice.value = 'Draft created for the earlier selection. Find it in Messages to review.'; return }
+    createdMessageDraftId.value = result.proposal.id
     openProposal(result.proposal)
-    tab.value = 'queue'
-    await nextTick()
+    await focusMessageDraft()
   }
+}
+async function focusMessageDraft() {
+  await nextTick()
+  const editor = document.querySelector<HTMLTextAreaElement>('.email-body')
+  editor?.scrollIntoView({block:'center', behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth'})
+  editor?.focus({preventScroll:true})
 }
 async function toggleSave(t: OutreachTarget) {
   const saved = data.value?.saves.includes(t.id)
@@ -1633,64 +1694,17 @@ onMounted(async () => {
                     ><span>Open the official source</span><SiteIcon name="arrow" :size="14"
                   /></a>
                   <div class="ws-divider" />
-                  <details class="research-next-step" :open="Boolean(matchPreview)">
-                    <summary><span>Plan the first message</span><small>Build a source-backed connection plan</small></summary>
-                    <p class="ws-muted">This saves a reviewed match with its evidence, suggested task, unknowns, and access checks. It feeds the editable draft; nothing sends automatically.</p>
-                    <ThemedSelect
-                      v-if="canDiscover"
-                      v-model="scope"
-                      label="Connection type"
-                      :options="[
-                        { value: 'society', label: 'Matrix Fellows connection' },
-                        { value: 'student', label: 'Personal inquiry' },
-                      ]"
-                    /><ThemedSelect
-                      v-if="canDiscover && scope === 'student'"
-                      v-model="profileId"
-                      label="Represented profile"
-                      :options="[{value: '', label: 'Choose a consenting member'}, ...sharedProfiles.map((p) => ({ value: p.profileId, label: p.displayName }))]"
-                    />
-                    <ThemedSelect v-if="canDiscover && scope === 'student' && projectChoices.length" v-model="selectedProjectId" label="Relevant project" :options="[{value:'',label:'Use profile context'},...projectChoices.map(p=>({value:p.id,label:p.title}))]" />
-                    <ThemedSelect v-if="canDiscover && contributionChoices.length" v-model="selectedContribution" label="Supported angle" :options="[{value:'',label:'Let the plan choose'},...contributionChoices]" />
-                    <button v-if="canDiscover" class="ws-button ws-button--primary" :disabled="busy || (scope === 'student' && !profileId)" @click="previewMatch">Review the connection plan <SiteIcon name="right" :size="14" /></button>
-                  </details>
-                  <section v-if="matchPreview" aria-label="Selected connection plan">
-                    <div class="connection-plan-heading">
-                      <div>
-                        <p class="ws-kicker">Connection plan ready</p>
-                        <h3>{{ matchPreview.plan.connection }}</h3>
-                      </div>
-                      <span class="ws-chip">Saved match</span>
-                    </div>
-                    <div class="connection-plan-grid">
-                      <div><span>Why this target</span><p>{{ matchPreview.topicOverlap }}</p></div>
-                      <div><span>Suggested first ask</span><p>{{ matchPreview.plan.question }}</p></div>
-                      <div v-if="matchPreview.plan.deliverable"><span>Small deliverable</span><p>{{ matchPreview.plan.deliverable }}</p></div>
-                      <div><span>Participation</span><p>{{ matchPreview.access.access }} access</p></div>
-                    </div>
-                    <div v-if="matchPreview.plan.evidence?.length" class="connection-plan-evidence">
-                      <span>Evidence used</span>
-                      <a v-for="evidence in matchPreview.plan.evidence" :key="evidence.url + evidence.quote" :href="evidence.url" target="_blank" rel="noopener noreferrer" class="evidence">
-                        <span>{{ evidence.quote }}</span><SiteIcon name="arrow" :size="13" />
-                      </a>
-                    </div>
-                    <ul v-if="matchPreview.plan.unknowns?.length" class="analysis-list analysis-list--muted">
-                      <li v-for="unknown in matchPreview.plan.unknowns" :key="unknown">{{ unknown }}</li>
-                    </ul>
-                    <ul v-if="matchPreview.coordination?.length" class="analysis-list analysis-list--muted">
-                      <li v-for="contact in matchPreview.coordination" :key="contact.id">Prior outreach: {{ contact.stage }} · assigned officer {{ contact.ownerId }}</li>
-                    </ul>
-                    <p class="ws-muted connection-plan-footnote">{{ matchPreview.historyStatus }} history. This plan does not establish a recruiting need, supervision availability, or commitment.</p>
-                  </section>
-                  <div v-if="canDiscover && matchPreview" class="research-dossier-actions">
-                    <ThemedSelect
-                      v-model="proposalStyle"
-                      label="Draft tone"
-                      :options="proposalStyles.map((value) => ({ value, label: value.charAt(0).toUpperCase() + value.slice(1) }))"
-                    />
-                    <button class="ws-button ws-button--primary" :disabled="busy || !matchPreview || (scope === 'student' && !profileId)" @click="plan()">
-                      Shape the draft<SiteIcon name="right" :size="14" />
-                    </button>
+                  <OutreachMessagePlan
+                    v-if="canDiscover" :key="selected.id" :target="selected"
+                    v-model:scope="scope" v-model:profile-id="profileId" v-model:project-id="selectedProjectId" v-model:angle="selectedContribution"
+                    :profiles="sharedProfiles" :projects="projectChoices" :angles="contributionChoices" :match="matchPreview"
+                    :planning="planningBusy" :creating="creatingMessageDraft" :busy="busy" :projects-loading="projectsLoading"
+                    :profile-error="sharedProfilesError" :project-error="projectsError" :plan-error="planningError" :officers="officers"
+                    :more-profiles="sharedProfiles.length < sharedProfileTotal" :profiles-loading="sharedProfilesLoading" :draft-created="Boolean(createdMessageDraftId)"
+                    @preview="previewMatch" @draft="plan" @edit="openTarget(selected)" @ready="selectedDecision = 'ready'; updateSelectedStatus()"
+                    @retry-profiles="loadSharedProfiles" @retry-projects="loadProjects" @more-profiles="sharedProfilePage++; loadSharedProfiles()"
+                  />
+                  <div v-if="canDiscover" class="research-dossier-actions">
                     <details class="research-more-actions">
                       <summary>More candidate actions</summary>
                       <button class="ws-button" @click="openTarget(selected)">Edit evidence</button>
@@ -2891,7 +2905,6 @@ onMounted(async () => {
 }
 .assessment-heading,
 .analysis-heading,
-.connection-plan-heading,
 .sample-heading {
   display: flex;
   align-items: flex-start;
@@ -2899,14 +2912,12 @@ onMounted(async () => {
   gap: 16px;
 }
 .assessment-heading .ws-chip,
-.analysis-heading .ws-chip,
-.connection-plan-heading .ws-chip {
+.analysis-heading .ws-chip {
   flex: 0 0 auto;
 }
 .assessment-heading h3,
 .analysis-heading h3,
-.sample-heading h3,
-.connection-plan-heading h3 {
+.sample-heading h3 {
   margin-top: 4px !important;
 }
 .assessment-rationale {
@@ -3034,49 +3045,6 @@ onMounted(async () => {
 }
 .sample-heading h3 {
   margin: 0 !important;
-}
-.connection-plan-heading {
-  align-items: center;
-}
-.connection-plan-heading h3 {
-  margin-bottom: 0;
-}
-.connection-plan-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin: 18px 0;
-}
-.connection-plan-grid > div {
-  min-width: 0;
-  padding: 13px 14px;
-  border: 1px solid #ffffff0d;
-  border-radius: 14px;
-  background: #0d0e121f;
-}
-.connection-plan-grid span,
-.connection-plan-evidence > span {
-  display: block;
-  margin-bottom: 7px;
-  color: #91899c;
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-.connection-plan-grid p {
-  margin: 0;
-  color: #cec5d6;
-  font-size: 12px;
-  line-height: 1.6;
-}
-.connection-plan-evidence {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid #ffffff0d;
-}
-.connection-plan-footnote {
-  margin-top: 15px;
-  line-height: 1.6;
 }
 .consent {
   display: flex;
@@ -3421,18 +3389,13 @@ onMounted(async () => {
   }
   .assessment-heading,
   .analysis-heading,
-  .connection-plan-heading,
   .sample-heading {
     align-items: flex-start;
-  }
-  .assessment-signals,
-  .connection-plan-grid {
-    grid-template-columns: 1fr;
   }
 }
 </style>
 
 <style scoped>
-.research-next-step{margin-top:20px;padding:18px 20px;border:1px solid rgb(216 185 119 / 18%);border-radius:20px;background:linear-gradient(135deg,rgb(216 185 119 / 7%),rgb(185 163 237 / 5%));transition:border-color .35s,box-shadow .35s,transform .35s cubic-bezier(.22,1,.36,1)}.research-next-step[open]{border-color:rgb(216 185 119 / 34%);box-shadow:0 16px 42px rgb(9 8 16 / 18%)}.research-next-step:hover{border-color:rgb(216 185 119 / 32%)}.research-next-step>summary,.research-more-actions>summary{display:flex;align-items:center;justify-content:space-between;gap:14px;cursor:pointer;list-style:none;color:#efe7d6;font-size:13px;font-weight:550}.research-next-step>summary::-webkit-details-marker,.research-more-actions>summary::-webkit-details-marker{display:none}.research-next-step>summary:after,.research-more-actions>summary:after{content:'＋';color:#d8b977;font-size:16px;transition:transform .35s cubic-bezier(.22,1,.36,1)}.research-next-step[open]>summary:after,.research-more-actions[open]>summary:after{transform:rotate(45deg)}.research-next-step summary small{margin-left:auto;color:#aaa3b3;font-size:11px;font-weight:400}.research-next-step>.ws-muted{margin:12px 0 16px}.research-next-step :deep(.themed-select){margin-top:12px}.research-next-step>.ws-button{margin-top:15px}.research-dossier-actions{display:grid;gap:12px;margin-top:20px}.research-dossier-actions :deep(.themed-select){margin:0}.research-more-actions{margin-top:3px;padding-top:13px;border-top:1px solid #ffffff10}.research-more-actions>summary{font-size:11px;color:#aca5b5;font-weight:450}.research-more-actions .ws-button{margin-top:13px}.research-status-action{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:10px;margin-top:12px}.research-status-action :deep(.themed-select){margin:0}.research-action-status__orb{will-change:box-shadow}.source-link{margin-top:10px}.research-next-step,.research-dossier-actions,.research-more-actions{animation:research-flow-in .55s cubic-bezier(.22,1,.36,1) both}@keyframes research-flow-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@media(max-width:760px){.research-status-action{grid-template-columns:1fr}.research-next-step{padding:16px}.research-next-step summary small{display:none}}@media(prefers-reduced-motion:reduce){.research-next-step,.research-dossier-actions,.research-more-actions{animation:none}.research-next-step{transition:none}}
+.research-dossier-actions{display:grid;gap:12px;margin-top:20px}.research-dossier-actions :deep(.themed-select){margin:0}.research-more-actions>summary{display:flex;align-items:center;justify-content:space-between;gap:14px;cursor:pointer;list-style:none}.research-more-actions>summary::-webkit-details-marker{display:none}.research-more-actions>summary:after{content:"＋";color:#d8b977;font-size:16px;transition:transform .35s}.research-more-actions[open]>summary:after{transform:rotate(45deg)}.research-more-actions{margin-top:3px;padding-top:13px;border-top:1px solid #ffffff10}.research-more-actions>summary{font-size:11px;color:#aca5b5;font-weight:450}.research-more-actions .ws-button{margin-top:13px}.research-status-action{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:10px;margin-top:12px}.research-status-action :deep(.themed-select){margin:0}.research-action-status__orb{will-change:box-shadow}.source-link{margin-top:10px}.research-dossier-actions,.research-more-actions{animation:research-flow-in .55s cubic-bezier(.22,1,.36,1) both}@keyframes research-flow-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@media(max-width:760px){.research-status-action{grid-template-columns:1fr}}@media(prefers-reduced-motion:reduce){.research-dossier-actions,.research-more-actions{animation:none}}
 .research-action-status{display:flex;align-items:center;gap:9px;margin:12px 0;padding:11px 14px;border:1px solid rgb(216 185 119 / 22%);border-radius:14px;color:#d9d1c2;background:linear-gradient(100deg,rgb(216 185 119 / 9%),rgb(185 163 237 / 6%));font-size:12px}.research-action-status--saved{border-color:rgb(146 218 177 / 26%);color:#c4e3cf}.research-action-status--failed{border-color:rgb(236 130 130 / 32%);color:#efb6b6}.research-action-status__orb{width:8px;height:8px;flex:0 0 8px;border-radius:50%;background:#d8b977;box-shadow:0 0 0 0 rgb(216 185 119 / 40%);animation:research-action-pulse 1.8s ease-out infinite}.research-action-status--saved .research-action-status__orb{background:#92dab1;animation:none}.research-action-status--failed .research-action-status__orb{background:#ec8282;animation:none}@keyframes research-action-pulse{0%{box-shadow:0 0 0 0 rgb(216 185 119 / 40%)}70%{box-shadow:0 0 0 8px rgb(216 185 119 / 0%)}100%{box-shadow:0 0 0 0 rgb(216 185 119 / 0%)}}.research-action-enter-active,.research-action-leave-active{transition:opacity .28s ease,transform .28s ease}.research-action-enter-from,.research-action-leave-to{opacity:0;transform:translateY(-6px)}@media (prefers-reduced-motion:reduce){.research-action-status__orb{animation:none}.research-action-enter-active,.research-action-leave-active{transition:none}}
 </style>

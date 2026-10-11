@@ -11,6 +11,7 @@ export default defineEventHandler(async event => {
   assertWorkspaceOrigin(event)
   const actor = await requireWorkspaceOfficer(event)
   const input = await workspaceBody(event, z.object({profileId:z.uuid().optional(),projectId:z.uuid().optional(),targetId:z.uuid().optional(),contributionOption:z.number().int().min(0).max(10).optional()}).strict())
+  if (input.projectId && !input.profileId) throw createError({statusCode:422,statusMessage:'Select a member before including their project.'})
   const db = workspaceStorage(event)
   const packet = input.profileId ? await shareableResearchProfile(event,input.profileId) : null
   const profile = packet ? await draftProfileProjection(event,packet,input.projectId) : undefined
@@ -30,7 +31,9 @@ export default defineEventHandler(async event => {
     .sort((a,b)=>b.overlap-a.overlap || Number(a.fit.access==='unconfirmed')-Number(b.fit.access==='unconfirmed')).slice(0,5)
   const items=[]
   for(const {target,overlap,fit} of ranked){
-    const plan=buildContributionPlan(target,profile,input.contributionOption)
+    let plan: ReturnType<typeof buildContributionPlan>
+    try { plan=buildContributionPlan(target,profile,input.contributionOption) }
+    catch { throw createError({statusCode:422,statusMessage:'Select a research angle supported by acquired evidence.'}) }
     const inputVersions={target:target.updatedAt,profile:packet?.versionId || null,project:input.projectId || null,option:input.contributionOption ?? null,preferences,schema:'match-v1'}
     const workKey=await hashText(JSON.stringify({targetId:target.id,profileId:packet?.profileId || null,...inputVersions}))
     const match=workspaceResult(await db.from('outreach_matches').upsert({target_id:target.id,profile_id:packet?.profileId || null,created_by:actor.userId,input_versions:inputVersions,plan,work_key:workKey},{onConflict:'created_by,work_key'}).select('id').single())

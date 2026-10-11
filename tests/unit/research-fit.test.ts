@@ -135,7 +135,7 @@ describe('transparent feasible research ordering', () => {
     ]
     expect(orderResearchTargets(items, preferences)[0]?.id).toBe('chemistry')
     expect(explainResearchFit(items[1]!, preferences).unresolved).toContain(
-      'Current student availability, supervision, and eligibility need confirmation.',
+      'Current participant availability, supervision, and eligibility need confirmation.',
     )
   })
 })

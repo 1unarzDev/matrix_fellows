@@ -12,6 +12,7 @@ import {
 import type { OutreachProfile } from '#shared/types/outreach'
 import { proposalStyles, tailorOutreachDraft } from '#shared/utils/outreach-tailoring'
 import { buildContributionPlan } from '#shared/utils/research-plan'
+import { isCurrentOutreachMatch } from '#shared/utils/outreach-match'
 import { shareableResearchProfile, draftProfileProjection } from '../../utils/research-profile'
 import { assertWorkspaceTarget } from '../../utils/workspace-access'
 
@@ -49,6 +50,8 @@ export default defineEventHandler(async (event) => {
       })
       .strict(),
   )
+  if (input.kind === 'society' && input.projectId)
+    throw createError({ statusCode: 422, statusMessage: 'Select a member before including their project.' })
   const db = workspaceStorage(event)
   await assertWorkspaceTarget(event, member, input.targetId, input.kind)
   const target = targetFromRow(
@@ -80,6 +83,8 @@ export default defineEventHandler(async (event) => {
   const societySignals = await loadSocietySignals(db)
   let profile: OutreachProfile | undefined
   let profileVersionId: string | null = null
+  let subjectUserId = member.userId
+  let declaredInterests: string[] = []
   let consumedClaims: { id: string; statement: string; origin: string; support: string }[] = []
   if (input.kind === 'student') {
     if (!input.profileId)
@@ -89,16 +94,29 @@ export default defineEventHandler(async (event) => {
       })
     const packet = await shareableResearchProfile(event, input.profileId)
     profileVersionId = packet.versionId
+    subjectUserId = packet.subjectUserId
+    declaredInterests = packet.declaredInterests
     consumedClaims = packet.claims
     profile = await draftProfileProjection(event, packet, input.projectId)
 
   }
-  let plan = buildContributionPlan(target, profile, input.contributionOption)
+  let plan: ReturnType<typeof buildContributionPlan>
   if (input.matchId) {
     const match = workspaceResult(await db.from('outreach_matches').select('*').eq('id',input.matchId).eq('created_by',member.userId).maybeSingle())
-    if (!match || match.target_id !== target.id || match.profile_id !== (input.kind === 'student' ? input.profileId : null) || match.input_versions?.target !== target.updatedAt || match.input_versions?.profile !== profileVersionId || (match.input_versions?.project || null) !== (input.projectId || null))
-      throw createError({statusCode:409,statusMessage:'Match context changed. Review the connection again.'})
+    const preference = workspaceResult(await db.from('research_preferences').select('lens,reachable_locations').eq('user_id', subjectUserId).maybeSingle())
+    if (!isCurrentOutreachMatch(match, {
+      targetId: target.id,
+      profileId: input.kind === 'student' ? input.profileId! : null,
+      targetVersion: target.updatedAt,
+      profileVersion: profileVersionId,
+      projectId: input.projectId || null,
+      contributionOption: input.contributionOption ?? null,
+      preferences: { lens: preference?.lens || 'nearby', reachableLocations: preference?.reachable_locations || ['Arlington'], interests: declaredInterests },
+    })) throw createError({ statusCode: 409, statusMessage: 'The plan’s evidence, angle, or participation preferences changed. Rebuild the message plan before drafting.' })
     plan = match.plan
+  } else {
+    try { plan = buildContributionPlan(target, profile, input.contributionOption) }
+    catch { throw createError({statusCode:422,statusMessage:'Select a research angle supported by acquired evidence.'}) }
   }
   const voice = await loadOfficerVoice(event, member.userId)
   const draft = tailorOutreachDraft({

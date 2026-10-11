@@ -206,7 +206,7 @@ export function explainResearchFit(
       ...(access === 'outside-preference'
         ? ['Access falls outside your current location or participation preference.']
         : []),
-      'Current student availability, supervision, and eligibility need confirmation.',
+      'Current participant availability, supervision, and eligibility need confirmation.',
       ...(target.assessment.blockers || []),
     ],
   }

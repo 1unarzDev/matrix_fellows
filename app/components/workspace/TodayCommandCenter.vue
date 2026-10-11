@@ -215,7 +215,6 @@ const allTasksComplete = computed(() => dayTasks.value.length > 0 && openTasks.v
             </span>
           </button>
         </div>
-        <div class="day-rail__hint"><span>Scroll</span><span class="day-rail__hint-line" /></div>
       </div>
 
       <Transition name="day-panel" mode="out-in">
@@ -457,7 +456,7 @@ const allTasksComplete = computed(() => dayTasks.value.length > 0 && openTasks.v
 .today-command__layout {
   display: grid;
   grid-template-columns: minmax(260px, 0.8fr) minmax(360px, 1.2fr);
-  gap: clamp(22px, 5vw, 72px);
+  gap: 24px;
   align-items: stretch;
 }
 .day-rail-wrap {
@@ -488,8 +487,7 @@ const allTasksComplete = computed(() => dayTasks.value.length > 0 && openTasks.v
   background-size: 160px 160px;
   mix-blend-mode: soft-light;
 }
-.day-rail-wrap > .day-rail,
-.day-rail-wrap > .day-rail__hint {
+.day-rail-wrap > .day-rail {
   position: relative;
   z-index: 1;
 }
@@ -594,7 +592,7 @@ const allTasksComplete = computed(() => dayTasks.value.length > 0 && openTasks.v
   margin-left: 25px;
   border: 1px solid rgb(216 185 119 / 55%);
   border-radius: 50%;
-  background: #12131b;
+  background: rgb(25 24 31 / 96%);
   box-shadow: 0 0 0 5px rgb(216 185 119 / 5%);
   transition:
     transform 0.4s,
@@ -603,7 +601,7 @@ const allTasksComplete = computed(() => dayTasks.value.length > 0 && openTasks.v
 }
 .day-orbit--active .day-orbit__dot {
   transform: scale(1.45);
-  background: #e3bc67;
+  background: rgb(31 28 31 / 96%);
   box-shadow:
     0 0 0 7px rgb(216 185 119 / 10%),
     0 0 22px rgb(216 185 119 / 35%);
@@ -654,23 +652,6 @@ const allTasksComplete = computed(() => dayTasks.value.length > 0 && openTasks.v
   border-radius: 50%;
   background: #c8a4e8;
   box-shadow: 0 0 8px #c8a4e8;
-}
-.day-rail__hint {
-  position: absolute;
-  bottom: 4px;
-  left: 25px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: #777481;
-  font-size: 10px;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-}
-.day-rail__hint-line {
-  width: 32px;
-  height: 1px;
-  background: #777481;
 }
 .day-panel {
   position: relative;

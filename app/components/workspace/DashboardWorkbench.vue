@@ -3898,21 +3898,40 @@ function calendarFacts(date: string) {
 }
 .wb-board__lane {
   position: relative;
+  isolation: isolate;
+  overflow: hidden;
   min-width: 0;
   min-height: 280px;
   padding: 17px;
-  border: 1px solid rgb(244 241 233 / 11%);
+  border: 1px solid rgb(255 255 255 / 10%);
   border-radius: 20px;
-  background: rgb(255 255 255 / 3%);
+  background: rgb(255 255 255 / 2.5%);
   box-shadow:
-    inset 0 1px rgb(244 241 233 / 7%),
-    0 14px 34px rgb(0 0 0 / 12%);
+    inset 0 1px rgb(255 255 255 / 6%),
+    0 16px 48px rgb(0 0 0 / 10%);
+  -webkit-backdrop-filter: blur(22px) saturate(112%);
+  backdrop-filter: blur(22px) saturate(112%);
   scroll-snap-align: start;
-  overflow: hidden;
+}
+.wb-board__lane::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='board-grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23board-grain)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+  mix-blend-mode: soft-light;
+}
+.wb-board__lane > * {
+  position: relative;
+  z-index: 1;
 }
 .wb-board__lane::before {
   content: '';
   position: absolute;
+  z-index: 2;
   top: 0;
   right: 18px;
   left: 18px;

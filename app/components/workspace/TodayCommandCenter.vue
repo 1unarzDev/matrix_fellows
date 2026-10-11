@@ -464,8 +464,34 @@ const allTasksComplete = computed(() => dayTasks.value.length > 0 && openTasks.v
   --rail-side: 30px;
   --dot-center: 30px;
   position: relative;
+  isolation: isolate;
+  overflow: hidden;
   min-width: 0;
   min-height: 440px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 24px;
+  background: rgb(255 255 255 / 2.5%);
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 6%),
+    0 16px 48px rgb(0 0 0 / 10%);
+  -webkit-backdrop-filter: blur(22px) saturate(112%);
+  backdrop-filter: blur(22px) saturate(112%);
+}
+.day-rail-wrap::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='rail-grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23rail-grain)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+  mix-blend-mode: soft-light;
+}
+.day-rail-wrap > .day-rail,
+.day-rail-wrap > .day-rail__hint {
+  position: relative;
+  z-index: 1;
 }
 .day-rail {
   --rail-height: 440px;

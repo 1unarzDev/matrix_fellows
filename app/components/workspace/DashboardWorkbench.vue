@@ -894,7 +894,7 @@ function calendarFacts(date: string) {
       <button
         v-if="section !== 'today'"
         class="wb-button wb-primary"
-        @click="section === 'activities' ? editActivity() : editTask()"
+        @click="section === 'activities' ? editActivity() : editQuickTask()"
       >
         {{ section === 'activities' ? '+ Add activity' : '+ Add task' }}
       </button>

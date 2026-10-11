@@ -1332,7 +1332,9 @@ function calendarFacts(date: string) {
           >
         </form>
       </div>
-      <Transition name="wb-mode-switch" mode="out-in">
+      <!-- prettier-ignore -->
+      <div class="wb-mode-stage">
+        <Transition name="wb-mode-switch" mode="in-out">
         <div v-if="mode === 'discover'" key="discover" class="wb-discovery">
           <TransitionGroup
             name="wb-filter-chip"
@@ -1695,7 +1697,8 @@ function calendarFacts(date: string) {
             </div>
           </Transition>
         </div>
-      </Transition>
+        </Transition>
+      </div>
     </template>
 
     <DashboardDialog
@@ -2432,6 +2435,15 @@ function calendarFacts(date: string) {
   z-index: 1;
 }
 .wb-plan-mode {
+  min-width: 0;
+}
+.wb-mode-stage {
+  display: grid;
+  min-width: 0;
+}
+.wb-mode-stage > .wb-discovery,
+.wb-mode-stage > .wb-plan-mode {
+  grid-area: 1 / 1;
   min-width: 0;
 }
 .wb-mode-switch-enter-active,

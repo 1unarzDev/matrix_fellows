@@ -21,6 +21,7 @@ export interface SocietyContextSource {
   byteSize: number | null
   excerpt: string
   sourceDate: string | null
+  sourceEndDate: string | null
   chapter: string | null
   submittedBy: string | null
   status: SocietySourceStatus

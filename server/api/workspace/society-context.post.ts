@@ -11,6 +11,7 @@ const jsonSchema = z
     title: z.string().trim().min(1).max(200).optional(),
     content: z.string().max(8000000).optional(),
     sourceDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+    sourceEndDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
     chapter: z.string().trim().max(160).nullable().optional(),
     relationshipHint: z.string().trim().max(500).nullable().optional(),
   })
@@ -47,6 +48,7 @@ export default defineEventHandler(async (event) => {
   let title = ''
   let content = ''
   let sourceDate: string | null = null
+  let sourceEndDate: string | null = null
   let chapter: string | null = null
   let relationshipHint: string | null = null
   let file: { data: Uint8Array; filename?: string; type?: string } | null = null
@@ -60,6 +62,7 @@ export default defineEventHandler(async (event) => {
       else if (part.name === 'title') title = value
       else if (part.name === 'content') content = value
       else if (part.name === 'sourceDate') sourceDate = value || null
+      else if (part.name === 'sourceEndDate') sourceEndDate = value || null
       else if (part.name === 'chapter') chapter = value || null
       else if (part.name === 'relationshipHint') relationshipHint = value || null
       else if (part.name === 'file' && part.data?.length) file = { data: part.data, filename: part.filename, type: part.type }
@@ -73,6 +76,7 @@ export default defineEventHandler(async (event) => {
     title = parsed.data.title || ''
     content = parsed.data.content || ''
     sourceDate = parsed.data.sourceDate || null
+    sourceEndDate = parsed.data.sourceEndDate || null
     chapter = parsed.data.chapter || null
     relationshipHint = parsed.data.relationshipHint || null
   }
@@ -103,6 +107,8 @@ export default defineEventHandler(async (event) => {
     title = title || file.filename || 'Uploaded society source'
     content = textFromBytes(file.data, file.type || 'application/octet-stream')
   }
+  if (sourceDate && sourceEndDate && sourceEndDate < sourceDate)
+    throw createError({ statusCode: 400, statusMessage: 'The source period ends after it starts.' })
   title = title.trim().slice(0, 200)
   if (!title) throw createError({ statusCode: 400, statusMessage: 'Add a short title for this source.' })
   if (!file && !content.trim())
@@ -121,6 +127,7 @@ export default defineEventHandler(async (event) => {
         mime_type: file?.type || null,
         byte_size: file?.data.length || new TextEncoder().encode(content).length,
         source_date: sourceDate,
+        source_end_date: sourceEndDate,
         chapter,
         relationship_hint: relationshipHint,
         processing_status: 'queued',

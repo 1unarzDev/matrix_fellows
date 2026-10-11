@@ -12,11 +12,12 @@ export default defineEventHandler(async (event) => {
   const token = getCookie(event, WORKSPACE_FLOW_COOKIE) || ''
   deleteCookie(event, WORKSPACE_FLOW_COOKIE, { path: '/api/workspace' })
   try {
-    const flow = await openWorkspace<{ verifier: string; expires: number; kind?: string }>(
-      token,
-      config.workspaceSessionSecret,
-      WORKSPACE_FLOW_COOKIE,
-    )
+    const flow = await openWorkspace<{
+      verifier: string
+      expires: number
+      kind?: string
+      returnTo?: string
+    }>(token, config.workspaceSessionSecret, WORKSPACE_FLOW_COOKIE)
     const query = getQuery(event)
     if (flow.expires < Date.now() || typeof query.code !== 'string' || query.code.length > 2000)
       throw new Error('Expired flow')
@@ -38,7 +39,7 @@ export default defineEventHandler(async (event) => {
       return sendRedirect(event, '/login?recovery=1', 303)
     }
     await writeWorkspaceSession(event, tokens)
-    return sendRedirect(event, '/workspace', 303)
+    return sendRedirect(event, flow.returnTo || '/workspace', 303)
   } catch {
     return sendRedirect(event, '/login?error=failed', 303)
   }

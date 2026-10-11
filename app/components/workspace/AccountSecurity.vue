@@ -7,15 +7,15 @@ const security = ref<{
   passkeys: Passkey[]
   passkeyAvailable: boolean
   fresh: boolean
-} | null>(
-  null,
-)
+} | null>(null)
 const providers = ref({ google: true, azure: true })
 const busy = ref(false)
 const error = ref('')
 const notice = ref('')
 const password = ref('')
 const confirmation = ref('')
+const reauthPassword = ref('')
+const showPasswordVerification = ref(false)
 const names = reactive<Record<string, string>>({})
 const supported = ref(false)
 const passkeySetupRequested = ref(false)
@@ -55,7 +55,11 @@ async function sendSignInEmail() {
   try {
     await $fetch('/api/workspace/auth/login' as string, {
       method: 'POST',
-      body: { provider: 'email', email: security.value.email },
+      body: {
+        provider: 'email',
+        email: security.value.email,
+        returnTo: '/workspace?section=settings',
+      },
     })
     notice.value = `A sign-in link is on its way to ${security.value.email}. Open it in this browser to continue.`
   } catch (cause) {
@@ -71,7 +75,7 @@ async function signInWithProvider(provider: Provider) {
   try {
     const result = await $fetch<{ url?: string }>('/api/workspace/auth/login' as string, {
       method: 'POST',
-      body: { provider },
+      body: { provider, returnTo: '/workspace?section=settings' },
     })
     if (result.url) window.location.assign(result.url)
     else throw new Error('The sign-in provider did not return a redirect.')
@@ -80,14 +84,39 @@ async function signInWithProvider(provider: Provider) {
     busy.value = false
   }
 }
+async function verifyWithPassword() {
+  if (busy.value || !security.value?.email || !reauthPassword.value) return
+  busy.value = true
+  error.value = ''
+  notice.value = ''
+  try {
+    await $fetch('/api/workspace/auth/password' as string, {
+      method: 'POST',
+      body: { action: 'signin', email: security.value.email, password: reauthPassword.value },
+    })
+    reauthPassword.value = ''
+    showPasswordVerification.value = false
+    await load()
+    notice.value = 'Identity verified. You can update your password now.'
+  } catch (cause) {
+    error.value = accountError(cause)
+  } finally {
+    busy.value = false
+  }
+}
 async function verifyWithPasskey() {
   if (!security.value?.passkeys.length) {
     passkeySetupRequested.value = true
-    notice.value = supported.value ? 'No passkey is registered on this account yet.' : 'Passkeys are not available on this device.'
+    notice.value = supported.value
+      ? 'No passkey is registered on this account yet.'
+      : 'Passkeys are not available on this device.'
     return
   }
   controller = new AbortController()
-  await perform(() => usePasskey(false, controller!.signal), 'Identity verified. You can update security settings now.')
+  await perform(
+    () => usePasskey(false, controller!.signal),
+    'Identity verified. You can update security settings now.',
+  )
 }
 async function perform(action: () => Promise<unknown>, message: string) {
   if (busy.value) return
@@ -148,121 +177,193 @@ onMounted(() => {
 })
 </script>
 <template>
-  <section class="account-security ws-panel settings-panel settings-security-panel" aria-labelledby="account-security-title">
+  <section
+    class="account-security ws-panel settings-panel settings-security-panel"
+    aria-labelledby="account-security-title"
+  >
     <div class="settings-panel__heading">
       <div>
         <p class="settings-panel__eyebrow">Your account</p>
         <h2 id="account-security-title">Sign-in &amp; security</h2>
       </div>
-      <span class="settings-panel__icon" aria-hidden="true"><SiteIcon name="lock" :size="17" /></span>
+      <span class="settings-panel__icon" aria-hidden="true"
+        ><SiteIcon name="lock" :size="17"
+      /></span>
     </div>
-      <p class="ws-muted">Choose a method to verify your account.</p>
-      <p v-if="error" class="security-error" role="alert">{{ error }}</p>
-      <p v-if="notice" role="status">{{ notice }}</p>
-      <template v-if="security">
-        <section class="security-verification" aria-labelledby="security-verification-title">
-          <div class="security-verification__heading">
-            <h3 id="security-verification-title">Verify to continue</h3>
-            <span class="security-verification__status" :class="{ 'is-ready': security.fresh }">
-              {{ security.fresh ? 'Verified' : 'Needed' }}
-            </span>
-          </div>
-          <div class="security-methods">
-            <button class="security-method" type="button" :disabled="busy" @click="sendSignInEmail">
-              <span class="security-method__icon" aria-hidden="true"><SiteIcon name="mail" :size="15" /></span>
-              <strong>Email link</strong><small>{{ security.email }}</small>
-            </button>
-            <button class="security-method" type="button" :disabled="busy" @click="signInWithProvider('google')">
-              <span class="security-method__icon" aria-hidden="true">G</span>
-              <strong>Google</strong><small v-if="!providers.google">Not configured</small>
-            </button>
-            <button class="security-method" type="button" :disabled="busy" @click="signInWithProvider('azure')">
-              <span class="security-method__icon" aria-hidden="true"><SiteIcon name="dashboard" :size="13" /></span>
-              <strong>Microsoft</strong><small v-if="!providers.azure">Not configured</small>
-            </button>
-            <button class="security-method" type="button" aria-label="Passkey" :disabled="busy" @click="verifyWithPasskey">
-              <span class="security-method__icon" aria-hidden="true"><SiteIcon name="lock" :size="14" /></span>
-              <strong>Passkey</strong><small v-if="!(supported && security.passkeyAvailable)">Works when passkeys are enabled</small>
-            </button>
-          </div>
-        </section>
-        <div v-for="key in security.passkeys" :key="key.id" class="security-key">
-          <label :for="`key-${key.id}`"
-            >Passkey name<input
-              :id="`key-${key.id}`"
-              v-model="names[key.id]"
-              maxlength="120"
-              :disabled="busy || !security.fresh"
-          /></label>
-          <small class="ws-muted">Added {{ new Date(key.created_at).toLocaleDateString() }}</small>
-          <div class="ws-actions">
-            <button
-              class="ws-button"
-              :disabled="busy || !security.fresh || !names[key.id]?.trim()"
-              @click="
-                perform(
-                  () =>
-                    $fetch<{ ok: boolean }>('/api/workspace/auth/passkey' as string, {
-                      method: 'POST',
-                      body: { action: 'rename', id: key.id, name: names[key.id] },
-                    }),
-                  'Passkey renamed.',
-                )
-              "
-            >
-              Rename</button
-            ><button
-              class="ws-button ws-button--danger"
-              :disabled="busy || !security.fresh"
-              @click="remove(key)"
-            >
-              Remove
-            </button>
-          </div>
+    <p class="ws-muted">Choose a method to verify your account.</p>
+    <p v-if="error" class="security-error" role="alert">{{ error }}</p>
+    <p v-if="notice" role="status">{{ notice }}</p>
+    <template v-if="security">
+      <section class="security-verification" aria-labelledby="security-verification-title">
+        <div class="security-verification__heading">
+          <h3 id="security-verification-title">Verify to continue</h3>
+          <span class="security-verification__status" :class="{ 'is-ready': security.fresh }">
+            {{ security.fresh ? 'Verified' : 'Needed' }}
+          </span>
         </div>
-        <div v-if="passkeySetupRequested" class="passkey-setup-prompt">
-          <p>{{ supported ? 'Set up a passkey on this device for faster sign-in.' : 'Passkeys are not available on this device.' }}</p>
-          <button v-if="supported" class="ws-button ws-button--primary" :disabled="busy || !security.fresh" @click="addPasskey">
-            Set up a passkey
+        <div class="security-methods">
+          <button class="security-method" type="button" :disabled="busy" @click="sendSignInEmail">
+            <span class="security-method__icon" aria-hidden="true"
+              ><SiteIcon name="mail" :size="15"
+            /></span>
+            <strong>Email link</strong><small>{{ security.email }}</small>
+          </button>
+          <button
+            class="security-method"
+            type="button"
+            :disabled="busy"
+            @click="signInWithProvider('google')"
+          >
+            <span class="security-method__icon" aria-hidden="true">G</span>
+            <strong>Google</strong><small v-if="!providers.google">Not configured</small>
+          </button>
+          <button
+            class="security-method"
+            type="button"
+            :disabled="busy"
+            @click="signInWithProvider('azure')"
+          >
+            <span class="security-method__icon" aria-hidden="true"
+              ><SiteIcon name="dashboard" :size="13"
+            /></span>
+            <strong>Microsoft</strong><small v-if="!providers.azure">Not configured</small>
+          </button>
+          <button
+            class="security-method"
+            type="button"
+            aria-label="Passkey"
+            :disabled="busy"
+            @click="verifyWithPasskey"
+          >
+            <span class="security-method__icon" aria-hidden="true"
+              ><SiteIcon name="lock" :size="14"
+            /></span>
+            <strong>Passkey</strong
+            ><small v-if="!(supported && security.passkeyAvailable)"
+              >Works when passkeys are enabled</small
+            >
+          </button>
+          <button
+            class="security-method"
+            type="button"
+            :class="{ 'is-selected': showPasswordVerification }"
+            :disabled="busy"
+            @click="showPasswordVerification = !showPasswordVerification"
+          >
+            <span class="security-method__icon" aria-hidden="true"
+              ><SiteIcon name="lock" :size="14"
+            /></span>
+            <strong>Password</strong><small>Use your account password</small>
           </button>
         </div>
-        <form class="security-password settings-password-card" @submit.prevent="changePassword">
-          <div class="settings-password-card__heading">
-            <div>
-              <p class="settings-panel__eyebrow">Account recovery</p>
-              <h3>Set or change password</h3>
-            </div>
-            <span class="settings-password-card__mark" aria-hidden="true">✦</span>
+      </section>
+      <form
+        v-if="showPasswordVerification"
+        class="security-password-verify"
+        @submit.prevent="verifyWithPassword"
+      >
+        <label for="security-current-password"
+          >Current password<input
+            id="security-current-password"
+            v-model="reauthPassword"
+            type="password"
+            autocomplete="current-password"
+            required
+            :disabled="busy"
+            placeholder="Enter your password"
+        /></label>
+        <button class="ws-button" :disabled="busy || !reauthPassword">Verify password</button>
+      </form>
+      <div v-for="key in security.passkeys" :key="key.id" class="security-key">
+        <label :for="`key-${key.id}`"
+          >Passkey name<input
+            :id="`key-${key.id}`"
+            v-model="names[key.id]"
+            maxlength="120"
+            :disabled="busy || !security.fresh"
+        /></label>
+        <small class="ws-muted">Added {{ new Date(key.created_at).toLocaleDateString() }}</small>
+        <div class="ws-actions">
+          <button
+            class="ws-button"
+            :disabled="busy || !security.fresh || !names[key.id]?.trim()"
+            @click="
+              perform(
+                () =>
+                  $fetch<{ ok: boolean }>('/api/workspace/auth/passkey' as string, {
+                    method: 'POST',
+                    body: { action: 'rename', id: key.id, name: names[key.id] },
+                  }),
+                'Passkey renamed.',
+              )
+            "
+          >
+            Rename</button
+          ><button
+            class="ws-button ws-button--danger"
+            :disabled="busy || !security.fresh"
+            @click="remove(key)"
+          >
+            Remove
+          </button>
+        </div>
+      </div>
+      <div v-if="passkeySetupRequested" class="passkey-setup-prompt">
+        <p>
+          {{
+            supported
+              ? 'Set up a passkey on this device for faster sign-in.'
+              : 'Passkeys are not available on this device.'
+          }}
+        </p>
+        <button
+          v-if="supported"
+          class="ws-button ws-button--primary"
+          :disabled="busy || !security.fresh"
+          @click="addPasskey"
+        >
+          Set up a passkey
+        </button>
+      </div>
+      <form class="security-password settings-password-card" @submit.prevent="changePassword">
+        <div class="settings-password-card__heading">
+          <div>
+            <p class="settings-panel__eyebrow">Account recovery</p>
+            <h3>Set or change password</h3>
           </div>
-          <label for="security-password"
-            >New password<input
-              id="security-password"
-              v-model="password"
-              type="password"
-              autocomplete="new-password"
-              required
-              minlength="12"
-              maxlength="128"
-              :disabled="busy"
-              placeholder="At least 12 characters"
-          /></label>
-          <label for="security-confirm"
-            >Confirm password<input
-              id="security-confirm"
-              v-model="confirmation"
-              type="password"
-              autocomplete="new-password"
-              required
-              minlength="12"
-              maxlength="128"
-              :disabled="busy"
-          /></label>
-          <p class="ws-muted">After saving, your current dashboard session will close and you’ll sign in again.</p>
-          <button class="ws-button" :disabled="busy || !security.fresh">Update password</button>
-        </form>
-      </template>
-      <button v-else-if="error" class="ws-button" @click="load">Retry account settings</button>
-      <p v-else class="ws-muted" role="status">Loading account security…</p>
+          <span class="settings-password-card__mark" aria-hidden="true">✦</span>
+        </div>
+        <label for="security-password"
+          >New password<input
+            id="security-password"
+            v-model="password"
+            type="password"
+            autocomplete="new-password"
+            required
+            minlength="12"
+            maxlength="128"
+            :disabled="busy"
+            placeholder="At least 12 characters"
+        /></label>
+        <label for="security-confirm"
+          >Confirm password<input
+            id="security-confirm"
+            v-model="confirmation"
+            type="password"
+            autocomplete="new-password"
+            required
+            minlength="12"
+            maxlength="128"
+            :disabled="busy"
+        /></label>
+        <p class="ws-muted">
+          After saving, your current dashboard session will close and you’ll sign in again.
+        </p>
+        <button class="ws-button" :disabled="busy || !security.fresh">Update password</button>
+      </form>
+    </template>
+    <button v-else-if="error" class="ws-button" @click="load">Retry account settings</button>
+    <p v-else class="ws-muted" role="status">Loading account security…</p>
   </section>
 </template>
 <style scoped>
@@ -283,8 +384,21 @@ onMounted(() => {
   display: grid;
   gap: 0.85rem;
 }
-.passkey-setup-prompt { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 14px; padding: 12px 0 0; border-top: 1px solid rgb(255 255 255 / 8%); }
-.passkey-setup-prompt p { margin: 0; color: rgb(244 241 233 / 48%); font-size: 11px; line-height: 1.5; }
+.passkey-setup-prompt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 14px;
+  padding: 12px 0 0;
+  border-top: 1px solid rgb(255 255 255 / 8%);
+}
+.passkey-setup-prompt p {
+  margin: 0;
+  color: rgb(244 241 233 / 48%);
+  font-size: 11px;
+  line-height: 1.5;
+}
 .security-password {
   position: relative;
   overflow: hidden;
@@ -310,15 +424,27 @@ onMounted(() => {
   justify-content: space-between;
   gap: 14px;
 }
-.security-verification__heading h3 { margin: 0; font-size: 15px; font-weight: 500; letter-spacing: -.02em; }
+.security-verification__heading h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
 .security-verification__status {
   color: rgb(244 241 233 / 38%);
   font-size: 9px;
-  letter-spacing: .1em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
-.security-verification__status.is-ready { color: rgb(180 211 190 / 72%); }
-.security-methods { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin-top: .7rem; }
+.security-verification__status.is-ready {
+  color: rgb(180 211 190 / 72%);
+}
+.security-methods {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 0.7rem;
+}
 .security-method {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -326,22 +452,74 @@ onMounted(() => {
   gap: 8px;
   min-width: 0;
   padding: 11px 10px;
-  border: 0;
-  border-right: 1px solid rgb(255 255 255 / 8%);
-  border-radius: 0;
-  background: transparent;
+  border: 1px solid rgb(244 241 233 / 10%);
+  border-radius: 12px;
+  background: rgb(244 241 233 / 2%);
   color: rgb(244 241 233 / 78%);
   text-align: left;
   cursor: pointer;
-  transition: color 220ms ease, background-color 220ms ease;
+  transition:
+    color 220ms ease,
+    background-color 220ms ease,
+    border-color 220ms ease,
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 260ms ease;
 }
-.security-method:last-child { border-right: 0; }
-.security-method:hover, .security-method:focus-visible { background: rgb(255 255 255 / 4%); color: #f4f1e9; }
-.security-method:focus-visible { outline: 1px solid rgb(216 185 119 / 58%); outline-offset: -1px; }
-.security-method:disabled { opacity: .5; cursor: wait; }
-.security-method__icon { display: grid; place-items: center; width: 25px; height: 25px; flex: 0 0 auto; color: rgb(244 241 233 / 56%); font-size: 12px; font-weight: 600; }
-.security-method strong { align-self: center; font-size: 11px; font-weight: 500; }
-.security-method small { grid-column: 2; overflow: hidden; margin-top: -4px; color: rgb(244 241 233 / 38%); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.security-method:hover:not(:disabled),
+.security-method:focus-visible,
+.security-method.is-selected {
+  border-color: rgb(216 185 119 / 38%);
+  background: rgb(216 185 119 / 8%);
+  color: #f4f1e9;
+  transform: translateY(-2px);
+  box-shadow: 0 9px 22px rgb(0 0 0 / 14%);
+}
+.security-method:focus-visible {
+  outline: 2px solid rgb(216 185 119 / 58%);
+  outline-offset: 2px;
+}
+.security-method:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.security-method__icon {
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  flex: 0 0 auto;
+  color: rgb(244 241 233 / 56%);
+  font-size: 12px;
+  font-weight: 600;
+}
+.security-method strong {
+  align-self: center;
+  font-size: 11px;
+  font-weight: 500;
+}
+.security-method small {
+  grid-column: 2;
+  overflow: hidden;
+  margin-top: -4px;
+  color: rgb(244 241 233 / 38%);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.security-password-verify {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid rgb(216 185 119 / 20%);
+  border-radius: 14px;
+  background: rgb(244 241 233 / 3%);
+}
+.security-password-verify input {
+  max-width: none;
+}
 .settings-password-card__heading {
   display: flex;
   align-items: flex-start;
@@ -358,7 +536,9 @@ onMounted(() => {
   letter-spacing: 0.18em;
   text-transform: uppercase;
 }
-.settings-password-card__mark { display: none; }
+.settings-password-card__mark {
+  display: none;
+}
 label {
   display: grid;
   gap: 0.45rem;
@@ -392,11 +572,16 @@ a {
   }
 }
 @media (max-width: 560px) {
-  .security-methods { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .security-method:nth-child(2) { border-right: 0; }
-  .security-method:nth-child(-n + 2) { border-bottom: 1px solid rgb(255 255 255 / 8%); }
+  .security-methods {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .security-password-verify {
+    grid-template-columns: 1fr;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .security-method { transition: none; }
+  .security-method {
+    transition: none;
+  }
 }
 </style>

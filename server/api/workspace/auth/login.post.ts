@@ -11,12 +11,17 @@ import {
 const schema = z.object({
   provider: z.enum(['google', 'azure', 'email']),
   email: z.string().email().max(254).optional(),
+  returnTo: z
+    .string()
+    .regex(/^\/[^/]/)
+    .max(200)
+    .optional(),
 })
 export default defineEventHandler(async (event) => {
   setHeader(event, 'Cache-Control', 'no-store')
   assertWorkspaceOrigin(event)
   const config = workspaceConfig(event)
-  const { provider, email } = schema.parse(await readBody(event))
+  const { provider, email, returnTo } = schema.parse(await readBody(event))
   const verifier = randomToken()
   const challenge = await hashText(verifier)
   const redirect = `${new URL(config.public.siteUrl).origin}/api/workspace/auth/callback`
@@ -27,7 +32,7 @@ export default defineEventHandler(async (event) => {
       event,
       WORKSPACE_FLOW_COOKIE,
       await sealWorkspace(
-        { verifier, email: normalized, expires: Date.now() + 10 * 60000 },
+        { verifier, email: normalized, returnTo, expires: Date.now() + 10 * 60000 },
         config.workspaceSessionSecret,
         WORKSPACE_FLOW_COOKIE,
       ),
@@ -58,7 +63,7 @@ export default defineEventHandler(async (event) => {
     event,
     WORKSPACE_FLOW_COOKIE,
     await sealWorkspace(
-      { verifier, expires: Date.now() + 10 * 60000 },
+      { verifier, returnTo, expires: Date.now() + 10 * 60000 },
       config.workspaceSessionSecret,
       WORKSPACE_FLOW_COOKIE,
     ),

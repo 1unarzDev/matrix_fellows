@@ -3172,22 +3172,6 @@ function calendarFacts(date: string) {
     0 0 15px rgb(228 187 114 / 12%),
     inset 0 1px rgb(255 255 255 / 8%);
 }
-.quick-calendar__day--range-start::before,
-.quick-calendar__day--range-end::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  width: 8px;
-  height: 2px;
-  background: #e7c779;
-  box-shadow: 0 0 9px #e7c779aa;
-}
-.quick-calendar__day--range-start::before {
-  left: -7px;
-}
-.quick-calendar__day--range-end::after {
-  right: -7px;
-}
 .quick-calendar__day--today {
   box-shadow: inset 0 -2px #d8b977;
 }

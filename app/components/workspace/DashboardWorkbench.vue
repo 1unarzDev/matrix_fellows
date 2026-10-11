@@ -1274,6 +1274,21 @@ function calendarFacts(date: string) {
                 {{ v === 'focus' ? 'Focus' : v }}
               </button>
             </div>
+            <div v-if="mode === 'plan'" class="wb-view-picker">
+              <ThemedSelect
+                v-model="view"
+                label="Plan view"
+                :options="[
+                  {
+                    value: 'focus',
+                    label: 'Focus',
+                    description: 'Daily priorities and saved opportunities',
+                  },
+                  { value: 'calendar', label: 'Calendar', description: 'Saved dates and events' },
+                  { value: 'board', label: 'Board', description: 'Move work through stages' },
+                ]"
+              />
+            </div>
           </div>
           <div class="wb-toolbar__actions">
             <button
@@ -2339,6 +2354,19 @@ function calendarFacts(date: string) {
   padding: 2px;
   width: max-content;
   max-width: 100%;
+}
+.wb-view-picker {
+  display: none;
+  min-width: 190px;
+}
+.wb-view-picker :deep(.themed-select__trigger) {
+  min-height: 42px;
+  border-color: rgb(244 241 233 / 12%);
+  border-radius: 12px;
+  background: rgb(255 255 255 / 3%);
+}
+.wb-view-picker :deep(.themed-select__menu) {
+  min-width: 230px;
 }
 .wb-plan-rail .wb-segments,
 .wb-plan-rail .wb-viewbar {
@@ -4039,6 +4067,31 @@ function calendarFacts(date: string) {
     grid-template-columns: repeat(5, minmax(224px, 1fr));
     margin-inline: -4px;
     padding-inline: 4px;
+  }
+}
+@media (max-width: 1100px) and (min-width: 701px) {
+  .wb-plan-rail {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+  .wb-plan-rail__navigation {
+    flex: 1 1 100%;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .wb-plan-rail .wb-viewbar {
+    display: none;
+  }
+  .wb-view-picker {
+    display: block;
+    flex: 0 1 260px;
+  }
+  .wb-toolbar__actions {
+    flex: 1 1 100%;
+    justify-content: flex-end;
+  }
+  .wb-toolbar__actions .wb-export-button {
+    min-width: 170px;
   }
 }
 @media (max-width: 420px) {

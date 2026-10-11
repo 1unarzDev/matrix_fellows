@@ -441,7 +441,7 @@ onMounted(() => {
 }
 .security-methods {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
   gap: 8px;
   margin-top: 0.7rem;
 }
@@ -496,15 +496,15 @@ onMounted(() => {
   align-self: center;
   font-size: 11px;
   font-weight: 500;
+  line-height: 1.25;
 }
 .security-method small {
   grid-column: 2;
-  overflow: hidden;
   margin-top: -4px;
   color: rgb(244 241 233 / 38%);
   font-size: 9px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 .security-password-verify {
   display: grid;

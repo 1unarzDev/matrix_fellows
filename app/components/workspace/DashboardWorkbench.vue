@@ -1987,17 +1987,6 @@ function calendarFacts(date: string) {
   color: var(--wb-ink);
   font-family: Manrope, sans-serif;
   min-width: 0;
-  animation: workbench-enter 200ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-@keyframes workbench-enter {
-  from {
-    opacity: 0.5;
-    transform: translateY(5px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
 }
 .wb-heading {
   display: flex;

@@ -1293,14 +1293,20 @@ onMounted(async () => {
           />
         </div>
       </div>
-      <DashboardWorkbench
-        v-if="tab === 'opportunities'"
-        :workspace="data"
-        section="opportunities"
-        @navigate="tab = $event"
-      />
-      <Transition v-if="tab !== 'opportunities'" name="ws-content" mode="out-in"
-        ><section :key="tab" class="studio-content">
+      <!-- prettier-ignore -->
+      <div class="studio-content-stage">
+        <Transition name="ws-content" mode="in-out">
+          <div v-if="tab === 'opportunities'" key="opportunities" class="studio-route">
+            <KeepAlive>
+              <DashboardWorkbench
+                :workspace="data"
+                section="opportunities"
+                @navigate="tab = $event"
+              />
+            </KeepAlive>
+          </div>
+          <div v-else :key="tab" class="studio-route">
+            <section class="studio-content">
           <template v-if="tab === 'queue'">
             <div class="section-top">
               <div>
@@ -2702,8 +2708,10 @@ onMounted(async () => {
               </p>
             </section>
           </template>
-        </section></Transition
-      >
+            </section>
+          </div>
+        </Transition>
+      </div>
     </div>
   </WorkspaceShell>
 </template>
@@ -3676,6 +3684,15 @@ onMounted(async () => {
   color: #d2b779;
 }
 .studio-content {
+  min-width: 0;
+}
+.studio-content-stage {
+  display: grid;
+  min-width: 0;
+  align-items: start;
+}
+.studio-content-stage > .studio-route {
+  grid-area: 1 / 1;
   min-width: 0;
 }
 .section-top {

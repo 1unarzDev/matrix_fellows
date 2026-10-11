@@ -419,13 +419,24 @@ withDefaults(
 :deep(.ws-content-enter-active),
 :deep(.ws-content-leave-active) {
   transition:
-    opacity 0.24s ease,
-    transform 0.48s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity 0.32s ease,
+    transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+  transform-origin: top center;
 }
 :deep(.ws-content-enter-from),
 :deep(.ws-content-leave-to) {
   opacity: 0;
-  transform: translateY(7px);
+  transform: translateY(6px);
+}
+@media (prefers-reduced-motion: reduce) {
+  :deep(.ws-content-enter-active),
+  :deep(.ws-content-leave-active),
+  :deep(.ws-content-enter-from),
+  :deep(.ws-content-leave-to) {
+    transition: none;
+    transform: none;
+  }
 }
 @media (max-width: 700px) {
   .workspace-header {

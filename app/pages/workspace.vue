@@ -2041,14 +2041,7 @@ onMounted(async () => {
             <SocietyConnectionCloud :officer="canDiscover" :allow-add="false" />
           </template>
           <template v-else-if="tab === 'settings'">
-            <div class="settings-hero">
-              <div>
-                <p class="ws-kicker">Your workspace</p>
-                <h2>Settings</h2>
-                <p class="ws-muted">Keep your sign-in secure and connect a mailbox when you are ready to send an approved message.</p>
-              </div>
-              <div class="settings-hero__orb" aria-hidden="true"><span></span></div>
-            </div>
+            <div class="section-top"><h2>Settings</h2></div>
             <div class="settings-grid">
               <AccountSecurity />
               <section class="ws-panel settings-panel mailbox-panel" aria-labelledby="mailbox-settings-title">
@@ -3147,26 +3140,6 @@ onMounted(async () => {
 .connection-note {
   margin-top: 25px;
 }
-.settings-hero {
-  position: relative;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 24px;
-  min-height: 160px;
-  margin-bottom: 24px;
-  padding: clamp(24px, 4vw, 40px);
-  overflow: hidden;
-  border: 1px solid rgb(239 235 224 / 12%);
-  border-radius: 30px;
-  background:
-    radial-gradient(28rem 18rem at 100% 0%, rgb(228 187 114 / 10%), transparent 70%),
-    linear-gradient(145deg, rgb(244 241 233 / 7%), rgb(244 241 233 / 2.8%) 48%, transparent 78%),
-    rgb(10 12 16 / 58%);
-  box-shadow: 0 30px 100px rgb(0 0 0 / 28%), inset 0 1px 0 rgb(255 255 255 / 7%);
-  backdrop-filter: blur(30px) saturate(120%);
-}
-.settings-hero::before,
 .settings-panel::before,
 :deep(.settings-security-panel)::before {
   content: '';
@@ -3176,49 +3149,6 @@ onMounted(async () => {
   background: url('/textures/glass-grain.svg') repeat;
   opacity: 0.11;
   mix-blend-mode: soft-light;
-}
-.settings-hero > div:first-child {
-  position: relative;
-  z-index: 1;
-  max-width: 620px;
-}
-.settings-hero h2 {
-  margin: 8px 0 2px;
-  font-size: clamp(28px, 4vw, 42px);
-  letter-spacing: -0.06em;
-}
-.settings-hero .ws-muted {
-  max-width: 52ch;
-  margin: 0;
-  padding-block: 8px 0;
-}
-.settings-hero__orb {
-  position: absolute;
-  right: 8%;
-  bottom: -58px;
-  width: 180px;
-  height: 180px;
-  border: 1px solid rgb(228 187 114 / 22%);
-  border-radius: 50%;
-  box-shadow: 0 0 70px rgb(228 187 114 / 8%), inset 0 0 40px rgb(228 187 114 / 8%);
-  animation: settings-orbit 12s linear infinite;
-}
-.settings-hero__orb::before,
-.settings-hero__orb::after {
-  content: '';
-  position: absolute;
-  inset: 18px;
-  border: 1px solid rgb(228 187 114 / 14%);
-  border-radius: 50%;
-}
-.settings-hero__orb::after {
-  inset: 50%;
-  width: 9px;
-  height: 9px;
-  margin: -4px;
-  border: 0;
-  background: #e4bb72;
-  box-shadow: 0 0 24px 7px rgb(228 187 114 / 40%);
 }
 .settings-grid {
   display: grid;
@@ -3238,30 +3168,30 @@ onMounted(async () => {
     rgb(10 12 16 / 54%);
   box-shadow: 0 26px 90px rgb(0 0 0 / 24%), inset 0 1px 0 rgb(255 255 255 / 7%);
 }
-.settings-panel > * {
+:deep(.settings-panel > *) {
   position: relative;
   z-index: 1;
 }
-.settings-panel__heading {
+:deep(.settings-panel__heading) {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 18px;
   margin-bottom: 3px;
 }
-.settings-panel__heading h2 {
+:deep(.settings-panel__heading h2) {
   margin: 4px 0 0;
   font-size: clamp(20px, 2.5vw, 28px);
   letter-spacing: -0.045em;
 }
-.settings-panel__eyebrow {
+:deep(.settings-panel__eyebrow) {
   margin: 0;
   color: #d8b977;
   font-size: 9px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
 }
-.settings-panel__icon {
+:deep(.settings-panel__icon) {
   display: grid;
   place-items: center;
   width: 38px;
@@ -3293,21 +3223,13 @@ onMounted(async () => {
 .account-panel {
   margin-top: 22px;
 }
-@keyframes settings-orbit {
-  to { transform: rotate(360deg); }
-}
 @media (max-width: 820px) {
   .settings-grid {
     grid-template-columns: 1fr;
   }
-  .settings-hero__orb {
-    right: -50px;
-    bottom: -70px;
-    opacity: 0.65;
-  }
+
 }
 @media (prefers-reduced-motion: reduce) {
-  .settings-hero__orb { animation: none; }
   .mailbox-panel .job-row { transition: none; }
 }
 .account-panel,

@@ -89,10 +89,14 @@ onMounted(() => {
 })
 </script>
 <template>
-  <section class="account-security" aria-labelledby="account-security-title">
-    <p class="ws-kicker">Your account</p>
-    <h2 id="account-security-title">Sign-in &amp; security</h2>
-    <div class="ws-panel settings-panel settings-security-panel">
+  <section class="account-security ws-panel settings-panel settings-security-panel" aria-labelledby="account-security-title">
+    <div class="settings-panel__heading">
+      <div>
+        <p class="settings-panel__eyebrow">Your account</p>
+        <h2 id="account-security-title">Sign-in &amp; security</h2>
+      </div>
+      <span class="settings-panel__icon" aria-hidden="true"><SiteIcon name="lock" :size="17" /></span>
+    </div>
       <p class="ws-muted">
         Passkeys use your device’s fingerprint, face recognition, or security key. Email sign-in
         remains available for recovery.
@@ -186,7 +190,6 @@ onMounted(() => {
       </template>
       <button v-else-if="error" class="ws-button" @click="load">Retry account settings</button>
       <p v-else class="ws-muted" role="status">Loading account security…</p>
-    </div>
   </section>
 </template>
 <style scoped>
@@ -194,9 +197,8 @@ onMounted(() => {
   margin-bottom: 2rem;
 }
 .settings-security-panel {
-  min-height: 100%;
   background:
-    radial-gradient(30rem 20rem at 100% 0%, rgb(228 187 114 / 8%), transparent 70%),
+    radial-gradient(28rem 18rem at 100% 0%, rgb(228 187 114 / 8%), transparent 70%),
     linear-gradient(145deg, rgb(244 241 233 / 6%), rgb(244 241 233 / 2.4%) 48%, transparent 78%),
     rgb(10 12 16 / 54%);
 }

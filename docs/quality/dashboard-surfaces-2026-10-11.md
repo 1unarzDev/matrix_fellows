@@ -28,3 +28,19 @@ Captures: `/tmp/matrix-dashboard-evidence/opportunities-{discover,timeline,board
 This release changes UI and display composition only. No migration, secret change, mailbox consent, or research-provider activation is required. Deploy the built application using `wrangler.jsonc` with `--keep-vars` to preserve remotely managed configuration. The preceding application version was `04dca2d7-bc92-4d7f-9615-29e045d447cf`; application rollback does not roll back database data.
 
 Released application commit: `1a2c4a5`. Worker version: `802bce22-b313-4fa6-b353-a51aa065c891`, deployed to `matrixfellows.com`. The dashboard document and its new `workspace.8N4GIhaw.css` asset returned HTTP 200; the published CSS contains the unified dock and animated outbox disclosure and excludes the removed outreach grain wrappers. This is a deployment/static-asset smoke check, not proof of live account persistence or email delivery. The release was pushed to `origin/main`.
+
+## Settings alignment follow-up
+
+Removed the large Settings introduction, its explanatory paragraph, and decorative
+orb, retaining a simple page heading. Sign-in/security and mailbox connections now
+place their headings inside matching glass panels with shared heading/icon styles.
+Desktop panel tops and heading baselines match exactly in preview measurements;
+mobile panels stack with matching widths and padding, without horizontal overflow.
+
+Application/Worker typecheck, production build, diff whitespace, and application
+Wrangler dry run passed. All four existing desktop/mobile account-security browser
+checks passed, exercising passkey registration/rename/removal, password mismatch,
+and stale-session restrictions against synthetic API fixtures. Screenshots were
+inspected at `/tmp/matrix-dashboard-evidence/settings-alignment-{desktop,mobile}.png`.
+This is UI verification; no live credentials, account changes, or mailbox consent
+were exercised.

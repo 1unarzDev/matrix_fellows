@@ -294,7 +294,7 @@ test('fixture: officer research evidence, autosave preserves in-flight typing an
   await expect(page.getByText('Plan the first message', { exact: true })).toBeVisible()
   await page
     .getByRole('navigation', { name: 'Dashboard sections' })
-    .getByRole('button', { name: 'Draft review', exact: true })
+    .getByRole('button', { name: 'Outreach', exact: true })
     .click()
   await page.getByRole('button', { name: /Synthetic inquiry about spectroscopy/ }).click()
   const editor = page.getByLabel('Email', { exact: true })
@@ -325,7 +325,7 @@ test('fixture: revision conflict preserves manual buffer without retrying or sen
 }) => {
   const state = await setup(page, true)
   state.workspace.member.role = 'officer'
-  await page.goto('/dashboard?section=drafts')
+  await page.goto('/dashboard?section=queue')
   await page.getByRole('button', { name: /Synthetic inquiry about spectroscopy/ }).click()
   const editor = page.getByLabel('Email', { exact: true })
   await editor.fill('Synthetic conflict buffer must survive.')

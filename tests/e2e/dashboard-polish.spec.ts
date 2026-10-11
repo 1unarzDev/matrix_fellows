@@ -112,7 +112,7 @@ test('dashboard catalog shares featured panels, rounded navigation and responsiv
     )
     const draft = page
       .getByRole('navigation', { name: 'Dashboard sections' })
-      .getByRole('button', { name: 'Draft review', exact: true })
+      .getByRole('button', { name: 'Outreach', exact: true })
     await draft.scrollIntoViewIfNeeded()
     expect(await draft.evaluate((el) => getComputedStyle(el).borderTopLeftRadius)).toBe('15px')
     await page
@@ -128,10 +128,10 @@ test('dashboard catalog shares featured panels, rounded navigation and responsiv
       animations: 'disabled',
     })
     await draft.click()
-    await expect(page.getByRole('heading', { name: 'Draft review', exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Outreach', exact: true })).toBeVisible()
     await expect(draft).toHaveAttribute('aria-current', 'page')
     await page.screenshot({
-      path: `/tmp/matrix-dashboard-polish/drafts-${width}-${info.project.name}.png`,
+      path: `/tmp/matrix-dashboard-polish/outreach-${width}-${info.project.name}.png`,
       fullPage: true,
       animations: 'disabled',
     })
@@ -159,9 +159,9 @@ test('mobile dashboard section selector stays contained and navigates cleanly', 
     true,
   )
 
-  await selector.selectOption('drafts')
-  await expect(page.getByRole('heading', { name: 'Draft review', exact: true })).toBeVisible()
-  await expect(selector).toHaveValue('drafts')
+  await selector.selectOption('queue')
+  await expect(page.getByRole('heading', { name: 'Outreach', exact: true })).toBeVisible()
+  await expect(selector).toHaveValue('queue')
   await selector.selectOption('today')
   await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible()
 })

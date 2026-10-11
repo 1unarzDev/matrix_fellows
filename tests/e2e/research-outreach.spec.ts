@@ -8,7 +8,7 @@ test('contextual revision preview cannot replace edits made while it was in flig
   await new Promise(resolve=>setTimeout(resolve,600))
   await route.fulfill({json:{baseRevision:1,subject:'Proposed shorter subject',body:'Proposed shorter message',notices:['Local revision'],mode:'local'}})
  })
- await page.goto('/dashboard?section=drafts')
+ await page.goto('/dashboard?section=queue')
  await page.getByRole('button',{name:/Synthetic inquiry about spectroscopy/}).click()
  const editor=page.getByLabel('Email',{exact:true})
  await page.getByRole('button',{name:'Shorten',exact:true}).click()

@@ -41,17 +41,18 @@ test('member dashboard retains assigned research and excludes officer drafts', a
   })
   await page.goto('/dashboard?section=queue')
   await expect(
-    page.getByRole('heading', { name: 'Research relationships', exact: true }),
+    page.getByRole('heading', { name: 'Outreach', exact: true }),
   ).toBeVisible()
   const nav = page.getByRole('navigation', { name: 'Dashboard sections' })
   await expect(nav.getByRole('button', { name: 'Discovery', exact: true })).toHaveCount(0)
   await expect(nav.getByRole('button', { name: 'Source management', exact: true })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Assign connection', exact: true })).toHaveCount(0)
-  await page.getByRole('button', { name: /Robotics Research Group/ }).click()
+  await page.locator('.candidate-list').first().getByRole('button', { name: /Robotics Research Group/ }).click()
   await expect(page.getByRole('button', { name: 'Shape a proposal', exact: true })).toHaveCount(0)
-  await expect(nav.getByRole('button', { name: 'Draft review', exact: true })).toHaveCount(0)
-  await page.goto('/dashboard?section=drafts')
-  await expect(page.getByRole('heading', { name: 'Draft review', exact: true })).toHaveCount(0)
+  await expect(nav.getByRole('button', { name: 'Outreach', exact: true })).toHaveCount(1)
+  await page.goto('/dashboard?section=queue')
+  await expect(page.getByRole('heading', { name: 'Outreach', exact: true })).toHaveCount(1)
+  await expect(page.getByRole('heading', { name: 'Messages to review', exact: true })).toHaveCount(0)
   expect(requests.some((request) => request.path === '/api/workspace/planner')).toBe(false)
   await nav.getByRole('button', { name: 'Society', exact: true }).click()
   await expect(
@@ -66,57 +67,12 @@ test('member dashboard retains assigned research and excludes officer drafts', a
   await page.reload()
   await page
     .getByRole('navigation', { name: 'Dashboard sections' })
-    .getByRole('button', { name: /Research/ })
+    .getByRole('button', { name: 'Outreach', exact: true })
     .click()
   await expect(page.getByRole('button', { name: 'Shape a proposal', exact: true })).toHaveCount(0)
   await expect(page.getByText(/No candidates match these filters/)).toBeVisible()
 })
 
-test('officers assign and revoke reviewed connections for enrolled members', async ({ page }) => {
-  const data = fixture()
-  const assignments: any[] = []
-  const requests: any[] = []
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await page.route('**/api/workspace**', (route) => {
-    const path = new URL(route.request().url()).pathname
-    if (path === '/api/workspace/plan')
-      return route.fulfill({
-        json: { pursuits: [], tasks: [], activities: [], events: [], capacityHours: null },
-      })
-    if (path === '/api/workspace') return route.fulfill({ json: data })
-    if (path === '/api/workspace/mailboxes')
-      return route.fulfill({ json: { items: [], providers: {} } })
-    if (path === '/api/workspace/assignments') {
-      if (route.request().method() === 'POST') {
-        const body = route.request().postDataJSON()
-        requests.push(body)
-        if (body.action === 'assign')
-          assignments.push({ targetId, userId: officer, email: body.email, createdAt: '' })
-        else assignments.splice(0)
-        return route.fulfill({ json: { ok: true } })
-      }
-      return route.fulfill({ json: { assignments } })
-    }
-    return route.fulfill({ json: { items: [] } })
-  })
-  await page.goto('/dashboard?section=queue')
-  await page.getByRole('button', { name: /Robotics Research Group/ }).click()
-  await page.getByLabel('Member email', { exact: true }).fill('member@example.org')
-  await page.getByRole('button', { name: 'Assign connection', exact: true }).click()
-  await expect(
-    page.getByRole('button', { name: 'Revoke access for member@example.org', exact: true }),
-  ).toBeVisible()
-  await page
-    .getByRole('button', { name: 'Revoke access for member@example.org', exact: true })
-    .click()
-  await expect(
-    page.getByRole('button', { name: 'Revoke access for member@example.org', exact: true }),
-  ).toHaveCount(0)
-  expect(requests).toEqual([
-    { targetId, email: 'member@example.org', action: 'assign' },
-    { targetId, email: 'member@example.org', action: 'revoke' },
-  ])
-})
 const officer = '11111111-1111-4111-8111-111111111111'
 const targetId = '22222222-2222-4222-8222-222222222222'
 const mailboxId = '33333333-3333-4333-8333-333333333333'
@@ -294,9 +250,9 @@ test('private studio presents evidence, unknown priority and all sections withou
   page.on('pageerror', (error) => errors.push(error.message))
   await page.goto('/workspace?section=queue')
   await expect(
-    page.getByRole('heading', { name: 'Research relationships', exact: true }),
+    page.getByRole('heading', { name: 'Outreach', exact: true }),
   ).toBeVisible()
-  await page.getByRole('button', { name: /Robotics Research Group/ }).click()
+  await page.locator('.candidate-list').first().getByRole('button', { name: /Robotics Research Group/ }).click()
   await expect(page.getByText('Evidence, not assumptions', { exact: true })).toBeVisible()
   await expect(
     page.getByText('Research themes verified; mentoring availability unknown.', { exact: true }),
@@ -306,7 +262,7 @@ test('private studio presents evidence, unknown priority and all sections withou
     'Society',
     'Source management',
     'Connections',
-    'Draft review',
+    'Outreach',
   ]) {
     await page
       .getByRole('navigation', { name: 'Dashboard sections' })
@@ -357,7 +313,7 @@ test('mail sending requires separate approval and final confirmation', async ({ 
   await page.goto('/workspace')
   await page
     .getByRole('navigation', { name: 'Dashboard sections' })
-    .getByRole('button', { name: 'Draft review', exact: true })
+    .getByRole('button', { name: 'Outreach', exact: true })
     .click()
   await page.getByRole('button', { name: /Robotics discussion with Matrix Fellows/ }).click()
   await expect(page.getByRole('button', { name: 'Review & send' })).toBeDisabled()

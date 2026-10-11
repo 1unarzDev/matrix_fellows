@@ -25,7 +25,9 @@ const tab = computed({
     typeof route.query.section === 'string' &&
     sections.value.some((section) => section.value === route.query.section)
       ? route.query.section
-      : route.query.section === 'saved'
+      : route.query.section === 'drafts'
+        ? 'queue'
+        : route.query.section === 'saved'
         ? 'opportunities'
         : 'today',
   set: (section: string) => patchQuery({ section }, true),
@@ -33,9 +35,8 @@ const tab = computed({
 const canDiscover = computed(() => ['officer', 'admin'].includes(data.value?.member.role || ''))
 const allSections = [
   { value: 'today', label: 'Today', icon: 'spark' },
-  { value: 'queue', label: 'Research', icon: 'compass' },
+  { value: 'queue', label: 'Outreach', icon: 'compass' },
   { value: 'opportunities', label: 'Opportunities', icon: 'calendar' },
-  { value: 'drafts', label: 'Draft review', icon: 'mail' },
   { value: 'profiles', label: 'Your profile', icon: 'spark' },
   { value: 'society', label: 'Society', icon: 'atom' },
   { value: 'research', label: 'Source management', icon: 'globe' },
@@ -442,7 +443,7 @@ watch(data, (value) => {
       scope.value = 'student'
     }
   }
-  if (!canDiscover.value && ['research', 'drafts'].includes(String(route.query.section))) tab.value = 'today'
+  if (!canDiscover.value && ['research'].includes(String(route.query.section))) tab.value = 'today'
   const p = value.profiles.find((profile) => profile.id === value.primaryProfileId) || value.profiles[0]
   if (p && !profileSaving.value && (!profileForm.id || profileForm.id !== p.id)) {
     Object.assign(profileForm, {
@@ -494,7 +495,7 @@ async function saveProfile() {
 }
 async function plan() {
   if (!canDiscover.value || !selected.value) return
-  const result = await mutate(
+  const result = await mutate<{ proposal: OutreachProposal }>(
     '/planner',
     'POST',
     {
@@ -508,7 +509,11 @@ async function plan() {
     },
     'Proposal created. Review every claim before approval.',
   )
-  if (result) tab.value = 'drafts'
+  if (result?.proposal) {
+    openProposal(result.proposal)
+    tab.value = 'queue'
+    await nextTick()
+  }
 }
 async function toggleSave(t: OutreachTarget) {
   const saved = data.value?.saves.includes(t.id)
@@ -867,13 +872,14 @@ async function reconcile() {
   }
 }
 watch(tab, (value) => {
-  if (value === 'drafts' && canDiscover.value) void loadOutbox()
+  if (value === 'queue' && canDiscover.value) void loadOutbox()
 })
 onMounted(async () => {
   await refresh()
   await loadMailboxes()
   if (canDiscover.value) {
     await loadSharedProfiles()
+    if (tab.value === 'queue') await loadOutbox()
   }
 })
 </script>
@@ -921,11 +927,12 @@ onMounted(async () => {
           v-for="section in sections"
           :key="section.value"
           :class="{ active: tab === section.value }"
-          :data-group-start="section.value === 'drafts'"
+          :data-group-start="section.value === 'queue'"
           :data-secondary="
-            ['drafts', 'profiles', 'society', 'research', 'settings'].includes(section.value)
+            ['profiles', 'society', 'research', 'settings'].includes(section.value)
           "
           :aria-current="tab === section.value ? 'page' : undefined"
+          :aria-label="section.value === 'queue' ? section.label : undefined"
           @click="tab = section.value"
         >
           <SiteIcon :name="section.icon" :size="17" />{{ section.label
@@ -969,7 +976,7 @@ onMounted(async () => {
                 <p class="ws-kicker">
                   {{ canDiscover ? 'Shared source review' : 'Connections assigned to you' }}
                 </p>
-                <h2>Research queue</h2>
+                <h2>Outreach</h2>
               </div>
               <button v-if="canDiscover" class="ws-button" @click="openTarget()">
                 <SiteIcon name="plus" :size="15" />Add candidate
@@ -1484,11 +1491,9 @@ onMounted(async () => {
                 </div></Transition
               >
             </div>
-          </template>
-          <template v-else-if="tab === 'drafts' && canDiscover"
-            ><div class="section-top">
+          <section v-if="canDiscover" class="outreach-draft-workspace"><div class="section-top">
               <div>
-                <h2>Draft review</h2>
+                <h2>Messages to review</h2>
               </div>
               <span class="ws-chip">Every send requires your approval</span>
             </div>
@@ -1509,7 +1514,7 @@ onMounted(async () => {
                   }}</small>
                 </button>
                 <div v-if="!visibleProposals.length" class="ws-empty">
-                  Select a candidate in Discovery and shape a proposal. Nothing is sent
+                  Select a candidate in Outreach and shape a proposal. Nothing is sent
                   automatically.
                 </div>
               </div>
@@ -1702,7 +1707,7 @@ onMounted(async () => {
                 >
               </form>
               <div v-else class="ws-empty dossier-empty">
-                Choose a draft to refine, approve, and send.
+                Choose a message to refine, approve, and send.
               </div>
             </div>
             <details class="ws-panel secondary-panel">
@@ -1746,7 +1751,9 @@ onMounted(async () => {
                 </div>
               </form>
             </details>
+          </section>
           </template>
+
           <template v-else-if="tab === 'profiles'"
             ><section class="ws-panel" aria-label="Practical participation preferences">
               <ThemedSelect v-model="lens" label="Practical participation" :options="[{value:'nearby',label:'Nearby or remote'},{value:'remote',label:'Remote only'},{value:'travel',label:'Travel is practical'}]" />

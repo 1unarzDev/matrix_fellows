@@ -29,11 +29,29 @@ Registration can begin before your project is fully formed. The goal of this fir
 
 Go to [fwrsef.stemwizard.com](https://fwrsef.stemwizard.com/). Choose **Registration** in the top navigation, then choose **Student**.
 
+::guide-screenshot{src="/guides/fort-worth-regional-science-fair/01-registration.webp" alt="STEM Wizard fair homepage with Registration circled in the top navigation" caption="1. Open Registration from the STEM Wizard homepage."}
+::
+
+::guide-screenshot{src="/guides/fort-worth-regional-science-fair/02-student-registration.webp" alt="STEM Wizard Registration menu with Student circled" caption="2. Choose Student from the Registration menu."}
+::
+
 When the school list appears, choose **Martin STEM School – Arlington ISD**. This is the school entry the fair was originally registered under; choosing it is okay even if you are not enrolled in the STEM program. It is an administrative registration choice, not a statement about the limits of your project.
+
+::guide-screenshot{src="/guides/fort-worth-regional-science-fair/03-school-selection.webp" alt="STEM Wizard school dropdown with Martin STEM School – Arlington ISD highlighted" caption="3. Select Martin STEM School – Arlington ISD. It is okay to use this entry even if you are not in the STEM program because it is how the fair was originally registered."}
+::
 
 Choose **Senior Division (9th–12th grade)**. For **Class Period**, a temporary selection such as **001** is fine. You can correct details later if the fair or your teacher asks for a different value.
 
+::guide-screenshot{src="/guides/fort-worth-regional-science-fair/04-project-information.webp" alt="STEM Wizard Project Information form showing Senior division, a category, and class period 001" caption="4. Choose Senior Division, select a tentative category, and use 001 for Class Period."}
+::
+
 For **Teacher**, select **Ben Taylor** for now. **Caitlin Quinn** or **Brandon Searcey** can be selected in the future; currently they are still being approved, so only Ben appears in the list. For **Secondary Teacher**, choose **Powen Cheng** for now.
+
+::guide-screenshot{src="/guides/fort-worth-regional-science-fair/05-teacher-selection.webp" alt="STEM Wizard teacher dropdown with Ben Taylor – Martin STEM School highlighted" caption="5. Select Ben Taylor. Caitlin Quinn and Brandon Searcey are still being approved and may appear later."}
+::
+
+::guide-screenshot{src="/guides/fort-worth-regional-science-fair/06-secondary-teacher.webp" alt="STEM Wizard secondary teacher dropdown with Powen Cheng – Martin STEM School highlighted" caption="6. Select Powen Cheng as the secondary teacher for now."}
+::
 
 Use a placeholder project name if you need one. Something like “Project idea — working title” is enough to get through registration. Replace it when your question and team are clearer; the placeholder is not your final title.
 

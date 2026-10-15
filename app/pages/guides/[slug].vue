@@ -161,6 +161,12 @@ useHead({
 .guide-article {
   text-wrap: pretty;
 }
+.guide-article :deep(.guide-screenshot img) {
+  max-height: 34rem;
+  object-fit: contain;
+  object-position: top center;
+  background: rgb(255 255 255 / 96%);
+}
 .guide-article :deep(figure) {
   transform: translate3d(0, 0, 0);
   transition:

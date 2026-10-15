@@ -57,6 +57,15 @@ test('poster guide renders original instructional figures and keeps navigation u
   else await expect(onThisPage).toBeVisible()
 })
 
+test('Fort Worth registration guide renders its screenshots as rounded figures', async ({ page }) => {
+  await page.goto('/guides/register-for-fort-worth-regional-science-fair')
+  const screenshots = page.locator('article figure.guide-screenshot')
+  await expect(screenshots).toHaveCount(6)
+  await expect(screenshots.first()).toHaveCSS('border-top-left-radius', '16px')
+  await expect(screenshots.locator('img')).toHaveCount(6)
+  await expect(screenshots.locator('img').first()).toHaveAttribute('loading', 'lazy')
+})
+
 test('guide section navigation is smooth, shareable, and synchronized with reading position', async ({
   page,
 }, testInfo) => {

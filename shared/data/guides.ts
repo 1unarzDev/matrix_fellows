@@ -131,6 +131,17 @@ export const guideSummaries: GuideSummary[] = [
     featured: true,
     order: 11,
   },
+  {
+    slug: 'register-for-fort-worth-regional-science-fair',
+    title: 'Register for the Fort Worth Regional Science & Engineering Fair',
+    description:
+      'Start a STEM Wizard registration, choose a provisional project path, and prepare the forms that matter before experimentation.',
+    category: 'Start',
+    stage: 'Starting out',
+    readingMinutes: 6,
+    featured: false,
+    order: 12,
+  },
 ]
 
 export const featuredGuideSummaries = guideSummaries.filter((guide) => guide.featured)

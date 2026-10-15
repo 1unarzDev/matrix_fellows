@@ -13,7 +13,7 @@ test('guide library and guide content are crawlable, readable, and route correct
 
   await page.goto('/guides')
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Research becomes real')
-  await expect(page.locator('main a[href^="/guides/"]')).toHaveCount(11)
+  await expect(page.locator('main a[href^="/guides/"]')).toHaveCount(12)
   await page.getByRole('link', { name: /Find an idea worth pursuing/ }).click()
   await expect(page).toHaveURL(/\/guides\/find-a-research-idea$/)
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Find an idea worth pursuing')
